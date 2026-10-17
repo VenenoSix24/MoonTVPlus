@@ -5,12 +5,18 @@ interface ScrollableRowProps {
   children: React.ReactNode;
   scrollDistance?: number;
   bottomPadding?: string;
+  /** 横向吸附滚动 */
+  snap?: boolean;
+  /** 两端渐隐遮罩 */
+  fade?: boolean;
 }
 
 export default function ScrollableRow({
   children,
   scrollDistance = 1000,
   bottomPadding = 'pb-12 sm:pb-14',
+  snap = false,
+  fade = false,
 }: ScrollableRowProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [showLeftScroll, setShowLeftScroll] = useState(false);
@@ -104,7 +110,9 @@ export default function ScrollableRow({
     >
       <div
         ref={containerRef}
-        className={`flex space-x-2 sm:space-x-4 overflow-x-auto scrollbar-hide py-1 sm:py-2 ${bottomPadding} px-4 sm:px-6`}
+        className={`flex space-x-2 sm:space-x-4 overflow-x-auto scrollbar-hide py-1 sm:py-2 ${bottomPadding} px-4 sm:px-6 ${
+          snap ? 'mtv-rail' : ''
+        } ${fade ? 'mtv-rail-fade' : ''}`}
         onScroll={checkScroll}
       >
         {children}
@@ -130,9 +138,9 @@ export default function ScrollableRow({
           >
             <button
               onClick={handleScrollLeftClick}
-              className='w-12 h-12 bg-white/95 rounded-full shadow-lg flex items-center justify-center hover:bg-white border border-gray-200 transition-transform hover:scale-105 dark:bg-gray-800/90 dark:hover:bg-gray-700 dark:border-gray-600'
+              className='w-12 h-12 bg-ui-surface rounded-full shadow-ui-2 flex items-center justify-center border border-ui-hair transition-transform hover:scale-105'
             >
-              <ChevronLeft className='w-6 h-6 text-gray-600 dark:text-gray-300' />
+              <ChevronLeft className='w-6 h-6 text-ui-ink-2' />
             </button>
           </div>
         </div>
@@ -159,9 +167,9 @@ export default function ScrollableRow({
           >
             <button
               onClick={handleScrollRightClick}
-              className='w-12 h-12 bg-white/95 rounded-full shadow-lg flex items-center justify-center hover:bg-white border border-gray-200 transition-transform hover:scale-105 dark:bg-gray-800/90 dark:hover:bg-gray-700 dark:border-gray-600'
+              className='w-12 h-12 bg-ui-surface rounded-full shadow-ui-2 flex items-center justify-center border border-ui-hair transition-transform hover:scale-105'
             >
-              <ChevronRight className='w-6 h-6 text-gray-600 dark:text-gray-300' />
+              <ChevronRight className='w-6 h-6 text-ui-ink-2' />
             </button>
           </div>
         </div>

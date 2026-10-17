@@ -571,18 +571,13 @@ function HomeClient() {
         return (
           <section key='hotMovies' className='mb-8'>
             <div className='mb-4 flex items-center justify-between'>
-              <h2 className='text-xl font-bold text-gray-800 dark:text-gray-200'>
-                热门电影
-              </h2>
-              <Link
-                href='/douban?type=movie'
-                className='flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-              >
+              <h2 className='mtv-row-title'>热门电影</h2>
+              <Link href='/douban?type=movie' className='mtv-row-more'>
                 查看更多
                 <ChevronRight className='w-4 h-4 ml-1' />
               </Link>
             </div>
-            <ScrollableRow>
+            <ScrollableRow snap fade>
               {loading
                 ? Array.from({ length: 8 }).map((_, index) => (
                     <div
@@ -619,18 +614,13 @@ function HomeClient() {
         return (
           <section key='hotDuanju' className='mb-8'>
             <div className='mb-4 flex items-center justify-between'>
-              <h2 className='text-xl font-bold text-gray-800 dark:text-gray-200'>
-                热播短剧
-              </h2>
-              <Link
-                href='/duanju'
-                className='flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-              >
+              <h2 className='mtv-row-title'>热播短剧</h2>
+              <Link href='/duanju' className='mtv-row-more'>
                 查看更多
                 <ChevronRight className='w-4 h-4 ml-1' />
               </Link>
             </div>
-            <ScrollableRow>
+            <ScrollableRow snap fade>
               {loading
                 ? Array.from({ length: 8 }).map((_, index) => (
                     <div
@@ -673,18 +663,13 @@ function HomeClient() {
         return (
           <section key='bangumiCalendar' className='mb-8'>
             <div className='mb-4 flex items-center justify-between'>
-              <h2 className='text-xl font-bold text-gray-800 dark:text-gray-200'>
-                新番放送
-              </h2>
-              <Link
-                href='/douban?type=anime'
-                className='flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-              >
+              <h2 className='mtv-row-title'>新番放送</h2>
+              <Link href='/douban?type=anime' className='mtv-row-more'>
                 查看更多
                 <ChevronRight className='w-4 h-4 ml-1' />
               </Link>
             </div>
-            <ScrollableRow>
+            <ScrollableRow snap fade>
               {loading
                 ? Array.from({ length: 8 }).map((_, index) => (
                     <div
@@ -746,18 +731,13 @@ function HomeClient() {
         return (
           <section key='hotTvShows' className='mb-8'>
             <div className='mb-4 flex items-center justify-between'>
-              <h2 className='text-xl font-bold text-gray-800 dark:text-gray-200'>
-                热门剧集
-              </h2>
-              <Link
-                href='/douban?type=tv'
-                className='flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-              >
+              <h2 className='mtv-row-title'>热门剧集</h2>
+              <Link href='/douban?type=tv' className='mtv-row-more'>
                 查看更多
                 <ChevronRight className='w-4 h-4 ml-1' />
               </Link>
             </div>
-            <ScrollableRow>
+            <ScrollableRow snap fade>
               {loading
                 ? Array.from({ length: 8 }).map((_, index) => (
                     <div
@@ -793,18 +773,13 @@ function HomeClient() {
         return (
           <section key='hotVarietyShows' className='mb-8'>
             <div className='mb-4 flex items-center justify-between'>
-              <h2 className='text-xl font-bold text-gray-800 dark:text-gray-200'>
-                热门综艺
-              </h2>
-              <Link
-                href='/douban?type=show'
-                className='flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-              >
+              <h2 className='mtv-row-title'>热门综艺</h2>
+              <Link href='/douban?type=show' className='mtv-row-more'>
                 查看更多
                 <ChevronRight className='w-4 h-4 ml-1' />
               </Link>
             </div>
-            <ScrollableRow>
+            <ScrollableRow snap fade>
               {loading
                 ? Array.from({ length: 8 }).map((_, index) => (
                     <div
@@ -843,11 +818,9 @@ function HomeClient() {
         return (
           <section key='upcomingContent' className='mb-8'>
             <div className='mb-4 flex items-center justify-between'>
-              <h2 className='text-xl font-bold text-gray-800 dark:text-gray-200'>
-                即将上映
-              </h2>
+              <h2 className='mtv-row-title'>即将上映</h2>
             </div>
-            <ScrollableRow>
+            <ScrollableRow snap fade>
               {upcomingContent.map((item) => (
                 <div
                   key={`${item.media_type}-${item.id}`}
