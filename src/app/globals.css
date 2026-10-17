@@ -2,6 +2,79 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ==========================================================================
+   语义化设计令牌
+   --------------------------------------------------------------------------
+   浅色是默认值（:root），深色在 .dark 下覆盖。新样式只消费这里的变量，
+   不再散落 bg-white / bg-gray-* 字面量，换肤与改品牌色都只动这一处。
+
+   命名刻意避开 bg-white / bg-gray-* / border-gray / text-gray-* 这几族子串：
+   管理端主题层（/api/theme/css）会对它们做 [class*="..."] !important 覆盖，
+   撞上就会被强行改色。消费令牌的类名同样统一走 ui- / mtv- 前缀。
+   ========================================================================== */
+:root {
+  /* 表面层级：页面底 → 卡片 → 悬浮 → 控件 */
+  --ui-bg: #f5f6f9;
+  --ui-surface: #ffffff;
+  --ui-surface-2: #ffffff;
+  --ui-surface-3: #eef0f4;
+
+  /* 文本层级 */
+  --ui-ink: #0e1524;
+  --ui-ink-2: #59636f;
+  --ui-ink-3: #8a93a1;
+
+  /* 描边 */
+  --ui-hair: rgba(14, 21, 36, 0.1);
+  --ui-hair-strong: rgba(14, 21, 36, 0.2);
+
+  /* 投影 */
+  --ui-elev-1: 0 1px 2px rgba(14, 21, 36, 0.07);
+  --ui-elev-2: 0 10px 28px -12px rgba(14, 21, 36, 0.2);
+  --ui-elev-3: 0 28px 64px -20px rgba(14, 21, 36, 0.3);
+
+  /* 圆角 */
+  --ui-r-sm: 6px;
+  --ui-r-md: 10px;
+  --ui-r-lg: 16px;
+
+  /* 动效 */
+  --ui-dur-1: 140ms;
+  --ui-dur-2: 260ms;
+  --ui-dur-3: 420ms;
+  --ui-ease: cubic-bezier(0.22, 0.72, 0.24, 1);
+  --ui-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dark {
+  --ui-bg: #000000;
+  --ui-surface: #141414;
+  --ui-surface-2: #1f1f1f;
+  --ui-surface-3: #2a2a2a;
+
+  --ui-ink: #ffffff;
+  --ui-ink-2: #b3b3b3;
+  --ui-ink-3: #777777;
+
+  --ui-hair: rgba(255, 255, 255, 0.1);
+  --ui-hair-strong: rgba(255, 255, 255, 0.18);
+
+  --ui-elev-1: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --ui-elev-2: 0 10px 28px -10px rgba(0, 0, 0, 0.75);
+  --ui-elev-3: 0 28px 64px -18px rgba(0, 0, 0, 0.88);
+}
+
+:root {
+  /*
+   * 品牌强调色。优先跟随管理端主题色 --theme-primary（内置主题会写它），
+   * 站长没配主题时回落到流媒体红。派生色由 color-mix 算，只需改这一个值。
+   */
+  --ui-accent: var(--theme-primary, #e50914);
+  --ui-accent-ink: #ffffff;
+  --ui-accent-soft: color-mix(in srgb, var(--ui-accent) 16%, transparent);
+  --ui-accent-glow: color-mix(in srgb, var(--ui-accent) 50%, transparent);
+}
+
 /* NProgress 进度条样式 */
 #nprogress {
   pointer-events: none;
@@ -1204,4 +1277,71 @@ html[data-loading-style='grid'] .mtv-err-box {
   .group:hover .mtv-rate-medal {
     transform: scale(0.85);
   }
+}
+
+/* ==========================================================================
+   首页内容区：内容行 / 小节标题
+   --------------------------------------------------------------------------
+   类名统一走 mtv- 前缀，既避开管理端主题层的 [class*="..."] 覆盖，也便于和
+   既有的 mtv-load / mtv-rate 区分开。颜色只取自 --ui-* 令牌。
+   ========================================================================== */
+
+/* ---------- 内容行：横向吸附 + 两端渐隐 ---------- */
+.mtv-rail {
+  scroll-snap-type: x proximity;
+}
+
+.mtv-rail > * {
+  scroll-snap-align: start;
+}
+
+/* 两端渐隐：提示"还能继续滑"，同时把滚出视口的卡片边缘化掉 */
+.mtv-rail-fade {
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    #000 14px,
+    #000 calc(100% - 32px),
+    transparent 100%
+  );
+}
+
+/* ---------- 小节标题 ---------- */
+.mtv-row-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.mtv-row-title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  color: var(--ui-ink);
+}
+
+.mtv-row-sub {
+  font-size: 0.75rem;
+  color: var(--ui-ink-3);
+}
+
+/* 「查看更多」：常显，不再做悬浮才出现 */
+.mtv-row-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 8px;
+  border-radius: var(--ui-r-sm);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--ui-ink-3);
+  transition: color var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-row-more:hover {
+  color: var(--ui-ink);
+  background-color: var(--ui-surface-3);
 }
