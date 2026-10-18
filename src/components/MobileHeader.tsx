@@ -56,7 +56,7 @@ const MobileHeader = ({ showBackButton = false }: MobileHeaderProps) => {
           <Link
             href='/'
             prefetch={false}
-            className='text-2xl font-bold text-green-600 tracking-tight hover:opacity-80 transition-opacity'
+            className='text-2xl font-bold text-ui-accent tracking-tight hover:opacity-80 transition-opacity'
           >
             {siteName}
           </Link>
