@@ -1455,3 +1455,156 @@ html[data-loading-style='grid'] .mtv-err-box {
     display: flex;
   }
 }
+
+/* ==========================================================================
+   首页 Hero（BannerCarousel）
+   --------------------------------------------------------------------------
+   Hero 跟随主题深浅色：浅色下换成浅色遮罩 + 深色字，画面提亮；深色下维持
+   原来的黑遮罩 + 白字。整组取值走 --hero-* 令牌，随 .dark 切换。
+   ========================================================================== */
+:root {
+  --hero-scrim:
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.96) 0%,
+      rgba(255, 255, 255, 0.86) 28%,
+      rgba(255, 255, 255, 0.4) 55%,
+      rgba(255, 255, 255, 0.08) 78%,
+      transparent 100%
+    ),
+    linear-gradient(0deg, var(--ui-bg) 0%, rgba(255, 255, 255, 0.6) 14%, transparent 38%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0%, transparent 28%);
+  --hero-ink: #0e1524;
+  --hero-ink-2: rgba(14, 21, 36, 0.78);
+  --hero-art-filter: saturate(0.85) brightness(1.28) contrast(0.94);
+  --hero-btn-bg: #0e1524;
+  --hero-btn-ink: #ffffff;
+  --hero-btn-bg-hover: #2a2a30;
+  --hero-chip-bg: rgba(14, 21, 36, 0.09);
+  --hero-chip-ink: #0e1524;
+  --hero-ctl-bg: rgba(255, 255, 255, 0.72);
+  --hero-dot: rgba(14, 21, 36, 0.3);
+}
+
+.dark {
+  --hero-scrim:
+    linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.92) 0%,
+      rgba(0, 0, 0, 0.72) 28%,
+      rgba(0, 0, 0, 0.28) 55%,
+      transparent 78%
+    ),
+    linear-gradient(0deg, var(--ui-bg) 0%, rgba(0, 0, 0, 0.55) 14%, transparent 38%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.6) 0%, transparent 28%);
+  --hero-ink: #ffffff;
+  --hero-ink-2: rgba(255, 255, 255, 0.78);
+  --hero-art-filter: none;
+  --hero-btn-bg: #ffffff;
+  --hero-btn-ink: #000000;
+  --hero-btn-bg-hover: rgba(255, 255, 255, 0.82);
+  --hero-chip-bg: rgba(255, 255, 255, 0.16);
+  --hero-chip-ink: #ffffff;
+  --hero-ctl-bg: rgba(0, 0, 0, 0.42);
+  --hero-dot: rgba(255, 255, 255, 0.4);
+}
+
+/* 只给画面本身提亮/压灰。遮罩和画面在同一个 wrapper 里，
+   所以不能把 filter 加在 wrapper 上，否则遮罩会一起被提亮。 */
+.mtv-hero-art img,
+.mtv-hero-art video,
+.mtv-hero-art iframe {
+  filter: var(--hero-art-filter);
+  transition: filter var(--ui-dur-3) var(--ui-ease);
+}
+
+.mtv-hero-scrim {
+  background: var(--hero-scrim);
+  transition: background var(--ui-dur-3) var(--ui-ease);
+}
+
+.mtv-hero-title {
+  margin: 0;
+  font-size: clamp(1.9rem, 4.2vw, 4rem);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  color: var(--hero-ink);
+  text-wrap: balance;
+}
+
+.mtv-hero-meta {
+  color: var(--hero-ink-2);
+}
+
+.mtv-hero-chip {
+  padding: 2px 9px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: var(--hero-chip-bg);
+  color: var(--hero-chip-ink);
+  backdrop-filter: blur(8px);
+}
+
+.mtv-hero-score {
+  padding: 2px 9px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background-color: var(--ui-accent);
+  color: var(--ui-accent-ink);
+}
+
+.mtv-hero-syn {
+  color: var(--hero-ink-2);
+}
+
+.mtv-hero-play {
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 24px;
+  border-radius: var(--ui-r-sm);
+  font-size: 0.875rem;
+  font-weight: 650;
+  background-color: var(--hero-btn-bg);
+  color: var(--hero-btn-ink);
+  transition: background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-hero-play:hover {
+  background-color: var(--hero-btn-bg-hover);
+}
+
+.mtv-hero-play svg {
+  fill: currentColor;
+}
+
+.mtv-hero-ctl {
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background-color: var(--hero-ctl-bg);
+  color: var(--hero-ink);
+  backdrop-filter: blur(8px);
+  transition: background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-hero-dot {
+  height: 6px;
+  border-radius: 9999px;
+  background-color: var(--hero-dot);
+  transition: width var(--ui-dur-2) var(--ui-ease);
+}
+
+.mtv-hero-dot-active {
+  width: 26px;
+  background-color: var(--ui-accent);
+}
+
+@media (min-width: 768px) {
+  .mtv-hero {
+    min-height: 460px;
+  }
+}

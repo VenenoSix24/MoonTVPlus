@@ -504,7 +504,7 @@ export default function BannerCarousel({
 
   return (
     <div
-      className={`relative w-full ${bannerHeightClassMap[bannerHeightScale]} overflow-hidden group`}
+      className={`mtv-hero relative w-full ${bannerHeightClassMap[bannerHeightScale]} overflow-hidden group`}
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onTouchStart={handleTouchStart}
@@ -522,7 +522,7 @@ export default function BannerCarousel({
         {items.map((item, index) => (
           <div
             key={item.id}
-            className={`absolute inset-0 transition-opacity duration-1000 ${
+            className={`mtv-hero-art absolute inset-0 transition-opacity duration-1000 ${
               index === currentIndex ? 'opacity-100' : 'opacity-0'
             }`}
           >
@@ -574,8 +574,7 @@ export default function BannerCarousel({
               />
             )}
             {/* 渐变遮罩 */}
-            <div className='absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent'></div>
-            <div className='absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent'></div>
+            <div className='mtv-hero-scrim absolute inset-0'></div>
           </div>
         ))}
       </div>
@@ -585,7 +584,7 @@ export default function BannerCarousel({
         <div className='max-w-2xl space-y-4'>
           <h2
             ref={titleRef}
-            className='text-3xl md:text-5xl font-bold text-white drop-shadow-lg'
+            className='mtv-hero-title'
             style={
               isMobileView && bannerHeightScale === '1'
                 ? { fontSize: `${mobileTitleFontSize}px` }
@@ -595,19 +594,16 @@ export default function BannerCarousel({
             <span ref={titleTextRef}>{currentItem.title}</span>
           </h2>
 
-          <div className='flex items-center gap-2 md:gap-3 text-sm md:text-base text-white/90 flex-wrap'>
+          <div className='mtv-hero-meta flex items-center gap-2 md:gap-3 text-sm md:text-base flex-wrap'>
             {currentItem.vote_average > 0 && (
-              <span className='px-2 py-1 bg-yellow-500 text-black font-semibold rounded'>
+              <span className='mtv-hero-score'>
                 {currentItem.vote_average.toFixed(1)}
               </span>
             )}
             {/* 显示标签：优先TX的tags，其次豆瓣的genres，最后TMDB的genre_ids */}
             {currentItem.tags && currentItem.tags.length > 0
               ? currentItem.tags.slice(0, 3).map((tag, index) => (
-                  <span
-                    key={index}
-                    className='px-2 py-1 bg-white/20 backdrop-blur-sm rounded text-sm'
-                  >
+                  <span key={index} className='mtv-hero-chip'>
                     {tag}
                   </span>
                 ))
@@ -616,19 +612,13 @@ export default function BannerCarousel({
                 currentItem.genres.length > 0
               ? /* 显示豆瓣数据源的标签 */
                 currentItem.genres.slice(0, 3).map((genre, index) => (
-                  <span
-                    key={index}
-                    className='px-2 py-1 bg-white/20 backdrop-blur-sm rounded text-sm'
-                  >
+                  <span key={index} className='mtv-hero-chip'>
                     {genre}
                   </span>
                 ))
               : /* 显示TMDB数据源的类型标签 */
                 getGenreNames(currentItem.genre_ids, 3).map((genre) => (
-                  <span
-                    key={genre}
-                    className='px-2 py-1 bg-white/20 backdrop-blur-sm rounded text-sm'
-                  >
+                  <span key={genre} className='mtv-hero-chip'>
                     {genre}
                   </span>
                 ))}
@@ -643,14 +633,14 @@ export default function BannerCarousel({
               e.stopPropagation();
               handlePlay(currentItem.title);
             }}
-            className='hidden md:flex items-center gap-2 px-6 py-3 bg-gray-500/30 hover:bg-gray-500/50 backdrop-blur-sm text-white font-semibold rounded-lg transition-all pointer-events-auto'
+            className='mtv-hero-play hidden md:flex items-center gap-2 pointer-events-auto'
           >
-            <Play className='w-5 h-5 fill-white' />
+            <Play className='w-5 h-5' />
             立即播放
           </button>
 
           {currentItem.overview && (
-            <p className='text-sm md:text-base text-white/80 line-clamp-3 drop-shadow-md'>
+            <p className='mtv-hero-syn text-sm md:text-base line-clamp-3 drop-shadow-md'>
               {currentItem.overview}
             </p>
           )}
@@ -660,14 +650,14 @@ export default function BannerCarousel({
       {/* 左右切换按钮 - 只在桌面端显示 */}
       <button
         onClick={goToPrevious}
-        className='hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/30 hover:bg-black/60 text-white rounded-full items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300'
+        className='mtv-hero-ctl hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300'
         aria-label='上一张'
       >
         <ChevronLeft className='w-8 h-8' />
       </button>
       <button
         onClick={goToNext}
-        className='hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/30 hover:bg-black/60 text-white rounded-full items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300'
+        className='mtv-hero-ctl hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300'
         aria-label='下一张'
       >
         <ChevronRight className='w-8 h-8' />
@@ -677,7 +667,7 @@ export default function BannerCarousel({
       {currentItem.trailer_url && enableTrailers && (
         <button
           onClick={toggleMute}
-          className='absolute top-2 right-2 md:top-4 md:right-4 w-8 h-8 md:w-10 md:h-10 bg-black/30 hover:bg-black/60 text-white rounded-full flex items-center justify-center transition-all duration-300 z-10'
+          className='mtv-hero-ctl absolute top-2 right-2 md:top-4 md:right-4 w-8 h-8 md:w-10 md:h-10 flex items-center justify-center transition-all duration-300 z-10'
           aria-label={isMuted ? '开启声音' : '关闭声音'}
         >
           {isMuted ? (
@@ -694,10 +684,8 @@ export default function BannerCarousel({
           <button
             key={index}
             onClick={() => goToSlide(index)}
-            className={`h-1.5 rounded-full transition-all duration-300 ${
-              index === currentIndex
-                ? 'w-8 bg-white'
-                : 'w-1.5 bg-white/50 hover:bg-white/80'
+            className={`mtv-hero-dot ${
+              index === currentIndex ? 'mtv-hero-dot-active' : 'w-1.5'
             }`}
             aria-label={`跳转到第 ${index + 1} 张`}
           />
