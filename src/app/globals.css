@@ -2391,9 +2391,11 @@ html[data-loading-style='grid'] .mtv-err-box {
 .mtv-play-tab {
   position: relative;
   flex: 1;
-  padding-block: 12px;
+  padding-block: 13px;
   text-align: center;
-  font-weight: 500;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--mtv-ink-3);
   transition: color var(--ui-dur-1) var(--ui-ease);
 }
 
@@ -2416,6 +2418,11 @@ html[data-loading-style='grid'] .mtv-err-box {
 .mtv-play-tab-active::after {
   opacity: 1;
   transform: translateX(-50%) scaleX(1);
+}
+
+/* 定稿：激活的 Tab 是白字 + 品牌色下划线，字本身不变色 */
+.mtv-play-tab-active {
+  color: #fff;
 }
 
 /* 播放页固定深色，浮层不能跟着主题走 —— 浅色主题下 --ui-surface-2 是白的，
@@ -2441,4 +2448,368 @@ html[data-loading-style='grid'] .mtv-err-box {
 .mtv-play-pop button > span {
   max-width: none;
   margin-left: 0.25rem;
+}
+
+/* ==========================================================================
+   播放页 · 按定稿落地的结构类（design-preview/play-d.html）
+   --------------------------------------------------------------------------
+   定稿是「A 的骨架 + A 的操作区 + B 的卡片分层 + C 的详情内容」：
+   上半部分（播放器 + 右侧栏 / 标题行 / 操作区）用 A —— 操作区是纯文字按钮，
+   没有卡片底、没有胶囊；从详情区开始换成 B 的「面 + 描边」，内容是 C 的。
+   这里把定稿里的 .pg-* 逐条搬过来，只把 --accent 换成 --ui-accent；
+   ink / hair 用定稿给的固定值 —— 播放页恒为深色，不跟主题走。
+   ========================================================================== */
+.mtv-play-root {
+  --mtv-card: rgba(255, 255, 255, 0.04);
+  --mtv-hair: rgba(255, 255, 255, 0.085);
+  --mtv-hair-2: rgba(255, 255, 255, 0.1);
+  --mtv-ink: #f5f5f7;
+  --mtv-ink-2: rgba(255, 255, 255, 0.62);
+  --mtv-ink-3: rgba(255, 255, 255, 0.4);
+}
+
+/* 标题行徽章：年份 / 类型是描边胶囊，完结状态另有一套强调色；评分排在最后 */
+.mtv-play-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 9px;
+
+/* 主要操作（下载 / 复制链接）的图标跟着品牌色走 —— 文字保持白色 */
+.mtv-play-act-primary > svg {
+  color: var(--ui-accent);
+}
+  flex-wrap: wrap;
+}
+
+.mtv-play-badge {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 9999px;
+  border: 1px solid var(--mtv-hair-2);
+  color: var(--mtv-ink-2);
+}
+
+.mtv-play-badge-done {
+  border-color: color-mix(in srgb, var(--ui-accent) 45%, transparent);
+  color: #ff6b72;
+  background-color: color-mix(in srgb, var(--ui-accent) 10%, transparent);
+}
+
+.mtv-play-score {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  margin-left: 2px;
+}
+
+.mtv-play-score b {
+  font-size: 19px;
+  font-weight: 750;
+  color: #ffb020;
+  letter-spacing: -0.02em;
+}
+
+.mtv-play-score i {
+  font-size: 11px;
+  color: var(--mtv-ink-3);
+  font-style: normal;
+}
+
+/* 操作区：纯文字按钮 —— 无底色、无胶囊。分隔符把「常用 / 更多 / 网盘与 AI」分开 */
+.mtv-play-acts {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.mtv-play-act {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 13px;
+  border-radius: 9px;
+  font-size: 13.5px;
+  font-weight: 550;
+  color: var(--mtv-ink-2);
+  background: none;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-play-act:hover {
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.07);
+}
+
+.mtv-play-act-primary {
+  color: #fff;
+}
+
+.mtv-play-act-primary .mtv-play-act-ic {
+  color: var(--ui-accent);
+}
+
+.mtv-play-act-ic {
+  display: grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  flex: none;
+  color: currentColor;
+}
+
+.mtv-play-act-sep {
+  width: 1px;
+  height: 18px;
+  background-color: var(--mtv-hair-2);
+  margin: 0 7px;
+}
+
+/* 详情区：左宽右窄。上面压一条分界线，从这里开始用「面 + 描边」 */
+.mtv-play-detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 14px;
+  border-top: 1px solid var(--mtv-hair);
+  padding-top: 20px;
+  align-items: start;
+}
+
+.mtv-play-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.mtv-play-card {
+  background-color: var(--mtv-card);
+  border: 1px solid var(--mtv-hair);
+  border-radius: 16px;
+  padding: 20px 22px;
+}
+
+.mtv-play-sec {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mtv-ink-3);
+  margin-bottom: 13px;
+}
+
+.mtv-play-sec-sub {
+  margin-top: 22px;
+}
+
+.mtv-play-syn {
+  font-size: 14.5px;
+  line-height: 1.8;
+  color: var(--mtv-ink-2);
+  max-width: 78ch;
+  white-space: pre-line;
+}
+
+.mtv-play-syn em {
+  color: var(--mtv-ink);
+  font-style: normal;
+  font-weight: 600;
+}
+
+.mtv-play-meta {
+  display: flex;
+  gap: 28px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--mtv-hair);
+}
+
+.mtv-play-meta dt {
+  font-size: 11.5px;
+  color: var(--mtv-ink-3);
+  margin-bottom: 4px;
+}
+
+.mtv-play-meta dd {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.mtv-play-stills {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.mtv-play-still {
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  border-radius: 8px;
+  object-fit: cover;
+  filter: brightness(0.86);
+  border: 1px solid var(--mtv-hair-2);
+}
+
+.mtv-play-cast {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+
+.mtv-play-cast::-webkit-scrollbar {
+  display: none;
+}
+
+.mtv-play-person {
+  flex: none;
+  width: 88px;
+  text-align: center;
+}
+
+.mtv-play-avatar {
+  width: 88px;
+  height: 88px;
+  border-radius: 9999px;
+  object-fit: cover;
+  background-color: #1c1c21;
+  border: 1px solid var(--mtv-hair-2);
+  margin-bottom: 8px;
+}
+
+.mtv-play-pname {
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.mtv-play-prole {
+  font-size: 11px;
+  color: var(--mtv-ink-3);
+  margin-top: 2px;
+}
+
+/* 相关推荐：竖排列表（小海报 + 标题 + 年份 / 类型 / 评分） */
+.mtv-play-recs {
+  display: grid;
+  gap: 6px;
+}
+
+.mtv-play-rec {
+  display: flex;
+  gap: 11px;
+  align-items: center;
+  padding: 7px;
+  border-radius: 11px;
+  transition: background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-play-rec:hover {
+  background-color: rgba(255, 255, 255, 0.055);
+}
+
+.mtv-play-rec-poster {
+  width: 44px;
+  height: 64px;
+  border-radius: 8px;
+  object-fit: cover;
+  background-color: #16161a;
+  flex: none;
+  border: 1px solid var(--mtv-hair-2);
+}
+
+.mtv-play-rec-t {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.mtv-play-rec-m {
+  font-size: 11.5px;
+  color: var(--mtv-ink-3);
+  margin-top: 3px;
+}
+
+/* 右侧栏工具条与集数网格 */
+.mtv-play-rail-body {
+  padding: 14px;
+}
+
+.mtv-play-rail-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.mtv-play-select {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 34px;
+  padding: 0 11px;
+  border-radius: 9px;
+  border: 1px solid var(--mtv-hair-2);
+  background-color: rgba(0, 0, 0, 0.3);
+  font-size: 12.5px;
+  color: var(--mtv-ink-2);
+}
+
+.mtv-play-mini {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  border: 1px solid var(--mtv-hair-2);
+  background-color: rgba(0, 0, 0, 0.3);
+  color: var(--mtv-ink-2);
+  flex: none;
+}
+
+.mtv-play-eps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.mtv-play-ep {
+  display: grid;
+  place-items: center;
+  height: 44px;
+  border-radius: 9px;
+  border: 1px solid var(--mtv-hair-2);
+  background-color: rgba(255, 255, 255, 0.035);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mtv-ink-2);
+  font-variant-numeric: tabular-nums;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease),
+    border-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-play-ep:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.mtv-play-ep-on,
+.mtv-play-ep-on:hover {
+  background-color: var(--ui-accent);
+  border-color: var(--ui-accent);
+  color: #fff;
+  box-shadow: 0 8px 20px -6px color-mix(in srgb, var(--ui-accent) 70%, transparent);
 }
