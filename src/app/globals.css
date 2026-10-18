@@ -1564,10 +1564,57 @@ html[data-loading-style='grid'] .mtv-err-box {
   transition: filter var(--ui-dur-3) var(--ui-ease);
 }
 
-/* 16:9 的画面塞进更扁的容器只能裁切。把裁切重心上移，主体通常在偏上位置，
-   比默认居中更不容易裁到脸。 */
-.mtv-hero-art img {
+/* 画面两种画法共用铺满容器的基础，具体由 HeroArt 按图片实际宽高比切换。 */
+.mtv-hero-art img.mtv-hero-art-cover,
+.mtv-hero-art img.mtv-hero-art-fill {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 横版剧照：16:9 的画面塞进更扁的容器只能裁切。把裁切重心上移，主体通常在偏上
+   位置，比默认居中更不容易裁到脸。 */
+.mtv-hero-art img.mtv-hero-art-cover {
   object-position: center 30%;
+}
+
+/* 竖版海报（豆瓣 / TX 数据源）：2:3 的图被 object-cover 塞进扁 Hero 只会裁出中间
+   一条，看着就像被拉扁铺满。改成两层——同一张图放大模糊铺底提供环境色，原图
+   object-contain 靠右立起来，比例不失真。 */
+.mtv-hero-art img.mtv-hero-art-fill {
+  object-position: center;
+  /* 浅色下把模糊铺底半透明地压到页面底色上：海报本身偏暗，直接铺满会在浅色
+     页面里压出一大块深色，跟主题对不上。 */
+  opacity: 0.62;
+  filter: blur(44px) saturate(140%) brightness(1.1);
+  transform: scale(1.2);
+}
+
+.dark .mtv-hero-art img.mtv-hero-art-fill {
+  opacity: 1;
+  filter: blur(44px) saturate(150%) brightness(0.5);
+}
+
+/* 右侧退开一个翻页按钮身位，免得悬停时按钮压在立起来的海报上 */
+.mtv-hero-art img.mtv-hero-art-subject {
+  position: absolute;
+  top: 50%;
+  right: calc(var(--ui-gutter) + 4rem);
+  width: auto;
+  height: min(86%, 460px);
+  transform: translateY(-50%);
+  border-radius: var(--ui-r-lg);
+  box-shadow: 0 30px 70px -20px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+/* 手机上 Hero 只有 200px 高，右侧再立一张海报会压到标题，直接不出 */
+@media (max-width: 767px) {
+  .mtv-hero-art img.mtv-hero-art-subject {
+    display: none;
+  }
 }
 
 .mtv-hero-scrim {

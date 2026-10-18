@@ -10,6 +10,7 @@ import {
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
+  type SyntheticEvent,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -44,6 +45,17 @@ const getSavedBannerHeightScale = (): HomeBannerHeightScale => {
 
   const saved = localStorage.getItem('homeBannerHeightScale');
   return saved === '1.5' || saved === '2' ? saved : '1';
+};
+
+// 获取图片原始URL（处理TX完整URL和TMDB路径）
+const getImageUrl = (path: string | null) => {
+  if (!path) return '';
+  // 如果是完整URL（TX数据源或豆瓣），直接返回原始地址
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
+  // 否则使用TMDB的URL拼接原始地址
+  return getTMDBImageUrl(path, 'original');
 };
 
 // 扩展TMDBItem类型以支持TX数据源的额外字段
@@ -107,17 +119,6 @@ export default function BannerCarousel({
     if (currentVideo) {
       currentVideo.muted = newMutedState;
     }
-  };
-
-  // 获取图片原始URL（处理TX完整URL和TMDB路径）
-  const getImageUrl = (path: string | null) => {
-    if (!path) return '';
-    // 如果是完整URL（TX数据源或豆瓣），直接返回原始地址
-    if (path.startsWith('http://') || path.startsWith('https://')) {
-      return path;
-    }
-    // 否则使用TMDB的URL拼接原始地址
-    return getTMDBImageUrl(path, 'original');
   };
 
   // 获取视频URL（处理豆瓣视频代理）
@@ -563,15 +564,8 @@ export default function BannerCarousel({
                 />
               </div>
             ) : (
-              /* 显示图片 */
-              <ProxyImage
-                originalSrc={getImageUrl(
-                  item.backdrop_path || item.poster_path
-                )}
-                alt={item.title}
-                className='absolute inset-0 w-full h-full object-cover'
-                loading={index === 0 ? 'eager' : 'lazy'}
-              />
+              /* 显示图片。竖版海报走双层处理，见 HeroArt */
+              <HeroArt item={item} priority={index === 0} />
             )}
             {/* 渐变遮罩 */}
             <div className='mtv-hero-scrim absolute inset-0'></div>
@@ -692,5 +686,55 @@ export default function BannerCarousel({
         ))}
       </div>
     </div>
+  );
+}
+
+/** 宽高比达到这个值就按横版剧照处理，否则视为竖版海报。 */
+const WIDE_ART_MIN_RATIO = 1.4;
+
+/**
+ * Hero 画面。
+ *
+ * 豆瓣 / TX 数据源把同一张封面同时写进 backdrop_path 和 poster_path，而豆瓣的
+ * cover_url 是 s_ratio_poster 竖图（实测 540×771）。2:3 的图被 object-cover 塞进
+ * 扁 Hero，只能裁出中间一条，看着就像被拉扁铺满。
+ *
+ * 所以分两种画法：横版剧照直接铺满；竖版海报走两层——同一张图放大模糊铺底提供
+ * 环境色，原图 object-contain 靠右立起来，比例不失真。
+ *
+ * 判型先按「两个字段相同即手里只有海报」同步给初值，图加载完再用实际宽高比校正，
+ * 数据源换图型时不用改代码。
+ */
+function HeroArt({ item, priority }: { item: BannerItem; priority: boolean }) {
+  const src = getImageUrl(item.backdrop_path || item.poster_path);
+  const [isPoster, setIsPoster] = useState(
+    () => !item.backdrop_path || item.backdrop_path === item.poster_path
+  );
+
+  const handleLoad = (e: SyntheticEvent<HTMLImageElement>) => {
+    const { naturalWidth, naturalHeight } = e.currentTarget;
+    if (!naturalWidth || !naturalHeight) return;
+    setIsPoster(naturalWidth / naturalHeight < WIDE_ART_MIN_RATIO);
+  };
+
+  return (
+    <>
+      <ProxyImage
+        originalSrc={src}
+        alt={item.title}
+        loading={priority ? 'eager' : 'lazy'}
+        onLoad={handleLoad}
+        className={isPoster ? 'mtv-hero-art-fill' : 'mtv-hero-art-cover'}
+      />
+      {isPoster && (
+        <ProxyImage
+          originalSrc={src}
+          alt=''
+          aria-hidden='true'
+          loading={priority ? 'eager' : 'lazy'}
+          className='mtv-hero-art-subject'
+        />
+      )}
+    </>
   );
 }
