@@ -574,6 +574,11 @@ export default function BannerCarousel({
   const titleLogo: string | null =
     logoMap[logoKey] ?? heroLogoCache.get(logoKey) ?? null;
 
+  // TMDB 源下标题字是异步取的。落地之前先把文字藏起来（占位仍在，不跳版），
+  // 否则会「先显示文字、一秒后突然变成 logo」闪一下。
+  const logoPending =
+    dataSource === 'TMDB' && !titleLogo && !heroLogoCache.has(logoKey);
+
   return (
     <div
       className={`mtv-hero relative w-full ${bannerHeightClassMap[bannerHeightScale]} overflow-hidden group`}
@@ -664,7 +669,9 @@ export default function BannerCarousel({
                 逻辑靠 titleTextRef 量它的行数，拿掉就会失效。 */}
             <span
               ref={titleTextRef}
-              className={titleLogo ? 'sr-only' : undefined}
+              className={
+                titleLogo ? 'sr-only' : logoPending ? 'invisible' : undefined
+              }
             >
               {currentItem.title}
             </span>

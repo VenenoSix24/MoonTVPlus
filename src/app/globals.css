@@ -1927,7 +1927,7 @@ html[data-loading-style='grid'] .mtv-err-box {
    文字和海报被拉开，反而更空。 */
 @media (min-width: 768px) {
   .mtv-hero {
-    min-height: max(420px, min(38vw, 560px));
+    min-height: max(480px, min(44vw, 680px));
   }
 }
 
