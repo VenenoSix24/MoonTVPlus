@@ -11916,104 +11916,50 @@ function PlayPageClient() {
                         <AlertCircle className='h-6 w-6 text-gray-700 dark:text-gray-300' />
                       </button>
                     )}
-                    {/* 豆瓣评分显示 */}
-                    {doubanRating && doubanRating.value > 0 && (
-                      <div className='flex items-center gap-2 text-base font-normal'>
-                        {/* 星级显示 */}
-                        <div className='flex items-center gap-1'>
-                          {[1, 2, 3, 4, 5].map((star) => {
-                            const starValue = doubanRating.value / 2; // 转换为5星制
-                            const isFullStar = star <= Math.floor(starValue);
-                            const isHalfStar = !isFullStar && star <= Math.ceil(starValue) && starValue % 1 >= 0.25;
-
-                            return (
-                              <div key={star} className='relative w-5 h-5'>
-                                {isFullStar ? (
-                                  // 全星
-                                  <svg
-                                    className='w-5 h-5 text-yellow-400 fill-yellow-400'
-                                    viewBox='0 0 24 24'
-                                    xmlns='http://www.w3.org/2000/svg'
-                                  >
-                                    <path d='M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z' />
-                                  </svg>
-                                ) : isHalfStar ? (
-                                  // 半星
-                                  <>
-                                    {/* 空星背景 */}
-                                    <svg
-                                      className='absolute w-5 h-5 text-gray-300 dark:text-gray-600 fill-gray-300 dark:fill-gray-600'
-                                      viewBox='0 0 24 24'
-                                      xmlns='http://www.w3.org/2000/svg'
-                                    >
-                                      <path d='M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z' />
-                                    </svg>
-                                    {/* 半星遮罩 */}
-                                    <svg
-                                      className='absolute w-5 h-5 text-yellow-400 fill-yellow-400'
-                                      viewBox='0 0 24 24'
-                                      xmlns='http://www.w3.org/2000/svg'
-                                      style={{ clipPath: 'inset(0 50% 0 0)' }}
-                                    >
-                                      <path d='M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z' />
-                                    </svg>
-                                  </>
-                                ) : (
-                                  // 空星
-                                  <svg
-                                    className='w-5 h-5 text-gray-300 dark:text-gray-600 fill-gray-300 dark:fill-gray-600'
-                                    viewBox='0 0 24 24'
-                                    xmlns='http://www.w3.org/2000/svg'
-                                  >
-                                    <path d='M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z' />
-                                  </svg>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                        {/* 评分数值 */}
-                        <span className="font-semibold text-white">
-                          {doubanRating.value.toFixed(1)}
-                        </span>
-                        {/* 评分人数 */}
-                        <span className="text-sm text-white/70">
-                          ({doubanRating.count.toLocaleString()}人评价)
-                        </span>
-                      </div>
-                    )}
                   </h1>
 
-                  {/* 关键信息行 */}
+                  {/* 关键信息行：评分原来独立占一整条，把标题和信息行挤散了，挪到这里跟在类型标签后面 */}
                   <div className="flex flex-wrap items-center gap-3 text-base mb-4 opacity-80 flex-shrink-0 text-white">
                     {detail?.class && (
                       <span className='text-ui-accent font-semibold'>
                         {detail.class}
                       </span>
                     )}
+                    {doubanRating && doubanRating.value > 0 && (
+                      <span className='inline-flex items-center gap-1 text-ui-accent font-semibold'>
+                        <svg
+                          className='w-4 h-4'
+                          fill='currentColor'
+                          viewBox='0 0 24 24'
+                        >
+                          <path d='M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z' />
+                        </svg>
+                        {doubanRating.value.toFixed(1)}
+                        <span className='text-sm font-normal opacity-70'>
+                          ({doubanRating.count.toLocaleString()}人评价)
+                        </span>
+                      </span>
+                    )}
                     {/* 优先使用 doubanYear，如果没有则使用 detail.year 或 videoYear */}
                     {(doubanYear || netdiskTMDBMeta?.year || detail?.year || videoYear) && (
                       <span>{doubanYear || netdiskTMDBMeta?.year || detail?.year || videoYear}</span>
                     )}
-                    {detail?.source_name && (
-                      <span
-                        className={`relative group cursor-pointer border px-2 py-[1px] rounded ${detail.source === 'xiaoya' ? 'border-blue-500' : isNetdiskSource(detail.source) ? 'border-purple-500' : detail.source === 'openlist' || detail.source === 'emby' || detail.source?.startsWith('emby_') ? 'border-yellow-500' : 'border-gray-500/60'
-                          }`}
-                        onClick={fetchCurrentSourceVideoInfo}
-                      >
-                        {detail.source_name}
-                        {/* 视频信息悬浮提示 */}
-                        {currentSourceVideoInfo && (
-                          <div className='absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 dark:bg-gray-900 text-white text-sm rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 ease-out whitespace-nowrap z-[100] pointer-events-none'>
-                            <div className='text-sm'>
-                              <div>分辨率: {currentSourceVideoInfo.quality}</div>
-                              <div>码率: {currentSourceVideoInfo.bitrate}</div>
-                            </div>
-                            <div className='absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800 dark:border-t-gray-900'></div>
+                    {/* 原来这里是「来源」角标，各数据源填的值不一致，改成只显示画质 */}
+                    <span
+                      className='relative group cursor-pointer border border-white/15 px-2 py-[1px] rounded'
+                      onClick={fetchCurrentSourceVideoInfo}
+                    >
+                      {currentSourceVideoInfo?.quality || '画质'}
+                      {currentSourceVideoInfo && (
+                        <div className='absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 dark:bg-gray-900 text-white text-sm rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 ease-out whitespace-nowrap z-[100] pointer-events-none'>
+                          <div className='text-sm'>
+                            <div>分辨率: {currentSourceVideoInfo.quality}</div>
+                            <div>码率: {currentSourceVideoInfo.bitrate}</div>
                           </div>
-                        )}
-                      </span>
-                    )}
+                          <div className='absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800 dark:border-t-gray-900'></div>
+                        </div>
+                      )}
+                    </span>
                     {detail?.type_name && <span>{detail.type_name}</span>}
                   </div>
                   {/* 剧情简介 */}
