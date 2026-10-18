@@ -169,9 +169,9 @@ const TopNav = () => {
         >
           <Search />
         </Link>
-        <ThemeToggle />
+        <ThemeToggle className='mtv-topnav-icon' />
         <UpdateNotification />
-        <UserMenu />
+        <UserMenu className='mtv-topnav-icon' />
       </div>
     </header>
   );

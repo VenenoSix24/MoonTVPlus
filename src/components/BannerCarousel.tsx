@@ -729,9 +729,9 @@ export default function BannerCarousel({
             </p>
           )}
 
-          {/* 操作区：主按钮实心 + 次按钮描边，高度与圆角一致。
-              主 CTA 手机端也显示（Hero 整块虽然可点，但有个明确按钮更好找）；
-              次按钮是外链，手机上留出空间更划算，所以只在 md 以上出现。 */}
+          {/* 操作区：主按钮实心 + 次按钮玻璃描边，整颗胶囊、高度与圆角完全一致。
+              手机端整块不显示（见 .mtv-hero-actions 的移动端规则）——整块画面可点
+              即播，再叠一个按钮是多余的一层。 */}
           <div className='mtv-hero-actions pointer-events-auto flex items-center gap-3'>
             <button
               onClick={(e) => {
