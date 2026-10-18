@@ -14,6 +14,25 @@ import { pickLogo, pickTextlessPoster, titlePrefersZh } from '@/lib/tmdb.logo';
 // 缓存配置 - 服务器内存缓存3小时
 const CACHE_DURATION = 3 * 60 * 60 * 1000; // 3小时
 
+/**
+ * 给一个 promise 套上预算，超时或失败都返回 null。
+ *
+ * 标题字是锦上添花：拿不到就回落文字标题，用户完全无感。但 getTMDBImages 自己带
+ * 15/30 秒超时，撞上慢代理时会把整个列表一起拖住——首页要多等半分钟才出轮播图，
+ * 代价和收益完全不成比例。这里单独压一个短预算，到点就当没有。
+ */
+const ASSET_BUDGET_MS = 6000;
+
+function withBudget<T>(promise: Promise<T>, ms: number): Promise<T | null> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const budget = new Promise<null>((resolve) => {
+    timer = setTimeout(() => resolve(null), ms);
+  });
+  return Promise.race([promise.catch(() => null), budget]).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
+}
+
 // 为不同数据源分别维护缓存
 let tmdbCache: { data: any; timestamp: number } | null = null;
 let txCache: { data: any; timestamp: number } | null = null;
@@ -94,11 +113,14 @@ export async function GET() {
                 proxy,
                 reverseProxy
               ),
-              getTMDBImages(apiKey, item.id, kind, proxy, reverseProxy),
+              withBudget(
+                getTMDBImages(apiKey, item.id, kind, proxy, reverseProxy),
+                ASSET_BUDGET_MS
+              ),
             ]);
 
             const images =
-              imagesRes.code === 200 && imagesRes.images
+              imagesRes && imagesRes.code === 200 && imagesRes.images
                 ? imagesRes.images
                 : null;
             const logo = images
