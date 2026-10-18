@@ -30,6 +30,11 @@ import {
   searchAnime,
 } from '@/lib/danmaku/api';
 import {
+  getCachedDanmakuEpisodes,
+  setCachedDanmakuEpisodes,
+} from '@/lib/danmaku/episodes-cache';
+import { cleanEpisodeDisplayName } from '@/lib/danmaku/format';
+import {
   getDanmakuAnimeId,
   getDanmakuSearchKeyword,
   getDanmakuSourceIndex,
@@ -39,17 +44,7 @@ import {
   saveDanmakuSourceIndex,
   saveManualDanmakuSelection,
 } from '@/lib/danmaku/selection-memory';
-import { cleanEpisodeDisplayName } from '@/lib/danmaku/format';
-import {
-  getCachedDanmakuEpisodes,
-  setCachedDanmakuEpisodes,
-} from '@/lib/danmaku/episodes-cache';
 import type { DanmakuAnime, DanmakuComment, DanmakuSelection, DanmakuSettings } from '@/lib/danmaku/types';
-import type { EpisodeTitleCorrection } from '@/lib/episode-title-correction';
-import {
-  EPISODE_TITLE_CORRECTION_EVENT,
-  getEpisodeTitleCorrection,
-} from '@/lib/episode-title-correction';
 import {
   deleteFavorite,
   deleteSkipConfig,
@@ -67,13 +62,18 @@ import {
 } from '@/lib/db.client';
 import { getDoubanDetail } from '@/lib/douban.client';
 import { isEpisodeHiddenByFilter, normalizeEpisodeFilterConfig } from '@/lib/episode-filter';
-import { appendSpecialSourceParam, isSpecialSourceContext } from '@/lib/special-source.client';
 import {
   buildEpisodeProgressContentKey,
   loadLocalEpisodeProgress,
   pruneLocalEpisodeProgressStorage,
   saveLocalEpisodeProgress,
 } from '@/lib/episode-progress';
+import type { EpisodeTitleCorrection } from '@/lib/episode-title-correction';
+import {
+  EPISODE_TITLE_CORRECTION_EVENT,
+  getEpisodeTitleCorrection,
+} from '@/lib/episode-title-correction';
+import { getIndexedDBVideoPlaybackUrl } from '@/lib/indexeddb-video-cache';
 import { isNetdiskSource, normalizeNetdiskSource } from '@/lib/netdisk/source';
 import {
   calculateSeekTime,
@@ -89,7 +89,7 @@ import {
   recommendationCacheKeys,
   setRecommendationCache,
 } from '@/lib/recommendations/cache';
-import { getIndexedDBVideoPlaybackUrl } from '@/lib/indexeddb-video-cache';
+import { appendSpecialSourceParam, isSpecialSourceContext } from '@/lib/special-source.client';
 import {
   convertSubtitleFileToVttObjectUrl,
   CUSTOM_SUBTITLE_ACCEPT,
@@ -99,7 +99,6 @@ import { DanmakuFilterConfig, EpisodeFilterConfig, SearchResult } from '@/lib/ty
 import { base58Decode, getVideoResolutionFromM3u8, processImageUrl } from '@/lib/utils';
 import { useEnableAIComments } from '@/hooks/useEnableAIComments';
 import { useEnableComments } from '@/hooks/useEnableComments';
-import { useWatchRoomContextSafe } from '@/components/WatchRoomProvider';
 import {
   getRoomRemotePlaybackRate,
   isRemoteRoomRateActive,
@@ -116,8 +115,8 @@ import DownloadEpisodeSelector from '@/components/DownloadEpisodeSelector';
 import Drawer from '@/components/Drawer';
 import EpisodeSelector from '@/components/EpisodeSelector';
 import LoadingStyle, {
-  LoadingErrorStyle,
   type LoadingStep,
+  LoadingErrorStyle,
 } from '@/components/LoadingStyle';
 import PageLayout from '@/components/PageLayout';
 import PansouSearch from '@/components/PansouSearch';
@@ -126,6 +125,7 @@ import { useSite } from '@/components/SiteProvider';
 import SmartRecommendations from '@/components/SmartRecommendations';
 import Toast, { ToastProps } from '@/components/Toast';
 import VideoCard from '@/components/VideoCard';
+import { useWatchRoomContextSafe } from '@/components/WatchRoomProvider';
 
 import { useDownload } from '@/contexts/DownloadContext';
 
@@ -3790,7 +3790,7 @@ function PlayPageClient() {
   const refreshXiaoyaUrl = async (
     preferredHls?: any,
     preferredVideo?: HTMLVideoElement,
-    isScheduled: boolean = false
+    isScheduled = false
   ) => {
     // 防抖：距离上次刷新不足3秒则不刷新
     const now = Date.now();
@@ -10772,19 +10772,17 @@ function PlayPageClient() {
 
   return (
     <PageLayout activePath='/play' hideNavigation={isWebFullscreen}>
-      {/* TMDB背景图 */}
+      {/* 背景三层：近黑底 + 剧照环境光 + 沉降渐变。剧照只贡献色相、不作为可辨识
+          图像出现，正文永远落在实底上 —— 不再需要跟着背景在黑白之间切字色。 */}
+      <div className='mtv-play-bg' aria-hidden='true' />
       {tmdbBackdrop && (
         <div
-          className='fixed inset-0 z-0'
-          style={{
-            backgroundImage: `url(${tmdbBackdrop})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            filter: 'blur(5px) brightness(0.7)',
-          }}
+          className='mtv-play-ambient'
+          aria-hidden='true'
+          style={{ backgroundImage: `url(${tmdbBackdrop})` }}
         />
       )}
+      <div className='mtv-play-settle' aria-hidden='true' />
       {/* 弹幕源选择对话框 */}
       {showDanmakuSourceSelector && danmakuMatches.length > 0 && (
         <div className='fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm'>
@@ -10925,11 +10923,11 @@ function PlayPageClient() {
       <div className='relative z-10 flex flex-col gap-3 py-4 px-5 lg:px-[3rem] 2xl:px-20'>
         {/* 第一行：影片标题 */}
         <div className='py-1'>
-          <h1 className={`text-xl font-semibold flex items-center gap-2 flex-wrap ${tmdbBackdrop ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>
+          <h1 className="text-xl font-semibold flex items-center gap-2 flex-wrap text-white">
             <span>
               {videoTitle || '影片标题'}
               {shouldShowEpisodeLabel && (
-                <span className={tmdbBackdrop ? 'text-white opacity-80' : 'text-gray-500 dark:text-gray-400'}>
+                <span className="text-white/70">
                   {` > ${episodeLabel}`}
                 </span>
               )}
@@ -11749,7 +11747,7 @@ function PlayPageClient() {
                 sourceSearchError={sourceSearchError}
                 backgroundSourcesLoading={backgroundSourcesLoading}
                 precomputedVideoInfo={precomputedVideoInfo}
-                useLightTextOnBackdrop={!!tmdbBackdrop}
+                useLightTextOnBackdrop
                 onDanmakuSelect={(selection) => handleDanmakuSelect(selection, true)}
                 onDanmakuEpisodesLoaded={applyDanmakuEpisodes}
                 currentDanmakuSelection={currentDanmakuSelection}
@@ -11772,7 +11770,7 @@ function PlayPageClient() {
               <div className='md:col-span-4 lg:col-span-5'>
                 <div className='p-6 flex flex-col min-h-0'>
                   {/* 标题 */}
-                  <h1 className={`text-3xl font-bold mb-2 tracking-wide flex items-center flex-shrink-0 text-center md:text-left w-full flex-wrap gap-2 ${tmdbBackdrop ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>
+                  <h1 className="text-3xl font-bold mb-2 tracking-wide flex items-center flex-shrink-0 text-center md:text-left w-full flex-wrap gap-2 text-white">
                     <span className={doubanAka.length > 0 ? 'relative group cursor-help' : ''}>
                       {videoTitle || '影片标题'}
                       {/* aka 悬浮提示 */}
@@ -11906,11 +11904,11 @@ function PlayPageClient() {
                           })}
                         </div>
                         {/* 评分数值 */}
-                        <span className={`font-semibold ${tmdbBackdrop ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}>
+                        <span className="font-semibold text-white">
                           {doubanRating.value.toFixed(1)}
                         </span>
                         {/* 评分人数 */}
-                        <span className={`text-sm ${tmdbBackdrop ? 'text-white/80' : 'text-gray-500 dark:text-gray-400'}`}>
+                        <span className="text-sm text-white/70">
                           ({doubanRating.count.toLocaleString()}人评价)
                         </span>
                       </div>
@@ -11918,7 +11916,7 @@ function PlayPageClient() {
                   </h1>
 
                   {/* 关键信息行 */}
-                  <div className={`flex flex-wrap items-center gap-3 text-base mb-4 opacity-80 flex-shrink-0 ${tmdbBackdrop ? 'text-white' : ''}`}>
+                  <div className="flex flex-wrap items-center gap-3 text-base mb-4 opacity-80 flex-shrink-0 text-white">
                     {detail?.class && (
                       <span className='text-ui-accent font-semibold'>
                         {detail.class}
@@ -11952,7 +11950,7 @@ function PlayPageClient() {
                   {/* 剧情简介 */}
                   {(doubanCardSubtitle || netdiskTMDBMeta?.desc || correctedDesc || detail?.desc) && (
                     <div
-                      className={`mt-0 text-base leading-relaxed opacity-90 overflow-y-auto pr-2 flex-1 min-h-0 scrollbar-hide ${tmdbBackdrop ? 'text-white' : ''}`}
+                      className="mt-0 text-base leading-relaxed opacity-90 overflow-y-auto pr-2 flex-1 min-h-0 scrollbar-hide text-white"
                       style={{ whiteSpace: 'pre-line' }}
                     >
                       {/* card_subtitle 在前，desc 在后 */}

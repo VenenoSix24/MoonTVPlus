@@ -2297,3 +2297,57 @@ html[data-loading-style='grid'] .mtv-err-box {
     transparent
   );
 }
+
+/* ==========================================================================
+   播放页背景
+   --------------------------------------------------------------------------
+   之前是剧照 blur(5px) 直接铺满：糊掉的图仍然是亮的、仍然在抢注意力，正文压在
+   上面就得跟着背景在黑白之间来回切（tmdbBackdrop ? 'text-white' : …）。
+   改成三层 —— 近黑底 / 剧照环境光 / 沉降渐变：剧照只贡献色相、不作为可辨识
+   图像出现，正文永远落在实底上，对比度不再依赖剧照本身亮不亮。
+   ========================================================================== */
+.mtv-play-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: #0a0a0b;
+}
+
+.mtv-play-ambient {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 52%;
+  z-index: 0;
+  pointer-events: none;
+  background-size: cover;
+  background-position: center 28%;
+  background-repeat: no-repeat;
+  filter: blur(80px) saturate(180%) brightness(0.62);
+  opacity: 0.42;
+  transform: scale(1.3);
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    #000 0%,
+    #000 30%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(180deg, #000 0%, #000 30%, transparent 100%);
+}
+
+.mtv-play-settle {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    transparent 14%,
+    rgba(10, 10, 11, 0.78) 33%,
+    rgba(10, 10, 11, 0.95) 48%,
+    #0a0a0b 62%
+  );
+}
