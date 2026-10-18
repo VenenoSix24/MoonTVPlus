@@ -447,6 +447,18 @@ div[data-media-provider] video {
   .tv-focused {
     transition: none;
   }
+
+  /* Hero 的两处动效：文字块入场、模糊铺底推近。
+     必须整个关掉动画，而不是把时长压到 0——文字块靠 fill-mode: both 把起始帧钉在
+     opacity: 0，压时长会让它停在「即将可见」的那一帧；关掉才会回到自然状态。
+     铺底的基础 transform 就是 scale(1.15)，关掉等于定格在起始画面上，不会跳。 */
+  .mtv-hero-body {
+    animation: none;
+  }
+
+  .mtv-hero-art img.mtv-hero-art-fill-active {
+    animation: none;
+  }
 }
 
 /* 骨架屏微光动画与配色变量 - 原为 ImagePlaceholder 的内联 <style>，
@@ -1742,16 +1754,69 @@ html[data-loading-style='grid'] .mtv-err-box {
     linear-gradient(180deg, rgba(0, 0, 0, 0.6) 0%, transparent 28%);
 }
 
-/* 手机上 Hero 只有 200px 高，右侧再立一张海报会压到标题，直接不出 */
+/* 手机端的两处覆盖。 */
 @media (max-width: 767px) {
+  /* 手机端不走双层处理，右侧那张立式海报直接不出。 */
   .mtv-hero-art img.mtv-hero-art-subject {
     display: none;
+  }
+
+  /* 桌面那套「左侧黑遮罩」在手机上不成立：90deg 的档位是按宽屏铺的，在 390px 上
+     78% 的位置还在屏幕里，等于整屏压了一层 0.28–0.92 的黑，海报直接被压成一片黑。
+     手机端内容居中，改成上下对称的纵向遮罩——上端压住顶栏、下端托住白色文字，
+     中间完整露出画面。
+     选择器要和上面浅色 / 深色两条逐一对齐：特异度相同，靠源码顺序取胜。 */
+  .mtv-hero:has(.mtv-hero-art-cover),
+  .mtv-hero:has(.mtv-hero-logo) {
+    --hero-scrim: linear-gradient(
+        180deg,
+        rgba(0, 0, 0, 0.45) 0%,
+        transparent 18%
+      ),
+      linear-gradient(
+        0deg,
+        var(--ui-bg) 0%,
+        rgba(0, 0, 0, 0.72) 7%,
+        transparent 60%
+      );
+  }
+
+  /* 深色下页面本身就是黑的，底部可以铺得更长，过渡更自然 */
+  .dark .mtv-hero:has(.mtv-hero-art-cover),
+  .dark .mtv-hero:has(.mtv-hero-logo) {
+    --hero-scrim: linear-gradient(
+        180deg,
+        rgba(0, 0, 0, 0.55) 0%,
+        transparent 24%
+      ),
+      linear-gradient(
+        0deg,
+        var(--ui-bg) 0%,
+        rgba(0, 0, 0, 0.7) 10%,
+        transparent 64%
+      );
   }
 }
 
 .mtv-hero-scrim {
   background: var(--hero-scrim);
   transition: background var(--ui-dur-3) var(--ui-ease);
+}
+
+/* 切屏时文字块自己入场一次。
+   画面是整块交叉淡入，文字如果只是原地换内容就会「啪」地跳一下，和画面节奏对不上
+   —— 看起来像三次独立切换而不是一次。这里让文字块跟着淡入并轻微上浮。
+   重挂载由组件上的 key={currentIndex} 触发；上浮幅度压得很小，避免和画面淡入
+   叠出「两层各动各的」的杂乱感。 */
+@keyframes mtv-hero-body-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 /* 文字承载面。深色下是透明的（沿用左侧黑遮罩），浅色下变成一块磨砂玻璃，
@@ -1763,6 +1828,7 @@ html[data-loading-style='grid'] .mtv-err-box {
   backdrop-filter: var(--hero-panel-blur);
   box-shadow: var(--hero-panel-shadow);
   transition: background-color var(--ui-dur-3) var(--ui-ease);
+  animation: mtv-hero-body-in var(--ui-dur-3) var(--ui-ease-out) both;
 }
 
 .mtv-hero-title {
@@ -1888,15 +1954,23 @@ html[data-loading-style='grid'] .mtv-err-box {
   transition: background-color var(--ui-dur-1) var(--ui-ease);
 }
 
-/* 指示器改成细条：每条等宽，当前条按自动播放时长实时填充，比一排静态圆点
-   更能说明「还剩多久切下一张」。 */
+/* 指示器走「···▬···」：未到的是圆点，正在播的那一条拉长成进度条，并按自动播放
+   时长实时填充。比一排等宽静态条更能说明「现在在第几张、还剩多久切下一张」。 */
 .mtv-hero-dot {
   position: relative;
-  width: 26px;
-  height: 3px;
+  flex: none;
+  width: 6px;
+  height: 6px;
   overflow: hidden;
   border-radius: var(--ui-r-full);
   background-color: var(--hero-dot);
+  transition: width var(--ui-dur-2) var(--ui-ease),
+    height var(--ui-dur-2) var(--ui-ease);
+}
+
+.mtv-hero-dot-active {
+  width: 26px;
+  height: 3px;
 }
 
 .mtv-hero-dot-fill {

@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getConfig } from '@/lib/config';
 import { getTMDBImages } from '@/lib/tmdb.client';
+import { pickLogo, pickTextlessPoster, TMDBImageAsset } from '@/lib/tmdb.logo';
 
 export const runtime = 'nodejs';
 
@@ -14,50 +15,6 @@ export const runtime = 'nodejs';
  * 这里单独开一个轻量接口取它，避免污染 /api/tmdb/images（那个是照片墙在用的，
  * 混进 logo 会让照片墙多出一堆标题字）。
  */
-
-interface TMDBLogo {
-  file_path: string;
-  width: number;
-  height: number;
-  vote_average?: number;
-  vote_count?: number;
-  iso_639_1?: string | null;
-}
-
-/** 排序权重：片名是中文时优先中文标题字，否则中文/英文/无语言标记依次退让。 */
-function logoRank(logo: TMDBLogo, preferZh: boolean): number {
-  const lang = (logo.iso_639_1 || '').toLowerCase();
-  if (lang.startsWith('zh')) return preferZh ? 0 : 1;
-  if (lang.startsWith('en')) return 2;
-  if (!lang) return 3; // 无语言标记的多半是纯图形标题，任何语言下都能用
-  return 4;
-}
-
-function pickLogo(logos: TMDBLogo[], preferZh: boolean): TMDBLogo | null {
-  const sorted = [...logos].sort((a, b) => {
-    const rank = logoRank(a, preferZh) - logoRank(b, preferZh);
-    if (rank !== 0) return rank;
-    const vote = (b.vote_average || 0) - (a.vote_average || 0);
-    if (vote !== 0) return vote;
-    return (b.vote_count || 0) - (a.vote_count || 0);
-  });
-  return sorted[0] || null;
-}
-
-/**
- * 无字海报：iso_639_1 为 null 的那种，TMDB 官网标成「Not Specified」。
- * 手机端用它 + 标题字 logo，避免海报自带的片名和 logo 叠在一起。
- * 注意不保证每部片都有——没有就回落到带字海报，logo 始终保留。
- */
-function pickTextlessPoster(posters: TMDBLogo[]): TMDBLogo | null {
-  const textless = posters.filter((p) => !p.iso_639_1);
-  if (!textless.length) return null;
-  return [...textless].sort((a, b) => {
-    const vote = (b.vote_average || 0) - (a.vote_average || 0);
-    if (vote !== 0) return vote;
-    return (b.vote_count || 0) - (a.vote_count || 0);
-  })[0];
-}
 
 /**
  * GET /api/tmdb/logo?id=xxx&type=movie|tv&zh=1
@@ -111,7 +68,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const logos: TMDBLogo[] = response.images.logos || [];
+    const logos: TMDBImageAsset[] = response.images.logos || [];
     const picked = pickLogo(logos, preferZh);
     const textlessPoster = pickTextlessPoster(response.images.posters || []);
 

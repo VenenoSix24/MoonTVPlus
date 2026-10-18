@@ -4,7 +4,12 @@ import { NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
 import { fetchDoubanData } from '@/lib/douban';
-import { getTMDBTrendingContent, getTMDBVideos } from '@/lib/tmdb.client';
+import {
+  getTMDBImages,
+  getTMDBTrendingContent,
+  getTMDBVideos,
+} from '@/lib/tmdb.client';
+import { pickLogo, pickTextlessPoster, titlePrefersZh } from '@/lib/tmdb.logo';
 
 // 缓存配置 - 服务器内存缓存3小时
 const CACHE_DURATION = 3 * 60 * 60 * 1000; // 3小时
@@ -71,13 +76,47 @@ export async function GET() {
 
       // 为每个项目获取视频数据
       if (result.code === 200 && result.list) {
-        const itemsWithVideos = await Promise.all(
+        // 标题字 / 无字海报和预告片一起取。
+        //
+        // 标题字原本是前端挂载后才逐条去请求的，首屏渲染时手里还没有，只能先把
+        // 文字藏起来等它——表现出来就是标题区先空一块、几百毫秒后才补上。放到这里
+        // 随列表一起下发，首帧就是完整的；而且服务端结果有 3 小时缓存，前端那份
+        // prefetch 则是每次进首页都要重打一遍。
+        const itemsWithAssets = await Promise.all(
           result.list.map(async (item: any) => {
-            const videoKey = await getTMDBVideos(apiKey, item.media_type, item.id, proxy, reverseProxy);
-            return { ...item, video_key: videoKey };
+            const kind: 'movie' | 'tv' =
+              item.media_type === 'tv' ? 'tv' : 'movie';
+            const [videoKey, imagesRes] = await Promise.all([
+              getTMDBVideos(
+                apiKey,
+                item.media_type,
+                item.id,
+                proxy,
+                reverseProxy
+              ),
+              getTMDBImages(apiKey, item.id, kind, proxy, reverseProxy),
+            ]);
+
+            const images =
+              imagesRes.code === 200 && imagesRes.images
+                ? imagesRes.images
+                : null;
+            const logo = images
+              ? pickLogo(images.logos || [], titlePrefersZh(item.title))
+              : null;
+            const textless = images
+              ? pickTextlessPoster(images.posters || [])
+              : null;
+
+            return {
+              ...item,
+              video_key: videoKey,
+              title_logo_path: logo ? logo.file_path : null,
+              textless_poster_path: textless ? textless.file_path : null,
+            };
           })
         );
-        result.list = itemsWithVideos;
+        result.list = itemsWithAssets;
       }
 
       // 添加数据源标识

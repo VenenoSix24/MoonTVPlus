@@ -65,6 +65,9 @@ interface BannerItem extends TMDBItem {
   tags?: string[]; // TX数据源的标签
   trailer_url?: string | null; // 豆瓣预告片直链
   genres?: string[]; // 豆瓣数据源的类型标签
+  // 以下两项由 /api/tmdb/trending 在服务端随列表一起下发，首帧即可用
+  title_logo_path?: string | null; // 官方标题字（key art logo）
+  textless_poster_path?: string | null; // 无字海报
 }
 
 export default function BannerCarousel({
@@ -284,6 +287,7 @@ export default function BannerCarousel({
 
         // 乐观缓存：如果有缓存（无论是否过期），先显示缓存数据
         if (cachedData) {
+          primeLogoCache(cachedData);
           setItems(cachedData);
           setDataSource(validSource || ''); // 设置数据源
           setIsLoading(false);
@@ -299,6 +303,7 @@ export default function BannerCarousel({
             const newDataSource = result.source || 'TMDB'; // 获取数据源标识
             const cacheKey = getLocalStorageKey(newDataSource);
 
+            primeLogoCache(result.list);
             setItems(result.list);
             setDataSource(newDataSource); // 设置数据源
             setTrailersLoaded(false); // 重置预告片加载状态
@@ -597,7 +602,7 @@ export default function BannerCarousel({
         {items.map((item, index) => (
           <div
             key={item.id}
-            className={`mtv-hero-art absolute inset-0 transition-opacity duration-1000 ${
+            className={`mtv-hero-art absolute inset-0 transition-opacity duration-700 ${
               index === currentIndex ? 'opacity-100' : 'opacity-0'
             }`}
           >
@@ -654,7 +659,7 @@ export default function BannerCarousel({
 
       {/* 内容信息 */}
       <div className='mtv-hero-wrap absolute inset-0 flex items-end pointer-events-none'>
-        <div className='mtv-hero-body max-w-xl space-y-3'>
+        <div key={currentIndex} className='mtv-hero-body max-w-xl space-y-3'>
           <h2
             ref={titleRef}
             lang={titleIsCJK ? 'zh-Hans' : 'en'}
@@ -785,18 +790,19 @@ export default function BannerCarousel({
         </button>
       )}
 
-      {/* 指示器：细条进度，当前条按自动播放时长实时填充 */}
-      <div className='absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2'>
+      {/* 指示器：未到的是圆点，当前那张拉长成进度条并按自动播放时长填充 */}
+      <div className='absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2'>
         {items.map((_, index) => (
           <button
             key={index}
             onClick={(e) => {
-              // 阻止冒泡：Hero 根节点有「移动端点击整块跳播放」的逻辑，
               // 不拦的话手机上点圆点会直接跳走，而不是切到那一张。
               e.stopPropagation();
               goToSlide(index);
             }}
-            className='mtv-hero-dot'
+            className={`mtv-hero-dot ${
+              index === currentIndex ? 'mtv-hero-dot-active' : ''
+            }`}
             aria-label={`跳转到第 ${index + 1} 张`}
             aria-current={index === currentIndex}
           >
@@ -835,6 +841,28 @@ const logoRequest = (item: BannerItem) => {
 };
 
 /**
+ * 把服务端随列表下发的标题字写进模块缓存。
+ *
+ * 必须在 setItems 之前同步调用：渲染时才去读 heroLogoCache，这样 items 到位的那
+ * 一帧标题字就已经在手，不会先空一块再补上。
+ *
+ * 字段缺失时跳过（老 localStorage 缓存、非 TMDB 数据源），留给下面的预取 effect 兜底。
+ */
+const primeLogoCache = (list: BannerItem[]) => {
+  list.forEach((item) => {
+    if (item.title_logo_path === undefined) return;
+    const { key } = logoRequest(item);
+    if (heroLogoCache.has(key)) return;
+    heroLogoCache.set(
+      key,
+      item.title_logo_path
+        ? getTMDBImageUrl(item.title_logo_path, 'w500')
+        : null
+    );
+  });
+};
+
+/**
  * Hero 画面。
  *
  * 豆瓣 / TX 数据源把同一张封面同时写进 backdrop_path 和 poster_path，而豆瓣的
@@ -860,9 +888,16 @@ function HeroArt({
 }) {
   // 手机端优先竖版海报：2:3 的海报塞进竖屏天然合适，横版剧照则要被裁掉一大半。
   // 桌面端反过来——横屏用横图。
+  //
+  // 有官方标题字时手机端改用无字海报：带字海报自带的片名会和叠在上面的 logo
+  // 撞在一起。无字海报不是每部片都有，取不到就回落带字海报——logo 始终保留，
+  // 版面不会因为少一层而错位。
+  const textlessPoster = item.textless_poster_path
+    ? getTMDBImageUrl(item.textless_poster_path, 'w500')
+    : null;
   const src = getImageUrl(
     mobile
-      ? item.poster_path || item.backdrop_path || null
+      ? textlessPoster || item.poster_path || item.backdrop_path || null
       : item.backdrop_path || item.poster_path || null
   );
   const [isPoster, setIsPoster] = useState(
