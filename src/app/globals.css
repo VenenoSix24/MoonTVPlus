@@ -1701,9 +1701,19 @@ html[data-loading-style='grid'] .mtv-err-box {
   font-size: var(--ui-fs-display);
   font-weight: 800;
   line-height: 1.02;
+  /* 字距按语言分流，不能一套打天下。
+     拉丁字母的 advance 只有 0.5–0.6em，两侧各留约 0.2em 空白，大字号下显得松，
+     所以要收到 -0.04em。
+     中文方块字的 advance 是整 1em（实测 73.6px 字号下每字正好 73.6px），本身
+     没有可收的空隙——再收 -0.04em 就是让相邻汉字重叠 4%，笔画会贴到一起。
+     所以中文归零，交给字体本来的字距。lang 由组件按片名内容判定。 */
   letter-spacing: -0.04em;
   color: var(--hero-ink);
   text-wrap: balance;
+}
+
+.mtv-hero-title:lang(zh) {
+  letter-spacing: 0;
 }
 
 .mtv-hero-meta {

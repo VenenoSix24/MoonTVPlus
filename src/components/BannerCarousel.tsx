@@ -531,6 +531,9 @@ export default function BannerCarousel({
     return null;
   })();
 
+  // 中文方块字的字距规则和拉丁字母相反，见 .mtv-hero-title 的注释
+  const titleIsCJK = /[\u3400-\u9fff\uf900-\ufaff]/.test(currentItem.title);
+
   return (
     <div
       className={`mtv-hero relative w-full ${bannerHeightClassMap[bannerHeightScale]} overflow-hidden group`}
@@ -610,6 +613,7 @@ export default function BannerCarousel({
         <div className='mtv-hero-body max-w-xl space-y-3'>
           <h2
             ref={titleRef}
+            lang={titleIsCJK ? 'zh-Hans' : 'en'}
             className='mtv-hero-title'
             style={
               isMobileView && bannerHeightScale === '1'
