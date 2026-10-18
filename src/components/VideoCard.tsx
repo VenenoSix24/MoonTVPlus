@@ -1248,7 +1248,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                   <PlayCircleIcon
                     size={50}
                     strokeWidth={0.8}
-                    className='text-white fill-transparent transition-all duration-300 ease-out hover:fill-green-500 hover:scale-[1.1]'
+                    className='text-white fill-transparent transition-all duration-300 ease-out hover:fill-ui-accent hover:scale-[1.1]'
                     style={
                       {
                         WebkitUserSelect: 'none',
@@ -1606,7 +1606,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                   }}
                 >
                   <div
-                    className='bg-ui-accent-soft0 text-white text-xs font-bold w-7 h-7 rounded-full flex items-center justify-center shadow-md hover:brightness-110 hover:scale-[1.1] transition-all duration-300 ease-out'
+                    className='bg-ui-accent text-white text-xs font-bold w-7 h-7 rounded-full flex items-center justify-center shadow-md hover:brightness-110 hover:scale-[1.1] transition-all duration-300 ease-out'
                     style={
                       {
                         WebkitUserSelect: 'none',
@@ -2087,7 +2087,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                   }}
                 >
                   <div
-                    className='h-full bg-ui-accent-soft0 transition-all duration-500 ease-out'
+                    className='h-full bg-ui-accent transition-all duration-500 ease-out'
                     style={
                       {
                         width: `${progress}%`,

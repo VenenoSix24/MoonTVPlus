@@ -162,7 +162,7 @@ const EpisodeButton: React.FC<EpisodeButtonProps> = ({
         canShowOriginalName ? 'select-none' : ''
       }
         ${isActive
-          ? 'bg-ui-accent-soft0 text-white border-ui-accent shadow-lg shadow-green-500/25 bg-ui-accent cursor-default'
+          ? 'bg-ui-accent text-white border-ui-accent shadow-lg mtv-shadow-accent cursor-default'
           : isWatched
             ? 'bg-ui-accent-soft text-ui-accent border-ui-accent-soft hover:bg-ui-accent-soft hover:scale-105 bg-ui-accent-soft text-ui-accent border-ui-accent-soft hover:bg-ui-accent-soft'
             : inactiveEpisodeClass
@@ -179,7 +179,7 @@ const EpisodeButton: React.FC<EpisodeButtonProps> = ({
       title={isWatched && !isActive ? '已观看过' : undefined}
     >
       {isWatched && !isActive && (
-        <span className='absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-ui-accent-soft0 bg-ui-accent' />
+        <span className='absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-ui-accent' />
       )}
       {displayLabel}
     </button>
@@ -218,7 +218,7 @@ const EpisodeListItem: React.FC<EpisodeListItemProps> = ({
       title={name}
       className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg border text-left transition-all duration-200 ${
         isActive
-          ? 'bg-ui-accent-soft0 text-white border-ui-accent shadow-lg shadow-green-500/25 bg-ui-accent cursor-default'
+          ? 'bg-ui-accent text-white border-ui-accent shadow-lg mtv-shadow-accent cursor-default'
           : isWatched
             ? 'bg-ui-accent-soft text-ui-accent border-ui-accent-soft hover:bg-ui-accent-soft bg-ui-accent-soft text-ui-accent border-ui-accent-soft hover:bg-ui-accent-soft'
             : inactiveRowClass
@@ -237,7 +237,7 @@ const EpisodeListItem: React.FC<EpisodeListItemProps> = ({
       </span>
       <span className='flex-1 truncate text-sm font-medium'>{name}</span>
       {isWatched && !isActive && (
-        <span className='flex-shrink-0 h-1.5 w-1.5 rounded-full bg-ui-accent-soft0 bg-ui-accent' />
+        <span className='flex-shrink-0 h-1.5 w-1.5 rounded-full bg-ui-accent' />
       )}
     </button>
   );
@@ -1141,7 +1141,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                     >
                       {label}
                       {isActive && (
-                        <div className='absolute bottom-0 left-0 right-0 h-0.5 bg-ui-accent-soft0 bg-ui-accent' />
+                        <div className='absolute bottom-0 left-0 right-0 h-0.5 bg-ui-accent' />
                       )}
                     </button>
                   );

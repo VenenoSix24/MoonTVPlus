@@ -228,7 +228,7 @@ const DownloadEpisodeSelector: React.FC<DownloadEpisodeSelectorProps> = ({
                       className={`px-4 py-2 text-sm font-medium rounded-md transition-all whitespace-nowrap
                         ${
                           isActive
-                            ? 'bg-ui-accent-soft0 text-white shadow-md'
+                            ? 'bg-ui-accent text-white shadow-md'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
                         }
                       `.trim()}
@@ -281,7 +281,7 @@ const DownloadEpisodeSelector: React.FC<DownloadEpisodeSelectorProps> = ({
                   className={`h-10 min-w-10 px-3 py-2 flex items-center justify-center text-sm font-medium rounded-md transition-all duration-200 whitespace-nowrap font-mono relative
                     ${
                       isSelected
-                        ? 'bg-ui-accent-soft0 text-white shadow-lg shadow-green-500/25 bg-ui-accent'
+                        ? 'bg-ui-accent text-white shadow-lg mtv-shadow-accent'
                         : 'bg-gray-200 text-gray-700 hover:bg-gray-300 hover:scale-105 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
                     }
                   `.trim()}
@@ -343,7 +343,7 @@ const DownloadEpisodeSelector: React.FC<DownloadEpisodeSelectorProps> = ({
               className={`px-4 py-2 text-sm font-medium text-white rounded-md transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed ${
                 offlineMode && enableOfflineDownload && hasOfflinePermission
                   ? 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800'
-                  : 'bg-ui-accent-soft0 hover:brightness-110 bg-ui-accent hover:brightness-110 disabled:hover:brightness-110'
+                  : 'bg-ui-accent hover:brightness-110 disabled:hover:brightness-110'
               }`}
             >
               {offlineMode && enableOfflineDownload && hasOfflinePermission ? '离线' : ''}下载 {selectedEpisodes.size > 0 && `(${selectedEpisodes.size})`}

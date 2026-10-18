@@ -2272,10 +2272,11 @@ html[data-loading-style='grid'] .mtv-err-box {
    播放页强调色
    --------------------------------------------------------------------------
    播放页此前整套用的是原版 MoonTV 的绿（green-* / emerald-*，共 70 处），而站点
-   品牌色早已是 --ui-accent。现已全部改走 ui-accent 工具类，只有三处 Tailwind
+   品牌色早已是 --ui-accent。现已全部改走 ui-accent 工具类，只有四处 Tailwind
    表达不了的留在这里：
      · 渐变（Tailwind 的 from-/to- 只能吃静态色值，--ui-accent 是 CSS 变量）
      · 带透明度的描边（/30 这类透明度修饰符需要 RGB 三元组，hex 变量用不了）
+     · 带透明度的投影（同上，shadow-<color>/25 不会生成）
    这样换品牌色只改 --ui-accent 一处，播放页自动跟随。
    ========================================================================== */
 .mtv-play-grad {
@@ -2296,6 +2297,14 @@ html[data-loading-style='grid'] .mtv-err-box {
     color-mix(in srgb, var(--ui-accent) 15%, transparent),
     transparent
   );
+}
+
+/* 品牌色投影。Tailwind v3 的透明度修饰符对 CSS 变量色值不生效
+   （--ui-accent 是 var(...)，shadow-ui-accent/25 压根不会生成），只能手写：
+   给出 --tw-shadow-color，并把 --tw-shadow 指回 colored 版本。 */
+.mtv-shadow-accent {
+  --tw-shadow-color: color-mix(in srgb, var(--ui-accent) 25%, transparent);
+  --tw-shadow: var(--tw-shadow-colored);
 }
 
 /* ==========================================================================

@@ -328,7 +328,7 @@ export default function DanmakuPanel({
           <button
             onClick={() => handleSearch(searchKeyword)}
             disabled={isSearching}
-            className='flex flex-shrink-0 items-center justify-center gap-2 rounded-lg bg-ui-accent-soft0 px-3 py-2
+            className='flex flex-shrink-0 items-center justify-center gap-2 rounded-lg bg-ui-accent px-3 py-2
                      text-sm font-medium text-white transition-colors
                      hover:brightness-110 disabled:cursor-not-allowed
                      disabled:opacity-50 bg-ui-accent hover:brightness-110
@@ -406,7 +406,7 @@ export default function DanmakuPanel({
               <div className='flex items-center justify-center py-8'>
                 <div
                   className='h-8 w-8 animate-spin rounded-full border-4
-                              border-gray-300 border-t-green-500'
+                              border-gray-300 border-t-ui-accent'
                 />
               </div>
             )}
@@ -442,7 +442,7 @@ export default function DanmakuPanel({
                         >
                           {label}
                           {isActive && (
-                            <div className='absolute bottom-0 left-0 right-0 h-0.5 bg-ui-accent-soft0 bg-ui-accent' />
+                            <div className='absolute bottom-0 left-0 right-0 h-0.5 bg-ui-accent' />
                           )}
                         </button>
                       );
@@ -497,7 +497,7 @@ export default function DanmakuPanel({
                           onClick={() => handleEpisodeSelect(episode)}
                           className={`rounded-lg px-3 py-2 text-sm font-medium transition-all ${
                             isSelected
-                              ? 'bg-ui-accent-soft0 text-white shadow-md'
+                              ? 'bg-ui-accent text-white shadow-md'
                               : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
                           }`}
                           title={stripDanmakuSource(episode.episodeTitle)}
@@ -519,7 +519,7 @@ export default function DanmakuPanel({
                           onClick={() => handleEpisodeSelect(episode)}
                           className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all duration-200 group border ${
                             isSelected
-                              ? 'bg-ui-accent-soft0 text-white border-ui-accent shadow-md'
+                              ? 'bg-ui-accent text-white border-ui-accent shadow-md'
                               : 'bg-gray-100 hover:bg-gray-200 border-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 dark:border-gray-700 hover:border-ui-accent hover:shadow-sm'
                           }`}
                         >
@@ -527,7 +527,7 @@ export default function DanmakuPanel({
                             className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
                               isSelected
                                 ? 'bg-white/20 text-white'
-                                : 'bg-ui-accent-soft0 text-white group-hover:bg-ui-accent'
+                                : 'bg-ui-accent text-white group-hover:brightness-110'
                             }`}
                           >
                             {episode.episodeNumber}

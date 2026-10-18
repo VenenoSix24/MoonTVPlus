@@ -327,7 +327,7 @@ function SwitchButton({
       disabled={disabled}
       onClick={onClick}
       className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${
-        checked ? 'bg-ui-accent-soft0' : 'bg-gray-300 dark:bg-gray-600'
+        checked ? 'bg-ui-accent' : 'bg-gray-300 dark:bg-gray-600'
       } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
     >
       <span

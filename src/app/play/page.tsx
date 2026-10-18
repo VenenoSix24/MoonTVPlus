@@ -10571,7 +10571,7 @@ function PlayPageClient() {
                         style={{ animationDelay: '0.5s' }}
                       ></div>
                       <div
-                        className='absolute bottom-3 left-6 w-1 h-1 bg-lime-400 rounded-full animate-bounce'
+                        className='absolute bottom-3 left-6 w-1 h-1 bg-ui-accent rounded-full animate-bounce'
                         style={{ animationDelay: '1s' }}
                       ></div>
                     </div>
@@ -11109,7 +11109,7 @@ function PlayPageClient() {
                                     style={{ animationDelay: '0.5s' }}
                                   ></div>
                                   <div
-                                    className='absolute bottom-3 left-6 w-1 h-1 bg-lime-400 rounded-full animate-bounce'
+                                    className='absolute bottom-3 left-6 w-1 h-1 bg-ui-accent rounded-full animate-bounce'
                                     style={{ animationDelay: '1s' }}
                                   ></div>
                                 </div>

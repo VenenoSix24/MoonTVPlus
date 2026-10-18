@@ -1703,7 +1703,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                       <button
                         onClick={handleToggleSource}
                         disabled={loading}
-                        className='px-3 py-1.5 text-sm rounded-lg bg-ui-accent-soft0 hover:brightness-110 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+                        className='px-3 py-1.5 text-sm rounded-lg bg-ui-accent hover:brightness-110 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
                       >
                         切换到 TMDB
                       </button>
@@ -2168,7 +2168,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                       <button
                         onClick={handleToggleSource}
                         disabled={loading}
-                        className='px-3 py-1.5 text-sm rounded-lg bg-ui-accent-soft0 hover:brightness-110 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+                        className='px-3 py-1.5 text-sm rounded-lg bg-ui-accent hover:brightness-110 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
                       >
                         切换到 TMDB
                       </button>
@@ -2313,7 +2313,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                     <button
                       onClick={handleToggleSource}
                       disabled={loading}
-                      className='px-3 py-1.5 text-sm rounded-lg bg-ui-accent-soft0 hover:brightness-110 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+                      className='px-3 py-1.5 text-sm rounded-lg bg-ui-accent hover:brightness-110 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
                     >
                       切换到 TMDB
                     </button>
@@ -2775,7 +2775,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                     <button
                       onClick={handleToggleSource}
                       disabled={loading}
-                      className='px-3 py-1.5 text-sm rounded-lg bg-ui-accent-soft0 hover:brightness-110 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+                      className='px-3 py-1.5 text-sm rounded-lg bg-ui-accent hover:brightness-110 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
                     >
                       切换到 TMDB
                     </button>

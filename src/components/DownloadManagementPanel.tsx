@@ -595,7 +595,7 @@ export function DownloadManagementPanel({
                   onClick={handleExport}
                   aria-label={isExporting ? '导出中' : '导出选中'}
                   disabled={selectedIds.size === 0 || isExporting || isDeleting}
-                  className='flex h-10 w-10 items-center justify-center rounded bg-ui-accent-soft0 text-white transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 sm:h-auto sm:w-auto sm:gap-2 sm:px-4 sm:py-2 sm:text-sm'
+                  className='flex h-10 w-10 items-center justify-center rounded bg-ui-accent text-white transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 sm:h-auto sm:w-auto sm:gap-2 sm:px-4 sm:py-2 sm:text-sm'
                 >
                   <Download className='h-4 w-4' />
                   <span className='hidden sm:inline'>
@@ -655,7 +655,7 @@ export function DownloadManagementPanel({
                             }}
                             className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded border-2 transition-colors sm:mt-1 sm:h-5 sm:w-5 ${
                               isGroupSelected
-                                ? 'border-ui-accent bg-ui-accent-soft0'
+                                ? 'border-ui-accent bg-ui-accent'
                                 : isGroupPartiallySelected
                                 ? 'border-ui-accent bg-ui-accent-soft bg-ui-accent-soft'
                                 : 'border-gray-300 dark:border-gray-600'
@@ -665,7 +665,7 @@ export function DownloadManagementPanel({
                             {isGroupSelected ? (
                               <Check className='h-4 w-4 text-white sm:h-3 sm:w-3' />
                             ) : isGroupPartiallySelected ? (
-                              <span className='h-0.5 w-3 rounded bg-ui-accent-soft0 sm:w-2.5' />
+                              <span className='h-0.5 w-3 rounded bg-ui-accent sm:w-2.5' />
                             ) : null}
                           </button>
 
@@ -728,7 +728,7 @@ export function DownloadManagementPanel({
                                   <div
                                     className={`flex h-8 w-8 items-center justify-center rounded border-2 sm:h-5 sm:w-5 ${
                                       selectedIds.has(task.id)
-                                        ? 'border-ui-accent bg-ui-accent-soft0'
+                                        ? 'border-ui-accent bg-ui-accent'
                                         : 'border-gray-300 dark:border-gray-600'
                                     }`}
                                   >

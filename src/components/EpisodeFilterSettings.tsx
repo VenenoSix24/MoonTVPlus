@@ -415,7 +415,7 @@ export default function EpisodeFilterSettings({
             {loading ? (
               <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                 <div className="inline-flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-gray-300 border-t-green-500 rounded-full animate-spin"></div>
+                  <div className="w-4 h-4 border-2 border-gray-300 border-t-ui-accent rounded-full animate-spin"></div>
                   <span>加载中...</span>
                 </div>
               </div>

@@ -199,7 +199,7 @@ export function DownloadPanel() {
                           task.status === 'downloading'
                             ? 'bg-gradient-to-r from-sky-500 to-ui-accent motion-safe:animate-pulse'
                             : task.status === 'done'
-                            ? 'bg-ui-accent-soft0'
+                            ? 'bg-ui-accent'
                             : task.status === 'error'
                             ? 'bg-rose-500'
                             : 'bg-slate-400'
