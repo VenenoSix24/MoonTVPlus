@@ -638,6 +638,7 @@ export default function BannerCarousel({
                 item={item}
                 priority={index === 0}
                 active={index === currentIndex}
+                mobile={isMobileView}
               />
             )}
             {/* 渐变遮罩 */}
@@ -843,12 +844,20 @@ function HeroArt({
   item,
   priority,
   active,
+  mobile,
 }: {
   item: BannerItem;
   priority: boolean;
   active: boolean;
+  mobile: boolean;
 }) {
-  const src = getImageUrl(item.backdrop_path || item.poster_path);
+  // 手机端优先竖版海报：2:3 的海报塞进竖屏天然合适，横版剧照则要被裁掉一大半。
+  // 桌面端反过来——横屏用横图。
+  const src = getImageUrl(
+    mobile
+      ? item.poster_path || item.backdrop_path || null
+      : item.backdrop_path || item.poster_path || null
+  );
   const [isPoster, setIsPoster] = useState(
     () => !item.backdrop_path || item.backdrop_path === item.poster_path
   );
@@ -859,6 +868,9 @@ function HeroArt({
     setIsPoster(naturalWidth / naturalHeight < WIDE_ART_MIN_RATIO);
   };
 
+  // 手机端一律单层铺满：竖屏里 2:3 和 16:9 都不需要「模糊铺底 + 立式海报」那套
+  const useDoubleLayer = !mobile && isPoster;
+
   return (
     <>
       <ProxyImage
@@ -867,12 +879,12 @@ function HeroArt({
         loading={priority ? 'eager' : 'lazy'}
         onLoad={handleLoad}
         className={
-          isPoster
+          useDoubleLayer
             ? `mtv-hero-art-fill${active ? ' mtv-hero-art-fill-active' : ''}`
             : 'mtv-hero-art-cover'
         }
       />
-      {isPoster && (
+      {useDoubleLayer && (
         <>
           {/* 渐变垫在竖版海报下面，海报才不会被渐变压暗 */}
           <div className='mtv-hero-art-veil' />
