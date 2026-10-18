@@ -581,7 +581,7 @@ export default function BannerCarousel({
 
       {/* 内容信息 */}
       <div className='mtv-hero-wrap absolute inset-0 flex items-end pointer-events-none'>
-        <div className='mtv-hero-body max-w-2xl space-y-3'>
+        <div className='mtv-hero-body max-w-xl space-y-3'>
           <h2
             ref={titleRef}
             className='mtv-hero-title'
@@ -628,7 +628,7 @@ export default function BannerCarousel({
           </div>
 
           {currentItem.overview && (
-            <p className='mtv-hero-syn text-sm md:text-base line-clamp-3 drop-shadow-md'>
+            <p className='mtv-hero-syn text-sm md:text-base line-clamp-2 drop-shadow-md'>
               {currentItem.overview}
             </p>
           )}
@@ -650,14 +650,14 @@ export default function BannerCarousel({
       {/* 左右切换按钮 - 只在桌面端显示 */}
       <button
         onClick={goToPrevious}
-        className='mtv-hero-ctl hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300'
+        className='mtv-hero-ctl hidden md:flex absolute left-[var(--ui-sp-4)] top-1/2 -translate-y-1/2 w-12 h-12 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300'
         aria-label='上一张'
       >
         <ChevronLeft className='w-8 h-8' />
       </button>
       <button
         onClick={goToNext}
-        className='mtv-hero-ctl hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300'
+        className='mtv-hero-ctl hidden md:flex absolute right-[var(--ui-sp-4)] top-1/2 -translate-y-1/2 w-12 h-12 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300'
         aria-label='下一张'
       >
         <ChevronRight className='w-8 h-8' />

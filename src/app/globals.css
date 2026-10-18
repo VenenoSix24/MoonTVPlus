@@ -1510,10 +1510,11 @@ html[data-loading-style='grid'] .mtv-err-box {
   --hero-ink: #0e1524;
   --hero-ink-2: rgba(14, 21, 36, 0.78);
   --hero-art-filter: none;
-  --hero-panel-bg: rgba(255, 255, 255, 0.74);
-  --hero-panel-blur: blur(26px) saturate(170%);
-  --hero-panel-shadow: 0 20px 50px -22px rgba(14, 21, 36, 0.45);
-  --hero-panel-pad: 26px 30px;
+  --hero-panel-bg: rgba(255, 255, 255, 0.78);
+  --hero-panel-blur: blur(40px) saturate(180%);
+  --hero-panel-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55),
+    0 24px 56px -24px rgba(14, 21, 36, 0.5);
+  --hero-panel-pad: 22px 26px;
   --hero-btn-bg: #0e1524;
   --hero-btn-ink: #ffffff;
   --hero-btn-bg-hover: #2a2a30;
@@ -1696,14 +1697,20 @@ html[data-loading-style='grid'] .mtv-err-box {
 }
 
 /* 卡片容器只有三档尺度，替代原来的 96 / 100 / 120 / 140 / 180 / 200 六种 */
+/* flex: none 是必须的：卡片活在 overflow-x 的 flex 行里，
+   没有它就会被 flex-shrink 按各自的 min-content 宽度不等量压缩——
+   标题长的卡片压得少、标题短的压得多，同一行宽度参差，海报高度也跟着参差。 */
 .mtv-card-sm {
+  flex: none;
   width: var(--ui-card-sm);
 }
 
 .mtv-card-md {
+  flex: none;
   width: var(--ui-card-md);
 }
 
 .mtv-card-wide {
+  flex: none;
   width: var(--ui-card-wide);
 }
