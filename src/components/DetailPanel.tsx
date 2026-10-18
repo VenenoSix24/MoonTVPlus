@@ -1292,7 +1292,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
     >
       {galleryLoading && (
         <div className='flex items-center justify-center py-20'>
-          <div className='animate-spin rounded-full h-10 w-10 border-b-2 border-green-500'></div>
+          <div className='animate-spin rounded-full h-10 w-10 border-b-2 border-ui-accent'></div>
         </div>
       )}
 
@@ -1443,7 +1443,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
     <div className='flex-1 overflow-y-auto overflow-x-hidden p-4'>
       {episodeStillsLoading && (
         <div className='flex items-center justify-center py-20'>
-          <div className='animate-spin rounded-full h-10 w-10 border-b-2 border-green-500'></div>
+          <div className='animate-spin rounded-full h-10 w-10 border-b-2 border-ui-accent'></div>
         </div>
       )}
 
@@ -1545,7 +1545,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
               onClick={() => handleSelectTmdbResult(result)}
               className={`flex items-start gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
                 isActive
-                  ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-green-500'
+                  ? 'bg-ui-accent-soft bg-ui-accent-soft ring-2 ring-ui-accent'
                   : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
             >
@@ -1673,7 +1673,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
         <div className='overflow-y-auto max-h-[calc(90vh-4rem)]'>
           {loading && (
             <div className='flex items-center justify-center py-20'>
-              <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-green-500'></div>
+              <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-ui-accent'></div>
             </div>
           )}
 
@@ -1703,7 +1703,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                       <button
                         onClick={handleToggleSource}
                         disabled={loading}
-                        className='px-3 py-1.5 text-sm rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+                        className='px-3 py-1.5 text-sm rounded-lg bg-ui-accent-soft0 hover:brightness-110 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
                       >
                         切换到 TMDB
                       </button>
@@ -1903,7 +1903,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                               )}`}
                               target='_blank'
                               rel='noopener noreferrer'
-                              className='text-xs font-medium text-gray-900 dark:text-gray-100 text-center w-20 line-clamp-2 hover:text-green-600 dark:hover:text-green-400 transition-colors cursor-pointer'
+                              className='text-xs font-medium text-gray-900 dark:text-gray-100 text-center w-20 line-clamp-2 hover:text-ui-accent dark:hover:text-ui-accent transition-colors cursor-pointer'
                               onClick={(e) => e.stopPropagation()}
                             >
                               {actor.name}
@@ -1983,7 +1983,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                 <div className='mt-6'>
                   {loadingSeasons && (
                     <div className='flex items-center justify-center py-4'>
-                      <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-green-500'></div>
+                      <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-ui-accent'></div>
                     </div>
                   )}
 
@@ -2004,7 +2004,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                                 }
                                 className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${
                                   selectedSeason === season.season_number
-                                    ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-green-500'
+                                    ? 'bg-ui-accent-soft bg-ui-accent-soft ring-2 ring-ui-accent'
                                     : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'
                                 }`}
                               >
@@ -2079,7 +2079,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                                     id={`episode-${episode.episode_number}`}
                                     className={`flex-shrink-0 w-64 p-3 rounded ${
                                       isCurrentEpisode
-                                        ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-green-500'
+                                        ? 'bg-ui-accent-soft bg-ui-accent-soft ring-2 ring-ui-accent'
                                         : 'bg-gray-50 dark:bg-gray-800'
                                     }`}
                                     style={{
@@ -2168,7 +2168,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                       <button
                         onClick={handleToggleSource}
                         disabled={loading}
-                        className='px-3 py-1.5 text-sm rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+                        className='px-3 py-1.5 text-sm rounded-lg bg-ui-accent-soft0 hover:brightness-110 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
                       >
                         切换到 TMDB
                       </button>
@@ -2285,7 +2285,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
         <div className='overflow-y-auto max-h-[calc(90vh-4rem)]'>
           {loading && (
             <div className='flex items-center justify-center py-20'>
-              <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-green-500'></div>
+              <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-ui-accent'></div>
             </div>
           )}
 
@@ -2313,7 +2313,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                     <button
                       onClick={handleToggleSource}
                       disabled={loading}
-                      className='px-3 py-1.5 text-sm rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+                      className='px-3 py-1.5 text-sm rounded-lg bg-ui-accent-soft0 hover:brightness-110 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
                     >
                       切换到 TMDB
                     </button>
@@ -2512,7 +2512,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                               )}`}
                               target='_blank'
                               rel='noopener noreferrer'
-                              className='text-xs font-medium text-gray-900 dark:text-gray-100 text-center w-20 line-clamp-2 hover:text-green-600 dark:hover:text-green-400 transition-colors cursor-pointer'
+                              className='text-xs font-medium text-gray-900 dark:text-gray-100 text-center w-20 line-clamp-2 hover:text-ui-accent dark:hover:text-ui-accent transition-colors cursor-pointer'
                               onClick={(e) => e.stopPropagation()}
                             >
                               {actor.name}
@@ -2592,7 +2592,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                 <div className='mt-6'>
                   {loadingSeasons && (
                     <div className='flex items-center justify-center py-4'>
-                      <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-green-500'></div>
+                      <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-ui-accent'></div>
                     </div>
                   )}
 
@@ -2613,7 +2613,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                                 }
                                 className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${
                                   selectedSeason === season.season_number
-                                    ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-green-500'
+                                    ? 'bg-ui-accent-soft bg-ui-accent-soft ring-2 ring-ui-accent'
                                     : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'
                                 }`}
                               >
@@ -2688,7 +2688,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                                     id={`episode-${episode.episode_number}`}
                                     className={`flex-shrink-0 w-64 p-3 rounded ${
                                       isCurrentEpisode
-                                        ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-green-500'
+                                        ? 'bg-ui-accent-soft bg-ui-accent-soft ring-2 ring-ui-accent'
                                         : 'bg-gray-50 dark:bg-gray-800'
                                     }`}
                                     style={{
@@ -2775,7 +2775,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                     <button
                       onClick={handleToggleSource}
                       disabled={loading}
-                      className='px-3 py-1.5 text-sm rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+                      className='px-3 py-1.5 text-sm rounded-lg bg-ui-accent-soft0 hover:brightness-110 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
                     >
                       切换到 TMDB
                     </button>

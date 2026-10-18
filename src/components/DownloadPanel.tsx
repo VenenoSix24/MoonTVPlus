@@ -54,7 +54,7 @@ export function DownloadPanel() {
       case 'pause':
         return 'text-yellow-600 dark:text-amber-400';
       case 'done':
-        return 'text-green-600 dark:text-emerald-400';
+        return 'text-ui-accent text-ui-accent';
       case 'error':
         return 'text-red-600 dark:text-rose-400';
       default:
@@ -79,7 +79,7 @@ export function DownloadPanel() {
       case 'downloading':
         return 'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-400/30 dark:bg-sky-400/10 dark:text-sky-300';
       case 'success':
-        return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-400/30 dark:bg-emerald-400/10 dark:text-emerald-300';
+        return 'border-ui-accent-soft bg-ui-accent-soft text-ui-accent border-ui-accent-soft bg-ui-accent-soft text-ui-accent';
       case 'retry':
         return 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300';
       case 'timeout':
@@ -197,9 +197,9 @@ export function DownloadPanel() {
                       <div
                         className={`h-full rounded-full transition-all duration-300 ${
                           task.status === 'downloading'
-                            ? 'bg-gradient-to-r from-sky-500 to-emerald-500 motion-safe:animate-pulse'
+                            ? 'bg-gradient-to-r from-sky-500 to-ui-accent motion-safe:animate-pulse'
                             : task.status === 'done'
-                            ? 'bg-emerald-500'
+                            ? 'bg-ui-accent-soft0'
                             : task.status === 'error'
                             ? 'bg-rose-500'
                             : 'bg-slate-400'
@@ -324,9 +324,9 @@ export function DownloadPanel() {
                     <div className='text-xs text-slate-500 dark:text-slate-400'>日志数</div>
                     <div className='mt-1 text-lg font-semibold text-slate-900 dark:text-slate-50'>{logStats.total}</div>
                   </div>
-                  <div className='rounded-xl border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-400/30 dark:bg-emerald-400/10'>
-                    <div className='text-xs text-emerald-700 dark:text-emerald-300'>成功分片</div>
-                    <div className='mt-1 text-lg font-semibold text-emerald-700 dark:text-emerald-200'>{logStats.success}</div>
+                  <div className='rounded-xl border border-ui-accent-soft bg-ui-accent-soft p-3 border-ui-accent-soft bg-ui-accent-soft'>
+                    <div className='text-xs text-ui-accent text-ui-accent'>成功分片</div>
+                    <div className='mt-1 text-lg font-semibold text-ui-accent text-ui-accent'>{logStats.success}</div>
                   </div>
                   <div className='rounded-xl border border-sky-200 bg-sky-50 p-3 dark:border-sky-400/30 dark:bg-sky-400/10'>
                     <div className='text-xs text-sky-700 dark:text-sky-300'>下载中</div>

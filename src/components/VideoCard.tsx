@@ -1606,7 +1606,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                   }}
                 >
                   <div
-                    className='bg-green-500 text-white text-xs font-bold w-7 h-7 rounded-full flex items-center justify-center shadow-md hover:bg-green-600 hover:scale-[1.1] transition-all duration-300 ease-out'
+                    className='bg-ui-accent-soft0 text-white text-xs font-bold w-7 h-7 rounded-full flex items-center justify-center shadow-md hover:brightness-110 hover:scale-[1.1] transition-all duration-300 ease-out'
                     style={
                       {
                         WebkitUserSelect: 'none',
@@ -2087,7 +2087,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                   }}
                 >
                   <div
-                    className='h-full bg-green-500 transition-all duration-500 ease-out'
+                    className='h-full bg-ui-accent-soft0 transition-all duration-500 ease-out'
                     style={
                       {
                         width: `${progress}%`,
@@ -2130,7 +2130,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                   }
                 >
                   <span
-                    className='block text-sm font-semibold truncate text-gray-900 dark:text-gray-100 transition-colors duration-300 ease-in-out group-hover:text-green-600 dark:group-hover:text-green-400 peer'
+                    className='block text-sm font-semibold truncate text-gray-900 dark:text-gray-100 transition-colors duration-300 ease-in-out group-hover:text-ui-accent group-hover:text-ui-accent peer'
                     style={
                       {
                         WebkitUserSelect: 'none',
@@ -2281,7 +2281,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
           }}
         />
         {animeSubscribeToast ? (
-          <div className='fixed bottom-24 left-1/2 z-[var(--ui-z-toast)] -translate-x-1/2 rounded-full bg-green-600 px-4 py-2 text-sm text-white shadow-lg'>
+          <div className='fixed bottom-24 left-1/2 z-[var(--ui-z-toast)] -translate-x-1/2 rounded-full bg-ui-accent px-4 py-2 text-sm text-white shadow-lg'>
             {animeSubscribeToast}
           </div>
         ) : null}

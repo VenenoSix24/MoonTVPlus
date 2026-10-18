@@ -162,9 +162,9 @@ const EpisodeButton: React.FC<EpisodeButtonProps> = ({
         canShowOriginalName ? 'select-none' : ''
       }
         ${isActive
-          ? 'bg-green-500 text-white border-green-400 shadow-lg shadow-green-500/25 dark:bg-green-600 cursor-default'
+          ? 'bg-ui-accent-soft0 text-white border-ui-accent shadow-lg shadow-green-500/25 bg-ui-accent cursor-default'
           : isWatched
-            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:scale-105 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-700/60 dark:hover:bg-emerald-900/30'
+            ? 'bg-ui-accent-soft text-ui-accent border-ui-accent-soft hover:bg-ui-accent-soft hover:scale-105 bg-ui-accent-soft text-ui-accent border-ui-accent-soft hover:bg-ui-accent-soft'
             : inactiveEpisodeClass
         }`.trim()}
       style={
@@ -179,7 +179,7 @@ const EpisodeButton: React.FC<EpisodeButtonProps> = ({
       title={isWatched && !isActive ? '已观看过' : undefined}
     >
       {isWatched && !isActive && (
-        <span className='absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400' />
+        <span className='absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-ui-accent-soft0 bg-ui-accent' />
       )}
       {displayLabel}
     </button>
@@ -218,9 +218,9 @@ const EpisodeListItem: React.FC<EpisodeListItemProps> = ({
       title={name}
       className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg border text-left transition-all duration-200 ${
         isActive
-          ? 'bg-green-500 text-white border-green-400 shadow-lg shadow-green-500/25 dark:bg-green-600 cursor-default'
+          ? 'bg-ui-accent-soft0 text-white border-ui-accent shadow-lg shadow-green-500/25 bg-ui-accent cursor-default'
           : isWatched
-            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-700/60 dark:hover:bg-emerald-900/30'
+            ? 'bg-ui-accent-soft text-ui-accent border-ui-accent-soft hover:bg-ui-accent-soft bg-ui-accent-soft text-ui-accent border-ui-accent-soft hover:bg-ui-accent-soft'
             : inactiveRowClass
       }`.trim()}
     >
@@ -229,7 +229,7 @@ const EpisodeListItem: React.FC<EpisodeListItemProps> = ({
           isActive
             ? 'bg-white/20 text-white'
             : isWatched
-              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-300'
+              ? 'bg-ui-accent-soft text-ui-accent text-ui-accent'
               : 'bg-black/5 dark:bg-white/10'
         }`}
       >
@@ -237,7 +237,7 @@ const EpisodeListItem: React.FC<EpisodeListItemProps> = ({
       </span>
       <span className='flex-1 truncate text-sm font-medium'>{name}</span>
       {isWatched && !isActive && (
-        <span className='flex-shrink-0 h-1.5 w-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400' />
+        <span className='flex-shrink-0 h-1.5 w-1.5 rounded-full bg-ui-accent-soft0 bg-ui-accent' />
       )}
     </button>
   );
@@ -335,13 +335,13 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
     : 'text-gray-500 dark:text-gray-400';
   const inactiveTabClass = useLightTextOnBackdrop
     ? 'text-white/85 hover:text-white bg-white/10 dark:bg-white/5 hover:bg-white/15 dark:hover:bg-white/10'
-    : 'text-gray-700 hover:text-green-600 bg-black/5 dark:bg-white/5 dark:text-gray-300 dark:hover:text-green-400 hover:bg-black/3 dark:hover:bg-white/3';
+    : 'text-gray-700 hover:text-ui-accent bg-black/5 dark:bg-white/5 dark:text-gray-300 dark:hover:text-ui-accent hover:bg-black/3 dark:hover:bg-white/3';
   const inactiveActionTextClass = useLightTextOnBackdrop
     ? 'text-white/85 hover:text-white'
-    : 'text-gray-700 hover:text-green-600 dark:text-gray-300 dark:hover:text-green-400';
+    : 'text-gray-700 hover:text-ui-accent dark:text-gray-300 dark:hover:text-ui-accent';
   const iconButtonClass = useLightTextOnBackdrop
     ? 'text-white/85 hover:text-white hover:bg-white/15'
-    : 'text-gray-700 hover:text-green-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-green-400 dark:hover:bg-white/20';
+    : 'text-gray-700 hover:text-ui-accent hover:bg-gray-100 dark:text-gray-300 dark:hover:text-ui-accent dark:hover:bg-white/20';
   const inactiveEpisodeClass = useLightTextOnBackdrop
     ? 'bg-white/15 text-white border-white/10 hover:bg-white/25 hover:scale-105'
     : 'bg-gray-200 text-gray-700 border-transparent hover:bg-gray-300 hover:scale-105 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600';
@@ -1058,7 +1058,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
             className={`flex-1 py-3 px-6 text-center transition-all duration-200 font-medium relative
               ${isRoomMember ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
               ${activeTab === 'episodes'
-                ? 'text-green-600 dark:text-green-400'
+                ? 'text-ui-accent text-ui-accent'
                 : inactiveTabClass
               }
             `.trim()}
@@ -1074,7 +1074,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
           className={`flex-1 py-3 px-6 text-center transition-all duration-200 font-medium relative
             ${isRoomMember ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
             ${activeTab === 'sources'
-              ? 'text-green-600 dark:text-green-400'
+              ? 'text-ui-accent text-ui-accent'
               : inactiveTabClass
             }
           `.trim()}
@@ -1088,7 +1088,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
           onClick={() => setActiveTab('danmaku')}
           className={`flex-1 py-3 px-6 text-center cursor-pointer transition-all duration-200 font-medium
             ${activeTab === 'danmaku'
-              ? 'text-green-600 dark:text-green-400'
+              ? 'text-ui-accent text-ui-accent'
               : inactiveTabClass
             }
           `.trim()}
@@ -1134,14 +1134,14 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                       onClick={() => handleCategoryClick(idx)}
                       className={`w-20 relative py-2 text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 text-center 
                         ${isActive
-                          ? 'text-green-500 dark:text-green-400'
+                          ? 'text-ui-accent text-ui-accent'
                           : inactiveActionTextClass
                         }
                       `.trim()}
                     >
                       {label}
                       {isActive && (
-                        <div className='absolute bottom-0 left-0 right-0 h-0.5 bg-green-500 dark:bg-green-400' />
+                        <div className='absolute bottom-0 left-0 right-0 h-0.5 bg-ui-accent-soft0 bg-ui-accent' />
                       )}
                     </button>
                   );
@@ -1316,7 +1316,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
 
           {sourceSearchLoading && (
             <div className='flex items-center justify-center py-8'>
-              <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-green-500'></div>
+              <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-ui-accent'></div>
               <span className={`ml-2 text-sm ${mutedTextClass}`}>
                 搜索中...
               </span>
@@ -1392,7 +1392,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                         }
                         className={`flex items-start gap-3 px-2 py-3 rounded-lg transition-all select-none duration-200 relative
                       ${isCurrentSource
-                         ? 'bg-green-500/10 dark:bg-green-500/20 border-green-500/30 border'
+                         ? 'bg-ui-accent-soft bg-ui-accent-soft border-ui-accent-soft border'
                           : 'hover:bg-gray-200/50 dark:hover:bg-white/10 hover:scale-[1.02] cursor-pointer'
                           }`.trim()}
                       >
@@ -1454,7 +1454,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                                   const textColorClasses = isUltraHigh
                                     ? 'text-purple-600 dark:text-purple-400'
                                     : isHigh
-                                      ? 'text-green-600 dark:text-green-400'
+                                      ? 'text-ui-accent text-ui-accent'
                                       : 'text-yellow-600 dark:text-yellow-400';
 
                                   return (
@@ -1497,7 +1497,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                                   if (!videoInfo.hasError) {
                                     return (
                                       <div className='flex items-end gap-3 text-xs'>
-                                        <div className='text-green-600 dark:text-green-400 font-medium text-xs'>
+                                        <div className='text-ui-accent text-ui-accent font-medium text-xs'>
                                           {videoInfo.loadSpeed}
                                         </div>
                                         <div className='text-orange-600 dark:text-orange-400 font-medium text-xs'>
@@ -1560,7 +1560,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                 {/* 后台加载提示 */}
                 {backgroundSourcesLoading && (
                   <div className='flex items-center justify-center py-6 border-t border-gray-300 dark:border-gray-700'>
-                    <div className='animate-spin rounded-full h-6 w-6 border-b-2 border-green-500'></div>
+                    <div className='animate-spin rounded-full h-6 w-6 border-b-2 border-ui-accent'></div>
                     <span className={`ml-2 text-sm ${mutedTextClass}`}>
                       正在加载更多播放源...
                     </span>
@@ -1575,7 +1575,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                         );
                       }
                     }}
-                    className={`w-full text-center text-xs ${faintTextClass} hover:text-green-500 dark:hover:text-green-400 transition-colors py-2`}
+                    className={`w-full text-center text-xs ${faintTextClass} hover:text-ui-accent dark:hover:text-ui-accent transition-colors py-2`}
                   >
                     影片匹配有误？点击去搜索
                   </button>

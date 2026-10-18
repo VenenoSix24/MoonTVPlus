@@ -353,7 +353,7 @@ export default function AIChatPanel({
                   className={
                     status === 'failed'
                       ? 'text-red-500'
-                      : 'text-green-500'
+                      : 'text-ui-accent'
                   }
                 >
                   {status === 'failed' ? '✕' : '✓'}

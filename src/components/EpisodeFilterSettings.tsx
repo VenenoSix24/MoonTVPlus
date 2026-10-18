@@ -345,7 +345,7 @@ export default function EpisodeFilterSettings({
                 {config.reverseMode ? (
                   <ToggleRight
                     size={28}
-                    className="text-green-500 hover:text-green-400 transition-colors duration-150"
+                    className="text-ui-accent hover:text-ui-accent transition-colors duration-150"
                   />
                 ) : (
                   <ToggleLeft
@@ -374,20 +374,20 @@ export default function EpisodeFilterSettings({
                 spellCheck="false"
                 data-form-type="other"
                 data-lpignore="true"
-                className="w-full px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg border border-gray-200 dark:border-gray-600 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 transition-all duration-200"
+                className="w-full px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg border border-gray-200 dark:border-gray-600 focus:border-ui-accent focus:outline-none focus:ring-2 focus:ring-ui-accent transition-all duration-200"
               />
               <div className="flex gap-2">
                 <select
                   value={newType}
                   onChange={(e) => setNewType(e.target.value as 'normal' | 'regex')}
-                  className="flex-1 px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg border border-gray-200 dark:border-gray-600 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 transition-all duration-200"
+                  className="flex-1 px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg border border-gray-200 dark:border-gray-600 focus:border-ui-accent focus:outline-none focus:ring-2 focus:ring-ui-accent transition-all duration-200"
                 >
                   <option value="normal">普通模式</option>
                   <option value="regex">正则模式</option>
                 </select>
                 <button
                   onClick={handleAddRule}
-                  className="px-6 py-3 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white rounded-lg transition-all duration-200 flex items-center gap-2 active:scale-[0.98] shadow-sm hover:shadow-md"
+                  className="px-6 py-3 bg-ui-accent hover:brightness-110 active:brightness-95 text-white rounded-lg transition-all duration-200 flex items-center gap-2 active:scale-[0.98] shadow-sm hover:shadow-md"
                 >
                   <Plus size={18} />
                   <span className="font-medium">添加</span>
@@ -446,7 +446,7 @@ export default function EpisodeFilterSettings({
                       {rule.enabled ? (
                         <ToggleRight
                           size={28}
-                          className="text-green-500 hover:text-green-400 transition-colors duration-150"
+                          className="text-ui-accent hover:text-ui-accent transition-colors duration-150"
                         />
                       ) : (
                         <ToggleLeft
@@ -504,7 +504,7 @@ export default function EpisodeFilterSettings({
             <button
               onClick={handleSave}
               disabled={saving}
-              className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:bg-gray-300 disabled:cursor-not-allowed dark:disabled:bg-gray-700 text-white rounded-xl font-medium transition-all duration-200 active:scale-[0.98] shadow-sm hover:shadow-md disabled:shadow-none"
+              className="flex-1 px-4 py-3 bg-ui-accent hover:brightness-110 active:brightness-95 disabled:bg-gray-300 disabled:cursor-not-allowed dark:disabled:bg-gray-700 text-white rounded-xl font-medium transition-all duration-200 active:scale-[0.98] shadow-sm hover:shadow-md disabled:shadow-none"
             >
               {saving ? (
                 <span className="inline-flex items-center gap-2">
