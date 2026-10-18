@@ -2351,3 +2351,18 @@ html[data-loading-style='grid'] .mtv-err-box {
     #0a0a0b 62%
   );
 }
+
+/* 播放器容器：原来只有圆角 + 一个 dark: 才有的描边，画面浮不起来。
+   换成令牌圆角 + 常态细描边 + 一层环境投影。不加 overflow:hidden —— 播放器的
+   加载蒙层和控制条是绝对定位的，裁掉会出问题。 */
+.mtv-play-player {
+  border-radius: var(--ui-r-md);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 26px 60px -20px rgba(0, 0, 0, 0.9);
+}
+
+/* 右侧栏：和播放器同一套圆角/描边 */
+.mtv-play-rail {
+  border-radius: var(--ui-r-md);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}

@@ -10920,7 +10920,7 @@ function PlayPageClient() {
         </div>
       )}
 
-      <div className='relative z-10 flex flex-col gap-3 py-4 px-5 lg:px-[3rem] 2xl:px-20'>
+      <div className='relative z-10 flex flex-col gap-3 py-5 px-[var(--ui-gutter)]'>
         {/* 第一行：影片标题 */}
         <div className='py-1'>
           <h1 className="text-xl font-semibold flex items-center gap-2 flex-wrap text-white">
@@ -11004,7 +11004,7 @@ function PlayPageClient() {
           >
             {/* 播放器 */}
             <div
-              className={`transition-all duration-300 ease-in-out rounded-xl border border-white/0 dark:border-white/30 flex flex-col ${isEpisodeSelectorCollapsed ? 'col-span-1' : 'md:col-span-3'
+              className={`transition-all duration-300 ease-in-out flex flex-col ${isEpisodeSelectorCollapsed ? 'col-span-1' : 'md:col-span-3'
                 }`}
             >
               {/* 播放器容器 */}
