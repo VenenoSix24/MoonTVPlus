@@ -84,6 +84,7 @@ export default function BannerCarousel({
   const [dataSource, setDataSource] = useState<string>(''); // 当前数据源
   const [trailersLoaded, setTrailersLoaded] = useState(false); // 预告片是否已加载
   const [isMuted, setIsMuted] = useState(true); // 视频是否静音（默认静音）
+  const [titleLogo, setTitleLogo] = useState<string | null>(null); // TMDB 官方标题字
   const [bannerHeightScale, setBannerHeightScale] =
     useState<HomeBannerHeightScale>('1'); // 轮播图高度倍率
   const [isMobileView, setIsMobileView] = useState(false);
@@ -427,6 +428,45 @@ export default function BannerCarousel({
     skipNextAutoPlay,
     currentIndex,
   ]);
+
+  // TMDB 数据源下取当前影片的官方标题字（key art logo）——就是 Netflix / Apple TV+
+  // 放在 Hero 上的那个东西。豆瓣 / TX 没有这个资产，取不到就保持 null，标题回落到
+  // 文字，行为和以前完全一致。
+  useEffect(() => {
+    const item = items[currentIndex];
+    if (dataSource !== 'TMDB' || !item) {
+      setTitleLogo(null);
+      return;
+    }
+
+    const kind = item.media_type === 'tv' ? 'tv' : 'movie';
+    const zh = /[\u3400-\u9fff\uf900-\ufaff]/.test(item.title) ? 1 : 0;
+    const cacheKey = `${kind}:${item.id}:${zh}`;
+
+    if (heroLogoCache.has(cacheKey)) {
+      setTitleLogo(heroLogoCache.get(cacheKey) ?? null);
+      return;
+    }
+
+    const controller = new AbortController();
+    fetch(`/api/tmdb/logo?id=${item.id}&type=${kind}&zh=${zh}`, {
+      signal: controller.signal,
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        const src = data?.logo_path
+          ? getTMDBImageUrl(data.logo_path, 'w500')
+          : null;
+        heroLogoCache.set(cacheKey, src);
+        setTitleLogo(src);
+      })
+      .catch(() => {
+        // 取不到标题字就回落到文字标题，不打扰用户
+        if (!controller.signal.aborted) setTitleLogo(null);
+      });
+
+    return () => controller.abort();
+  }, [dataSource, items, currentIndex]);
   const goToPrevious = useCallback(() => {
     isManualChange.current = true;
     setSkipNextAutoPlay(true);
@@ -621,7 +661,22 @@ export default function BannerCarousel({
                 : undefined
             }
           >
-            <span ref={titleTextRef}>{currentItem.title}</span>
+            {/* 文字始终留在 DOM 里：它是标题字的无障碍名称，而且移动端的自动缩字号
+                逻辑靠 titleTextRef 量它的行数，拿掉就会失效。 */}
+            <span
+              ref={titleTextRef}
+              className={titleLogo ? 'sr-only' : undefined}
+            >
+              {currentItem.title}
+            </span>
+            {titleLogo && (
+              <ProxyImage
+                originalSrc={titleLogo}
+                alt=''
+                aria-hidden='true'
+                className='mtv-hero-logo'
+              />
+            )}
           </h2>
 
           <div className='mtv-hero-meta flex items-center gap-2 md:gap-3 text-sm md:text-base flex-wrap'>
@@ -752,6 +807,9 @@ export default function BannerCarousel({
 
 /** 宽高比达到这个值就按横版剧照处理，否则视为竖版海报。 */
 const WIDE_ART_MIN_RATIO = 1.4;
+
+/** 标题字按「类型:id:语言」缓存。轮播每 5 秒切一次，来回切不该反复打接口。 */
+const heroLogoCache = new Map<string, string | null>();
 
 /**
  * Hero 画面。

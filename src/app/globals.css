@@ -1527,6 +1527,7 @@ html[data-loading-style='grid'] .mtv-err-box {
   --hero-ghost-bg: rgba(255, 255, 255, 0.55);
   --hero-ghost-bg-hover: rgba(255, 255, 255, 0.82);
   --hero-ghost-hair: rgba(14, 21, 36, 0.16);
+  --hero-title-shadow: rgba(255, 255, 255, 0.7);
 }
 
 .dark {
@@ -1558,6 +1559,7 @@ html[data-loading-style='grid'] .mtv-err-box {
   --hero-ghost-bg: rgba(255, 255, 255, 0.16);
   --hero-ghost-bg-hover: rgba(255, 255, 255, 0.28);
   --hero-ghost-hair: rgba(255, 255, 255, 0.3);
+  --hero-title-shadow: rgba(0, 0, 0, 0.55);
   --hero-panel-bg: transparent;
   --hero-panel-blur: none;
   --hero-panel-shadow: none;
@@ -1708,12 +1710,29 @@ html[data-loading-style='grid'] .mtv-err-box {
      没有可收的空隙——再收 -0.04em 就是让相邻汉字重叠 4%，笔画会贴到一起。
      所以中文归零，交给字体本来的字距。lang 由组件按片名内容判定。 */
   letter-spacing: -0.04em;
+  /* 片名压在任何画面上都得读得清。Netflix 的标题 logo 自带描边/发光，我们用
+     一层极淡的投影做同等的事：近处一层收紧边缘，远处一层把字从花哨底上托起来。 */
+  text-shadow: 0 1px 2px var(--hero-title-shadow),
+    0 10px 30px var(--hero-title-shadow);
   color: var(--hero-ink);
   text-wrap: balance;
 }
 
 .mtv-hero-title:lang(zh) {
   letter-spacing: 0;
+}
+
+/* 官方标题字（TMDB logos）。Netflix / Apple TV+ 的 Hero 片名走的就是这条：
+   用发行方做的品牌资产，而不是拿 UI 字体去打片名。取不到时组件回落到文字标题。 */
+.mtv-hero-logo {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: min(100%, 34rem);
+  max-height: clamp(2.25rem, 5vw, 5rem);
+  object-fit: contain;
+  /* 透明 PNG 用 drop-shadow 才贴着字形轮廓，box-shadow 会描出一个矩形 */
+  filter: drop-shadow(0 2px 12px var(--hero-title-shadow));
 }
 
 .mtv-hero-meta {
