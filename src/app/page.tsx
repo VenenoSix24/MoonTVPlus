@@ -568,6 +568,7 @@ function HomeClient() {
   const renderModule = (moduleId: string) => {
     switch (moduleId) {
       case 'hotMovies':
+        if (!loading && hotMovies.length === 0) return null;
         return (
           <section key='hotMovies' className='mtv-row'>
             <div className='mb-4 flex items-center justify-between'>
@@ -605,7 +606,7 @@ function HomeClient() {
         );
 
       case 'hotDuanju':
-        if (hotDuanju.length === 0) return null;
+        if (!loading && hotDuanju.length === 0) return null;
         return (
           <section key='hotDuanju' className='mtv-row'>
             <div className='mb-4 flex items-center justify-between'>
@@ -652,7 +653,18 @@ function HomeClient() {
           </section>
         );
 
-      case 'bangumiCalendar':
+      case 'bangumiCalendar': {
+        const today = new Date();
+        const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const todayAnimes =
+          bangumiCalendarData
+            .find((item) => item.weekday.en === weekdays[today.getDay()])
+            ?.items.filter((anime) => anime.images) || [];
+
+        // 这一行只显示当天更新的番，「今天没有」是常态而不是异常。空态必须和别的行
+        // 一样收起来，否则会留下「标题 + 查看更多 + 空轨道」的空壳。
+        if (!loading && todayAnimes.length === 0) return null;
+
         return (
           <section key='bangumiCalendar' className='mtv-row'>
             <div className='mb-4 flex items-center justify-between'>
@@ -672,50 +684,34 @@ function HomeClient() {
                       <div className='mt-2 h-4 bg-gray-200 rounded animate-pulse dark:bg-gray-800'></div>
                     </div>
                   ))
-                : (() => {
-                    const today = new Date();
-                    const weekdays = [
-                      'Sun',
-                      'Mon',
-                      'Tue',
-                      'Wed',
-                      'Thu',
-                      'Fri',
-                      'Sat',
-                    ];
-                    const currentWeekday = weekdays[today.getDay()];
-                    const todayAnimes =
-                      bangumiCalendarData
-                        .find((item) => item.weekday.en === currentWeekday)
-                        ?.items.filter((anime) => anime.images) || [];
-
-                    return todayAnimes.map((anime, index) => (
-                      <div key={`${anime.id}-${index}`} className='mtv-card-md'>
-                        <VideoCard
-                          hoverPanel
-                          from='douban'
-                          title={anime.name_cn || anime.name}
-                          poster={
-                            anime.images?.large ||
-                            anime.images?.common ||
-                            anime.images?.medium ||
-                            anime.images?.small ||
-                            anime.images?.grid ||
-                            ''
-                          }
-                          douban_id={anime.id}
-                          rate={anime.rating?.score?.toFixed(1) || ''}
-                          year={anime.air_date?.split('-')?.[0] || ''}
-                          isBangumi={true}
-                        />
-                      </div>
-                    ));
-                  })()}
+                : todayAnimes.map((anime, index) => (
+                    <div key={`${anime.id}-${index}`} className='mtv-card-md'>
+                      <VideoCard
+                        hoverPanel
+                        from='douban'
+                        title={anime.name_cn || anime.name}
+                        poster={
+                          anime.images?.large ||
+                          anime.images?.common ||
+                          anime.images?.medium ||
+                          anime.images?.small ||
+                          anime.images?.grid ||
+                          ''
+                        }
+                        douban_id={anime.id}
+                        rate={anime.rating?.score?.toFixed(1) || ''}
+                        year={anime.air_date?.split('-')?.[0] || ''}
+                        isBangumi={true}
+                      />
+                    </div>
+                  ))}
             </ScrollableRow>
           </section>
         );
+      }
 
       case 'hotTvShows':
+        if (!loading && hotTvShows.length === 0) return null;
         return (
           <section key='hotTvShows' className='mtv-row'>
             <div className='mb-4 flex items-center justify-between'>
@@ -753,6 +749,7 @@ function HomeClient() {
         );
 
       case 'hotVarietyShows':
+        if (!loading && hotVarietyShows.length === 0) return null;
         return (
           <section key='hotVarietyShows' className='mtv-row'>
             <div className='mb-4 flex items-center justify-between'>
@@ -792,7 +789,7 @@ function HomeClient() {
         );
 
       case 'upcomingContent':
-        if (upcomingContent.length === 0) return null;
+        if (!loading && upcomingContent.length === 0) return null;
         return (
           <section key='upcomingContent' className='mtv-row'>
             <div className='mb-4 flex items-center justify-between'>
