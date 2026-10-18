@@ -33,10 +33,14 @@
   --ui-elev-2: 0 10px 28px -12px rgba(14, 21, 36, 0.2);
   --ui-elev-3: 0 28px 64px -20px rgba(14, 21, 36, 0.3);
 
-  /* 圆角 */
-  --ui-r-sm: 6px;
-  --ui-r-md: 10px;
+  /* 圆角阶梯。档位对齐 Apple HIG 的常用值：控件 8 / 卡片 12 / 面板 16 / 大容器 24。
+     原来只有 6/10/16 三档，且 6px 在文件里定义了两遍，xs 与 md 全站零消费。 */
+  --ui-r-xs: 4px;
+  --ui-r-sm: 8px;
+  --ui-r-md: 12px;
   --ui-r-lg: 16px;
+  --ui-r-xl: 24px;
+  --ui-r-full: 9999px;
 
   /* 动效 */
   --ui-dur-1: 140ms;
@@ -52,16 +56,19 @@
   --ui-header-h: 64px;
   --ui-nav: color-mix(in srgb, var(--ui-bg) 92%, transparent);
 
-  /* ---- 尺度阶梯：字号 / 间距 / 卡片宽 ---- */
-  --ui-fs-display: clamp(2rem, 4.6vw, 4.6rem);
-  --ui-fs-h1: clamp(1.5rem, 2.2vw, 2rem);
-  --ui-fs-h2: clamp(1.05rem, 1.35vw, 1.3rem);
-  --ui-fs-body: 0.875rem;
-  --ui-fs-meta: 0.75rem;
-  --ui-fs-micro: 0.6875rem;
+  /* ---- 字号阶梯 ----
+     命名与档位对齐 Apple HIG 的文本样式：
+     LargeTitle 34 / Title1 28 / Title2 22 / Headline 17 / Body 15 /
+     Caption1 12 / Caption2 11。大标题保留 clamp 做流式缩放，小字用定值。 */
+  --ui-fs-display: clamp(2rem, 4.6vw, 4.6rem); /* 32 → 74，Hero 主标题 */
+  --ui-fs-h1: clamp(1.5rem, 2.2vw, 2rem); /* 24 → 32，区块标题 */
+  --ui-fs-h2: 1.125rem; /* 18，行标题（Headline 17 上浮一档做中文可读性） */
+  --ui-fs-body: 0.9375rem; /* 15，正文 / 按钮 */
+  --ui-fs-meta: 0.75rem; /* 12，Caption 1，元信息 */
+  --ui-fs-micro: 0.6875rem; /* 11，Caption 2 */
   /* 密集角标专用：卡片上的年份 / 集数 / 来源这类压在画面上的小字。
      原来是 8px / 9px / 10px 三种任意值，8px 基本不可读。 */
-  --ui-fs-nano: 0.625rem;
+  --ui-fs-nano: 0.625rem; /* 10，比 HIG 下限再低一档，仅用于画面角标 */
 
   --ui-sp-1: 4px;
   --ui-sp-2: 8px;
@@ -71,8 +78,6 @@
   --ui-sp-6: 32px;
   --ui-sp-7: 48px;
   --ui-sp-8: 64px;
-
-  --ui-r-xs: 6px;
 
   /* 卡片只有三档尺度：紧凑 / 竖版默认 / 横版宽。
      原来是 96/100/120/140/180/200 六种，同一视觉位六个尺寸。 */
@@ -1349,14 +1354,14 @@ html[data-loading-style='grid'] .mtv-err-box {
 
 .mtv-row-title {
   margin: 0;
-  font-size: 1.125rem;
+  font-size: var(--ui-fs-h2);
   font-weight: 600;
   letter-spacing: -0.012em;
   color: var(--ui-ink);
 }
 
 .mtv-row-sub {
-  font-size: 0.75rem;
+  font-size: var(--ui-fs-meta);
   color: var(--ui-ink-3);
 }
 
@@ -1367,7 +1372,7 @@ html[data-loading-style='grid'] .mtv-err-box {
   gap: 2px;
   padding: 4px 8px;
   border-radius: var(--ui-r-sm);
-  font-size: 0.75rem;
+  font-size: var(--ui-fs-meta);
   font-weight: 500;
   color: var(--ui-ink-3);
   transition: color var(--ui-dur-1) var(--ui-ease),
@@ -1499,13 +1504,14 @@ html[data-loading-style='grid'] .mtv-err-box {
    原来的黑遮罩 + 白字。整组取值走 --hero-* 令牌，随 .dark 切换。
    ========================================================================== */
 :root {
-  /* 浅色下不再拿白遮罩糊画面——那只会把海报洗成一片雾。
-     只留底部一小段融入页面的过渡，文字改由磨砂面板承载，画面本身保持原样。 */
+  /* 浅色下不拿白遮罩糊画面——那只会把海报洗成一片雾。只留底部一小段融入页面的
+     过渡。注意这三个停靠点必须同色系：原来中间那档写的是纯白 50%，比页面底色
+     还亮，Hero 底部就多出一条比页面更白的雾带。 */
   --hero-scrim: linear-gradient(
     0deg,
     var(--ui-bg) 0%,
-    rgba(255, 255, 255, 0.5) 7%,
-    transparent 24%
+    color-mix(in srgb, var(--ui-bg) 60%, transparent) 6%,
+    transparent 18%
   );
   --hero-ink: #0e1524;
   --hero-ink-2: rgba(14, 21, 36, 0.78);
@@ -1522,6 +1528,9 @@ html[data-loading-style='grid'] .mtv-err-box {
   --hero-chip-ink: #0e1524;
   --hero-ctl-bg: rgba(255, 255, 255, 0.72);
   --hero-dot: rgba(14, 21, 36, 0.3);
+  --hero-ghost-bg: rgba(255, 255, 255, 0.55);
+  --hero-ghost-bg-hover: rgba(255, 255, 255, 0.82);
+  --hero-ghost-hair: rgba(14, 21, 36, 0.16);
 }
 
 .dark {
@@ -1549,6 +1558,9 @@ html[data-loading-style='grid'] .mtv-err-box {
   --hero-chip-ink: #ffffff;
   --hero-ctl-bg: rgba(0, 0, 0, 0.42);
   --hero-dot: rgba(255, 255, 255, 0.4);
+  --hero-ghost-bg: rgba(255, 255, 255, 0.16);
+  --hero-ghost-bg-hover: rgba(255, 255, 255, 0.28);
+  --hero-ghost-hair: rgba(255, 255, 255, 0.3);
   --hero-panel-bg: transparent;
   --hero-panel-blur: none;
   --hero-panel-shadow: none;
@@ -1628,11 +1640,12 @@ html[data-loading-style='grid'] .mtv-err-box {
     0 0 0 1px rgba(255, 255, 255, 0.14);
 }
 
-/* 宽屏下 Hero 会拉到 3:1 以上，海报贴最右边会让中间空出一大块。把海报挪到
-   「文字块右侧剩余空间的正中」，左右留白接近，构成才平衡。 */
+/* 宽屏下 Hero 会拉到 3:1 以上，海报必须离开最右边缘，否则中间空一大块、
+   视觉重心整体偏左。600px 这个偏移是量出来的：1660px 视口下留白 230px，
+   和文字块到海报之间的间距接近，构成才平衡。 */
 @media (min-width: 1200px) {
   .mtv-hero-art img.mtv-hero-art-subject {
-    right: clamp(calc(var(--ui-gutter) + 4rem), calc(50vw - 500px), 560px);
+    right: clamp(calc(var(--ui-gutter) + 4rem), calc(50vw - 600px), 480px);
   }
 }
 
@@ -1670,7 +1683,7 @@ html[data-loading-style='grid'] .mtv-err-box {
 
 .mtv-hero-title {
   margin: 0;
-  font-size: clamp(2rem, 4.6vw, 4.6rem);
+  font-size: var(--ui-fs-display);
   font-weight: 800;
   line-height: 1.02;
   letter-spacing: -0.04em;
@@ -1685,7 +1698,7 @@ html[data-loading-style='grid'] .mtv-err-box {
 .mtv-hero-chip {
   padding: 2px 9px;
   border-radius: 9999px;
-  font-size: 0.75rem;
+  font-size: var(--ui-fs-meta);
   font-weight: 600;
   background-color: var(--hero-chip-bg);
   color: var(--hero-chip-ink);
@@ -1695,7 +1708,7 @@ html[data-loading-style='grid'] .mtv-err-box {
 .mtv-hero-score {
   padding: 2px 9px;
   border-radius: 9999px;
-  font-size: 0.75rem;
+  font-size: var(--ui-fs-meta);
   font-weight: 700;
   background-color: var(--ui-accent);
   color: var(--ui-accent-ink);
@@ -1711,7 +1724,7 @@ html[data-loading-style='grid'] .mtv-err-box {
   height: 44px;
   padding: 0 24px;
   border-radius: var(--ui-r-sm);
-  font-size: 0.875rem;
+  font-size: var(--ui-fs-body);
   font-weight: 650;
   background-color: var(--hero-btn-bg);
   color: var(--hero-btn-ink);
@@ -1726,6 +1739,27 @@ html[data-loading-style='grid'] .mtv-err-box {
   fill: currentColor;
 }
 
+/* 次按钮：ghost 风格。主按钮实心、次按钮描边，高度和圆角完全一致——
+   Apple 靠填充区分主次，不靠尺寸。 */
+.mtv-hero-more {
+  align-items: center;
+  gap: 6px;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: var(--ui-r-sm);
+  font-size: var(--ui-fs-body);
+  font-weight: 600;
+  color: var(--hero-ink);
+  border: 1px solid var(--hero-ghost-hair);
+  background-color: var(--hero-ghost-bg);
+  backdrop-filter: blur(8px);
+  transition: background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-hero-more:hover {
+  background-color: var(--hero-ghost-bg-hover);
+}
+
 .mtv-hero-ctl {
   align-items: center;
   justify-content: center;
@@ -1736,16 +1770,42 @@ html[data-loading-style='grid'] .mtv-err-box {
   transition: background-color var(--ui-dur-1) var(--ui-ease);
 }
 
+/* 指示器改成细条：每条等宽，当前条按自动播放时长实时填充，比一排静态圆点
+   更能说明「还剩多久切下一张」。 */
 .mtv-hero-dot {
-  height: 6px;
-  border-radius: 9999px;
+  position: relative;
+  width: 26px;
+  height: 3px;
+  overflow: hidden;
+  border-radius: var(--ui-r-full);
   background-color: var(--hero-dot);
-  transition: width var(--ui-dur-2) var(--ui-ease);
 }
 
-.mtv-hero-dot-active {
-  width: 26px;
+.mtv-hero-dot-fill {
+  position: absolute;
+  inset: 0;
   background-color: var(--ui-accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+/* 时长由 JS 按 autoPlayInterval 内联写入，这里给个兜底值 */
+.mtv-hero-dot-fill-active {
+  animation: mtv-hero-dot-fill 5000ms linear forwards;
+}
+
+@keyframes mtv-hero-dot-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* 悬停暂停自动播放时进度条也停住，两边节奏才对得上 */
+.mtv-hero:hover .mtv-hero-dot-fill-active {
+  animation-play-state: paused;
 }
 
 /* Hero 高度向 16:9 靠。TMDB 的 backdrop 是 16:9，容器越扁裁掉得越多，

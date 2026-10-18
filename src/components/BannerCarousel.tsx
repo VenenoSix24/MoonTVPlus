@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Play,
@@ -76,6 +77,8 @@ export default function BannerCarousel({
   const [isLoading, setIsLoading] = useState(true);
   const [shouldLoad, setShouldLoad] = useState(!delayLoad); // 是否应该开始加载数据
   const [isPaused, setIsPaused] = useState(false);
+  const [synopsisOpen, setSynopsisOpen] = useState(false); // Hero 简介是否展开
+  const [cycle, setCycle] = useState(0); // 自动播放计时器代次，用来同步指示器动画
   const [skipNextAutoPlay, setSkipNextAutoPlay] = useState(false); // 跳过下一次自动播放
   const [isYouTubeAccessible, setIsYouTubeAccessible] = useState(false); // YouTube连通性（默认false，检查后再决定）
   const [enableTrailers, setEnableTrailers] = useState(false); // 是否启用预告片（默认关闭）
@@ -413,6 +416,23 @@ export default function BannerCarousel({
     return () => clearInterval(timer);
   }, [items.length, isPaused, autoPlayInterval, skipNextAutoPlay]);
 
+  // 进度条的动画要和自动播放计时器同一个起点：计时器每次重建就 bump cycle，
+  // 指示器靠 key 重挂载来重启动画，条走满的瞬间正好是切片的瞬间。
+  useEffect(() => {
+    if (!items.length || isPaused) return;
+    setCycle((c) => c + 1);
+  }, [
+    items.length,
+    isPaused,
+    autoPlayInterval,
+    skipNextAutoPlay,
+    currentIndex,
+  ]);
+
+  // 换片时收起简介，免得上一张的展开状态带到下一张
+  useEffect(() => {
+    setSynopsisOpen(false);
+  }, [currentIndex]);
   const goToPrevious = useCallback(() => {
     isManualChange.current = true;
     setSkipNextAutoPlay(true);
@@ -622,22 +642,45 @@ export default function BannerCarousel({
           </div>
 
           {currentItem.overview && (
-            <p className='mtv-hero-syn text-sm md:text-base line-clamp-2 drop-shadow-md'>
+            <p
+              className={`mtv-hero-syn text-sm md:text-base drop-shadow-md ${
+                synopsisOpen ? '' : 'line-clamp-2'
+              }`}
+            >
               {currentItem.overview}
             </p>
           )}
 
-          {/* PC端播放按钮 */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handlePlay(currentItem.title);
-            }}
-            className='mtv-hero-play hidden md:flex items-center gap-2 pointer-events-auto'
-          >
-            <Play className='w-5 h-5' />
-            立即播放
-          </button>
+          {/* PC端操作区：主按钮实心 + 次按钮描边，高度与圆角一致 */}
+          <div className='pointer-events-auto hidden md:flex items-center gap-3'>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handlePlay(currentItem.title);
+              }}
+              className='mtv-hero-play flex items-center gap-2'
+            >
+              <Play className='w-5 h-5' />
+              立即播放
+            </button>
+            {currentItem.overview && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSynopsisOpen((v) => !v);
+                }}
+                className='mtv-hero-more flex items-center'
+                aria-expanded={synopsisOpen}
+              >
+                {synopsisOpen ? '收起' : '更多信息'}
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform duration-200 ${
+                    synopsisOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -672,17 +715,28 @@ export default function BannerCarousel({
         </button>
       )}
 
-      {/* 指示器 */}
+      {/* 指示器：细条进度，当前条按自动播放时长实时填充 */}
       <div className='absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2'>
         {items.map((_, index) => (
           <button
             key={index}
             onClick={() => goToSlide(index)}
-            className={`mtv-hero-dot ${
-              index === currentIndex ? 'mtv-hero-dot-active' : 'w-1.5'
-            }`}
+            className='mtv-hero-dot'
             aria-label={`跳转到第 ${index + 1} 张`}
-          />
+            aria-current={index === currentIndex}
+          >
+            <span
+              key={cycle}
+              className={`mtv-hero-dot-fill ${
+                index === currentIndex ? 'mtv-hero-dot-fill-active' : ''
+              }`}
+              style={
+                index === currentIndex
+                  ? { animationDuration: `${autoPlayInterval}ms` }
+                  : undefined
+              }
+            />
+          </button>
         ))}
       </div>
     </div>
