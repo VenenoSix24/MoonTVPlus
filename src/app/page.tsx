@@ -588,6 +588,7 @@ function HomeClient() {
                 : hotMovies.map((movie) => (
                     <div key={movie.id} className='mtv-card-md'>
                       <VideoCard
+                        hoverPanel
                         id={movie.id}
                         poster={movie.poster}
                         title={movie.title}
@@ -628,6 +629,7 @@ function HomeClient() {
                       className='mtv-card-md'
                     >
                       <VideoCard
+                        hoverPanel
                         id={duanju.id}
                         source={duanju.source}
                         poster={duanju.poster}
@@ -690,6 +692,7 @@ function HomeClient() {
                     return todayAnimes.map((anime, index) => (
                       <div key={`${anime.id}-${index}`} className='mtv-card-md'>
                         <VideoCard
+                          hoverPanel
                           from='douban'
                           title={anime.name_cn || anime.name}
                           poster={
@@ -733,6 +736,7 @@ function HomeClient() {
                 : hotTvShows.map((tvShow) => (
                     <div key={tvShow.id} className='mtv-card-md'>
                       <VideoCard
+                        hoverPanel
                         id={tvShow.id}
                         poster={tvShow.poster}
                         title={tvShow.title}
@@ -769,6 +773,7 @@ function HomeClient() {
                 : hotVarietyShows.map((varietyShow) => (
                     <div key={varietyShow.id} className='mtv-card-md'>
                       <VideoCard
+                        hoverPanel
                         id={varietyShow.id}
                         poster={varietyShow.poster}
                         title={varietyShow.title}
@@ -800,6 +805,7 @@ function HomeClient() {
                   className='mtv-card-md'
                 >
                   <VideoCard
+                    hoverPanel
                     title={item.title}
                     poster={processImageUrl(getTMDBImageUrl(item.poster_path))}
                     year={item.release_date?.split('-')?.[0] || ''}

@@ -96,6 +96,9 @@ export interface VideoCardProps {
   seasonNumber?: number; // 季度编号
   seasonName?: string; // 季度名称
   orientation?: 'vertical' | 'horizontal'; // 卡片方向
+  /** 悬浮信息面板：首页各行动用，桌面端悬浮时从卡片底部滑出元信息。
+      不传则行为完全不变（搜索 / 豆瓣 / 播放页不受影响）。 */
+  hoverPanel?: boolean;
   playTime?: number; // 当前播放时间（秒）
   totalTime?: number; // 总时长（秒）
   cmsData?: {
@@ -134,6 +137,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
       rate,
       type = '',
       isBangumi = false,
+      hoverPanel = false,
       isAnime = false,
       typeName,
       isAggregate = false,
@@ -1163,6 +1167,28 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                 }}
               />
             </div>
+
+            {/* 悬浮信息面板（首页各行动用 · 方案 A：卡内展开）
+                绝对定位在卡片内部，滚动行的 overflow 裁不到它，行距也不用改。
+                只放元信息，不接操作——卡片已有的居中播放键保持不变，零风险。 */}
+            {hoverPanel && (
+              <div className='mtv-card-panel'>
+                <div className='mtv-card-panel-meta'>
+                  {rate && (
+                    <span className='mtv-card-panel-match'>{rate} 分</span>
+                  )}
+                  {year && <span>{year}</span>}
+                  {episodes ? (
+                    <span>{episodes} 集</span>
+                  ) : type ? (
+                    <span>{type === 'tv' ? '剧集' : '电影'}</span>
+                  ) : null}
+                  {source_names && source_names.length > 1 && (
+                    <span>{source_names.length} 个来源</span>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* 播放按钮或上映倒计时 */}
             {isUpcoming && daysUntilRelease !== null ? (

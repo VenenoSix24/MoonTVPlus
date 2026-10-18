@@ -2049,3 +2049,86 @@ html[data-loading-style='grid'] .mtv-err-box {
     font-size: var(--ui-fs-meta);
   }
 }
+
+/* ==========================================================================
+   卡片悬浮信息面板（方案 A · 卡内展开）
+   --------------------------------------------------------------------------
+   面板绝对定位在卡片内部、从底部滑出，所以滚动行的 overflow 裁不到它，
+   行距也不用改——这正是选 A 而不是 Netflix 式外扩的原因。
+   触屏没有 hover，这里直接用 @media (hover: hover) 兜住，不依赖 Tailwind 的
+   future.hoverOnlyWhenSupported（实测那个只覆盖了一部分规则）。
+   ========================================================================== */
+.mtv-card-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  padding: var(--ui-sp-3);
+  border-radius: 0 0 var(--ui-r-md) var(--ui-r-md);
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.96),
+    rgba(0, 0, 0, 0.72) 70%,
+    transparent
+  );
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity var(--ui-dur-2) var(--ui-ease-out),
+    transform var(--ui-dur-2) var(--ui-ease-out);
+  pointer-events: none;
+}
+
+@media (hover: hover) {
+  .group:hover .mtv-card-panel {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+}
+
+.mtv-card-panel-acts {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-sp-2);
+  margin-bottom: var(--ui-sp-2);
+}
+
+.mtv-card-panel-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--ui-r-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-card-panel-btn-primary {
+  background: #fff;
+  color: #000;
+}
+
+.mtv-card-panel-btn-ghost {
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: #fff;
+}
+
+.mtv-card-panel-btn-ghost:hover {
+  border-color: #fff;
+}
+
+.mtv-card-panel-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: var(--ui-fs-nano);
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.mtv-card-panel-meta .mtv-card-panel-match {
+  color: #4ade80;
+  font-weight: 700;
+}
