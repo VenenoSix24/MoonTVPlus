@@ -593,7 +593,11 @@ export default function BannerCarousel({
               </div>
             ) : (
               /* 显示图片。竖版海报走双层处理，见 HeroArt */
-              <HeroArt item={item} priority={index === 0} />
+              <HeroArt
+                item={item}
+                priority={index === 0}
+                active={index === currentIndex}
+              />
             )}
             {/* 渐变遮罩 */}
             <div className='mtv-hero-scrim absolute inset-0'></div>
@@ -758,7 +762,15 @@ const WIDE_ART_MIN_RATIO = 1.4;
  * 判型先按「两个字段相同即手里只有海报」同步给初值，图加载完再用实际宽高比校正，
  * 数据源换图型时不用改代码。
  */
-function HeroArt({ item, priority }: { item: BannerItem; priority: boolean }) {
+function HeroArt({
+  item,
+  priority,
+  active,
+}: {
+  item: BannerItem;
+  priority: boolean;
+  active: boolean;
+}) {
   const src = getImageUrl(item.backdrop_path || item.poster_path);
   const [isPoster, setIsPoster] = useState(
     () => !item.backdrop_path || item.backdrop_path === item.poster_path
@@ -777,7 +789,11 @@ function HeroArt({ item, priority }: { item: BannerItem; priority: boolean }) {
         alt={item.title}
         loading={priority ? 'eager' : 'lazy'}
         onLoad={handleLoad}
-        className={isPoster ? 'mtv-hero-art-fill' : 'mtv-hero-art-cover'}
+        className={
+          isPoster
+            ? `mtv-hero-art-fill${active ? ' mtv-hero-art-fill-active' : ''}`
+            : 'mtv-hero-art-cover'
+        }
       />
       {isPoster && (
         <>

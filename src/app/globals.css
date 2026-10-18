@@ -1504,15 +1504,10 @@ html[data-loading-style='grid'] .mtv-err-box {
    原来的黑遮罩 + 白字。整组取值走 --hero-* 令牌，随 .dark 切换。
    ========================================================================== */
 :root {
-  /* 浅色下不拿白遮罩糊画面——那只会把海报洗成一片雾。只留底部一小段融入页面的
-     过渡。注意这三个停靠点必须同色系：原来中间那档写的是纯白 50%，比页面底色
-     还亮，Hero 底部就多出一条比页面更白的雾带。 */
-  --hero-scrim: linear-gradient(
-    0deg,
-    var(--ui-bg) 0%,
-    color-mix(in srgb, var(--ui-bg) 60%, transparent) 6%,
-    transparent 18%
-  );
+  /* 浅色下的底部过渡只负责收尾：Hero 底边经径向遮罩后已经是 91% 页面底色，
+     这里 6% 就够。原来给到 18%（100px）是在补救一条本来就暗的边，那层渐变
+     本身就是看得见的白雾。 */
+  --hero-scrim: linear-gradient(0deg, var(--ui-bg) 0%, transparent 6%);
   --hero-ink: #0e1524;
   --hero-ink-2: rgba(14, 21, 36, 0.78);
   --hero-art-filter: none;
@@ -1524,7 +1519,8 @@ html[data-loading-style='grid'] .mtv-err-box {
   --hero-btn-bg: #0e1524;
   --hero-btn-ink: #ffffff;
   --hero-btn-bg-hover: #2a2a30;
-  --hero-chip-bg: rgba(14, 21, 36, 0.08);
+  --hero-chip-bg: rgba(14, 21, 36, 0.13);
+  --hero-chip-hair: rgba(14, 21, 36, 0.12);
   --hero-chip-ink: #0e1524;
   --hero-ctl-bg: rgba(255, 255, 255, 0.72);
   --hero-dot: rgba(14, 21, 36, 0.3);
@@ -1555,6 +1551,7 @@ html[data-loading-style='grid'] .mtv-err-box {
   --hero-btn-ink: #000000;
   --hero-btn-bg-hover: rgba(255, 255, 255, 0.82);
   --hero-chip-bg: rgba(255, 255, 255, 0.16);
+  --hero-chip-hair: rgba(255, 255, 255, 0.22);
   --hero-chip-ink: #ffffff;
   --hero-ctl-bg: rgba(0, 0, 0, 0.42);
   --hero-dot: rgba(255, 255, 255, 0.4);
@@ -1605,20 +1602,38 @@ html[data-loading-style='grid'] .mtv-err-box {
   filter: blur(28px) saturate(150%) brightness(0.5);
 }
 
-/* 铺底之上压一层从海报位置向外淡出到页面底色的径向渐变：左半（文字那侧）回到
-   干净的页面底色，右半留下围绕海报的一圈环境色。用径向而不是线性，中间那块
-   空白才有一圈围绕海报的光晕，而不是一片均匀的糊色。
-   深浅色共用一套——--ui-bg 本身就是主题色。 */
+/* 缓慢推近。加在模糊铺底而不是海报上：海报要保持锐利，让景深层动起来才有纵深。
+   用 active 类触发而不是常驻动画——所有 slide 的画面一开始就全挂载了，常驻动画
+   会在轮到自己之前就跑完。 */
+.mtv-hero-art img.mtv-hero-art-fill-active {
+  animation: mtv-hero-kenburns 8s var(--ui-ease-out) forwards;
+}
+
+@keyframes mtv-hero-kenburns {
+  from {
+    transform: scale(1.15);
+  }
+  to {
+    transform: scale(1.24);
+  }
+}
+
+/* 铺底之上压一层径向渐变，把模糊色收成「围绕海报的一圈环境光」。
+   垂直半径必须比水平小得多（68% vs 86%）：原来 140% 的垂直半径让底部中央只被
+   盖住 42%，Hero 底边整条都是暗的；页面底色又是浅的，中间 90 级的落差只能靠
+   遮罩那 100px 渐变去抹——那层渐变就是看得见的白雾。
+   现在底边盖到 91%，落差只剩 14 级，遮罩只要 6% 收个尾。 */
 .mtv-hero-art-veil {
   position: absolute;
   inset: 0;
   pointer-events: none;
   background: radial-gradient(
-    84% 140% at 76% 50%,
+    86% 68% at 72% 46%,
     transparent 0%,
-    transparent 26%,
-    color-mix(in srgb, var(--ui-bg) 55%, transparent) 54%,
-    var(--ui-bg) 94%
+    transparent 20%,
+    color-mix(in srgb, var(--ui-bg) 40%, transparent) 46%,
+    color-mix(in srgb, var(--ui-bg) 80%, transparent) 72%,
+    var(--ui-bg) 92%
   );
 }
 
@@ -1697,11 +1712,12 @@ html[data-loading-style='grid'] .mtv-err-box {
 
 .mtv-hero-chip {
   padding: 2px 9px;
-  border-radius: 9999px;
+  border-radius: var(--ui-r-full);
   font-size: var(--ui-fs-meta);
   font-weight: 600;
   background-color: var(--hero-chip-bg);
   color: var(--hero-chip-ink);
+  box-shadow: inset 0 0 0 1px var(--hero-chip-hair);
   backdrop-filter: blur(8px);
 }
 
