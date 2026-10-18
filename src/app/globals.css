@@ -2628,9 +2628,6 @@ html[data-loading-style='grid'] .mtv-err-box {
   display: flex;
   gap: 28px;
   flex-wrap: wrap;
-  margin-top: 18px;
-  padding-top: 16px;
-  border-top: 1px solid var(--mtv-hair);
 }
 
 .mtv-play-meta dt {
@@ -2787,15 +2784,57 @@ html[data-loading-style='grid'] .mtv-err-box {
 }
 
 @media (max-width: 640px) {
-  .mtv-play-card {
-    padding: 16px;
+  /* 操作区：A 的纯文字风格保留，但改成图标在上、文字在下的五宫格 */
+  .mtv-play-acts {
+    padding: 10px 8px 4px;
+    gap: 0;
+    justify-content: space-between;
+    flex-wrap: nowrap;
   }
 
-  .mtv-play-stills {
-    grid-template-columns: repeat(2, 1fr);
+  .mtv-play-act {
+    flex-direction: column;
+    gap: 4px;
+    height: auto;
+    padding: 6px 8px;
+    font-size: 10.5px;
+    border-radius: 10px;
+    flex: 1;
+  }
+
+  .mtv-play-act-sep {
+    display: none;
+  }
+
+  /* 手机端只留四项：下载 / 复制链接 / 去广告 / 更多 —— 快捷键、网盘搜索、
+     AI 问片在窄屏是次要的，挤进来会把这一行压变形 */
+  .mtv-play-act-secondary {
+    display: none;
+  }
+
+  .mtv-play-detail {
+    gap: 12px;
+    padding-top: 16px;
+  }
+
+  .mtv-play-col {
+    gap: 12px;
+  }
+
+  .mtv-play-card {
+    border-radius: 15px;
+    padding: 16px;
   }
 
   .mtv-play-meta {
     gap: 20px;
+  }
+
+  .mtv-play-meta dd {
+    font-size: 13px;
+  }
+
+  .mtv-play-stills {
+    grid-template-columns: repeat(2, 1fr);
   }
 }

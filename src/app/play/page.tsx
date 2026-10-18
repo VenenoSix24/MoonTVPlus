@@ -11443,7 +11443,7 @@ function PlayPageClient() {
                         e.preventDefault();
                         setShowShortcutDialog(true);
                       }}
-                      className='mtv-play-act'
+                      className='mtv-play-act mtv-play-act-secondary'
                       title='快捷键说明'
                       aria-label='查看播放快捷键说明'
                     >
@@ -11524,7 +11524,7 @@ function PlayPageClient() {
                           e.preventDefault();
                           openDrawer('pansou');
                         }}
-                        className='mtv-play-act'
+                        className='mtv-play-act mtv-play-act-secondary'
                         title='搜索网盘资源'
                       >
                         <Cloud className='h-4 w-4 flex-shrink-0' />
@@ -11538,7 +11538,7 @@ function PlayPageClient() {
                           e.preventDefault();
                           openDrawer('aiChat');
                         }}
-                        className='mtv-play-act'
+                        className='mtv-play-act mtv-play-act-secondary'
                         title='AI问片'
                       >
                         <Sparkles className='h-4 w-4 flex-shrink-0' />
@@ -12170,7 +12170,8 @@ function PlayPageClient() {
 
                 {/* 作品信息 + 剧照 */}
                 <div className='mtv-play-card'>
-                  <dl className='mtv-play-meta'><div className='mtv-play-sec'>作品信息</div>
+                  <div className='mtv-play-sec'>作品信息</div>
+                  <dl className='mtv-play-meta'>
                     {tmdbDirectors.length > 0 && (
                       <div>
                         <dt>导演</dt>
