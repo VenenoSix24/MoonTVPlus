@@ -10022,6 +10022,7 @@ const ThemeConfigComponent = ({
     progressThumbCustomUrl: '',
     loadingStyle: 'talisman' as 'classic' | 'grid' | 'talisman',
     rateBadgeStyle: 'flag' as 'default' | 'flag' | 'medal',
+    defaultTheme: 'dark' as 'light' | 'dark' | 'system',
   });
   const [loginBackgroundImages, setLoginBackgroundImages] = useState<string[]>([
     '',
@@ -10046,6 +10047,7 @@ const ThemeConfigComponent = ({
         progressThumbCustomUrl: config.ThemeConfig.progressThumbCustomUrl || '',
         loadingStyle: config.ThemeConfig.loadingStyle || 'talisman',
         rateBadgeStyle: config.ThemeConfig.rateBadgeStyle || 'flag',
+        defaultTheme: config.ThemeConfig.defaultTheme || 'dark',
       });
 
       // 解析背景图配置
@@ -11038,6 +11040,30 @@ const ThemeConfigComponent = ({
         </div>
       </div>
 
+      {/* 站点默认配色 */}
+      <div>
+        <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2'>
+          站点默认配色
+        </label>
+        <select
+          value={themeSettings.defaultTheme}
+          onChange={(e) =>
+            setThemeSettings((prev) => ({
+              ...prev,
+              defaultTheme: e.target.value as 'light' | 'dark' | 'system',
+            }))
+          }
+          className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+        >
+          <option value='dark'>深色</option>
+          <option value='light'>浅色</option>
+          <option value='system'>跟随系统</option>
+        </select>
+        <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
+          新访客第一次打开网站时使用的配色。用户在本机右上角切过之后以本机为准，
+          不再受这里影响。
+        </p>
+      </div>
       {/* 保存按钮 */}
       <div className='flex justify-end'>
         <button

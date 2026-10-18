@@ -161,6 +161,9 @@ export interface AdminConfig {
     loadingStyle?: 'classic' | 'grid' | 'talisman';
     // 评分星标样式：视频卡片右上角评分徽章的款式
     rateBadgeStyle?: 'default' | 'flag' | 'medal';
+    // 站点默认配色（新访客的首屏主题）。用户在本机右上角切过之后以本机为准，
+    // 这里只决定「没选过的人第一次看到什么」。
+    defaultTheme?: 'light' | 'dark' | 'system';
   };
   OpenListConfig?: {
     Enabled: boolean; // 是否启用私人影库功能

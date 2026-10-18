@@ -141,6 +141,8 @@ export default async function RootLayout({
   let musicProxyEnabled = true;
   let advancedRecommendationEnabled = false;
   let localSettingsSyncMode: 'off' | 'manual' | 'auto' = 'off';
+  // 站点默认配色。声明在 if 外面：localstorage 模式下不读 config，也要有默认值。
+  let defaultTheme: 'light' | 'dark' | 'system' = 'dark';
   // 特殊源名单：供客户端按入口隔离收藏与播放记录。
   // 入口开关是本机 cookie，与存储模式无关，所以 localstorage 模式也要注入；
   // getConfig() 有模块级缓存，generateMetadata 里已经调过一次，这里不产生额外读取。
@@ -210,6 +212,11 @@ export default async function RootLayout({
         ? config.ThemeConfig.rateBadgeStyle
         : 'flag';
     enableRegistration = config.SiteConfig.EnableRegistration || false;
+    defaultTheme =
+      config.ThemeConfig?.defaultTheme === 'light' ||
+      config.ThemeConfig?.defaultTheme === 'system'
+        ? config.ThemeConfig?.defaultTheme
+        : 'dark';
     requireRegistrationInviteCode =
       config.SiteConfig.RequireRegistrationInviteCode || false;
     loginRequireTurnstile = config.SiteConfig.LoginRequireTurnstile || false;
@@ -440,7 +447,7 @@ export default async function RootLayout({
       >
         <ThemeProvider
           attribute='class'
-          defaultTheme='system'
+          defaultTheme={defaultTheme}
           enableSystem
           disableTransitionOnChange
         >
