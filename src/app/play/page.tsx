@@ -11997,175 +11997,180 @@ function PlayPageClient() {
             {/* 详情 + 推荐：左栏放详情，右栏 320px 放推荐 */}
                 <div className='mtv-play-detail'>
                   <div className='mtv-play-col'>
-                <div className='grid grid-cols-1 md:grid-cols-5 lg:grid-cols-6 gap-4'>
-                  {/* 文字区 */}
-                  <div className='md:col-span-4 lg:col-span-5'>
-                    <div className='p-6 flex flex-col min-h-0'>
-                      {/* 标题 */}
-                      <h1 className="text-3xl font-bold mb-2 tracking-wide flex items-center flex-shrink-0 text-center md:text-left w-full flex-wrap gap-2 text-white">
-                        <span className={doubanAka.length > 0 ? 'relative group cursor-help' : ''}>
-                          {videoTitle || '影片标题'}
-                          {/* aka 悬浮提示 */}
-                          {doubanAka.length > 0 && (
-                            <div className='absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 dark:bg-gray-900 text-white text-sm rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 ease-out whitespace-nowrap z-[100] pointer-events-none'>
-                              <div className='font-semibold text-xs text-gray-400 mb-1'>又名：</div>
-                              {doubanAka.map((name, index) => (
-                                <div key={index} className='text-sm'>
-                                  {name}
-                                </div>
-                              ))}
-                              <div className='absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800 dark:border-t-gray-900'></div>
-                            </div>
-                          )}
-                        </span>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleToggleFavorite();
-                          }}
-                          className='flex-shrink-0 hover:opacity-80 transition-opacity'
-                        >
-                          <FavoriteIcon filled={favorited} />
-                        </button>
-                        {/* 详情按钮 */}
-                        {detail && (
+                <div className='mtv-play-card'>
+                  <div className='grid grid-cols-1 md:grid-cols-5 lg:grid-cols-6 gap-4'>
+                    {/* 文字区 */}
+                    <div className='md:col-span-4 lg:col-span-5'>
+                      <div className='flex flex-col min-h-0'>
+                        {/* 标题 */}
+                        <h1 className="text-3xl font-bold mb-2 tracking-wide flex items-center flex-shrink-0 text-center md:text-left w-full flex-wrap gap-2 text-white">
+                          <span className={doubanAka.length > 0 ? 'relative group cursor-help' : ''}>
+                            {videoTitle || '影片标题'}
+                            {/* aka 悬浮提示 */}
+                            {doubanAka.length > 0 && (
+                              <div className='absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 dark:bg-gray-900 text-white text-sm rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 ease-out whitespace-nowrap z-[100] pointer-events-none'>
+                                <div className='font-semibold text-xs text-gray-400 mb-1'>又名：</div>
+                                {doubanAka.map((name, index) => (
+                                  <div key={index} className='text-sm'>
+                                    {name}
+                                  </div>
+                                ))}
+                                <div className='absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800 dark:border-t-gray-900'></div>
+                              </div>
+                            )}
+                          </span>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              openDrawer('detail');
-                            }}
-                            className='flex-shrink-0 hover:opacity-80 transition-opacity px-2 py-1 text-base font-medium text-gray-700 dark:text-gray-300'
-                            title='详情'
-                          >
-                            详
-                          </button>
-                        )}
-                        {/* 纠错按钮 - 仅小雅源显示 */}
-                        {detail && detail.source === 'xiaoya' && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openDrawer('correct');
+                              handleToggleFavorite();
                             }}
                             className='flex-shrink-0 hover:opacity-80 transition-opacity'
-                            title='纠错'
                           >
-                            <AlertCircle className='h-6 w-6 text-gray-700 dark:text-gray-300' />
+                            <FavoriteIcon filled={favorited} />
                           </button>
-                        )}
-                      </h1>
-
-                      {/* 标题行徽章：完结状态 / 年份 / 类型标签，评分排在最后（定稿 A 版） */}
-                      <div className='mtv-play-badges'>
-                        {detail?.vod_remarks && (
-                          <span className='mtv-play-badge mtv-play-badge-done'>
-                            {detail.vod_remarks}
-                          </span>
-                        )}
-                        {/* 优先使用 doubanYear，如果没有则使用 detail.year 或 videoYear */}
-                        {(doubanYear || netdiskTMDBMeta?.year || detail?.year || videoYear) && (
-                          <span className='mtv-play-badge'>
-                            {doubanYear || netdiskTMDBMeta?.year || detail?.year || videoYear}
-                          </span>
-                        )}
-                        {badgeGenres.map((genre) => (
-                          <span key={genre} className='mtv-play-badge'>
-                            {genre}
-                          </span>
-                        ))}
-                        {/* 原来这里是「来源」角标，各数据源填的值不一致，改成只显示画质 */}
-                        <span
-                          className='mtv-play-badge relative group cursor-pointer'
-                          onClick={fetchCurrentSourceVideoInfo}
-                        >
-                          {currentSourceVideoInfo?.quality || '画质'}
-                          {currentSourceVideoInfo && (
-                            <div className='absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 dark:bg-gray-900 text-white text-sm rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 ease-out whitespace-nowrap z-[100] pointer-events-none'>
-                              <div className='text-sm'>
-                                <div>分辨率: {currentSourceVideoInfo.quality}</div>
-                                <div>码率: {currentSourceVideoInfo.bitrate}</div>
-                              </div>
-                              <div className='absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800 dark:border-t-gray-900'></div>
-                            </div>
+                          {/* 详情按钮 */}
+                          {detail && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openDrawer('detail');
+                              }}
+                              className='flex-shrink-0 hover:opacity-80 transition-opacity px-2 py-1 text-base font-medium text-gray-700 dark:text-gray-300'
+                              title='详情'
+                            >
+                              详
+                            </button>
                           )}
-                        </span>
-                        {doubanRating && doubanRating.value > 0 && (
-                          <span className='mtv-play-score'>
-                            <b>{doubanRating.value.toFixed(1)}</b>
-                            <i>
-                              {doubanRating.count > 0
-                                ? `豆瓣 · ${(doubanRating.count / 10000).toFixed(1)} 万人评`
-                                : '豆瓣'}
-                            </i>
+                          {/* 纠错按钮 - 仅小雅源显示 */}
+                          {detail && detail.source === 'xiaoya' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openDrawer('correct');
+                              }}
+                              className='flex-shrink-0 hover:opacity-80 transition-opacity'
+                              title='纠错'
+                            >
+                              <AlertCircle className='h-6 w-6 text-gray-700 dark:text-gray-300' />
+                            </button>
+                          )}
+                        </h1>
+
+                        {/* 标题行徽章：完结状态 / 年份 / 类型标签，评分排在最后（定稿 A 版） */}
+                        <div className='mtv-play-badges'>
+                          {detail?.vod_remarks && (
+                            <span className='mtv-play-badge mtv-play-badge-done'>
+                              {detail.vod_remarks}
+                            </span>
+                          )}
+                          {/* 优先使用 doubanYear，如果没有则使用 detail.year 或 videoYear */}
+                          {(doubanYear || netdiskTMDBMeta?.year || detail?.year || videoYear) && (
+                            <span className='mtv-play-badge'>
+                              {doubanYear || netdiskTMDBMeta?.year || detail?.year || videoYear}
+                            </span>
+                          )}
+                          {badgeGenres.map((genre) => (
+                            <span key={genre} className='mtv-play-badge'>
+                              {genre}
+                            </span>
+                          ))}
+                          {/* 原来这里是「来源」角标，各数据源填的值不一致，改成只显示画质 */}
+                          <span
+                            className='mtv-play-badge relative group cursor-pointer'
+                            onClick={fetchCurrentSourceVideoInfo}
+                          >
+                            {currentSourceVideoInfo?.quality || '画质'}
+                            {currentSourceVideoInfo && (
+                              <div className='absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 dark:bg-gray-900 text-white text-sm rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 ease-out whitespace-nowrap z-[100] pointer-events-none'>
+                                <div className='text-sm'>
+                                  <div>分辨率: {currentSourceVideoInfo.quality}</div>
+                                  <div>码率: {currentSourceVideoInfo.bitrate}</div>
+                                </div>
+                                <div className='absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800 dark:border-t-gray-900'></div>
+                              </div>
+                            )}
                           </span>
-                        )}
+                          {doubanRating && doubanRating.value > 0 && (
+                            <span className='mtv-play-score'>
+                              <b>{doubanRating.value.toFixed(1)}</b>
+                              <i>
+                                {doubanRating.count > 0
+                                  ? `豆瓣 · ${(doubanRating.count / 10000).toFixed(1)} 万人评`
+                                  : '豆瓣'}
+                              </i>
+                            </span>
+                          )}
+                        </div>
+                        {/* 剧情简介：只有简介文字 —— 和封面并排、标题下边 */}
+                        <div>
+                          <div className='mtv-play-sec'>剧情简介</div>
+                          {(netdiskTMDBMeta?.desc || correctedDesc || detail?.desc) && (
+                            <p className='mtv-play-syn'>
+                              {netdiskTMDBMeta?.desc || correctedDesc || detail?.desc}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* 封面展示 */}
-                  <div className='hidden md:block md:col-span-1 md:order-first'>
-                    <div className='pl-0 py-4 pr-6 max-w-sm mx-auto'>
-                      <div className='relative bg-gray-300 dark:bg-gray-700 aspect-[2/3] flex items-center justify-center rounded-xl overflow-hidden'>
-                        {videoCover ? (
-                          <>
-                            <ProxyImage
-                              originalSrc={videoCover}
-                              alt={videoTitle}
-                              className='w-full h-full object-cover'
-                            />
+                    {/* 封面展示 */}
+                    <div className='hidden md:block md:col-span-1 md:order-first'>
+                      <div className='max-w-sm'>
+                        <div className='relative bg-gray-300 dark:bg-gray-700 aspect-[2/3] flex items-center justify-center rounded-xl overflow-hidden'>
+                          {videoCover ? (
+                            <>
+                              <ProxyImage
+                                originalSrc={videoCover}
+                                alt={videoTitle}
+                                className='w-full h-full object-cover'
+                              />
 
-                            {/* 豆瓣链接按钮 */}
-                            {videoDoubanId !== 0 && (
-                              <a
-                                href={`https://movie.douban.com/subject/${videoDoubanId.toString()}`}
-                                target='_blank'
-                                rel='noopener noreferrer'
-                                className='absolute top-3 left-3'
-                              >
-                                <div className='bg-ui-accent text-white text-xs font-bold w-8 h-8 rounded-full flex items-center justify-center shadow-md hover:brightness-110 hover:scale-[1.1] transition-all duration-300 ease-out'>
-                                  <svg
-                                    width='16'
-                                    height='16'
-                                    viewBox='0 0 24 24'
-                                    fill='none'
-                                    stroke='currentColor'
-                                    strokeWidth='2'
-                                    strokeLinecap='round'
-                                    strokeLinejoin='round'
-                                  >
-                                    <path d='M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71'></path>
-                                    <path d='M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71'></path>
-                                  </svg>
-                                </div>
-                              </a>
-                            )}
-                          </>
-                        ) : (
-                          isNetdiskSource(detail?.source) ? (
-                            <div className='flex flex-col items-center justify-center text-gray-500 dark:text-gray-400'>
-                              <Cloud className='w-16 h-16 opacity-80' />
-                            </div>
+                              {/* 豆瓣链接按钮 */}
+                              {videoDoubanId !== 0 && (
+                                <a
+                                  href={`https://movie.douban.com/subject/${videoDoubanId.toString()}`}
+                                  target='_blank'
+                                  rel='noopener noreferrer'
+                                  className='absolute top-3 left-3'
+                                >
+                                  <div className='bg-ui-accent text-white text-xs font-bold w-8 h-8 rounded-full flex items-center justify-center shadow-md hover:brightness-110 hover:scale-[1.1] transition-all duration-300 ease-out'>
+                                    <svg
+                                      width='16'
+                                      height='16'
+                                      viewBox='0 0 24 24'
+                                      fill='none'
+                                      stroke='currentColor'
+                                      strokeWidth='2'
+                                      strokeLinecap='round'
+                                      strokeLinejoin='round'
+                                    >
+                                      <path d='M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71'></path>
+                                      <path d='M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71'></path>
+                                    </svg>
+                                  </div>
+                                </a>
+                              )}
+                            </>
                           ) : (
-                            <span className='text-gray-600 dark:text-gray-400'>
-                              封面图片
-                            </span>
-                          )
-                        )}
+                            isNetdiskSource(detail?.source) ? (
+                              <div className='flex flex-col items-center justify-center text-gray-500 dark:text-gray-400'>
+                                <Cloud className='w-16 h-16 opacity-80' />
+                              </div>
+                            ) : (
+                              <span className='text-gray-600 dark:text-gray-400'>
+                                封面图片
+                              </span>
+                            )
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* 剧情简介：简介 + 元信息 + 剧照 同一张卡（定稿 C） */}
+                {/* 作品信息 + 剧照 */}
                 <div className='mtv-play-card'>
-                  <div className='mtv-play-sec'>剧情简介</div>
-                  {(netdiskTMDBMeta?.desc || correctedDesc || detail?.desc) && (
-                    <p className='mtv-play-syn'>
-                      {netdiskTMDBMeta?.desc || correctedDesc || detail?.desc}
-                    </p>
-                  )}
-                  <dl className='mtv-play-meta'>
+                  <dl className='mtv-play-meta'><div className='mtv-play-sec'>作品信息</div>
                     {tmdbDirectors.length > 0 && (
                       <div>
                         <dt>导演</dt>
@@ -12213,6 +12218,7 @@ function PlayPageClient() {
                     </>
                   )}
                 </div>
+
 
                 {/* 演职员：圆形头像 + 姓名 + 角色（定稿 C） */}
                 {tmdbCastList.length > 0 && (

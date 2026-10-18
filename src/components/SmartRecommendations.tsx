@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 
 import { useCallback,useEffect, useState } from 'react';
 
@@ -222,41 +221,27 @@ export default function SmartRecommendations({
   }
 
 
-  // 右栏竖排：播放页详情区用。横向滚动行在 320px 宽的栏里放不下两张卡，
-  // 换成「小海报 + 标题 + 年份 · 类型 · 评分」的竖排列表（定稿 B 的推荐做法）。
+  // 右栏：横向滚动行在 320px 宽的栏里放不下两张卡，换成两列紧凑网格。
   if (variant === 'rail') {
     return (
       <div className='mtv-play-card'>
         <div className='mtv-play-sec'>相关推荐</div>
-        <div className='mtv-play-recs'>
-          {recommendations.slice(0, 8).map((rec, index) => {
-            const meta = [rec.year, rec.genres, rec.rating]
-              .filter(Boolean)
-              .join(' · ');
-            return (
-              <Link
-                key={rec.doubanId || rec.tmdbId || index}
-                href={`/play?title=${encodeURIComponent(rec.title)}`}
-                className='mtv-play-rec'
-              >
-                <div className='mtv-play-rec-poster overflow-hidden'>
-                  {rec.poster && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={rec.poster}
-                      alt={rec.title}
-                      className='h-full w-full object-cover'
-                      loading='lazy'
-                    />
-                  )}
-                </div>
-                <div className='min-w-0'>
-                  <div className='mtv-play-rec-t truncate'>{rec.title}</div>
-                  {meta && <div className='mtv-play-rec-m'>{meta}</div>}
-                </div>
-              </Link>
-            );
-          })}
+        <div className='flex flex-wrap gap-3'>
+          {recommendations.slice(0, 8).map((rec, index) => (
+            <div
+              key={rec.doubanId || rec.tmdbId || index}
+              className='w-[calc(50%-6px)]'
+            >
+              <VideoCard
+                title={rec.title}
+                poster={rec.poster}
+                rate={rec.rating}
+                douban_id={rec.doubanId ? parseInt(rec.doubanId) : undefined}
+                tmdb_id={rec.tmdbId}
+                from={rec.doubanId ? 'douban' : 'tmdb'}
+              />
+            </div>
+          ))}
         </div>
       </div>
     );
