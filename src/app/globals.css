@@ -2267,3 +2267,33 @@ html[data-loading-style='grid'] .mtv-err-box {
   color: #4ade80;
   font-weight: 700;
 }
+
+/* ==========================================================================
+   播放页强调色
+   --------------------------------------------------------------------------
+   播放页此前整套用的是原版 MoonTV 的绿（green-* / emerald-*，共 70 处），而站点
+   品牌色早已是 --ui-accent。现已全部改走 ui-accent 工具类，只有三处 Tailwind
+   表达不了的留在这里：
+     · 渐变（Tailwind 的 from-/to- 只能吃静态色值，--ui-accent 是 CSS 变量）
+     · 带透明度的描边（/30 这类透明度修饰符需要 RGB 三元组，hex 变量用不了）
+   这样换品牌色只改 --ui-accent 一处，播放页自动跟随。
+   ========================================================================== */
+.mtv-play-grad {
+  background-image: linear-gradient(
+    to right,
+    var(--ui-accent),
+    color-mix(in srgb, var(--ui-accent) 78%, #000)
+  );
+}
+
+.mtv-play-hair-soft {
+  border-color: color-mix(in srgb, var(--ui-accent) 30%, transparent);
+}
+
+.mtv-play-glow {
+  background-image: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--ui-accent) 15%, transparent),
+    transparent
+  );
+}
