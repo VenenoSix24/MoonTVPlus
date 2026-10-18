@@ -1675,6 +1675,56 @@ html[data-loading-style='grid'] .mtv-err-box {
   backdrop-filter: none;
 }
 
+/* 横版剧照（TMDB 数据源）：Hero 是一整幅电影画面，文字一律走「白字 + 左侧黑遮罩」，
+   不跟页面主题走。两个原因：
+   1. 画作本身是深是浅不可控，浅色字是唯一在两种画作上都成立的选择；
+   2. TMDB 的官方标题字是「白字 + 透明底」的资产，只认得深色背景——压在浅底上会
+      直接消失。
+   所以这一档固定影院感，页面本身仍是浅色。Apple TV+ / Disney+ 的浅色主题也是这么
+   处理的：Hero 保持影院感，只有内容区跟随主题。
+   选择器必须同时覆盖「横版剧照」和「有官方标题字」——之前只写了竖版海报那一档
+   （见下面 :has(.mtv-hero-art-fill)），数据源切成 TMDB 后卡片就漏回来了。 */
+.mtv-hero:has(.mtv-hero-art-cover),
+.mtv-hero:has(.mtv-hero-logo) {
+  --hero-scrim: linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.92) 0%,
+      rgba(0, 0, 0, 0.72) 28%,
+      rgba(0, 0, 0, 0.28) 55%,
+      transparent 78%
+    ),
+    linear-gradient(
+      0deg,
+      var(--ui-bg) 0%,
+      rgba(0, 0, 0, 0.5) 10%,
+      transparent 30%
+    );
+  --hero-ink: #ffffff;
+  --hero-ink-2: rgba(255, 255, 255, 0.78);
+  --hero-title-shadow: rgba(0, 0, 0, 0.55);
+  --hero-chip-bg: rgba(255, 255, 255, 0.16);
+  --hero-chip-ink: #ffffff;
+  --hero-chip-hair: rgba(255, 255, 255, 0.22);
+  --hero-btn-bg: #ffffff;
+  --hero-btn-ink: #000000;
+  --hero-btn-bg-hover: rgba(255, 255, 255, 0.82);
+  --hero-ghost-bg: rgba(255, 255, 255, 0.16);
+  --hero-ghost-bg-hover: rgba(255, 255, 255, 0.28);
+  --hero-ghost-hair: rgba(255, 255, 255, 0.3);
+  --hero-ctl-bg: rgba(0, 0, 0, 0.42);
+  --hero-dot: rgba(255, 255, 255, 0.4);
+  /* 文字不再需要承载面 */
+  --hero-panel-bg: transparent;
+  --hero-panel-blur: none;
+  --hero-panel-shadow: none;
+  --hero-panel-pad: 0;
+}
+
+/* 有官方标题字时，铺底那层「向页面底色淡出」会把它一起洗掉 */
+.mtv-hero:has(.mtv-hero-logo) .mtv-hero-art-veil {
+  display: none;
+}
+
 /* 手机上 Hero 只有 200px 高，右侧再立一张海报会压到标题，直接不出 */
 @media (max-width: 767px) {
   .mtv-hero-art img.mtv-hero-art-subject {
