@@ -580,7 +580,7 @@ export default function BannerCarousel({
       </div>
 
       {/* 内容信息 */}
-      <div className='absolute inset-0 flex items-end p-8 md:p-12 pointer-events-none'>
+      <div className='mtv-hero-wrap absolute inset-0 flex items-end pointer-events-none'>
         <div className='mtv-hero-body max-w-2xl space-y-3'>
           <h2
             ref={titleRef}

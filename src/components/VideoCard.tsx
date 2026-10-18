@@ -985,9 +985,9 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
     return (
       <>
         <div
-          className={`group relative w-full rounded-lg bg-transparent transition-all duration-300 ease-in-out hover:scale-[1.05] hover:z-[500] ${
+          className={`group relative w-full rounded-lg bg-transparent transition-all duration-300 ease-in-out hover:scale-[1.05] hover:z-[var(--ui-z-panel)] ${
             isUpcoming ? 'cursor-default' : 'cursor-pointer'
-          } ${showUpcomingInfo ? 'scale-[1.05] z-[500]' : ''}`}
+          } ${showUpcomingInfo ? 'scale-[1.05] z-[var(--ui-z-panel)]' : ''}`}
           onClick={handleClick}
           {...longPressProps}
           style={
@@ -1413,7 +1413,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                   }}
                 >
                   <div
-                    className='text-[9px] sm:text-[10px] text-yellow-400 line-clamp-2 break-all'
+                    className='text-[var(--ui-fs-nano)] text-yellow-400 line-clamp-2 break-all'
                     style={
                       {
                         WebkitUserSelect: 'none',
@@ -1451,7 +1451,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                 >
                   {/* 集数显示 */}
                   <div
-                    className='bg-black/60 text-white text-[9px] sm:text-xs font-medium px-2 sm:px-3 py-0.5 sm:py-1 rounded-full shadow-md transition-all duration-300 ease-out group-hover:scale-110 backdrop-blur-sm flex items-center justify-center'
+                    className='bg-black/60 text-white text-[var(--ui-fs-nano)] sm:text-xs font-medium px-2 sm:px-3 py-0.5 sm:py-1 rounded-full shadow-md transition-all duration-300 ease-out group-hover:scale-110 backdrop-blur-sm flex items-center justify-center'
                     style={
                       {
                         WebkitUserSelect: 'none',
@@ -1472,7 +1472,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                   {/* 年份显示 */}
                   {displayYear && (
                     <div
-                      className='bg-black/60 text-white text-[9px] sm:text-xs font-medium px-2 sm:px-3 py-0.5 sm:py-1 rounded-full shadow-md transition-all duration-300 ease-out group-hover:scale-110 backdrop-blur-sm flex items-center justify-center'
+                      className='bg-black/60 text-white text-[var(--ui-fs-nano)] sm:text-xs font-medium px-2 sm:px-3 py-0.5 sm:py-1 rounded-full shadow-md transition-all duration-300 ease-out group-hover:scale-110 backdrop-blur-sm flex items-center justify-center'
                       style={
                         {
                           WebkitUserSelect: 'none',
@@ -1511,7 +1511,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                   }}
                 >
                   <span
-                    className={`inline-block border rounded px-1 py-0.5 text-[8px] text-white/90 bg-black/60 ${
+                    className={`inline-block border rounded px-1 py-0.5 text-[var(--ui-fs-nano)] text-white/90 bg-black/60 ${
                       actualSource === 'xiaoya'
                         ? 'border-blue-500'
                         : isNetdiskSource(actualSource)
@@ -1747,7 +1747,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                                   >
                                     <div className='h-0.5 w-0.5 flex-shrink-0 rounded-full bg-blue-400 sm:h-1 sm:w-1'></div>
                                     <span
-                                      className='truncate text-[10px] leading-tight sm:text-xs'
+                                      className='truncate text-[var(--ui-fs-nano)] leading-tight sm:text-xs'
                                       title={sourceName}
                                     >
                                       {sourceName}
@@ -1760,7 +1760,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                               {hasMore && (
                                 <div className='mt-1 border-t border-gray-700/50 pt-1 sm:mt-2 sm:pt-1.5'>
                                   <div className='flex items-center justify-center text-gray-400'>
-                                    <span className='text-[10px] font-medium sm:text-xs'>
+                                    <span className='text-[var(--ui-fs-nano)] font-medium sm:text-xs'>
                                       +{remainingCount} 播放源
                                     </span>
                                   </div>
@@ -1849,7 +1849,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                   {/* 直链地址 */}
                   {isDirectPlaySource && directLinkUrl && (
                     <div
-                      className='text-[10px] text-white/75 truncate'
+                      className='text-[var(--ui-fs-nano)] text-white/75 truncate'
                       style={
                         {
                           WebkitUserSelect: 'none',
@@ -1903,7 +1903,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                             playTime !== undefined &&
                             totalTime !== undefined && (
                               <div
-                                className='text-[10px] text-white/80'
+                                className='text-[var(--ui-fs-nano)] text-white/80'
                                 style={
                                   {
                                     WebkitUserSelect: 'none',
@@ -1934,7 +1934,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                           {/* 来源 - 右侧 */}
                           {config.showSourceName && source_name && !cmsData && (
                             <span
-                              className={`inline-block border rounded px-1 py-0.5 text-[8px] text-white/90 bg-black/30 backdrop-blur-sm ${
+                              className={`inline-block border rounded px-1 py-0.5 text-[var(--ui-fs-nano)] text-white/90 bg-black/30 backdrop-blur-sm ${
                                 actualSource === 'xiaoya'
                                   ? 'border-blue-500'
                                   : isNetdiskSource(actualSource)
@@ -2001,7 +2001,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                     !cmsData && (
                       <div className='flex items-center justify-end'>
                         <span
-                          className={`inline-block border rounded px-1 py-0.5 text-[8px] text-white/90 bg-black/30 backdrop-blur-sm ${
+                          className={`inline-block border rounded px-1 py-0.5 text-[var(--ui-fs-nano)] text-white/90 bg-black/30 backdrop-blur-sm ${
                             origin === 'live'
                               ? 'border-red-500'
                               : actualSource === 'openlist' ||
@@ -2249,7 +2249,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
           }}
         />
         {animeSubscribeToast ? (
-          <div className='fixed bottom-24 left-1/2 z-[10001] -translate-x-1/2 rounded-full bg-green-600 px-4 py-2 text-sm text-white shadow-lg'>
+          <div className='fixed bottom-24 left-1/2 z-[var(--ui-z-toast)] -translate-x-1/2 rounded-full bg-green-600 px-4 py-2 text-sm text-white shadow-lg'>
             {animeSubscribeToast}
           </div>
         ) : null}

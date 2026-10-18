@@ -135,7 +135,7 @@ export default function ContinueWatching({ className }: ContinueWatchingProps) {
             {Array.from({ length: 8 }).map((_, index) => (
               <div
                 key={index}
-                className='min-w-[180px] w-48 sm:min-w-[200px] sm:w-52'
+                className='mtv-card-wide'
               >
                 <div className='relative aspect-[3/2] w-full overflow-hidden rounded-lg bg-gray-200 animate-pulse dark:bg-gray-800'>
                   <div className='absolute inset-0 bg-gray-300 dark:bg-gray-700' />
@@ -153,7 +153,7 @@ export default function ContinueWatching({ className }: ContinueWatchingProps) {
                 return (
                   <div
                     key={record.key}
-                    className='min-w-[180px] w-48 sm:min-w-[200px] sm:w-52'
+                    className='mtv-card-wide'
                     style={{ position: 'relative' }}
                   >
                     <VideoCard
@@ -245,7 +245,7 @@ export default function ContinueWatching({ className }: ContinueWatchingProps) {
       {showConfirmDialog &&
         createPortal(
           <div
-            className='fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 p-4 transition-opacity duration-300'
+            className='fixed inset-0 z-[var(--ui-z-modal)] flex items-center justify-center bg-black bg-opacity-50 p-4 transition-opacity duration-300'
             onClick={() => setShowConfirmDialog(false)}
           >
             <div

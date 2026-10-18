@@ -45,9 +45,48 @@
   --ui-ease: cubic-bezier(0.22, 0.72, 0.24, 1);
   --ui-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
-  /* 页面横向留白，与顶栏底色 */
+  /* ---- 布局栅格：全站唯一的横向留白与纵向节奏 ---- */
   --ui-gutter: clamp(16px, 4vw, 56px);
+  --ui-row-gap: clamp(32px, 3.4vw, 56px);
+  --ui-hero-gap: clamp(28px, 3vw, 48px);
+  --ui-header-h: 64px;
   --ui-nav: color-mix(in srgb, var(--ui-bg) 92%, transparent);
+
+  /* ---- 尺度阶梯：字号 / 间距 / 卡片宽 ---- */
+  --ui-fs-display: clamp(2rem, 4.6vw, 4.6rem);
+  --ui-fs-h1: clamp(1.5rem, 2.2vw, 2rem);
+  --ui-fs-h2: clamp(1.05rem, 1.35vw, 1.3rem);
+  --ui-fs-body: 0.875rem;
+  --ui-fs-meta: 0.75rem;
+  --ui-fs-micro: 0.6875rem;
+  /* 密集角标专用：卡片上的年份 / 集数 / 来源这类压在画面上的小字。
+     原来是 8px / 9px / 10px 三种任意值，8px 基本不可读。 */
+  --ui-fs-nano: 0.625rem;
+
+  --ui-sp-1: 4px;
+  --ui-sp-2: 8px;
+  --ui-sp-3: 12px;
+  --ui-sp-4: 16px;
+  --ui-sp-5: 24px;
+  --ui-sp-6: 32px;
+  --ui-sp-7: 48px;
+  --ui-sp-8: 64px;
+
+  --ui-r-xs: 6px;
+
+  /* 卡片只有三档尺度：紧凑 / 竖版默认 / 横版宽。
+     原来是 96/100/120/140/180/200 六种，同一视觉位六个尺寸。 */
+  --ui-card-sm: 112px;
+  --ui-card-md: clamp(120px, 11vw, 168px);
+  --ui-card-wide: clamp(180px, 15vw, 240px);
+
+  /* ---- 层级：替代散落的 500 / 600 / 999 / 9999 / 10001 ---- */
+  --ui-z-content: 0;
+  --ui-z-nav: 100;
+  --ui-z-overlay: 200;
+  --ui-z-panel: 300;
+  --ui-z-modal: 400;
+  --ui-z-toast: 500;
 }
 
 .dark {
@@ -1633,4 +1672,38 @@ html[data-loading-style='grid'] .mtv-err-box {
   .mtv-hero {
     min-height: max(440px, min(56.25vw, 76vh));
   }
+}
+
+/* ==========================================================================
+   首页布局骨架
+   --------------------------------------------------------------------------
+   行与 Hero 共用同一个 --ui-gutter，所以两者左边缘天然对齐，
+   不需要再算「内容区最大宽度」的偏移。
+   ========================================================================== */
+.mtv-page {
+  padding-inline: var(--ui-gutter);
+  padding-bottom: var(--ui-sp-6);
+}
+
+/* 内容行：行间距走统一节奏，替代固定 mb-8 */
+.mtv-row {
+  margin-bottom: var(--ui-row-gap);
+}
+
+/* Hero 内容承载区：左右用同一 gutter，和下面各行的卡片左边缘对齐 */
+.mtv-hero-wrap {
+  padding: var(--ui-sp-5) var(--ui-gutter) var(--ui-sp-7);
+}
+
+/* 卡片容器只有三档尺度，替代原来的 96 / 100 / 120 / 140 / 180 / 200 六种 */
+.mtv-card-sm {
+  width: var(--ui-card-sm);
+}
+
+.mtv-card-md {
+  width: var(--ui-card-md);
+}
+
+.mtv-card-wide {
+  width: var(--ui-card-wide);
 }

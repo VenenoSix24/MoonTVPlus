@@ -569,7 +569,7 @@ function HomeClient() {
     switch (moduleId) {
       case 'hotMovies':
         return (
-          <section key='hotMovies' className='mb-8'>
+          <section key='hotMovies' className='mtv-row'>
             <div className='mb-4 flex items-center justify-between'>
               <h2 className='mtv-row-title'>热门电影</h2>
               <Link href='/douban?type=movie' className='mtv-row-more'>
@@ -580,19 +580,13 @@ function HomeClient() {
             <ScrollableRow snap fade>
               {loading
                 ? Array.from({ length: 8 }).map((_, index) => (
-                    <div
-                      key={index}
-                      className='min-w-[96px] w-24 sm:min-w-[180px] sm:w-44'
-                    >
+                    <div key={index} className='mtv-card-md'>
                       <div className='aspect-[2/3] bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse mb-2' />
                       <div className='h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4' />
                     </div>
                   ))
                 : hotMovies.map((movie) => (
-                    <div
-                      key={movie.id}
-                      className='min-w-[96px] w-24 sm:min-w-[180px] sm:w-44'
-                    >
+                    <div key={movie.id} className='mtv-card-md'>
                       <VideoCard
                         id={movie.id}
                         poster={movie.poster}
@@ -612,7 +606,7 @@ function HomeClient() {
       case 'hotDuanju':
         if (hotDuanju.length === 0) return null;
         return (
-          <section key='hotDuanju' className='mb-8'>
+          <section key='hotDuanju' className='mtv-row'>
             <div className='mb-4 flex items-center justify-between'>
               <h2 className='mtv-row-title'>热播短剧</h2>
               <Link href='/duanju' className='mtv-row-more'>
@@ -623,10 +617,7 @@ function HomeClient() {
             <ScrollableRow snap fade>
               {loading
                 ? Array.from({ length: 8 }).map((_, index) => (
-                    <div
-                      key={index}
-                      className='min-w-[96px] w-24 sm:min-w-[180px] sm:w-44'
-                    >
+                    <div key={index} className='mtv-card-md'>
                       <div className='aspect-[2/3] bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse mb-2' />
                       <div className='h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4' />
                     </div>
@@ -634,7 +625,7 @@ function HomeClient() {
                 : hotDuanju.map((duanju) => (
                     <div
                       key={duanju.id + duanju.source}
-                      className='min-w-[96px] w-24 sm:min-w-[180px] sm:w-44'
+                      className='mtv-card-md'
                     >
                       <VideoCard
                         id={duanju.id}
@@ -661,7 +652,7 @@ function HomeClient() {
 
       case 'bangumiCalendar':
         return (
-          <section key='bangumiCalendar' className='mb-8'>
+          <section key='bangumiCalendar' className='mtv-row'>
             <div className='mb-4 flex items-center justify-between'>
               <h2 className='mtv-row-title'>新番放送</h2>
               <Link href='/douban?type=anime' className='mtv-row-more'>
@@ -672,10 +663,7 @@ function HomeClient() {
             <ScrollableRow snap fade>
               {loading
                 ? Array.from({ length: 8 }).map((_, index) => (
-                    <div
-                      key={index}
-                      className='min-w-[96px] w-24 sm:min-w-[180px] sm:w-44'
-                    >
+                    <div key={index} className='mtv-card-md'>
                       <div className='relative aspect-[2/3] w-full overflow-hidden rounded-lg bg-gray-200 animate-pulse dark:bg-gray-800'>
                         <div className='absolute inset-0 bg-gray-300 dark:bg-gray-700'></div>
                       </div>
@@ -700,10 +688,7 @@ function HomeClient() {
                         ?.items.filter((anime) => anime.images) || [];
 
                     return todayAnimes.map((anime, index) => (
-                      <div
-                        key={`${anime.id}-${index}`}
-                        className='min-w-[96px] w-24 sm:min-w-[180px] sm:w-44'
-                      >
+                      <div key={`${anime.id}-${index}`} className='mtv-card-md'>
                         <VideoCard
                           from='douban'
                           title={anime.name_cn || anime.name}
@@ -729,7 +714,7 @@ function HomeClient() {
 
       case 'hotTvShows':
         return (
-          <section key='hotTvShows' className='mb-8'>
+          <section key='hotTvShows' className='mtv-row'>
             <div className='mb-4 flex items-center justify-between'>
               <h2 className='mtv-row-title'>热门剧集</h2>
               <Link href='/douban?type=tv' className='mtv-row-more'>
@@ -740,19 +725,13 @@ function HomeClient() {
             <ScrollableRow snap fade>
               {loading
                 ? Array.from({ length: 8 }).map((_, index) => (
-                    <div
-                      key={index}
-                      className='min-w-[96px] w-24 sm:min-w-[180px] sm:w-44'
-                    >
+                    <div key={index} className='mtv-card-md'>
                       <div className='aspect-[2/3] bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse mb-2' />
                       <div className='h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4' />
                     </div>
                   ))
                 : hotTvShows.map((tvShow) => (
-                    <div
-                      key={tvShow.id}
-                      className='min-w-[96px] w-24 sm:min-w-[180px] sm:w-44'
-                    >
+                    <div key={tvShow.id} className='mtv-card-md'>
                       <VideoCard
                         id={tvShow.id}
                         poster={tvShow.poster}
@@ -771,7 +750,7 @@ function HomeClient() {
 
       case 'hotVarietyShows':
         return (
-          <section key='hotVarietyShows' className='mb-8'>
+          <section key='hotVarietyShows' className='mtv-row'>
             <div className='mb-4 flex items-center justify-between'>
               <h2 className='mtv-row-title'>热门综艺</h2>
               <Link href='/douban?type=show' className='mtv-row-more'>
@@ -782,19 +761,13 @@ function HomeClient() {
             <ScrollableRow snap fade>
               {loading
                 ? Array.from({ length: 8 }).map((_, index) => (
-                    <div
-                      key={index}
-                      className='min-w-[96px] w-24 sm:min-w-[180px] sm:w-44'
-                    >
+                    <div key={index} className='mtv-card-md'>
                       <div className='aspect-[2/3] bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse mb-2' />
                       <div className='h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4' />
                     </div>
                   ))
                 : hotVarietyShows.map((varietyShow) => (
-                    <div
-                      key={varietyShow.id}
-                      className='min-w-[96px] w-24 sm:min-w-[180px] sm:w-44'
-                    >
+                    <div key={varietyShow.id} className='mtv-card-md'>
                       <VideoCard
                         id={varietyShow.id}
                         poster={varietyShow.poster}
@@ -816,7 +789,7 @@ function HomeClient() {
       case 'upcomingContent':
         if (upcomingContent.length === 0) return null;
         return (
-          <section key='upcomingContent' className='mb-8'>
+          <section key='upcomingContent' className='mtv-row'>
             <div className='mb-4 flex items-center justify-between'>
               <h2 className='mtv-row-title'>即将上映</h2>
             </div>
@@ -824,7 +797,7 @@ function HomeClient() {
               {upcomingContent.map((item) => (
                 <div
                   key={`${item.media_type}-${item.id}`}
-                  className='min-w-[96px] w-24 sm:min-w-[180px] sm:w-44'
+                  className='mtv-card-md'
                 >
                   <VideoCard
                     title={item.title}
@@ -862,8 +835,8 @@ function HomeClient() {
         </div>
       )}
 
-      <div className='px-2 sm:px-10 pb-4 sm:pb-8 overflow-visible'>
-        <div className='max-w-[95%] mx-auto'>
+      <div className='mtv-page overflow-visible'>
+        <div>
           {/* 首页内容 */}
           <>
             {/* 源站寻片和AI问片入口 */}
@@ -965,7 +938,7 @@ function HomeClient() {
 
       {/* 公告弹窗 */}
       {showAnnouncement && (
-        <div className='fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4'>
+        <div className='fixed inset-0 bg-black bg-opacity-50 z-[var(--ui-z-modal)] flex items-center justify-center p-4'>
           <div className='bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6'>
             <h3 className='text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3'>
               公告
@@ -985,7 +958,7 @@ function HomeClient() {
 
       {showDirectPlayDialog && (
         <div
-          className='fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4'
+          className='fixed inset-0 bg-black/50 z-[var(--ui-z-modal)] flex items-center justify-center p-4'
           onClick={() => setShowDirectPlayDialog(false)}
         >
           <div
