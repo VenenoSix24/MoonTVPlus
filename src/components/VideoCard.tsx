@@ -99,6 +99,8 @@ export interface VideoCardProps {
   /** 悬浮信息面板：首页各行动用，桌面端悬浮时从卡片底部滑出元信息。
       不传则行为完全不变（搜索 / 豆瓣 / 播放页不受影响）。 */
   hoverPanel?: boolean;
+  /** 隐藏来源角标：继续观看这类「接着看」的场景不需要知道片子来自哪个站。 */
+  hideSource?: boolean;
   playTime?: number; // 当前播放时间（秒）
   totalTime?: number; // 总时长（秒）
   cmsData?: {
@@ -138,6 +140,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
       type = '',
       isBangumi = false,
       hoverPanel = false,
+      hideSource = false,
       isAnime = false,
       typeName,
       isAggregate = false,
@@ -712,8 +715,11 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
           showYear: true,
         },
       };
-      return configs[from] || configs.search;
-    }, [from, isAggregate, douban_id, rate, isUpcoming]);
+      const resolved = configs[from] || configs.search;
+      // 继续观看只关心「看到哪了」，来源（爱奇艺 / 电影天堂这类）对用户没有意义，
+      // 由调用方按需关掉。
+      return hideSource ? { ...resolved, showSourceName: false } : resolved;
+    }, [from, isAggregate, douban_id, rate, isUpcoming, hideSource]);
 
     const upcomingReleaseText = useMemo(() => {
       if (!isUpcoming || daysUntilRelease === null) return undefined;
