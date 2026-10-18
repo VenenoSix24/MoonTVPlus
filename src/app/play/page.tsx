@@ -327,6 +327,32 @@ function PlayPageClient() {
 
   // TMDB背景图
   const [tmdbBackdrop, setTmdbBackdrop] = useState<string | null>(null);
+  // 操作区「更多」面板：外部播放器、App / PC 打开、HLS 开关都收在这里
+  const [showPlayActionMore, setShowPlayActionMore] = useState(false);
+  const playActionMoreRef = useRef<HTMLDivElement>(null);
+  const playActionMoreButtonRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!showPlayActionMore) return;
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        playActionMoreRef.current?.contains(target) ||
+        playActionMoreButtonRef.current?.contains(target)
+      ) {
+        return;
+      }
+      setShowPlayActionMore(false);
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setShowPlayActionMore(false);
+    };
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showPlayActionMore]);
   // TMDB 分集名称（按 episode_number-1 索引），复用背景请求解析出的 tmdbId 获取
   const [tmdbEpisodeNames, setTmdbEpisodeNames] = useState<string[]>([]);
   // 背景请求解析出的 tmdbId 字符串（形如 "tv:123"），供拉取分集名复用
@@ -11184,7 +11210,7 @@ function PlayPageClient() {
 
               {/* 第三方应用打开按钮 - 观影室同步状态下隐藏 */}
               {videoUrl && !playSync.isInRoom && (
-                <div className='mt-3 px-2 lg:flex-shrink-0'>
+                <div className='relative mt-3 px-2 lg:flex-shrink-0'>
                   <div className='bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-lg p-2 border border-gray-200/50 dark:border-gray-700/50 w-full lg:w-auto overflow-x-auto'>
                     <div className='flex gap-1.5 flex-nowrap lg:flex-wrap items-center'>
                       <div className='flex gap-1.5 flex-nowrap lg:flex-wrap lg:justify-end lg:flex-1'>
@@ -11273,113 +11299,6 @@ function PlayPageClient() {
                           </span>
                         </button>
 
-                        {/* App打开 */}
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            // 获取当前浏览器URL去除域名部分，并去除开头的/
-                            const currentPath = (window.location.pathname + window.location.search).replace(/^\//, '');
-                            // 打开moontvplus协议
-                            window.open(`moontvplus://${currentPath}`, '_blank');
-                          }}
-                          className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-blue-600 dark:border-blue-700 flex-shrink-0'
-                          title='App打开'
-                        >
-                          <svg
-                            className='w-4 h-4 flex-shrink-0 text-white'
-                            fill='none'
-                            stroke='currentColor'
-                            viewBox='0 0 24 24'
-                            xmlns='http://www.w3.org/2000/svg'
-                          >
-                            <path
-                              strokeLinecap='round'
-                              strokeLinejoin='round'
-                              strokeWidth={2}
-                              d='M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z'
-                            />
-                          </svg>
-                          <span className='hidden lg:inline max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out text-white'>
-                            App打开
-                          </span>
-                        </button>
-
-                        {/* PC Client 打开 */}
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            const currentPath = (window.location.pathname + window.location.search).replace(/^\//, '');
-                            window.open(`moontvpluspc://${currentPath}`, '_blank');
-                          }}
-                          className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-ui-accent hover:brightness-110 dark:hover:brightness-110 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-ui-accent dark:border-ui-accent flex-shrink-0'
-                          title='PC Client打开'
-                        >
-                          <svg
-                            className='w-4 h-4 flex-shrink-0 text-white'
-                            fill='none'
-                            stroke='currentColor'
-                            viewBox='0 0 24 24'
-                            xmlns='http://www.w3.org/2000/svg'
-                          >
-                            <path
-                              strokeLinecap='round'
-                              strokeLinejoin='round'
-                              strokeWidth={2}
-                              d='M4 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm-2 15h20M8 20h8'
-                            />
-                          </svg>
-                          <span className='hidden lg:inline max-w-0 group-hover:max-w-[120px] overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out text-white'>
-                            PC Client打开
-                          </span>
-                        </button>
-
-                        {/* 创建观影室（观影室开启且未加入房间时显示） */}
-                        {watchRoomContext?.isEnabled && watchRoomContext.isConnected && (
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              handleCreateWatchRoom();
-                            }}
-                            disabled={isCreatingRoom}
-                            className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-purple-500 hover:bg-purple-600 dark:bg-purple-600 dark:hover:bg-purple-700 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-purple-600 dark:border-purple-700 flex-shrink-0 disabled:opacity-60 disabled:cursor-wait'
-                            title='创建观影室'
-                          >
-                            {isCreatingRoom ? (
-                              <Loader2 className='w-4 h-4 flex-shrink-0 text-white animate-spin' />
-                            ) : (
-                              <Users className='w-4 h-4 flex-shrink-0 text-white' />
-                            )}
-                            <span className='hidden lg:inline max-w-0 group-hover:max-w-[120px] overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out text-white'>
-                              {isCreatingRoom ? '创建中' : '创建观影室'}
-                            </span>
-                          </button>
-                        )}
-
-                        {showExternalTranscodeButton && (
-                          <button
-                            onClick={async (e) => {
-                              e.preventDefault();
-                              await handleCreateTranscodeSession();
-                            }}
-                            disabled={isTranscoding}
-                            className={`group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md overflow-hidden border flex-shrink-0 ${
-                              isTranscoding
-                                ? 'bg-amber-400 text-white border-amber-400 cursor-wait'
-                                : 'bg-amber-500 hover:bg-amber-600 text-white border-amber-500 cursor-pointer'
-                            }`}
-                            title='转码播放'
-                          >
-                            {isTranscoding ? (
-                              <Loader2 className='w-4 h-4 flex-shrink-0 text-white animate-spin' />
-                            ) : (
-                              <Router className='w-4 h-4 flex-shrink-0 text-white' />
-                            )}
-                            <span className='hidden lg:inline max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out text-white'>
-                              {isTranscoding ? '转码中' : '转码'}
-                            </span>
-                          </button>
-                        )}
-
                         {/* 快捷键说明 */}
                         <button
                           onClick={(e) => {
@@ -11393,193 +11312,6 @@ function PlayPageClient() {
                           <Keyboard className='w-4 h-4 flex-shrink-0 text-gray-700 dark:text-gray-200' />
                           <span className='hidden lg:inline max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out text-gray-700 dark:text-gray-200'>
                             快捷键
-                          </span>
-                        </button>
-
-                        {/* PotPlayer */}
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            // 如果当前是代理播放模式，使用原始 URL；否则使用当前 videoUrl
-                            let urlToUse = videoUrl;
-                            if (sourceProxyMode && detail?.episodes && currentEpisodeIndex < detail.episodes.length) {
-                              urlToUse = detail.episodes[currentEpisodeIndex];
-                            }
-                            // 使用代理 URL
-                            const tokenParam = proxyToken ? `&token=${encodeURIComponent(proxyToken)}` : '';
-                            const proxyUrl = externalPlayerAdBlock
-                              ? `${window.location.origin}/api/proxy-m3u8?url=${encodeURIComponent(urlToUse)}&source=${encodeURIComponent(currentSource)}${tokenParam}`
-                              : urlToUse;
-                            // URL encode 避免冒号被吃掉
-                            window.open(`potplayer://${proxyUrl}`, '_blank');
-                          }}
-                          className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 flex-shrink-0'
-                          title='PotPlayer'
-                        >
-                          <img
-                            src='/players/potplayer.png'
-                            alt='PotPlayer'
-                            className='w-4 h-4 flex-shrink-0'
-                          />
-                          <span className='hidden lg:inline max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out text-gray-700 dark:text-gray-200'>
-                            PotPlayer
-                          </span>
-                        </button>
-
-                        {/* VLC */}
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            // 如果当前是代理播放模式，使用原始 URL；否则使用当前 videoUrl
-                            let urlToUse = videoUrl;
-                            if (sourceProxyMode && detail?.episodes && currentEpisodeIndex < detail.episodes.length) {
-                              urlToUse = detail.episodes[currentEpisodeIndex];
-                            }
-                            // 使用代理 URL
-                            const tokenParam = proxyToken ? `&token=${encodeURIComponent(proxyToken)}` : '';
-                            const proxyUrl = externalPlayerAdBlock
-                              ? `${window.location.origin}/api/proxy-m3u8?url=${encodeURIComponent(urlToUse)}&source=${encodeURIComponent(currentSource)}${tokenParam}`
-                              : urlToUse;
-                            // URL encode 避免冒号被吃掉
-                            window.open(`vlc://${proxyUrl}`, '_blank');
-                          }}
-                          className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 flex-shrink-0'
-                          title='VLC'
-                        >
-                          <img
-                            src='/players/vlc.png'
-                            alt='VLC'
-                            className='w-4 h-4 flex-shrink-0'
-                          />
-                          <span className='hidden lg:inline max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out text-gray-700 dark:text-gray-200'>
-                            VLC
-                          </span>
-                        </button>
-
-                        {/* MPV */}
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            // 如果当前是代理播放模式，使用原始 URL；否则使用当前 videoUrl
-                            let urlToUse = videoUrl;
-                            if (sourceProxyMode && detail?.episodes && currentEpisodeIndex < detail.episodes.length) {
-                              urlToUse = detail.episodes[currentEpisodeIndex];
-                            }
-                            // 使用代理 URL
-                            const tokenParam = proxyToken ? `&token=${encodeURIComponent(proxyToken)}` : '';
-                            const proxyUrl = externalPlayerAdBlock
-                              ? `${window.location.origin}/api/proxy-m3u8?url=${encodeURIComponent(urlToUse)}&source=${encodeURIComponent(currentSource)}${tokenParam}`
-                              : urlToUse;
-                            // URL encode 避免冒号被吃掉
-                            window.open(`mpv://${proxyUrl}`, '_blank');
-                          }}
-                          className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 flex-shrink-0'
-                          title='MPV'
-                        >
-                          <img
-                            src='/players/mpv.png'
-                            alt='MPV'
-                            className='w-4 h-4 flex-shrink-0'
-                          />
-                          <span className='hidden lg:inline max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out text-gray-700 dark:text-gray-200'>
-                            MPV
-                          </span>
-                        </button>
-
-                        {/* MX Player */}
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            // 如果当前是代理播放模式，使用原始 URL；否则使用当前 videoUrl
-                            let urlToUse = videoUrl;
-                            if (sourceProxyMode && detail?.episodes && currentEpisodeIndex < detail.episodes.length) {
-                              urlToUse = detail.episodes[currentEpisodeIndex];
-                            }
-                            // 使用代理 URL
-                            const tokenParam = proxyToken ? `&token=${encodeURIComponent(proxyToken)}` : '';
-                            const proxyUrl = externalPlayerAdBlock
-                              ? `${window.location.origin}/api/proxy-m3u8?url=${encodeURIComponent(urlToUse)}&source=${encodeURIComponent(currentSource)}${tokenParam}`
-                              : urlToUse;
-                            window.open(
-                              `intent://${proxyUrl}#Intent;package=com.mxtech.videoplayer.ad;S.title=${encodeURIComponent(
-                                videoTitle
-                              )};end`,
-                              '_blank'
-                            );
-                          }}
-                          className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 flex-shrink-0'
-                          title='MX Player'
-                        >
-                          <img
-                            src='/players/mxplayer.png'
-                            alt='MX Player'
-                            className='w-4 h-4 flex-shrink-0'
-                          />
-                          <span className='hidden lg:inline max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out text-gray-700 dark:text-gray-200'>
-                            MX Player
-                          </span>
-                        </button>
-
-                        {/* nPlayer */}
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            // 如果当前是代理播放模式，使用原始 URL；否则使用当前 videoUrl
-                            let urlToUse = videoUrl;
-                            if (sourceProxyMode && detail?.episodes && currentEpisodeIndex < detail.episodes.length) {
-                              urlToUse = detail.episodes[currentEpisodeIndex];
-                            }
-                            // 使用代理 URL
-                            const tokenParam = proxyToken ? `&token=${encodeURIComponent(proxyToken)}` : '';
-                            const proxyUrl = externalPlayerAdBlock
-                              ? `${window.location.origin}/api/proxy-m3u8?url=${encodeURIComponent(urlToUse)}&source=${encodeURIComponent(currentSource)}${tokenParam}`
-                              : urlToUse;
-                            window.open(`nplayer-${proxyUrl}`, '_blank');
-                          }}
-                          className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 flex-shrink-0'
-                          title='nPlayer'
-                        >
-                          <img
-                            src='/players/nplayer.png'
-                            alt='nPlayer'
-                            className='w-4 h-4 flex-shrink-0'
-                          />
-                          <span className='hidden lg:inline max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out text-gray-700 dark:text-gray-200'>
-                            nPlayer
-                          </span>
-                        </button>
-
-                        {/* IINA */}
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            // 如果当前是代理播放模式，使用原始 URL；否则使用当前 videoUrl
-                            let urlToUse = videoUrl;
-                            if (sourceProxyMode && detail?.episodes && currentEpisodeIndex < detail.episodes.length) {
-                              urlToUse = detail.episodes[currentEpisodeIndex];
-                            }
-                            // 使用代理 URL
-                            const tokenParam = proxyToken ? `&token=${encodeURIComponent(proxyToken)}` : '';
-                            const proxyUrl = externalPlayerAdBlock
-                              ? `${window.location.origin}/api/proxy-m3u8?url=${encodeURIComponent(urlToUse)}&source=${encodeURIComponent(currentSource)}${tokenParam}`
-                              : urlToUse;
-                            window.open(
-                              `iina://weblink?url=${encodeURIComponent(
-                                proxyUrl
-                              )}`,
-                              '_blank'
-                            );
-                          }}
-                          className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 flex-shrink-0'
-                          title='IINA'
-                        >
-                          <img
-                            src='/players/iina.png'
-                            alt='IINA'
-                            className='w-4 h-4 flex-shrink-0'
-                          />
-                          <span className='hidden lg:inline max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out text-gray-700 dark:text-gray-200'>
-                            IINA
                           </span>
                         </button>
                       </div>
@@ -11620,105 +11352,442 @@ function PlayPageClient() {
                         </span>
                       </button>
 
-                      {/* 鸿蒙 HLS.js 开关：关闭后使用原生 HLS，便于浏览器投屏 */}
-                      {isHarmonyOS && isHlsPlaybackUrl(videoUrl) && (
+                        {/* 更多：外部播放器 / App 与 PC 打开 / HLS 开关 */}
                         <button
-                          type='button'
-                          onClick={() =>
-                            switchHarmonyHlsPlaybackMode(
-                              harmonyHlsPlaybackMode === 'hlsjs'
-                                ? 'native'
-                                : 'hlsjs'
-                            )
-                          }
-                          aria-pressed={harmonyHlsPlaybackMode === 'hlsjs'}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer border flex-shrink-0 ${harmonyHlsPlaybackMode === 'hlsjs'
-                            ? 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white border-blue-400'
-                            : 'bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600'
-                            }`}
-                          title={
-                            harmonyHlsPlaybackMode === 'hlsjs'
-                              ? 'HLS.js 已开启，点击切换为原生 HLS'
-                              : 'HLS.js 已关闭，当前使用原生 HLS'
-                          }
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setShowPlayActionMore((v) => !v);
+                          }}
+                          className={`group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border flex-shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-ui-accent ${
+                            showPlayActionMore
+                              ? 'bg-white/20 text-white border-white/25'
+                              : 'bg-white/10 hover:bg-white/15 text-white/90 border-white/15'
+                          }`}
+                          title='更多'
+                          aria-haspopup='menu'
+                          aria-expanded={showPlayActionMore}
+                          ref={playActionMoreButtonRef}
                         >
                           <svg
-                            className='w-4 h-4 flex-shrink-0'
+                            className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${showPlayActionMore ? 'rotate-180' : ''}`}
                             fill='none'
                             stroke='currentColor'
                             viewBox='0 0 24 24'
                           >
-                            {harmonyHlsPlaybackMode === 'hlsjs' ? (
-                              <path
-                                strokeLinecap='round'
-                                strokeLinejoin='round'
-                                strokeWidth='2'
-                                d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
-                              />
-                            ) : (
-                              <path
-                                strokeLinecap='round'
-                                strokeLinejoin='round'
-                                strokeWidth='2'
-                                d='M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636'
-                              />
-                            )}
+                            <path
+                              strokeLinecap='round'
+                              strokeLinejoin='round'
+                              strokeWidth='2'
+                              d='M6 9l6 6 6-6'
+                            />
                           </svg>
-                          <span className='whitespace-nowrap'>HLS.js</span>
+                          <span className='hidden lg:inline max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out'>
+                            更多
+                          </span>
                         </button>
-                      )}
-
-                      {/* 网盘挂载原生 HLS 开关：关闭 HLS.js 使用浏览器原生 HLS 直连，更快且无需代理/去广告 */}
-                      {isNetdiskMountSource(currentSource) &&
-                        supportsNativeHls &&
-                        isHlsPlaybackUrl(videoUrl) && (
-                          <button
-                            type='button'
-                            onClick={() =>
-                              switchNetdiskHlsPlaybackMode(
-                                netdiskHlsPlaybackMode === 'native'
-                                  ? 'hlsjs'
-                                  : 'native'
-                              )
-                            }
-                            aria-pressed={netdiskHlsPlaybackMode === 'native'}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer border flex-shrink-0 ${netdiskHlsPlaybackMode === 'native'
-                              ? 'mtv-play-grad hover:brightness-110 text-white border-ui-accent'
-                              : 'bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600'
-                              }`}
-                            title={
-                              netdiskHlsPlaybackMode === 'native'
-                                ? '原生 HLS 已开启（直连网盘，最快），点击切换为 HLS.js'
-                                : '原生 HLS 已关闭（当前使用 HLS.js），点击切换为原生直连'
-                            }
-                          >
-                            <svg
-                              className='w-4 h-4 flex-shrink-0'
-                              fill='none'
-                              stroke='currentColor'
-                              viewBox='0 0 24 24'
-                            >
-                              {netdiskHlsPlaybackMode === 'native' ? (
-                                <path
-                                  strokeLinecap='round'
-                                  strokeLinejoin='round'
-                                  strokeWidth='2'
-                                  d='M13 10V3L4 14h7v7l9-11h-7z'
-                                />
-                              ) : (
-                                <path
-                                  strokeLinecap='round'
-                                  strokeLinejoin='round'
-                                  strokeWidth='2'
-                                  d='M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636'
-                                />
-                              )}
-                            </svg>
-                            <span className='whitespace-nowrap'>原生HLS</span>
-                          </button>
-                        )}
                     </div>
                   </div>
+                {showPlayActionMore && (
+                  <div
+                    ref={playActionMoreRef}
+                    className='mtv-play-pop absolute right-0 top-full z-50 mt-2 flex max-h-[70vh] w-max max-w-[min(92vw,46rem)] flex-wrap items-center gap-1.5 overflow-y-auto rounded-xl p-2'
+                    role='menu'
+                    onClick={() => setShowPlayActionMore(false)}
+                  >
+
+                    {/* App打开 */}
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        // 获取当前浏览器URL去除域名部分，并去除开头的/
+                        const currentPath = (window.location.pathname + window.location.search).replace(/^\//, '');
+                        // 打开moontvplus协议
+                        window.open(`moontvplus://${currentPath}`, '_blank');
+                      }}
+                      className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-blue-600 dark:border-blue-700 flex-shrink-0'
+                      title='App打开'
+                    >
+                      <svg
+                        className='w-4 h-4 flex-shrink-0 text-white'
+                        fill='none'
+                        stroke='currentColor'
+                        viewBox='0 0 24 24'
+                        xmlns='http://www.w3.org/2000/svg'
+                      >
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          strokeWidth={2}
+                          d='M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z'
+                        />
+                      </svg>
+                      <span className='hidden lg:inline max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out text-white'>
+                        App打开
+                      </span>
+                    </button>
+
+                    {/* PC Client 打开 */}
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        const currentPath = (window.location.pathname + window.location.search).replace(/^\//, '');
+                        window.open(`moontvpluspc://${currentPath}`, '_blank');
+                      }}
+                      className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-ui-accent hover:brightness-110 dark:hover:brightness-110 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-ui-accent dark:border-ui-accent flex-shrink-0'
+                      title='PC Client打开'
+                    >
+                      <svg
+                        className='w-4 h-4 flex-shrink-0 text-white'
+                        fill='none'
+                        stroke='currentColor'
+                        viewBox='0 0 24 24'
+                        xmlns='http://www.w3.org/2000/svg'
+                      >
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          strokeWidth={2}
+                          d='M4 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm-2 15h20M8 20h8'
+                        />
+                      </svg>
+                      <span className='hidden lg:inline max-w-0 group-hover:max-w-[120px] overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out text-white'>
+                        PC Client打开
+                      </span>
+                    </button>
+
+                    {/* 创建观影室（观影室开启且未加入房间时显示） */}
+                    {watchRoomContext?.isEnabled && watchRoomContext.isConnected && (
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleCreateWatchRoom();
+                        }}
+                        disabled={isCreatingRoom}
+                        className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-purple-500 hover:bg-purple-600 dark:bg-purple-600 dark:hover:bg-purple-700 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-purple-600 dark:border-purple-700 flex-shrink-0 disabled:opacity-60 disabled:cursor-wait'
+                        title='创建观影室'
+                      >
+                        {isCreatingRoom ? (
+                          <Loader2 className='w-4 h-4 flex-shrink-0 text-white animate-spin' />
+                        ) : (
+                          <Users className='w-4 h-4 flex-shrink-0 text-white' />
+                        )}
+                        <span className='hidden lg:inline max-w-0 group-hover:max-w-[120px] overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out text-white'>
+                          {isCreatingRoom ? '创建中' : '创建观影室'}
+                        </span>
+                      </button>
+                    )}
+
+                    {showExternalTranscodeButton && (
+                      <button
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          await handleCreateTranscodeSession();
+                        }}
+                        disabled={isTranscoding}
+                        className={`group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md overflow-hidden border flex-shrink-0 ${
+                          isTranscoding
+                            ? 'bg-amber-400 text-white border-amber-400 cursor-wait'
+                            : 'bg-amber-500 hover:bg-amber-600 text-white border-amber-500 cursor-pointer'
+                        }`}
+                        title='转码播放'
+                      >
+                        {isTranscoding ? (
+                          <Loader2 className='w-4 h-4 flex-shrink-0 text-white animate-spin' />
+                        ) : (
+                          <Router className='w-4 h-4 flex-shrink-0 text-white' />
+                        )}
+                        <span className='hidden lg:inline max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out text-white'>
+                          {isTranscoding ? '转码中' : '转码'}
+                        </span>
+                      </button>
+                    )}
+
+                    {/* PotPlayer */}
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        // 如果当前是代理播放模式，使用原始 URL；否则使用当前 videoUrl
+                        let urlToUse = videoUrl;
+                        if (sourceProxyMode && detail?.episodes && currentEpisodeIndex < detail.episodes.length) {
+                          urlToUse = detail.episodes[currentEpisodeIndex];
+                        }
+                        // 使用代理 URL
+                        const tokenParam = proxyToken ? `&token=${encodeURIComponent(proxyToken)}` : '';
+                        const proxyUrl = externalPlayerAdBlock
+                          ? `${window.location.origin}/api/proxy-m3u8?url=${encodeURIComponent(urlToUse)}&source=${encodeURIComponent(currentSource)}${tokenParam}`
+                          : urlToUse;
+                        // URL encode 避免冒号被吃掉
+                        window.open(`potplayer://${proxyUrl}`, '_blank');
+                      }}
+                      className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 flex-shrink-0'
+                      title='PotPlayer'
+                    >
+                      <img
+                        src='/players/potplayer.png'
+                        alt='PotPlayer'
+                        className='w-4 h-4 flex-shrink-0'
+                      />
+                      <span className='hidden lg:inline max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out text-gray-700 dark:text-gray-200'>
+                        PotPlayer
+                      </span>
+                    </button>
+
+                    {/* VLC */}
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        // 如果当前是代理播放模式，使用原始 URL；否则使用当前 videoUrl
+                        let urlToUse = videoUrl;
+                        if (sourceProxyMode && detail?.episodes && currentEpisodeIndex < detail.episodes.length) {
+                          urlToUse = detail.episodes[currentEpisodeIndex];
+                        }
+                        // 使用代理 URL
+                        const tokenParam = proxyToken ? `&token=${encodeURIComponent(proxyToken)}` : '';
+                        const proxyUrl = externalPlayerAdBlock
+                          ? `${window.location.origin}/api/proxy-m3u8?url=${encodeURIComponent(urlToUse)}&source=${encodeURIComponent(currentSource)}${tokenParam}`
+                          : urlToUse;
+                        // URL encode 避免冒号被吃掉
+                        window.open(`vlc://${proxyUrl}`, '_blank');
+                      }}
+                      className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 flex-shrink-0'
+                      title='VLC'
+                    >
+                      <img
+                        src='/players/vlc.png'
+                        alt='VLC'
+                        className='w-4 h-4 flex-shrink-0'
+                      />
+                      <span className='hidden lg:inline max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out text-gray-700 dark:text-gray-200'>
+                        VLC
+                      </span>
+                    </button>
+
+                    {/* MPV */}
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        // 如果当前是代理播放模式，使用原始 URL；否则使用当前 videoUrl
+                        let urlToUse = videoUrl;
+                        if (sourceProxyMode && detail?.episodes && currentEpisodeIndex < detail.episodes.length) {
+                          urlToUse = detail.episodes[currentEpisodeIndex];
+                        }
+                        // 使用代理 URL
+                        const tokenParam = proxyToken ? `&token=${encodeURIComponent(proxyToken)}` : '';
+                        const proxyUrl = externalPlayerAdBlock
+                          ? `${window.location.origin}/api/proxy-m3u8?url=${encodeURIComponent(urlToUse)}&source=${encodeURIComponent(currentSource)}${tokenParam}`
+                          : urlToUse;
+                        // URL encode 避免冒号被吃掉
+                        window.open(`mpv://${proxyUrl}`, '_blank');
+                      }}
+                      className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 flex-shrink-0'
+                      title='MPV'
+                    >
+                      <img
+                        src='/players/mpv.png'
+                        alt='MPV'
+                        className='w-4 h-4 flex-shrink-0'
+                      />
+                      <span className='hidden lg:inline max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out text-gray-700 dark:text-gray-200'>
+                        MPV
+                      </span>
+                    </button>
+
+                    {/* MX Player */}
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        // 如果当前是代理播放模式，使用原始 URL；否则使用当前 videoUrl
+                        let urlToUse = videoUrl;
+                        if (sourceProxyMode && detail?.episodes && currentEpisodeIndex < detail.episodes.length) {
+                          urlToUse = detail.episodes[currentEpisodeIndex];
+                        }
+                        // 使用代理 URL
+                        const tokenParam = proxyToken ? `&token=${encodeURIComponent(proxyToken)}` : '';
+                        const proxyUrl = externalPlayerAdBlock
+                          ? `${window.location.origin}/api/proxy-m3u8?url=${encodeURIComponent(urlToUse)}&source=${encodeURIComponent(currentSource)}${tokenParam}`
+                          : urlToUse;
+                        window.open(
+                          `intent://${proxyUrl}#Intent;package=com.mxtech.videoplayer.ad;S.title=${encodeURIComponent(
+                            videoTitle
+                          )};end`,
+                          '_blank'
+                        );
+                      }}
+                      className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 flex-shrink-0'
+                      title='MX Player'
+                    >
+                      <img
+                        src='/players/mxplayer.png'
+                        alt='MX Player'
+                        className='w-4 h-4 flex-shrink-0'
+                      />
+                      <span className='hidden lg:inline max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out text-gray-700 dark:text-gray-200'>
+                        MX Player
+                      </span>
+                    </button>
+
+                    {/* nPlayer */}
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        // 如果当前是代理播放模式，使用原始 URL；否则使用当前 videoUrl
+                        let urlToUse = videoUrl;
+                        if (sourceProxyMode && detail?.episodes && currentEpisodeIndex < detail.episodes.length) {
+                          urlToUse = detail.episodes[currentEpisodeIndex];
+                        }
+                        // 使用代理 URL
+                        const tokenParam = proxyToken ? `&token=${encodeURIComponent(proxyToken)}` : '';
+                        const proxyUrl = externalPlayerAdBlock
+                          ? `${window.location.origin}/api/proxy-m3u8?url=${encodeURIComponent(urlToUse)}&source=${encodeURIComponent(currentSource)}${tokenParam}`
+                          : urlToUse;
+                        window.open(`nplayer-${proxyUrl}`, '_blank');
+                      }}
+                      className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 flex-shrink-0'
+                      title='nPlayer'
+                    >
+                      <img
+                        src='/players/nplayer.png'
+                        alt='nPlayer'
+                        className='w-4 h-4 flex-shrink-0'
+                      />
+                      <span className='hidden lg:inline max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out text-gray-700 dark:text-gray-200'>
+                        nPlayer
+                      </span>
+                    </button>
+
+                    {/* IINA */}
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        // 如果当前是代理播放模式，使用原始 URL；否则使用当前 videoUrl
+                        let urlToUse = videoUrl;
+                        if (sourceProxyMode && detail?.episodes && currentEpisodeIndex < detail.episodes.length) {
+                          urlToUse = detail.episodes[currentEpisodeIndex];
+                        }
+                        // 使用代理 URL
+                        const tokenParam = proxyToken ? `&token=${encodeURIComponent(proxyToken)}` : '';
+                        const proxyUrl = externalPlayerAdBlock
+                          ? `${window.location.origin}/api/proxy-m3u8?url=${encodeURIComponent(urlToUse)}&source=${encodeURIComponent(currentSource)}${tokenParam}`
+                          : urlToUse;
+                        window.open(
+                          `iina://weblink?url=${encodeURIComponent(
+                            proxyUrl
+                          )}`,
+                          '_blank'
+                        );
+                      }}
+                      className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 flex-shrink-0'
+                      title='IINA'
+                    >
+                      <img
+                        src='/players/iina.png'
+                        alt='IINA'
+                        className='w-4 h-4 flex-shrink-0'
+                      />
+                      <span className='hidden lg:inline max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out text-gray-700 dark:text-gray-200'>
+                        IINA
+                      </span>
+                    </button>
+
+                  {/* 鸿蒙 HLS.js 开关：关闭后使用原生 HLS，便于浏览器投屏 */}
+                  {isHarmonyOS && isHlsPlaybackUrl(videoUrl) && (
+                    <button
+                      type='button'
+                      onClick={() =>
+                        switchHarmonyHlsPlaybackMode(
+                          harmonyHlsPlaybackMode === 'hlsjs'
+                            ? 'native'
+                            : 'hlsjs'
+                        )
+                      }
+                      aria-pressed={harmonyHlsPlaybackMode === 'hlsjs'}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer border flex-shrink-0 ${harmonyHlsPlaybackMode === 'hlsjs'
+                        ? 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white border-blue-400'
+                        : 'bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600'
+                        }`}
+                      title={
+                        harmonyHlsPlaybackMode === 'hlsjs'
+                          ? 'HLS.js 已开启，点击切换为原生 HLS'
+                          : 'HLS.js 已关闭，当前使用原生 HLS'
+                      }
+                    >
+                      <svg
+                        className='w-4 h-4 flex-shrink-0'
+                        fill='none'
+                        stroke='currentColor'
+                        viewBox='0 0 24 24'
+                      >
+                        {harmonyHlsPlaybackMode === 'hlsjs' ? (
+                          <path
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                            strokeWidth='2'
+                            d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
+                          />
+                        ) : (
+                          <path
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                            strokeWidth='2'
+                            d='M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636'
+                          />
+                        )}
+                      </svg>
+                      <span className='whitespace-nowrap'>HLS.js</span>
+                    </button>
+                  )}
+
+                  {/* 网盘挂载原生 HLS 开关：关闭 HLS.js 使用浏览器原生 HLS 直连，更快且无需代理/去广告 */}
+                  {isNetdiskMountSource(currentSource) &&
+                    supportsNativeHls &&
+                    isHlsPlaybackUrl(videoUrl) && (
+                      <button
+                        type='button'
+                        onClick={() =>
+                          switchNetdiskHlsPlaybackMode(
+                            netdiskHlsPlaybackMode === 'native'
+                              ? 'hlsjs'
+                              : 'native'
+                          )
+                        }
+                        aria-pressed={netdiskHlsPlaybackMode === 'native'}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer border flex-shrink-0 ${netdiskHlsPlaybackMode === 'native'
+                          ? 'mtv-play-grad hover:brightness-110 text-white border-ui-accent'
+                          : 'bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600'
+                          }`}
+                        title={
+                          netdiskHlsPlaybackMode === 'native'
+                            ? '原生 HLS 已开启（直连网盘，最快），点击切换为 HLS.js'
+                            : '原生 HLS 已关闭（当前使用 HLS.js），点击切换为原生直连'
+                        }
+                      >
+                        <svg
+                          className='w-4 h-4 flex-shrink-0'
+                          fill='none'
+                          stroke='currentColor'
+                          viewBox='0 0 24 24'
+                        >
+                          {netdiskHlsPlaybackMode === 'native' ? (
+                            <path
+                              strokeLinecap='round'
+                              strokeLinejoin='round'
+                              strokeWidth='2'
+                              d='M13 10V3L4 14h7v7l9-11h-7z'
+                            />
+                          ) : (
+                            <path
+                              strokeLinecap='round'
+                              strokeLinejoin='round'
+                              strokeWidth='2'
+                              d='M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636'
+                            />
+                          )}
+                        </svg>
+                        <span className='whitespace-nowrap'>原生HLS</span>
+                      </button>
+                    )}
+                  </div>
+                )}
                 </div>
               )}
             </div>

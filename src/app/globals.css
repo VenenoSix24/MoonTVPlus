@@ -2434,3 +2434,11 @@ html[data-loading-style='grid'] .mtv-err-box {
   background-color: rgba(255, 255, 255, 0.08);
   color: #ffffff;
 }
+
+/* 「更多」面板里的按钮标签常显。工具栏上按钮靠 hover 展开标签是为了省地方，
+   但在下拉面板里这么做会让面板跟着 hover 一起重排。手机上标签本来就是
+   `hidden`，所以这里只影响 lg 及以上。 */
+.mtv-play-pop button > span {
+  max-width: none;
+  margin-left: 0.25rem;
+}
