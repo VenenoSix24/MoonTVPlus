@@ -581,7 +581,7 @@ export default function BannerCarousel({
 
       {/* 内容信息 */}
       <div className='absolute inset-0 flex items-end p-8 md:p-12 pointer-events-none'>
-        <div className='max-w-2xl space-y-4'>
+        <div className='max-w-2xl space-y-3'>
           <h2
             ref={titleRef}
             className='mtv-hero-title'
@@ -627,6 +627,12 @@ export default function BannerCarousel({
             )}
           </div>
 
+          {currentItem.overview && (
+            <p className='mtv-hero-syn text-sm md:text-base line-clamp-3 drop-shadow-md'>
+              {currentItem.overview}
+            </p>
+          )}
+
           {/* PC端播放按钮 */}
           <button
             onClick={(e) => {
@@ -638,12 +644,6 @@ export default function BannerCarousel({
             <Play className='w-5 h-5' />
             立即播放
           </button>
-
-          {currentItem.overview && (
-            <p className='mtv-hero-syn text-sm md:text-base line-clamp-3 drop-shadow-md'>
-              {currentItem.overview}
-            </p>
-          )}
         </div>
       </div>
 

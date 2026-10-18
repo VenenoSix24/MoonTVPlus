@@ -1399,8 +1399,7 @@ html[data-loading-style='grid'] .mtv-err-box {
   font-weight: 500;
   white-space: nowrap;
   color: var(--ui-ink-2);
-  transition:
-    color var(--ui-dur-1) var(--ui-ease),
+  transition: color var(--ui-dur-1) var(--ui-ease),
     background-color var(--ui-dur-1) var(--ui-ease);
 }
 
@@ -1435,8 +1434,7 @@ html[data-loading-style='grid'] .mtv-err-box {
   height: 36px;
   border-radius: var(--ui-r-sm);
   color: var(--ui-ink-2);
-  transition:
-    color var(--ui-dur-1) var(--ui-ease),
+  transition: color var(--ui-dur-1) var(--ui-ease),
     background-color var(--ui-dur-1) var(--ui-ease);
 }
 
@@ -1463,20 +1461,24 @@ html[data-loading-style='grid'] .mtv-err-box {
    原来的黑遮罩 + 白字。整组取值走 --hero-* 令牌，随 .dark 切换。
    ========================================================================== */
 :root {
-  --hero-scrim:
-    linear-gradient(
+  --hero-scrim: linear-gradient(
       90deg,
-      rgba(255, 255, 255, 0.96) 0%,
-      rgba(255, 255, 255, 0.86) 28%,
-      rgba(255, 255, 255, 0.4) 55%,
-      rgba(255, 255, 255, 0.08) 78%,
-      transparent 100%
+      rgba(255, 255, 255, 0.99) 0%,
+      rgba(255, 255, 255, 0.95) 30%,
+      rgba(255, 255, 255, 0.55) 50%,
+      rgba(255, 255, 255, 0.12) 70%,
+      transparent 88%
     ),
-    linear-gradient(0deg, var(--ui-bg) 0%, rgba(255, 255, 255, 0.6) 14%, transparent 38%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0%, transparent 28%);
+    linear-gradient(
+      0deg,
+      var(--ui-bg) 0%,
+      rgba(255, 255, 255, 0.5) 16%,
+      transparent 42%
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, transparent 30%);
   --hero-ink: #0e1524;
   --hero-ink-2: rgba(14, 21, 36, 0.78);
-  --hero-art-filter: saturate(0.85) brightness(1.28) contrast(0.94);
+  --hero-art-filter: saturate(0.9) brightness(1.12) contrast(0.96);
   --hero-btn-bg: #0e1524;
   --hero-btn-ink: #ffffff;
   --hero-btn-bg-hover: #2a2a30;
@@ -1487,15 +1489,19 @@ html[data-loading-style='grid'] .mtv-err-box {
 }
 
 .dark {
-  --hero-scrim:
-    linear-gradient(
+  --hero-scrim: linear-gradient(
       90deg,
       rgba(0, 0, 0, 0.92) 0%,
       rgba(0, 0, 0, 0.72) 28%,
       rgba(0, 0, 0, 0.28) 55%,
       transparent 78%
     ),
-    linear-gradient(0deg, var(--ui-bg) 0%, rgba(0, 0, 0, 0.55) 14%, transparent 38%),
+    linear-gradient(
+      0deg,
+      var(--ui-bg) 0%,
+      rgba(0, 0, 0, 0.55) 14%,
+      transparent 38%
+    ),
     linear-gradient(180deg, rgba(0, 0, 0, 0.6) 0%, transparent 28%);
   --hero-ink: #ffffff;
   --hero-ink-2: rgba(255, 255, 255, 0.78);
@@ -1525,7 +1531,7 @@ html[data-loading-style='grid'] .mtv-err-box {
 
 .mtv-hero-title {
   margin: 0;
-  font-size: clamp(1.9rem, 4.2vw, 4rem);
+  font-size: clamp(2rem, 4.6vw, 4.6rem);
   font-weight: 800;
   line-height: 1.02;
   letter-spacing: -0.04em;
@@ -1605,6 +1611,18 @@ html[data-loading-style='grid'] .mtv-err-box {
 
 @media (min-width: 768px) {
   .mtv-hero {
-    min-height: 460px;
+    min-height: 480px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .mtv-hero {
+    min-height: 580px;
+  }
+}
+
+@media (min-width: 1600px) {
+  .mtv-hero {
+    min-height: 660px;
   }
 }
