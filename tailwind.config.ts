@@ -3,6 +3,12 @@ import defaultTheme from 'tailwindcss/defaultTheme';
 
 const config: Config = {
   darkMode: 'class',
+  // 触屏没有 hover：:hover 会退化成「点完卡住」的粘滞 hover——卡片标题会一直发绿、
+  // 悬浮遮罩会一直亮着。打开这个开关后，所有 hover:/group-hover: 变体只在真正
+  // 有指针的设备上生效，全站一次性修掉，不用逐个加 sm: 前缀。
+  future: {
+    hoverOnlyWhenSupported: true,
+  },
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',

@@ -716,8 +716,10 @@ export default function BannerCarousel({
             </p>
           )}
 
-          {/* PC端操作区：主按钮实心 + 次按钮描边，高度与圆角一致 */}
-          <div className='pointer-events-auto hidden md:flex items-center gap-3'>
+          {/* 操作区：主按钮实心 + 次按钮描边，高度与圆角一致。
+              主 CTA 手机端也显示（Hero 整块虽然可点，但有个明确按钮更好找）；
+              次按钮是外链，手机上留出空间更划算，所以只在 md 以上出现。 */}
+          <div className='mtv-hero-actions pointer-events-auto flex items-center gap-3'>
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -734,7 +736,7 @@ export default function BannerCarousel({
                 target='_blank'
                 rel='noopener noreferrer'
                 onClick={(e) => e.stopPropagation()}
-                className='mtv-hero-more flex items-center'
+                className='mtv-hero-more hidden md:flex items-center'
               >
                 {dataSource === 'Douban' ? '豆瓣详情' : 'TMDB 详情'}
                 <ExternalLink className='h-4 w-4' />
