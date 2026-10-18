@@ -11311,7 +11311,7 @@ function PlayPageClient() {
                             const currentPath = (window.location.pathname + window.location.search).replace(/^\//, '');
                             window.open(`moontvpluspc://${currentPath}`, '_blank');
                           }}
-                          className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-ui-accent hover:brightness-110 bg-ui-accent dark:hover:brightness-110 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-ui-accent dark:border-ui-accent flex-shrink-0'
+                          className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-ui-accent hover:brightness-110 dark:hover:brightness-110 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-ui-accent dark:border-ui-accent flex-shrink-0'
                           title='PC Client打开'
                         >
                           <svg

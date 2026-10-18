@@ -139,7 +139,7 @@ const DownloadEpisodeSelector: React.FC<DownloadEpisodeSelectorProps> = ({
           <div className='flex items-center gap-2'>
             <button
               onClick={handleSelectAll}
-              className='px-3 py-1.5 text-xs font-medium text-ui-accent hover:text-ui-accent hover:bg-ui-accent-soft text-ui-accent hover:text-ui-accent hover:bg-ui-accent-soft rounded-md transition-colors'
+              className='px-3 py-1.5 text-xs font-medium text-ui-accent hover:text-ui-accent hover:bg-ui-accent-soft rounded-md transition-colors'
             >
               全选
             </button>
@@ -325,7 +325,7 @@ const DownloadEpisodeSelector: React.FC<DownloadEpisodeSelectorProps> = ({
                 )}
               </>
             ) : (
-              <span className='font-medium text-ui-accent text-ui-accent'>
+              <span className='font-medium text-ui-accent'>
                 {selectedEpisodes.size} 集
               </span>
             )}

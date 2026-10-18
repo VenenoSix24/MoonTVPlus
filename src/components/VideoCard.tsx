@@ -2130,7 +2130,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                   }
                 >
                   <span
-                    className='block text-sm font-semibold truncate text-gray-900 dark:text-gray-100 transition-colors duration-300 ease-in-out group-hover:text-ui-accent group-hover:text-ui-accent peer'
+                    className='block text-sm font-semibold truncate text-gray-900 dark:text-gray-100 transition-colors duration-300 ease-in-out group-hover:text-ui-accent peer'
                     style={
                       {
                         WebkitUserSelect: 'none',

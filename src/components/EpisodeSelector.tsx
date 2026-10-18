@@ -164,7 +164,7 @@ const EpisodeButton: React.FC<EpisodeButtonProps> = ({
         ${isActive
           ? 'bg-ui-accent text-white border-ui-accent shadow-lg mtv-shadow-accent cursor-default'
           : isWatched
-            ? 'bg-ui-accent-soft text-ui-accent border-ui-accent-soft hover:bg-ui-accent-soft hover:scale-105 bg-ui-accent-soft text-ui-accent border-ui-accent-soft hover:bg-ui-accent-soft'
+            ? 'bg-ui-accent-soft text-ui-accent border-ui-accent-soft hover:bg-ui-accent-soft hover:scale-105'
             : inactiveEpisodeClass
         }`.trim()}
       style={
@@ -220,7 +220,7 @@ const EpisodeListItem: React.FC<EpisodeListItemProps> = ({
         isActive
           ? 'bg-ui-accent text-white border-ui-accent shadow-lg mtv-shadow-accent cursor-default'
           : isWatched
-            ? 'bg-ui-accent-soft text-ui-accent border-ui-accent-soft hover:bg-ui-accent-soft bg-ui-accent-soft text-ui-accent border-ui-accent-soft hover:bg-ui-accent-soft'
+            ? 'bg-ui-accent-soft text-ui-accent border-ui-accent-soft hover:bg-ui-accent-soft'
             : inactiveRowClass
       }`.trim()}
     >
@@ -229,7 +229,7 @@ const EpisodeListItem: React.FC<EpisodeListItemProps> = ({
           isActive
             ? 'bg-white/20 text-white'
             : isWatched
-              ? 'bg-ui-accent-soft text-ui-accent text-ui-accent'
+              ? 'bg-ui-accent-soft text-ui-accent'
               : 'bg-black/5 dark:bg-white/10'
         }`}
       >
@@ -1058,7 +1058,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
             className={`flex-1 py-3 px-6 text-center transition-all duration-200 font-medium relative
               ${isRoomMember ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
               ${activeTab === 'episodes'
-                ? 'text-ui-accent text-ui-accent'
+                ? 'text-ui-accent'
                 : inactiveTabClass
               }
             `.trim()}
@@ -1074,7 +1074,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
           className={`flex-1 py-3 px-6 text-center transition-all duration-200 font-medium relative
             ${isRoomMember ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
             ${activeTab === 'sources'
-              ? 'text-ui-accent text-ui-accent'
+              ? 'text-ui-accent'
               : inactiveTabClass
             }
           `.trim()}
@@ -1088,7 +1088,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
           onClick={() => setActiveTab('danmaku')}
           className={`flex-1 py-3 px-6 text-center cursor-pointer transition-all duration-200 font-medium
             ${activeTab === 'danmaku'
-              ? 'text-ui-accent text-ui-accent'
+              ? 'text-ui-accent'
               : inactiveTabClass
             }
           `.trim()}
@@ -1134,7 +1134,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                       onClick={() => handleCategoryClick(idx)}
                       className={`w-20 relative py-2 text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 text-center 
                         ${isActive
-                          ? 'text-ui-accent text-ui-accent'
+                          ? 'text-ui-accent'
                           : inactiveActionTextClass
                         }
                       `.trim()}
@@ -1392,7 +1392,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                         }
                         className={`flex items-start gap-3 px-2 py-3 rounded-lg transition-all select-none duration-200 relative
                       ${isCurrentSource
-                         ? 'bg-ui-accent-soft bg-ui-accent-soft border-ui-accent-soft border'
+                         ? 'bg-ui-accent-soft border-ui-accent-soft border'
                           : 'hover:bg-gray-200/50 dark:hover:bg-white/10 hover:scale-[1.02] cursor-pointer'
                           }`.trim()}
                       >
@@ -1454,7 +1454,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                                   const textColorClasses = isUltraHigh
                                     ? 'text-purple-600 dark:text-purple-400'
                                     : isHigh
-                                      ? 'text-ui-accent text-ui-accent'
+                                      ? 'text-ui-accent'
                                       : 'text-yellow-600 dark:text-yellow-400';
 
                                   return (
@@ -1497,7 +1497,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                                   if (!videoInfo.hasError) {
                                     return (
                                       <div className='flex items-end gap-3 text-xs'>
-                                        <div className='text-ui-accent text-ui-accent font-medium text-xs'>
+                                        <div className='text-ui-accent font-medium text-xs'>
                                           {videoInfo.loadSpeed}
                                         </div>
                                         <div className='text-orange-600 dark:text-orange-400 font-medium text-xs'>

@@ -331,7 +331,7 @@ export default function DanmakuPanel({
             className='flex flex-shrink-0 items-center justify-center gap-2 rounded-lg bg-ui-accent px-3 py-2
                      text-sm font-medium text-white transition-colors
                      hover:brightness-110 disabled:cursor-not-allowed
-                     disabled:opacity-50 bg-ui-accent hover:brightness-110
+                     disabled:opacity-50
                      lg:px-4 min-w-[44px]'
           >
             {isSearching ? (
@@ -364,7 +364,7 @@ export default function DanmakuPanel({
             className='mb-4 rounded-lg border border-ui-accent-soft bg-ui-accent-soft
                         px-3 py-2 text-sm'
           >
-            <p className='font-semibold text-ui-accent text-ui-accent'>
+            <p className='font-semibold text-ui-accent'>
               当前弹幕
             </p>
             <p className='mt-1 text-gray-700 dark:text-gray-300'>
@@ -390,8 +390,7 @@ export default function DanmakuPanel({
             {/* 返回按钮 */}
             <button
               onClick={handleBackToResults}
-              className='mb-2 text-sm text-ui-accent hover:underline
-                       text-ui-accent'
+              className='mb-2 text-sm text-ui-accent hover:underline'
             >
               ← 返回搜索结果
             </button>
@@ -436,7 +435,7 @@ export default function DanmakuPanel({
                           }
                           className={`relative w-20 py-2 text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 text-center ${
                             isActive
-                              ? 'text-ui-accent text-ui-accent'
+                              ? 'text-ui-accent'
                               : 'text-gray-700 hover:text-ui-accent dark:text-gray-300 dark:hover:text-ui-accent'
                           }`}
                         >

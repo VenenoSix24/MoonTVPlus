@@ -639,7 +639,7 @@ export function DownloadManagementPanel({
                         key={group.key}
                         className={`border rounded-lg overflow-hidden transition-colors ${
                           isGroupSelected || isGroupPartiallySelected
-                            ? 'border-ui-accent bg-ui-accent-soft bg-ui-accent-soft'
+                            ? 'border-ui-accent bg-ui-accent-soft'
                             : 'border-gray-200 dark:border-gray-700'
                         }`}
                       >
@@ -657,7 +657,7 @@ export function DownloadManagementPanel({
                               isGroupSelected
                                 ? 'border-ui-accent bg-ui-accent'
                                 : isGroupPartiallySelected
-                                ? 'border-ui-accent bg-ui-accent-soft bg-ui-accent-soft'
+                                ? 'border-ui-accent bg-ui-accent-soft'
                                 : 'border-gray-300 dark:border-gray-600'
                             }`}
                             aria-label={`选择 ${group.title}`}
@@ -697,7 +697,7 @@ export function DownloadManagementPanel({
                                     总大小：{formatFileSize(group.totalSize)}
                                   </div>
                                   {selectedCount > 0 && (
-                                    <div className='mt-1 text-xs text-ui-accent text-ui-accent'>
+                                    <div className='mt-1 text-xs text-ui-accent'>
                                       已选 {selectedCount} 集
                                     </div>
                                   )}
@@ -719,7 +719,7 @@ export function DownloadManagementPanel({
                                 key={task.id}
                                 className={`flex cursor-pointer items-start gap-2 px-3 py-3.5 transition-colors sm:gap-3 sm:px-4 sm:py-3 ${
                                   selectedIds.has(task.id)
-                                    ? 'bg-ui-accent-soft bg-ui-accent-soft'
+                                    ? 'bg-ui-accent-soft'
                                     : 'hover:bg-gray-50 dark:hover:bg-gray-800'
                                 }`}
                                 onClick={() => handleToggleSelect(task.id)}

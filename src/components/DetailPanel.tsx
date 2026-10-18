@@ -1545,7 +1545,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
               onClick={() => handleSelectTmdbResult(result)}
               className={`flex items-start gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
                 isActive
-                  ? 'bg-ui-accent-soft bg-ui-accent-soft ring-2 ring-ui-accent'
+                  ? 'bg-ui-accent-soft ring-2 ring-ui-accent'
                   : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
             >
@@ -2004,7 +2004,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                                 }
                                 className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${
                                   selectedSeason === season.season_number
-                                    ? 'bg-ui-accent-soft bg-ui-accent-soft ring-2 ring-ui-accent'
+                                    ? 'bg-ui-accent-soft ring-2 ring-ui-accent'
                                     : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'
                                 }`}
                               >
@@ -2079,7 +2079,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                                     id={`episode-${episode.episode_number}`}
                                     className={`flex-shrink-0 w-64 p-3 rounded ${
                                       isCurrentEpisode
-                                        ? 'bg-ui-accent-soft bg-ui-accent-soft ring-2 ring-ui-accent'
+                                        ? 'bg-ui-accent-soft ring-2 ring-ui-accent'
                                         : 'bg-gray-50 dark:bg-gray-800'
                                     }`}
                                     style={{
@@ -2613,7 +2613,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                                 }
                                 className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${
                                   selectedSeason === season.season_number
-                                    ? 'bg-ui-accent-soft bg-ui-accent-soft ring-2 ring-ui-accent'
+                                    ? 'bg-ui-accent-soft ring-2 ring-ui-accent'
                                     : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'
                                 }`}
                               >
@@ -2688,7 +2688,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                                     id={`episode-${episode.episode_number}`}
                                     className={`flex-shrink-0 w-64 p-3 rounded ${
                                       isCurrentEpisode
-                                        ? 'bg-ui-accent-soft bg-ui-accent-soft ring-2 ring-ui-accent'
+                                        ? 'bg-ui-accent-soft ring-2 ring-ui-accent'
                                         : 'bg-gray-50 dark:bg-gray-800'
                                     }`}
                                     style={{

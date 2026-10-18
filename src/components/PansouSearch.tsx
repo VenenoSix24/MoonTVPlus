@@ -71,7 +71,7 @@ const CLOUD_TYPE_COLORS: Record<string, string> = {
   quark:
     'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200',
   tianyi: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200',
-  uc: 'bg-ui-accent-soft text-ui-accent bg-ui-accent-soft text-ui-accent',
+  uc: 'bg-ui-accent-soft text-ui-accent',
   mobile: 'bg-pink-100 text-pink-800 dark:bg-pink-900/40 dark:text-pink-200',
   '115':
     'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200',
@@ -147,7 +147,7 @@ interface StoredCloudCheckState {
 const CHECK_STATUS_STYLE: Record<CheckItemStatus, string> = {
   pending: 'bg-gray-100 text-gray-700 dark:bg-gray-700/50 dark:text-gray-200',
   checking: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200',
-  valid: 'bg-ui-accent-soft text-ui-accent bg-ui-accent-soft text-ui-accent',
+  valid: 'bg-ui-accent-soft text-ui-accent',
   invalid: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200',
   unknown:
     'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-200',
@@ -382,7 +382,7 @@ export default function PansouSearch({
   const magnetHealthBadgeClass = (level: MagnetHealthLevel) => {
     switch (level) {
       case 'good':
-        return 'bg-ui-accent-soft text-ui-accent bg-ui-accent-soft text-ui-accent';
+        return 'bg-ui-accent-soft text-ui-accent';
       case 'ok':
         return 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200';
       case 'risk':
@@ -715,7 +715,7 @@ export default function PansouSearch({
       return (
         <div className='flex items-center justify-center py-12'>
           <div className='text-center'>
-            <Loader2 className='mx-auto h-8 w-8 animate-spin text-ui-accent text-ui-accent' />
+            <Loader2 className='mx-auto h-8 w-8 animate-spin text-ui-accent' />
             <p className='mt-4 text-sm text-gray-600 dark:text-gray-400'>
               正在搜索网盘资源...
             </p>
@@ -776,7 +776,7 @@ export default function PansouSearch({
         {/* 搜索结果统计 */}
         <div className='text-sm text-gray-600 dark:text-gray-400'>
           找到{' '}
-          <span className='font-semibold text-ui-accent text-ui-accent'>
+          <span className='font-semibold text-ui-accent'>
             {results.total}
           </span>{' '}
           个资源
@@ -897,7 +897,7 @@ export default function PansouSearch({
                 {sortedLinks.map((link: PansouLink, index: number) => (
                   <div
                     key={`${cloudType}-${index}`}
-                    className='p-4 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-ui-accent hover:border-ui-accent transition-colors'
+                    className='p-4 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-ui-accent transition-colors'
                   >
                     {/* 资源标题 */}
                     {link.note && (
@@ -1042,7 +1042,7 @@ export default function PansouSearch({
                           title='复制链接'
                         >
                           {copiedUrl === link.url ? (
-                            <span className='text-xs text-ui-accent text-ui-accent'>
+                            <span className='text-xs text-ui-accent'>
                               已复制
                             </span>
                           ) : (
