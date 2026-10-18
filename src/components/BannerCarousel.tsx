@@ -1,7 +1,7 @@
 'use client';
 
 import {
-  ChevronDown,
+  ExternalLink,
   ChevronLeft,
   ChevronRight,
   Play,
@@ -77,7 +77,6 @@ export default function BannerCarousel({
   const [isLoading, setIsLoading] = useState(true);
   const [shouldLoad, setShouldLoad] = useState(!delayLoad); // 是否应该开始加载数据
   const [isPaused, setIsPaused] = useState(false);
-  const [synopsisOpen, setSynopsisOpen] = useState(false); // Hero 简介是否展开
   const [cycle, setCycle] = useState(0); // 自动播放计时器代次，用来同步指示器动画
   const [skipNextAutoPlay, setSkipNextAutoPlay] = useState(false); // 跳过下一次自动播放
   const [isYouTubeAccessible, setIsYouTubeAccessible] = useState(false); // YouTube连通性（默认false，检查后再决定）
@@ -428,11 +427,6 @@ export default function BannerCarousel({
     skipNextAutoPlay,
     currentIndex,
   ]);
-
-  // 换片时收起简介，免得上一张的展开状态带到下一张
-  useEffect(() => {
-    setSynopsisOpen(false);
-  }, [currentIndex]);
   const goToPrevious = useCallback(() => {
     isManualChange.current = true;
     setSkipNextAutoPlay(true);
@@ -522,6 +516,20 @@ export default function BannerCarousel({
   }
 
   const currentItem = items[currentIndex];
+
+  // 外部详情页：豆瓣条目跳豆瓣，TMDB 条目跳 TMDB。TX 数据源的 id 是本地序号，
+  // 没有对应的公开页面，那种情况下不显示这个按钮。
+  const detailUrl = (() => {
+    if (!currentItem) return null;
+    if (dataSource === 'Douban') {
+      return `https://movie.douban.com/subject/${currentItem.id}/`;
+    }
+    if (dataSource === 'TMDB') {
+      const kind = currentItem.media_type === 'tv' ? 'tv' : 'movie';
+      return `https://www.themoviedb.org/${kind}/${currentItem.id}`;
+    }
+    return null;
+  })();
 
   return (
     <div
@@ -642,11 +650,7 @@ export default function BannerCarousel({
           </div>
 
           {currentItem.overview && (
-            <p
-              className={`mtv-hero-syn text-sm md:text-base drop-shadow-md ${
-                synopsisOpen ? '' : 'line-clamp-2'
-              }`}
-            >
+            <p className='mtv-hero-syn text-sm md:text-base drop-shadow-md'>
               {currentItem.overview}
             </p>
           )}
@@ -663,22 +667,17 @@ export default function BannerCarousel({
               <Play className='w-5 h-5' />
               立即播放
             </button>
-            {currentItem.overview && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSynopsisOpen((v) => !v);
-                }}
+            {detailUrl && (
+              <a
+                href={detailUrl}
+                target='_blank'
+                rel='noopener noreferrer'
+                onClick={(e) => e.stopPropagation()}
                 className='mtv-hero-more flex items-center'
-                aria-expanded={synopsisOpen}
               >
-                {synopsisOpen ? '收起' : '更多信息'}
-                <ChevronDown
-                  className={`h-4 w-4 transition-transform duration-200 ${
-                    synopsisOpen ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
+                {dataSource === 'Douban' ? '豆瓣详情' : 'TMDB 详情'}
+                <ExternalLink className='h-4 w-4' />
+              </a>
             )}
           </div>
         </div>

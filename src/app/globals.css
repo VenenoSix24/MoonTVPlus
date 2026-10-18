@@ -1714,7 +1714,13 @@ html[data-loading-style='grid'] .mtv-err-box {
   color: var(--ui-accent-ink);
 }
 
+/* 简介全展开，不再折叠。给一个上限兜底：实测豆瓣这批数据 85–185 字，在 576px
+   正文栏里最多 6 行（144px），离这个上限还有富余。真遇到超长简介时收在这里，
+   总比把标题顶出 Hero 被 overflow-hidden 裁掉强。
+   max() 的下限不能省：只写 30vh 的话，视口高度一小简介就被压没。 */
 .mtv-hero-syn {
+  max-height: max(180px, 30vh);
+  overflow: hidden;
   color: var(--hero-ink-2);
 }
 
