@@ -7741,7 +7741,18 @@ function PlayPageClient() {
           playsInline: true,
           autoPlayback: false,
           airplay: true,
-          theme: '#22c55e',
+          theme: (() => {
+                // ArtPlayer 只接受具体色值，不认 CSS 变量；而 --ui-accent 本身又是
+                // var(--theme-primary, …)，getPropertyValue 拿到的是未解析的原始串。
+                // 所以用一个探针元素让它自己算出最终颜色，站长自定义强调色也能跟着走。
+                const probe = document.createElement('span');
+                probe.style.color = 'var(--ui-accent)';
+                probe.style.display = 'none';
+                document.body.appendChild(probe);
+                const resolved = getComputedStyle(probe).color;
+                probe.remove();
+                return resolved || '#e50914';
+              })(),
           lang: 'zh-cn',
           hotkey: false,
           // 观影室房员禁用长按加速（会临时改变倍速）
@@ -8655,7 +8666,7 @@ function PlayPageClient() {
 
                 /* 标题栏 */
                 .ios-fullscreen-dialog-header {
-                  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+                  background: linear-gradient(135deg, var(--ui-accent) 0%, color-mix(in srgb, var(--ui-accent) 78%, #000) 100%);
                   padding: 20px 24px;
                 }
                 .ios-fullscreen-dialog-title {
@@ -8700,7 +8711,7 @@ function PlayPageClient() {
                 }
                 .ios-fullscreen-option:hover {
                   background: rgb(243, 244, 246);
-                  border-color: #22c55e;
+                  border-color: var(--ui-accent);
                   box-shadow: 0 4px 12px rgba(34, 197, 94, 0.15);
                 }
                 .dark .ios-fullscreen-option:hover {
@@ -8712,7 +8723,7 @@ function PlayPageClient() {
 
                 /* 推荐选项 */
                 .ios-fullscreen-option-recommended {
-                  border-color: #22c55e;
+                  border-color: var(--ui-accent);
                 }
 
                 /* 选项图标 */
@@ -8725,13 +8736,13 @@ function PlayPageClient() {
                   justify-content: center;
                   background: white;
                   border-radius: 10px;
-                  color: #22c55e;
+                  color: var(--ui-accent);
                 }
                 .dark .ios-fullscreen-option-icon {
                   background: rgb(31, 41, 55);
                 }
                 .ios-fullscreen-option-recommended .ios-fullscreen-option-icon {
-                  background: #22c55e;
+                  background: var(--ui-accent);
                   color: white;
                 }
 
@@ -8754,7 +8765,7 @@ function PlayPageClient() {
                 .ios-fullscreen-option-badge {
                   display: inline-block;
                   padding: 2px 8px;
-                  background: #22c55e;
+                  background: var(--ui-accent);
                   color: white;
                   font-size: 12px;
                   font-weight: 500;
@@ -8780,7 +8791,7 @@ function PlayPageClient() {
                 }
                 .ios-fullscreen-option:hover .ios-fullscreen-option-arrow {
                   transform: translateX(4px);
-                  color: #22c55e;
+                  color: var(--ui-accent);
                 }
 
                 /* 底部提示 */
@@ -9015,7 +9026,7 @@ function PlayPageClient() {
               }
 
               let thumbUrl = '';
-              let thumbColor = '#22c55e'; // 默认绿色
+              let thumbColor = artPlayerRef.current?.theme || '#e50914'; // 默认跟随品牌强调色
 
               if (config.PROGRESS_THUMB_TYPE === 'preset' && config.PROGRESS_THUMB_PRESET_ID) {
                 const presetConfig: Record<string, { url: string; color: string }> = {
