@@ -1585,16 +1585,38 @@ html[data-loading-style='grid'] .mtv-err-box {
    object-contain 靠右立起来，比例不失真。 */
 .mtv-hero-art img.mtv-hero-art-fill {
   object-position: center;
-  /* 浅色下把模糊铺底半透明地压到页面底色上：海报本身偏暗，直接铺满会在浅色
-     页面里压出一大块深色，跟主题对不上。 */
-  opacity: 0.62;
-  filter: blur(44px) saturate(140%) brightness(1.1);
-  transform: scale(1.2);
+  filter: blur(28px) saturate(170%) brightness(0.95);
+  transform: scale(1.15);
 }
 
 .dark .mtv-hero-art img.mtv-hero-art-fill {
-  opacity: 1;
-  filter: blur(44px) saturate(150%) brightness(0.5);
+  filter: blur(28px) saturate(150%) brightness(0.5);
+}
+
+/* 铺底之上压一层从页面底色到透明的横向渐变：左半（文字那一侧）回到干净的页面
+   底色，右半露出铺底的色彩让海报「浮」出来。没有它，整块 Hero 就是一片均匀的
+   模糊色块，看着像加载占位。 */
+.mtv-hero-art-veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* 左边缘留一点点铺底颜色透出来：既不会在 Hero 顶部跟导航栏之间出现接缝，
+     也让文字后面的磨砂面板有底色可依，不至于糊成一片纯白。 */
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--ui-bg) 94%, transparent) 0%,
+    color-mix(in srgb, var(--ui-bg) 78%, transparent) 28%,
+    transparent 66%
+  );
+}
+
+.dark .mtv-hero-art-veil {
+  background: linear-gradient(
+    90deg,
+    var(--ui-bg) 0%,
+    color-mix(in srgb, var(--ui-bg) 58%, transparent) 26%,
+    transparent 58%
+  );
 }
 
 /* 右侧退开一个翻页按钮身位，免得悬停时按钮压在立起来的海报上 */
@@ -1606,7 +1628,12 @@ html[data-loading-style='grid'] .mtv-err-box {
   height: min(86%, 460px);
   transform: translateY(-50%);
   border-radius: var(--ui-r-lg);
-  box-shadow: 0 30px 70px -20px rgba(0, 0, 0, 0.6),
+  box-shadow: 0 30px 70px -24px rgba(14, 21, 36, 0.5),
+    0 0 0 1px rgba(14, 21, 36, 0.1);
+}
+
+.dark .mtv-hero-art img.mtv-hero-art-subject {
+  box-shadow: 0 30px 70px -24px rgba(0, 0, 0, 0.7),
     0 0 0 1px rgba(255, 255, 255, 0.14);
 }
 
@@ -1715,10 +1742,11 @@ html[data-loading-style='grid'] .mtv-err-box {
 
 /* Hero 高度向 16:9 靠。TMDB 的 backdrop 是 16:9，容器越扁裁掉得越多，
    裁得越狠就越像"被放大铺满"。这里用 min-height 而不是 height，
-   站长在后台选的更大档位仍然生效。 */
+   站长在后台选的更大档位仍然生效。上限压到 560px：再高就只剩一片空画面，
+   文字和海报被拉开，反而更空。 */
 @media (min-width: 768px) {
   .mtv-hero {
-    min-height: max(440px, min(56.25vw, 76vh));
+    min-height: max(420px, min(38vw, 560px));
   }
 }
 

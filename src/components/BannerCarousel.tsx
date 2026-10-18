@@ -727,13 +727,17 @@ function HeroArt({ item, priority }: { item: BannerItem; priority: boolean }) {
         className={isPoster ? 'mtv-hero-art-fill' : 'mtv-hero-art-cover'}
       />
       {isPoster && (
-        <ProxyImage
-          originalSrc={src}
-          alt=''
-          aria-hidden='true'
-          loading={priority ? 'eager' : 'lazy'}
-          className='mtv-hero-art-subject'
-        />
+        <>
+          {/* 渐变垫在竖版海报下面，海报才不会被渐变压暗 */}
+          <div className='mtv-hero-art-veil' />
+          <ProxyImage
+            originalSrc={src}
+            alt=''
+            aria-hidden='true'
+            loading={priority ? 'eager' : 'lazy'}
+            className='mtv-hero-art-subject'
+          />
+        </>
       )}
     </>
   );
