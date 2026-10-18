@@ -45,6 +45,21 @@ function pickLogo(logos: TMDBLogo[], preferZh: boolean): TMDBLogo | null {
 }
 
 /**
+ * 无字海报：iso_639_1 为 null 的那种，TMDB 官网标成「Not Specified」。
+ * 手机端用它 + 标题字 logo，避免海报自带的片名和 logo 叠在一起。
+ * 注意不保证每部片都有——没有就回落到带字海报，logo 始终保留。
+ */
+function pickTextlessPoster(posters: TMDBLogo[]): TMDBLogo | null {
+  const textless = posters.filter((p) => !p.iso_639_1);
+  if (!textless.length) return null;
+  return [...textless].sort((a, b) => {
+    const vote = (b.vote_average || 0) - (a.vote_average || 0);
+    if (vote !== 0) return vote;
+    return (b.vote_count || 0) - (a.vote_count || 0);
+  })[0];
+}
+
+/**
  * GET /api/tmdb/logo?id=xxx&type=movie|tv&zh=1
  * 返回 { logo_path, aspect_ratio }。没有标题字时 logo_path 为 null，
  * 前端据此回落到文字标题。
@@ -98,11 +113,14 @@ export async function GET(request: NextRequest) {
 
     const logos: TMDBLogo[] = response.images.logos || [];
     const picked = pickLogo(logos, preferZh);
+    const textlessPoster = pickTextlessPoster(response.images.posters || []);
 
     return NextResponse.json({
       logo_path: picked ? picked.file_path : null,
       aspect_ratio:
         picked && picked.height ? picked.width / picked.height : null,
+      // 无字海报。取不到就是 null，前端回落到带字海报（logo 始终保留）
+      textless_poster_path: textlessPoster ? textlessPoster.file_path : null,
       total: logos.length,
     });
   } catch (error) {
