@@ -1593,29 +1593,20 @@ html[data-loading-style='grid'] .mtv-err-box {
   filter: blur(28px) saturate(150%) brightness(0.5);
 }
 
-/* 铺底之上压一层从页面底色到透明的横向渐变：左半（文字那一侧）回到干净的页面
-   底色，右半露出铺底的色彩让海报「浮」出来。没有它，整块 Hero 就是一片均匀的
-   模糊色块，看着像加载占位。 */
+/* 铺底之上压一层从海报位置向外淡出到页面底色的径向渐变：左半（文字那侧）回到
+   干净的页面底色，右半留下围绕海报的一圈环境色。用径向而不是线性，中间那块
+   空白才有一圈围绕海报的光晕，而不是一片均匀的糊色。
+   深浅色共用一套——--ui-bg 本身就是主题色。 */
 .mtv-hero-art-veil {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  /* 左边缘留一点点铺底颜色透出来：既不会在 Hero 顶部跟导航栏之间出现接缝，
-     也让文字后面的磨砂面板有底色可依，不至于糊成一片纯白。 */
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--ui-bg) 94%, transparent) 0%,
-    color-mix(in srgb, var(--ui-bg) 78%, transparent) 28%,
-    transparent 66%
-  );
-}
-
-.dark .mtv-hero-art-veil {
-  background: linear-gradient(
-    90deg,
-    var(--ui-bg) 0%,
-    color-mix(in srgb, var(--ui-bg) 58%, transparent) 26%,
-    transparent 58%
+  background: radial-gradient(
+    84% 140% at 76% 50%,
+    transparent 0%,
+    transparent 26%,
+    color-mix(in srgb, var(--ui-bg) 55%, transparent) 54%,
+    var(--ui-bg) 94%
   );
 }
 
@@ -1625,7 +1616,7 @@ html[data-loading-style='grid'] .mtv-err-box {
   top: 50%;
   right: calc(var(--ui-gutter) + 4rem);
   width: auto;
-  height: min(86%, 460px);
+  height: min(88%, 520px);
   transform: translateY(-50%);
   border-radius: var(--ui-r-lg);
   box-shadow: 0 30px 70px -24px rgba(14, 21, 36, 0.5),
@@ -1635,6 +1626,23 @@ html[data-loading-style='grid'] .mtv-err-box {
 .dark .mtv-hero-art img.mtv-hero-art-subject {
   box-shadow: 0 30px 70px -24px rgba(0, 0, 0, 0.7),
     0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+/* 宽屏下 Hero 会拉到 3:1 以上，海报贴最右边会让中间空出一大块。把海报挪到
+   「文字块右侧剩余空间的正中」，左右留白接近，构成才平衡。 */
+@media (min-width: 1200px) {
+  .mtv-hero-art img.mtv-hero-art-subject {
+    right: clamp(calc(var(--ui-gutter) + 4rem), calc(50vw - 500px), 560px);
+  }
+}
+
+/* 竖版海报时左边本来就是从页面底色渐变过来的浅底，再叠一层白卡片只会像贴上去
+   的。去掉承载面，让 Hero 标题和下面的行标题共用同一个 --ui-gutter。 */
+.mtv-hero:has(.mtv-hero-art-fill) .mtv-hero-body {
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 /* 手机上 Hero 只有 200px 高，右侧再立一张海报会压到标题，直接不出 */
