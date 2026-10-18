@@ -1686,6 +1686,9 @@ html[data-loading-style='grid'] .mtv-err-box {
    （见下面 :has(.mtv-hero-art-fill)），数据源切成 TMDB 后卡片就漏回来了。 */
 .mtv-hero:has(.mtv-hero-art-cover),
 .mtv-hero:has(.mtv-hero-logo) {
+  /* 左侧黑遮罩保证文字可读，底部只留 6% 收尾。
+     底部这一层必须单调：之前写成「页面底色 → 黑 50% → 透明」，在浅色下就是
+     「浅 → 深 → 透明」，中间会鼓出一条比两边都亮的雾带。 */
   --hero-scrim: linear-gradient(
       90deg,
       rgba(0, 0, 0, 0.92) 0%,
@@ -1693,12 +1696,7 @@ html[data-loading-style='grid'] .mtv-err-box {
       rgba(0, 0, 0, 0.28) 55%,
       transparent 78%
     ),
-    linear-gradient(
-      0deg,
-      var(--ui-bg) 0%,
-      rgba(0, 0, 0, 0.5) 10%,
-      transparent 30%
-    );
+    linear-gradient(0deg, var(--ui-bg) 0%, transparent 6%);
   --hero-ink: #ffffff;
   --hero-ink-2: rgba(255, 255, 255, 0.78);
   --hero-title-shadow: rgba(0, 0, 0, 0.55);
@@ -1723,6 +1721,25 @@ html[data-loading-style='grid'] .mtv-err-box {
 /* 有官方标题字时，铺底那层「向页面底色淡出」会把它一起洗掉 */
 .mtv-hero:has(.mtv-hero-logo) .mtv-hero-art-veil {
   display: none;
+}
+
+/* 深色下页面本身就是黑的，底部可以铺得更长，画面过渡更自然 */
+.dark .mtv-hero:has(.mtv-hero-art-cover),
+.dark .mtv-hero:has(.mtv-hero-logo) {
+  --hero-scrim: linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.92) 0%,
+      rgba(0, 0, 0, 0.72) 28%,
+      rgba(0, 0, 0, 0.28) 55%,
+      transparent 78%
+    ),
+    linear-gradient(
+      0deg,
+      var(--ui-bg) 0%,
+      rgba(0, 0, 0, 0.55) 14%,
+      transparent 38%
+    ),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.6) 0%, transparent 28%);
 }
 
 /* 手机上 Hero 只有 200px 高，右侧再立一张海报会压到标题，直接不出 */
@@ -1902,11 +1919,6 @@ html[data-loading-style='grid'] .mtv-err-box {
   to {
     transform: scaleX(1);
   }
-}
-
-/* 悬停暂停自动播放时进度条也停住，两边节奏才对得上 */
-.mtv-hero:hover .mtv-hero-dot-fill-active {
-  animation-play-state: paused;
 }
 
 /* Hero 高度向 16:9 靠。TMDB 的 backdrop 是 16:9，容器越扁裁掉得越多，

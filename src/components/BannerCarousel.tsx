@@ -76,7 +76,6 @@ export default function BannerCarousel({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [shouldLoad, setShouldLoad] = useState(!delayLoad); // 是否应该开始加载数据
-  const [isPaused, setIsPaused] = useState(false);
   const [cycle, setCycle] = useState(0); // 自动播放计时器代次，用来同步指示器动画
   const [skipNextAutoPlay, setSkipNextAutoPlay] = useState(false); // 跳过下一次自动播放
   const [isYouTubeAccessible, setIsYouTubeAccessible] = useState(false); // YouTube连通性（默认false，检查后再决定）
@@ -84,7 +83,7 @@ export default function BannerCarousel({
   const [dataSource, setDataSource] = useState<string>(''); // 当前数据源
   const [trailersLoaded, setTrailersLoaded] = useState(false); // 预告片是否已加载
   const [isMuted, setIsMuted] = useState(true); // 视频是否静音（默认静音）
-  const [titleLogo, setTitleLogo] = useState<string | null>(null); // TMDB 官方标题字
+  const [logoMap, setLogoMap] = useState<Record<string, string | null>>({}); // 官方标题字：请求键 → URL
   const [bannerHeightScale, setBannerHeightScale] =
     useState<HomeBannerHeightScale>('1'); // 轮播图高度倍率
   const [isMobileView, setIsMobileView] = useState(false);
@@ -399,9 +398,9 @@ export default function BannerCarousel({
     });
   }, [currentIndex, isMuted]);
 
-  // 自动播放
+  // 自动播放。鼠标悬停不暂停——按需求「移上去也继续跑」，所以没有 isPaused 这一档。
   useEffect(() => {
-    if (!items.length || isPaused) return;
+    if (!items.length) return;
 
     const timer = setInterval(() => {
       // 如果设置了跳过标志，跳过这一次自动播放
@@ -414,59 +413,54 @@ export default function BannerCarousel({
     }, autoPlayInterval);
 
     return () => clearInterval(timer);
-  }, [items.length, isPaused, autoPlayInterval, skipNextAutoPlay]);
+  }, [items.length, autoPlayInterval, skipNextAutoPlay]);
 
   // 进度条的动画要和自动播放计时器同一个起点：计时器每次重建就 bump cycle，
   // 指示器靠 key 重挂载来重启动画，条走满的瞬间正好是切片的瞬间。
   useEffect(() => {
-    if (!items.length || isPaused) return;
+    if (!items.length) return;
     setCycle((c) => c + 1);
-  }, [
-    items.length,
-    isPaused,
-    autoPlayInterval,
-    skipNextAutoPlay,
-    currentIndex,
-  ]);
+  }, [items.length, autoPlayInterval, skipNextAutoPlay, currentIndex]);
 
-  // TMDB 数据源下取当前影片的官方标题字（key art logo）——就是 Netflix / Apple TV+
-  // 放在 Hero 上的那个东西。豆瓣 / TX 没有这个资产，取不到就保持 null，标题回落到
-  // 文字，行为和以前完全一致。
+  // TMDB 数据源下把所有条目的官方标题字（key art logo）一次性预取进 logoMap。
+  // 不能等轮到某一屏才去取——那时背景已经切过去了、标题字还在路上，看起来就是
+  // 「左边慢半拍」。豆瓣 / TX 没有这个资产，取不到就是 null，标题回落到文字。
   useEffect(() => {
-    const item = items[currentIndex];
-    if (dataSource !== 'TMDB' || !item) {
-      setTitleLogo(null);
-      return;
-    }
+    if (dataSource !== 'TMDB' || !items.length) return;
 
-    const kind = item.media_type === 'tv' ? 'tv' : 'movie';
-    const zh = /[\u3400-\u9fff\uf900-\ufaff]/.test(item.title) ? 1 : 0;
-    const cacheKey = `${kind}:${item.id}:${zh}`;
-
-    if (heroLogoCache.has(cacheKey)) {
-      setTitleLogo(heroLogoCache.get(cacheKey) ?? null);
-      return;
-    }
+    const pending = items.filter(
+      (item) => !heroLogoCache.has(logoRequest(item).key)
+    );
+    if (!pending.length) return;
 
     const controller = new AbortController();
-    fetch(`/api/tmdb/logo?id=${item.id}&type=${kind}&zh=${zh}`, {
-      signal: controller.signal,
-    })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        const src = data?.logo_path
-          ? getTMDBImageUrl(data.logo_path, 'w500')
-          : null;
-        heroLogoCache.set(cacheKey, src);
-        setTitleLogo(src);
-      })
-      .catch(() => {
-        // 取不到标题字就回落到文字标题，不打扰用户
-        if (!controller.signal.aborted) setTitleLogo(null);
-      });
+
+    pending.forEach((item) => {
+      const { key, url } = logoRequest(item);
+      fetch(url, { signal: controller.signal })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          const src = data?.logo_path
+            ? getTMDBImageUrl(data.logo_path, 'w500')
+            : null;
+          heroLogoCache.set(key, src);
+          setLogoMap((prev) => ({ ...prev, [key]: src }));
+          if (src) {
+            // 上面只拿到了 URL，图片本身是渲染那一刻才下载的。这里预热进浏览器
+            // 缓存，切片瞬间标题字才不会白一下。
+            // 不能用 new Image()——本文件从 next/image 引入了同名的 Image 组件，
+            // 会把全局构造函数遮住。
+            const warm = document.createElement('img');
+            warm.src = src;
+          }
+        })
+        .catch(() => {
+          // 取不到就回落到文字标题，不打扰用户
+        });
+    });
 
     return () => controller.abort();
-  }, [dataSource, items, currentIndex]);
+  }, [dataSource, items]);
   const goToPrevious = useCallback(() => {
     isManualChange.current = true;
     setSkipNextAutoPlay(true);
@@ -574,11 +568,15 @@ export default function BannerCarousel({
   // 中文方块字的字距规则和拉丁字母相反，见 .mtv-hero-title 的注释
   const titleIsCJK = /[\u3400-\u9fff\uf900-\ufaff]/.test(currentItem.title);
 
+  // 官方标题字：优先读 state（预取完成后会触发重渲染），再兜一次模块缓存——
+  // 重新挂载时 state 是空的，而模块缓存里已经有值，可以立刻命中。
+  const logoKey = logoRequest(currentItem).key;
+  const titleLogo: string | null =
+    logoMap[logoKey] ?? heroLogoCache.get(logoKey) ?? null;
+
   return (
     <div
       className={`mtv-hero relative w-full ${bannerHeightClassMap[bannerHeightScale]} overflow-hidden group`}
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -782,7 +780,12 @@ export default function BannerCarousel({
         {items.map((_, index) => (
           <button
             key={index}
-            onClick={() => goToSlide(index)}
+            onClick={(e) => {
+              // 阻止冒泡：Hero 根节点有「移动端点击整块跳播放」的逻辑，
+              // 不拦的话手机上点圆点会直接跳走，而不是切到那一张。
+              e.stopPropagation();
+              goToSlide(index);
+            }}
             className='mtv-hero-dot'
             aria-label={`跳转到第 ${index + 1} 张`}
             aria-current={index === currentIndex}
@@ -810,6 +813,16 @@ const WIDE_ART_MIN_RATIO = 1.4;
 
 /** 标题字按「类型:id:语言」缓存。轮播每 5 秒切一次，来回切不该反复打接口。 */
 const heroLogoCache = new Map<string, string | null>();
+
+/** 官方标题字的请求参数。key 同时用作缓存键；语言按片名内容判定。 */
+const logoRequest = (item: BannerItem) => {
+  const kind = item.media_type === 'tv' ? 'tv' : 'movie';
+  const zh = /[\u3400-\u9fff\uf900-\ufaff]/.test(item.title) ? 1 : 0;
+  return {
+    key: `${kind}:${item.id}:${zh}`,
+    url: `/api/tmdb/logo?id=${item.id}&type=${kind}&zh=${zh}`,
+  };
+};
 
 /**
  * Hero 画面。
