@@ -11011,7 +11011,7 @@ function PlayPageClient() {
               <div className='relative w-full h-[300px] lg:flex-1 lg:min-h-0'>
                 <div
                   ref={artRef}
-                  className='bg-black w-full h-full rounded-xl overflow-hidden shadow-lg'
+                  className='mtv-play-player bg-black w-full h-full overflow-hidden'
                 ></div>
 
                 {/* 换源加载蒙层 */}

@@ -1048,20 +1048,16 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
   }, [showEpisodeMenu]);
 
   return (
-    <div className='md:ml-2 px-4 py-0 h-full rounded-xl bg-black/10 dark:bg-white/5 flex flex-col border border-white/0 dark:border-white/30 overflow-hidden'>
+    <div className='mtv-play-rail px-4 py-0 h-full flex flex-col overflow-hidden'>
       {/* 主要的 Tab 切换 - 无缝融入设计 */}
-      <div className='flex mb-1 -mx-6 flex-shrink-0'>
+      <div className='mtv-play-tabbar'>
         {/* 选集选项卡 - 仅在多集时显示 */}
         {totalEpisodes > 1 && (
           <div
             onClick={() => !isRoomMember && setActiveTab('episodes')}
-            className={`flex-1 py-3 px-6 text-center transition-all duration-200 font-medium relative
-              ${isRoomMember ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
-              ${activeTab === 'episodes'
-                ? 'text-ui-accent'
-                : inactiveTabClass
-              }
-            `.trim()}
+            className={`mtv-play-tab ${isRoomMember ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'} ${
+              activeTab === 'episodes' ? 'mtv-play-tab-active text-ui-accent' : inactiveTabClass
+            }`}
           >
             选集
             {isRoomMember && <span className="ml-1 text-xs">🔒</span>}
@@ -1071,13 +1067,9 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
         {/* 换源选项卡 */}
         <div
           onClick={() => !isRoomMember && handleSourceTabClick()}
-          className={`flex-1 py-3 px-6 text-center transition-all duration-200 font-medium relative
-            ${isRoomMember ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
-            ${activeTab === 'sources'
-              ? 'text-ui-accent'
-              : inactiveTabClass
-            }
-          `.trim()}
+          className={`mtv-play-tab ${isRoomMember ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'} ${
+            activeTab === 'sources' ? 'mtv-play-tab-active text-ui-accent' : inactiveTabClass
+          }`}
         >
           换源
           {isRoomMember && <span className="ml-1 text-xs">🔒</span>}
@@ -1086,12 +1078,9 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
         {/* 弹幕选项卡 */}
         <div
           onClick={() => setActiveTab('danmaku')}
-          className={`flex-1 py-3 px-6 text-center cursor-pointer transition-all duration-200 font-medium
-            ${activeTab === 'danmaku'
-              ? 'text-ui-accent'
-              : inactiveTabClass
-            }
-          `.trim()}
+          className={`mtv-play-tab cursor-pointer ${
+            activeTab === 'danmaku' ? 'mtv-play-tab-active text-ui-accent' : inactiveTabClass
+          }`}
         >
           弹幕
         </div>
@@ -1115,7 +1104,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
       {activeTab === 'episodes' && (
         <>
           {/* 分类标签 */}
-          <div className='relative z-30 flex items-center gap-4 mb-4 border-b border-gray-300 dark:border-gray-700 -mx-6 px-6 flex-shrink-0'>
+          <div className='relative z-30 flex items-center gap-4 mb-4 border-b border-white/10 -mx-4 px-4 flex-shrink-0'>
             <div
               className='flex-1 overflow-x-auto'
               ref={categoryContainerRef}
@@ -1186,12 +1175,12 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
               </button>
               {showEpisodeMenu && (
                 <div
-                  className='absolute right-0 top-9 z-50 min-w-[9rem] rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg py-1'
+                  className='mtv-play-pop absolute right-0 top-9 z-50 min-w-[9rem] rounded-lg py-1'
                   role='menu'
                 >
                   <button
                     role='menuitem'
-                    className='w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors'
+                    className='mtv-play-pop-item w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors'
                     onClick={() => {
                       userSetViewModeRef.current = true;
                       setEpisodeViewMode((m) =>
@@ -1211,7 +1200,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                   </button>
                   <button
                     role='menuitem'
-                    className='w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors'
+                    className='mtv-play-pop-item w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors'
                     onClick={() => {
                       setShowFilterSettings(true);
                       setShowEpisodeMenu(false);
@@ -1222,7 +1211,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                   </button>
                   <button
                     role='menuitem'
-                    className='w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors'
+                    className='mtv-play-pop-item w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors'
                     onClick={() => {
                       setShowTitleCorrect(true);
                       setShowEpisodeMenu(false);
@@ -1299,7 +1288,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
         <div className='flex flex-col h-full mt-2'>
           {/* 全部重测按钮 - 右上角 */}
           {!sourceSearchLoading && !sourceSearchError && availableSources.length > 0 && (
-            <div className='flex justify-end mb-2 px-2 pb-2 border-b border-gray-300 dark:border-gray-700'>
+            <div className='flex justify-end mb-2 px-2 pb-2 border-b border-white/10'>
               <button
                 onClick={retestAllSources}
                 disabled={isRetestingAll || retestingSources.size > 0 || isInitialTesting}
@@ -1327,7 +1316,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
             <div className='flex items-center justify-center py-8'>
               <div className='text-center'>
                 <div className='text-red-500 text-2xl mb-2'>⚠️</div>
-                <p className='text-sm text-red-600 dark:text-red-400'>
+                <p className='text-sm text-red-400'>
                   {sourceSearchError}
                 </p>
               </div>
@@ -1393,7 +1382,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                         className={`flex items-start gap-3 px-2 py-3 rounded-lg transition-all select-none duration-200 relative
                       ${isCurrentSource
                          ? 'bg-ui-accent-soft border-ui-accent-soft border'
-                          : 'hover:bg-gray-200/50 dark:hover:bg-white/10 hover:scale-[1.02] cursor-pointer'
+                          : 'hover:bg-white/10 hover:scale-[1.02] cursor-pointer'
                           }`.trim()}
                       >
                         {/* 封面 */}
@@ -1437,7 +1426,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                               if (videoInfo && videoInfo.quality !== '未知') {
                                 if (videoInfo.hasError) {
                                   return (
-                                    <div className='bg-gray-500/10 dark:bg-gray-400/20 text-red-600 dark:text-red-400 px-1.5 py-0 rounded text-xs flex-shrink-0 min-w-[50px] text-center'>
+                                    <div className='bg-white/10 text-red-400 px-1.5 py-0 rounded text-xs flex-shrink-0 min-w-[50px] text-center'>
                                       {videoInfo.errorType === 'timeout'
                                         ? '超时'
                                         : '无法访问'}
@@ -1459,7 +1448,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
 
                                   return (
                                     <div
-                                      className={`bg-gray-500/10 dark:bg-gray-400/20 ${textColorClasses} px-1.5 py-0 rounded text-xs flex-shrink-0 min-w-[50px] text-center`}
+                                      className={`bg-white/10 ${textColorClasses} px-1.5 py-0 rounded text-xs flex-shrink-0 min-w-[50px] text-center`}
                                     >
                                       {videoInfo.quality}
                                     </div>
@@ -1559,7 +1548,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                   })}
                 {/* 后台加载提示 */}
                 {backgroundSourcesLoading && (
-                  <div className='flex items-center justify-center py-6 border-t border-gray-300 dark:border-gray-700'>
+                  <div className='flex items-center justify-center py-6 border-t border-white/10'>
                     <div className='animate-spin rounded-full h-6 w-6 border-b-2 border-ui-accent'></div>
                     <span className={`ml-2 text-sm ${mutedTextClass}`}>
                       正在加载更多播放源...

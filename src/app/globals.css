@@ -2370,8 +2370,67 @@ html[data-loading-style='grid'] .mtv-err-box {
   box-shadow: 0 26px 60px -20px rgba(0, 0, 0, 0.9);
 }
 
-/* 右侧栏：和播放器同一套圆角/描边 */
+/* 右侧栏：和播放器同一套圆角/描边，另加一层极淡的承托面，让「选集 / 换源 /
+   弹幕」这个面板和播放器读起来是一套东西，而不是一块裸内容。 */
 .mtv-play-rail {
   border-radius: var(--ui-r-md);
   border: 1px solid rgba(255, 255, 255, 0.08);
+  background-color: rgba(255, 255, 255, 0.035);
+}
+
+/* 右侧栏主 Tab（选集 / 换源 / 弹幕）：原来只靠字色区分，切过去没有落点。
+   给每个 tab 一条居中的下划线，激活时才浮出来，压在栏的底边上。 */
+.mtv-play-tabbar {
+  display: flex;
+  flex-shrink: 0;
+  margin-inline: calc(-1 * var(--ui-sp-4));
+  padding-inline: var(--ui-sp-4);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.mtv-play-tab {
+  position: relative;
+  flex: 1;
+  padding-block: 12px;
+  text-align: center;
+  font-weight: 500;
+  transition: color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-play-tab::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -1px;
+  width: 28px;
+  height: 2px;
+  border-radius: 9999px;
+  background-color: var(--ui-accent);
+  opacity: 0;
+  transform: translateX(-50%) scaleX(0.4);
+  transition:
+    opacity var(--ui-dur-2) var(--ui-ease),
+    transform var(--ui-dur-2) var(--ui-ease);
+}
+
+.mtv-play-tab-active::after {
+  opacity: 1;
+  transform: translateX(-50%) scaleX(1);
+}
+
+/* 播放页固定深色，浮层不能跟着主题走 —— 浅色主题下 --ui-surface-2 是白的，
+   白底菜单压在近黑的右侧栏上会刺眼。这里给一套固定的深色浮层。 */
+.mtv-play-pop {
+  background-color: #1a1a1e;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 18px 44px -14px rgba(0, 0, 0, 0.9);
+}
+
+.mtv-play-pop-item {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.mtv-play-pop-item:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
 }
