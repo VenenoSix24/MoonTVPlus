@@ -2007,9 +2007,32 @@ html[data-loading-style='grid'] .mtv-err-box {
     justify-content: center;
   }
 
-  /* 标题字放大：它现在是画面的视觉中心，不再是一行说明文字 */
+  /* 标题字放大并居中：它现在是画面的视觉中心，不再是一行说明文字。
+     注意 logo 是 <img>（块级替换元素），text-align 管不到它，必须用自动外边距。 */
   .mtv-hero-logo {
     max-height: clamp(2.75rem, 12vw, 4.5rem);
+    margin-inline: auto;
+  }
+
+  /* 参考设计里手机端没有 CTA：整块画面可点即播，再放一个按钮是多余的一层 */
+  .mtv-hero-actions {
+    display: none;
+  }
+
+  /* 元信息改成一行「· 分隔」的弱化文字，不再是一排胶囊标签 */
+  .mtv-hero-chip {
+    padding: 0;
+    background: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    font-weight: 500;
+    color: var(--hero-ink-2);
+  }
+
+  .mtv-hero-chip + .mtv-hero-chip::before {
+    content: '·';
+    margin: 0 5px;
+    opacity: 0.55;
   }
 
   /* 简介收 3 行：一条 120 字的简介在 390px 宽下要排 8 行，
