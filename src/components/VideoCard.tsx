@@ -1086,7 +1086,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                   }
                   referrerPolicy='no-referrer'
                   loading='lazy'
-                  onLoadingComplete={() => {
+                  onLoad={() => {
                     setIsLoading(true);
                   }}
                   onError={(e) => {
