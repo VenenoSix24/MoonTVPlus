@@ -93,7 +93,7 @@ interface GalleryImage {
   vote_average?: number;
   vote_count?: number;
   iso_639_1?: string | null;
-  imageType: 'backdrop' | 'poster';
+  imageType: 'backdrop' | 'poster' | 'logo';
 }
 
 // 从多个 TMDB 搜索结果中挑选最匹配的一个
@@ -1248,6 +1248,8 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
           ? image.height / image.width
           : image.imageType === 'poster'
           ? 1.5
+          : image.imageType === 'logo'
+          ? 0.35
           : 0.5625;
       const renderHeight = Math.max(Math.round(columnWidth * ratio), 80);
       const top = columnHeights[targetColumn];
@@ -1315,13 +1317,15 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
           }}
         >
           {virtualGalleryLayout.visibleItems.map((image) => {
+            // 标题字是透明 PNG，尺寸比剧照小得多，取 original 纯属浪费带宽
+            const isLogo = image.imageType === 'logo';
             const imageUrl = getTMDBImageUrl(
               image.file_path,
-              image.imageType === 'poster' ? 'w500' : 'original'
+              image.imageType === 'backdrop' ? 'original' : 'w500'
             );
             const thumbUrl = getTMDBImageUrl(
               image.file_path,
-              image.imageType === 'poster' ? 'w342' : 'w780'
+              image.imageType === 'backdrop' ? 'w780' : isLogo ? 'w300' : 'w342'
             );
 
             return (
@@ -1336,7 +1340,9 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                 }}
               >
                 <div
-                  className='relative w-full h-full overflow-hidden rounded-md bg-gray-100 dark:bg-gray-800 cursor-pointer hover:opacity-90 transition-opacity'
+                  className={`relative w-full h-full overflow-hidden rounded-md cursor-pointer hover:opacity-90 transition-opacity ${
+                    isLogo ? 'bg-neutral-800' : 'bg-gray-100 dark:bg-gray-800'
+                  }`}
                   onClick={() => handleImageClick(imageUrl)}
                 >
                   <ProxyImage
@@ -1344,11 +1350,17 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                     alt={`${detailData?.title || title}-gallery-${
                       image.index + 1
                     }`}
-                    className='absolute inset-0 w-full h-full object-cover'
+                    className={`absolute inset-0 w-full h-full ${
+                      isLogo ? 'object-contain p-3' : 'object-cover'
+                    }`}
                     draggable={false}
                   />
                   <div className='absolute left-2 top-2 px-2 py-0.5 rounded-full text-xs bg-black/60 text-white'>
-                    {image.imageType === 'poster' ? '海报' : '剧照'}
+                    {image.imageType === 'poster'
+                      ? '海报'
+                      : image.imageType === 'logo'
+                      ? '标题字'
+                      : '剧照'}
                   </div>
                 </div>
               </div>

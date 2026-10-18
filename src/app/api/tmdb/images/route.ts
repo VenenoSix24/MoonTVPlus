@@ -68,7 +68,15 @@ export async function GET(request: NextRequest) {
       imageType: 'poster' as const,
     }));
 
-    const allImages = [...backdrops, ...posters].sort((a, b) => {
+    // 标题字（透明 PNG）。照片墙里单独成一类：它是发行方的品牌资产，展示方式和
+    // 剧照/海报完全不同——必须 object-contain 且垫深色底，否则透明区露白、
+    // 浅色的标题字会直接消失。
+    const logos = (response.images.logos || []).map((item: any) => ({
+      ...item,
+      imageType: 'logo' as const,
+    }));
+
+    const allImages = [...backdrops, ...posters, ...logos].sort((a, b) => {
       const voteDiff = (b.vote_average || 0) - (a.vote_average || 0);
       if (voteDiff !== 0) return voteDiff;
       return (b.vote_count || 0) - (a.vote_count || 0);
