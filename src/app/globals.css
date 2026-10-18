@@ -44,6 +44,10 @@
   --ui-dur-3: 420ms;
   --ui-ease: cubic-bezier(0.22, 0.72, 0.24, 1);
   --ui-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* 页面横向留白，与顶栏底色 */
+  --ui-gutter: clamp(16px, 4vw, 56px);
+  --ui-nav: color-mix(in srgb, var(--ui-bg) 92%, transparent);
 }
 
 .dark {
@@ -1063,17 +1067,8 @@ html[data-loading-style='grid'] .mtv-err-box {
   }
 }
 
-/* 加载遮罩用 fixed 铺满整个视口，桌面端要把左侧固定侧边栏的宽度让出来，
-   否则内容会按「含侧边栏的整屏」居中，看起来偏左。左偏移跟随侧边栏展开/收起：
-   Sidebar 收起时会在 <html> 上写 data-sidebar-collapsed。移动端无侧边栏，不偏移。 */
-@media (min-width: 768px) {
-  .mtv-load-overlay {
-    left: 16rem; /* 侧边栏展开 = w-64 */
-  }
-  html[data-sidebar-collapsed] .mtv-load-overlay {
-    left: 4rem; /* 侧边栏收起 = w-16 */
-  }
-}
+/* 加载遮罩用 fixed 铺满整个视口。桌面端导航已改成顶部条，不再占据左侧宽度，
+   所以左右都不需要让位。 */
 
 /* 方格款在 PC（≥1024）整体放大 2.5 倍：只放大铺满整屏的加载页那一版，
    播放器内的深色小图标（.mtv-on-dark）保持原样。用 transform 统一缩放，
@@ -1344,4 +1339,119 @@ html[data-loading-style='grid'] .mtv-err-box {
 .mtv-row-more:hover {
   color: var(--ui-ink);
   background-color: var(--ui-surface-3);
+}
+
+/* ==========================================================================
+   桌面端顶部导航（取代固定侧栏）
+   --------------------------------------------------------------------------
+   只在 md 以上显示；移动端仍走 MobileHeader + MobileBottomNav。
+   链接过多时横向滚动，不换行撑高。
+   ========================================================================== */
+.mtv-topnav {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 40;
+  display: none;
+  align-items: center;
+  gap: 26px;
+  height: 64px;
+  padding: 0 var(--ui-gutter);
+  background-color: var(--ui-nav);
+  backdrop-filter: blur(16px) saturate(150%);
+  box-shadow: 0 1px 0 var(--ui-hair);
+}
+
+.mtv-topnav-brand {
+  flex: none;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--ui-accent);
+  transition: opacity var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-topnav-brand:hover {
+  opacity: 0.8;
+}
+
+.mtv-topnav-links {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.mtv-topnav-links::-webkit-scrollbar {
+  display: none;
+}
+
+.mtv-topnav-link {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: var(--ui-r-sm);
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--ui-ink-2);
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-topnav-link svg {
+  width: 16px;
+  height: 16px;
+}
+
+.mtv-topnav-link:hover {
+  color: var(--ui-ink);
+  background-color: var(--ui-surface-3);
+}
+
+.mtv-topnav-link[aria-current='page'] {
+  font-weight: 600;
+  color: var(--ui-accent);
+  background-color: var(--ui-accent-soft);
+}
+
+.mtv-topnav-right {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.mtv-topnav-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--ui-r-sm);
+  color: var(--ui-ink-2);
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-topnav-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.mtv-topnav-icon:hover {
+  color: var(--ui-ink);
+  background-color: var(--ui-surface-3);
+}
+
+@media (min-width: 768px) {
+  .mtv-topnav {
+    display: flex;
+  }
 }
