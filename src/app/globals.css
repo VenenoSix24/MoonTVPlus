@@ -102,7 +102,7 @@
   width: 100px;
   height: 100%;
   box-shadow: 0 0 10px rgba(59, 130, 246, 0.8), 0 0 5px rgba(59, 130, 246, 0.6);
-  opacity: 1.0;
+  opacity: 1;
   transform: rotate(3deg) translate(0px, -4px);
 }
 
@@ -144,18 +144,10 @@ body {
 }
 
 html:not(.dark) body {
-  background: linear-gradient(
-    180deg,
-    #e6f3fb 0%,
-    #eaf3f7 18%,
-    #f7f7f3 38%,
-    #e9ecef 60%,
-    #dbe3ea 80%,
-    #d3dde6 100%
-  );
-  background-attachment: fixed;
+  /* 原来是蓝色玻璃渐变。Hero 底部要融入页面，渐变会让接缝对不上，
+     而且这套渐变和新的中性色令牌也不搭，统一收敛成 --ui-bg。 */
+  background: var(--ui-bg);
 }
-
 /* 自定义滚动条样式 */
 ::-webkit-scrollbar {
   width: 8px;
@@ -295,7 +287,8 @@ div[data-media-provider] video {
     transform: scale(1);
     opacity: 0.6;
   }
-  75%, 100% {
+  75%,
+  100% {
     transform: scale(2);
     opacity: 0;
   }
@@ -303,7 +296,8 @@ div[data-media-provider] video {
 
 /* 水波纹缩放动画 - 第二层 (慢速脉冲) */
 @keyframes pulse-scale {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
     opacity: 0.4;
   }
@@ -315,7 +309,8 @@ div[data-media-provider] video {
 
 /* 主体徽章缩放动画 */
 @keyframes badge-scale {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
   }
   50% {
@@ -324,7 +319,8 @@ div[data-media-provider] video {
 }
 
 @keyframes reader-book-flip {
-  0%, 100% {
+  0%,
+  100% {
     transform: perspective(120px) rotateY(0deg) translateY(0);
   }
   30% {
@@ -348,7 +344,6 @@ div[data-media-provider] video {
   color: #d9924a;
 }
 
-
 /* TV 端遥控器焦点：深色选中 + 放大，而不是细边框 */
 .tv-focusable {
   position: relative;
@@ -358,12 +353,8 @@ div[data-media-provider] video {
   scroll-margin-right: 48px;
   transform-origin: center;
   scale: 1;
-  transition:
-    scale 180ms ease,
-    background-color 180ms ease,
-    color 180ms ease,
-    box-shadow 180ms ease,
-    opacity 180ms ease;
+  transition: scale 180ms ease, background-color 180ms ease, color 180ms ease,
+    box-shadow 180ms ease, opacity 180ms ease;
 }
 
 .tv-focusable:focus,
@@ -373,9 +364,7 @@ div[data-media-provider] video {
   scale: 1.055;
   background-color: rgba(15, 23, 42, 0.96) !important;
   color: #ffffff !important;
-  box-shadow:
-    0 18px 44px rgba(0, 0, 0, 0.68),
-    0 0 26px rgba(225, 29, 72, 0.38) !important;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.68), 0 0 26px rgba(225, 29, 72, 0.38) !important;
   z-index: 30;
 }
 
@@ -394,7 +383,11 @@ div[data-media-provider] video {
   position: absolute;
   inset: -3px;
   border-radius: inherit;
-  background: linear-gradient(135deg, rgba(255,255,255,0.22), rgba(225,29,72,0.28));
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.22),
+    rgba(225, 29, 72, 0.28)
+  );
   opacity: 0.45;
   pointer-events: none;
 }
@@ -489,8 +482,7 @@ html:not([data-loading-style]) .mtv-load-talisman {
   border: 2.5px solid var(--mtv-ink);
   border-radius: 3px;
   /* 不能裁切：进行中的光环/光点要能扩到格子外面 */
-  transition:
-    background 0.45s ease,
+  transition: background 0.45s ease,
     transform 0.34s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .mtv-panel svg {
@@ -498,9 +490,7 @@ html:not([data-loading-style]) .mtv-load-talisman {
   height: 22px;
   color: var(--mtv-ink);
   opacity: 0.22;
-  transition:
-    color 0.35s,
-    opacity 0.35s;
+  transition: color 0.35s, opacity 0.35s;
 }
 .mtv-panel span {
   font-size: 8px;
@@ -508,9 +498,7 @@ html:not([data-loading-style]) .mtv-load-talisman {
   letter-spacing: 0.06em;
   color: var(--mtv-ink);
   opacity: 0.22;
-  transition:
-    color 0.35s,
-    opacity 0.35s;
+  transition: color 0.35s, opacity 0.35s;
 }
 /* 已完成：整格填蓝，白图标 */
 .mtv-panel.on {
@@ -567,8 +555,11 @@ html:not([data-loading-style]) .mtv-load-talisman {
   position: absolute;
   inset: -6px;
   border-radius: 9px;
-  background:
-    radial-gradient(circle at 50% 0, var(--mtv-acc) 1.6px, transparent 2.4px),
+  background: radial-gradient(
+      circle at 50% 0,
+      var(--mtv-acc) 1.6px,
+      transparent 2.4px
+    ),
     radial-gradient(circle at 100% 50%, var(--mtv-acc) 1.6px, transparent 2.4px),
     radial-gradient(circle at 50% 100%, var(--mtv-acc) 1.6px, transparent 2.4px),
     radial-gradient(circle at 0 50%, var(--mtv-acc) 1.6px, transparent 2.4px),
@@ -679,7 +670,12 @@ html:not([data-loading-style]) .mtv-load-talisman {
     var(--mtv-acc) 0 0.7deg,
     transparent 0.7deg 15deg
   );
-  -webkit-mask: radial-gradient(circle, transparent 62%, #000 63% 70%, transparent 71%);
+  -webkit-mask: radial-gradient(
+    circle,
+    transparent 62%,
+    #000 63% 70%,
+    transparent 71%
+  );
   mask: radial-gradient(circle, transparent 62%, #000 63% 70%, transparent 71%);
   animation: mtv-spin 26s linear infinite;
 }
@@ -691,7 +687,12 @@ html:not([data-loading-style]) .mtv-load-talisman {
     var(--mtv-acc-hover) 0 7deg,
     transparent 7deg 18deg
   );
-  -webkit-mask: radial-gradient(circle, transparent 78%, #000 79% 86%, transparent 87%);
+  -webkit-mask: radial-gradient(
+    circle,
+    transparent 78%,
+    #000 79% 86%,
+    transparent 87%
+  );
   mask: radial-gradient(circle, transparent 78%, #000 79% 86%, transparent 87%);
   animation: mtv-spin 17s linear infinite reverse;
 }
@@ -749,19 +750,17 @@ html:not([data-loading-style]) .mtv-load-talisman {
   position: absolute;
   left: 50%;
   top: 50%;
-  margin: calc(var(--mtv-tal-s) * -8 / 150) 0 0 calc(var(--mtv-tal-s) * -6 / 150);
-  font-family: Georgia, 'Songti SC', 'Noto Serif CJK SC', 'Noto Serif SC', STSong,
-    SimSun, serif;
+  margin: calc(var(--mtv-tal-s) * -8 / 150) 0 0
+    calc(var(--mtv-tal-s) * -6 / 150);
+  font-family: Georgia, 'Songti SC', 'Noto Serif CJK SC', 'Noto Serif SC',
+    STSong, SimSun, serif;
   font-size: calc(var(--mtv-tal-s) * 12 / 150);
   font-weight: 600;
   color: var(--mtv-acc-hover);
   opacity: 0.26;
   transform: rotate(var(--a)) translateY(calc(var(--mtv-tal-s) * -63 / 150))
     rotate(calc(-1 * var(--a)));
-  transition:
-    opacity 0.4s,
-    color 0.4s,
-    text-shadow 0.4s;
+  transition: opacity 0.4s, color 0.4s, text-shadow 0.4s;
 }
 .mtv-rune.lit {
   opacity: 1;
@@ -1461,28 +1460,25 @@ html[data-loading-style='grid'] .mtv-err-box {
    原来的黑遮罩 + 白字。整组取值走 --hero-* 令牌，随 .dark 切换。
    ========================================================================== */
 :root {
+  /* 浅色下不再拿白遮罩糊画面——那只会把海报洗成一片雾。
+     只留底部一小段融入页面的过渡，文字改由磨砂面板承载，画面本身保持原样。 */
   --hero-scrim: linear-gradient(
-      90deg,
-      rgba(255, 255, 255, 0.99) 0%,
-      rgba(255, 255, 255, 0.95) 30%,
-      rgba(255, 255, 255, 0.55) 50%,
-      rgba(255, 255, 255, 0.12) 70%,
-      transparent 88%
-    ),
-    linear-gradient(
-      0deg,
-      var(--ui-bg) 0%,
-      rgba(255, 255, 255, 0.5) 16%,
-      transparent 42%
-    ),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, transparent 30%);
+    0deg,
+    var(--ui-bg) 0%,
+    rgba(255, 255, 255, 0.5) 7%,
+    transparent 24%
+  );
   --hero-ink: #0e1524;
   --hero-ink-2: rgba(14, 21, 36, 0.78);
-  --hero-art-filter: saturate(0.9) brightness(1.12) contrast(0.96);
+  --hero-art-filter: none;
+  --hero-panel-bg: rgba(255, 255, 255, 0.74);
+  --hero-panel-blur: blur(26px) saturate(170%);
+  --hero-panel-shadow: 0 20px 50px -22px rgba(14, 21, 36, 0.45);
+  --hero-panel-pad: 26px 30px;
   --hero-btn-bg: #0e1524;
   --hero-btn-ink: #ffffff;
   --hero-btn-bg-hover: #2a2a30;
-  --hero-chip-bg: rgba(14, 21, 36, 0.09);
+  --hero-chip-bg: rgba(14, 21, 36, 0.08);
   --hero-chip-ink: #0e1524;
   --hero-ctl-bg: rgba(255, 255, 255, 0.72);
   --hero-dot: rgba(14, 21, 36, 0.3);
@@ -1513,6 +1509,10 @@ html[data-loading-style='grid'] .mtv-err-box {
   --hero-chip-ink: #ffffff;
   --hero-ctl-bg: rgba(0, 0, 0, 0.42);
   --hero-dot: rgba(255, 255, 255, 0.4);
+  --hero-panel-bg: transparent;
+  --hero-panel-blur: none;
+  --hero-panel-shadow: none;
+  --hero-panel-pad: 0;
 }
 
 /* 只给画面本身提亮/压灰。遮罩和画面在同一个 wrapper 里，
@@ -1524,9 +1524,26 @@ html[data-loading-style='grid'] .mtv-err-box {
   transition: filter var(--ui-dur-3) var(--ui-ease);
 }
 
+/* 16:9 的画面塞进更扁的容器只能裁切。把裁切重心上移，主体通常在偏上位置，
+   比默认居中更不容易裁到脸。 */
+.mtv-hero-art img {
+  object-position: center 30%;
+}
+
 .mtv-hero-scrim {
   background: var(--hero-scrim);
   transition: background var(--ui-dur-3) var(--ui-ease);
+}
+
+/* 文字承载面。深色下是透明的（沿用左侧黑遮罩），浅色下变成一块磨砂玻璃，
+   这样海报不用被白遮罩洗掉也能保证正文对比度。 */
+.mtv-hero-body {
+  padding: var(--hero-panel-pad);
+  border-radius: var(--ui-r-lg);
+  background-color: var(--hero-panel-bg);
+  backdrop-filter: var(--hero-panel-blur);
+  box-shadow: var(--hero-panel-shadow);
+  transition: background-color var(--ui-dur-3) var(--ui-ease);
 }
 
 .mtv-hero-title {
@@ -1609,20 +1626,11 @@ html[data-loading-style='grid'] .mtv-err-box {
   background-color: var(--ui-accent);
 }
 
+/* Hero 高度向 16:9 靠。TMDB 的 backdrop 是 16:9，容器越扁裁掉得越多，
+   裁得越狠就越像"被放大铺满"。这里用 min-height 而不是 height，
+   站长在后台选的更大档位仍然生效。 */
 @media (min-width: 768px) {
   .mtv-hero {
-    min-height: 480px;
-  }
-}
-
-@media (min-width: 1280px) {
-  .mtv-hero {
-    min-height: 580px;
-  }
-}
-
-@media (min-width: 1600px) {
-  .mtv-hero {
-    min-height: 660px;
+    min-height: max(440px, min(56.25vw, 76vh));
   }
 }

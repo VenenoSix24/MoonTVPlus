@@ -581,7 +581,7 @@ export default function BannerCarousel({
 
       {/* 内容信息 */}
       <div className='absolute inset-0 flex items-end p-8 md:p-12 pointer-events-none'>
-        <div className='max-w-2xl space-y-3'>
+        <div className='mtv-hero-body max-w-2xl space-y-3'>
           <h2
             ref={titleRef}
             className='mtv-hero-title'
