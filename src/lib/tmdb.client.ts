@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any,no-console */
 
 import { safeFetch } from './safe-http';
-
 import { getTmdbImageBaseUrl } from './tmdb-image-base';
 
 // TMDB API 默认 Base URL（不包含 /3/，由程序拼接）
@@ -741,6 +740,42 @@ export async function getTMDBTVDetails(
   }
 }
 
+/** aggregate_credits 与 credits 的返回形状不同：前者用 roles[] / jobs[] 数组，
+ *  后者用单个 character / job。这里统一成后者的形状，播放页按 job 过滤导演、
+ *  按 character 显示角色的逻辑就不用改。 */
+function normalizeTMDBCredits(data: any) {
+  if (!data || typeof data !== 'object') return data;
+
+  const cast = Array.isArray(data.cast)
+    ? data.cast.map((person: any, index: number) => {
+        if (!person) return person;
+        const roles = Array.isArray(person.roles)
+          ? person.roles.map((r: any) => r?.character).filter(Boolean)
+          : [];
+        return {
+          ...person,
+          character: person.character || roles[0] || '',
+          order: typeof person.order === 'number' ? person.order : index,
+        };
+      })
+    : [];
+
+  const crew = Array.isArray(data.crew)
+    ? data.crew.flatMap((person: any) => {
+        if (!person) return [];
+        const jobs = Array.isArray(person.jobs)
+          ? person.jobs.map((j: any) => j?.job).filter(Boolean)
+          : [];
+        // 一个人可能同时挂多个职位，展开成多条，避免调用方漏掉 Director
+        return jobs.length > 0
+          ? jobs.map((job: string) => ({ ...person, job }))
+          : [person];
+      })
+    : [];
+
+  return { ...data, cast, crew };
+}
+
 /**
  * 获取 TMDB 演职人员信息
  * @param apiKey - TMDB API Key
@@ -764,21 +799,57 @@ export async function getTMDBCredits(
     }
 
     const baseUrl = reverseProxyBaseUrl || DEFAULT_TMDB_BASE_URL;
-    const url = `${baseUrl}/3/${mediaType}/${mediaId}/credits?api_key=${actualKey}&language=zh-CN`;
+    // 剧集的 /credits 只返回「常驻主演」，长剧往往只剩几个人；全量演职员在
+    // /aggregate_credits。电影两者等价，直接走 /credits。
+    const endpoints =
+      mediaType === 'tv'
+        ? [
+            `${baseUrl}/3/tv/${mediaId}/aggregate_credits`,
+            `${baseUrl}/3/tv/${mediaId}/credits`,
+          ]
+        : [`${baseUrl}/3/${mediaType}/${mediaId}/credits`];
 
-    const response = await universalFetch(url, proxy);
+    let lastCode = 500;
+    let emptyCredits: any = null;
 
-    if (!response.ok) {
-      console.error('TMDB Credits API 请求失败:', response.status, response.statusText);
-      return { code: response.status, credits: null };
+    for (const endpoint of endpoints) {
+      try {
+        const response = await universalFetch(
+          `${endpoint}?api_key=${actualKey}&language=zh-CN`,
+          proxy
+        );
+
+        if (!response.ok) {
+          console.error(
+            'TMDB Credits API 请求失败:',
+            endpoint,
+            response.status,
+            response.statusText
+          );
+          lastCode = response.status;
+          continue;
+        }
+
+        const credits = normalizeTMDBCredits(await response.json());
+        const count =
+          (credits?.cast?.length ?? 0) + (credits?.crew?.length ?? 0);
+
+        // 空结果继续试下一个端点；全部为空时把空结果原样返回，调用方按
+        // 「无演职员」处理，而不是报错
+        if (count === 0) {
+          emptyCredits = emptyCredits ?? credits;
+          lastCode = 200;
+          continue;
+        }
+
+        return { code: 200, credits };
+      } catch (error) {
+        console.error('获取 TMDB 演职人员信息失败:', endpoint, error);
+        lastCode = 500;
+      }
     }
 
-    const data: any = await response.json();
-
-    return {
-      code: 200,
-      credits: data,
-    };
+    return { code: lastCode, credits: emptyCredits };
   } catch (error) {
     console.error('获取 TMDB 演职人员信息失败:', error);
     return { code: 500, credits: null };
