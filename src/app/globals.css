@@ -2542,11 +2542,45 @@ html[data-loading-style='grid'] .mtv-err-box {
   white-space: nowrap;
 }
 
+/* 标题行右侧的小图标按钮（收藏 / 详情）。原来收藏是 28px 的裸图标、详情是
+   一个 16px 的「详」字，两者差了一倍，跟 25px 高的评分胶囊也不齐。
+   统一成 26px 圆形热区 + 17px 图标 */
+.mtv-play-iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 9999px;
+  background-color: transparent;
+  color: var(--mtv-ink-2);
+  cursor: pointer;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-play-iconbtn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--mtv-ink);
+}
+
+.mtv-play-iconbtn svg {
+  width: 17px;
+  height: 17px;
+}
+
 /* 手机端：标题独占一行，评分胶囊落到标题下方 ——
    标题长的时候跟胶囊挤在同一行不好看 */
 @media (max-width: 640px) {
   .mtv-play-title {
     flex: 0 0 100%;
+    /* 标题独占整行之后，h1 上的 text-center 才显形（原来 span 只有内容宽，
+       居中看不出来）。按定稿改回居左 */
+    text-align: left;
   }
 }
 
@@ -3957,6 +3991,18 @@ html[data-loading-style='grid'] .mtv-err-box {
     /* 最小宽度压到 140：768 那一档侧栏只有 165px 宽，196 会让卡片比容器还宽 */
     width: clamp(140px, 62%, 248px);
     scroll-snap-align: start;
+  }
+
+  /* 卡片等高。横滑行是 align-items: stretch，槽位已经被拉到最高那张的高度，
+     但卡片本身 height: auto，所以只有标题换行的那张是高的。
+     卡片铺满槽位 + 标题固定预留两行 → 所有卡片上下边缘对齐，
+     日期行与简介的起始位置也齐 */
+  .mtv-play-epcard {
+    height: 100%;
+  }
+
+  .mtv-play-epcard-t {
+    min-height: calc(2 * 1.35em);
   }
 }
 

@@ -2,7 +2,7 @@
 
 'use client';
 
-import { AlertCircle, ArrowLeft, Cloud, FileText, Heart, Keyboard, Link2, Loader2, Play, RefreshCw, Router, Search, Sparkles, Star, Users, X } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Cloud, FileText, Heart, Info, Keyboard, Link2, Loader2, Play, RefreshCw, Router, Search, Sparkles, Star, Users, X } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Suspense,
@@ -12374,7 +12374,10 @@ function PlayPageClient() {
                               e.stopPropagation();
                               handleToggleFavorite();
                             }}
-                            className='flex-shrink-0 hover:opacity-80 transition-opacity'
+                            className='mtv-play-iconbtn'
+                            title={favorited ? '取消收藏' : '收藏'}
+                            aria-pressed={favorited}
+                            aria-label={favorited ? '取消收藏' : '收藏'}
                           >
                             <FavoriteIcon filled={favorited} />
                           </button>
@@ -12385,10 +12388,11 @@ function PlayPageClient() {
                                 e.stopPropagation();
                                 openDrawer('detail');
                               }}
-                              className='flex-shrink-0 hover:opacity-80 transition-opacity px-2 py-1 text-base font-medium text-gray-700 dark:text-gray-300'
+                              className='mtv-play-iconbtn'
                               title='详情'
+                              aria-label='查看影片详情'
                             >
-                              详
+                              <Info aria-hidden='true' />
                             </button>
                           )}
                           {/* 纠错按钮 - 仅小雅源显示 */}
@@ -12398,10 +12402,11 @@ function PlayPageClient() {
                                 e.stopPropagation();
                                 openDrawer('correct');
                               }}
-                              className='flex-shrink-0 hover:opacity-80 transition-opacity'
+                              className='mtv-play-iconbtn'
                               title='纠错'
+                              aria-label='纠错'
                             >
-                              <AlertCircle className='h-6 w-6 text-gray-700 dark:text-gray-300' />
+                              <AlertCircle aria-hidden='true' />
                             </button>
                           )}
                         </h1>
@@ -12985,7 +12990,7 @@ const FavoriteIcon = ({ filled }: { filled: boolean }) => {
   if (filled) {
     return (
       <svg
-        className='h-7 w-7'
+        aria-hidden='true'
         viewBox='0 0 24 24'
         xmlns='http://www.w3.org/2000/svg'
       >
@@ -13000,9 +13005,7 @@ const FavoriteIcon = ({ filled }: { filled: boolean }) => {
       </svg>
     );
   }
-  return (
-    <Heart className='h-7 w-7 stroke-[1] text-gray-600 dark:text-gray-300' />
-  );
+  return <Heart className='stroke-[1]' />;
 };
 
 export default function PlayPage() {
