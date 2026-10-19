@@ -3730,7 +3730,7 @@ html[data-loading-style='grid'] .mtv-err-box {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow: hidden;
-  margin-top: 5px;
+  margin-top: 4px;
   font-size: 11.5px;
   line-height: 1.5;
   color: var(--mtv-ink-3);
@@ -3994,15 +3994,9 @@ html[data-loading-style='grid'] .mtv-err-box {
   }
 
   /* 卡片等高。横滑行是 align-items: stretch，槽位已经被拉到最高那张的高度，
-     但卡片本身 height: auto，所以只有标题换行的那张是高的。
-     卡片铺满槽位 + 标题固定预留两行 → 所有卡片上下边缘对齐，
-     日期行与简介的起始位置也齐 */
+     但卡片本身 height: auto，所以只有标题换行的那张是高的 —— 这里铺满槽位。 */
   .mtv-play-epcard {
     height: 100%;
-  }
-
-  .mtv-play-epcard-t {
-    min-height: calc(2 * 1.35em);
   }
 }
 
