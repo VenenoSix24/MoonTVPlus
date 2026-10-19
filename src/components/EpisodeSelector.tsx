@@ -1183,11 +1183,12 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
   // 测速未完成的源速度为 -1，自然落到最后。
   const sortedSources = useMemo(() => {
     const keyOf = (source: SearchResult) => `${source.source}-${source.id}`;
-
     return [...availableSources].sort((a, b) => {
-      if (!initialTestingCompleted) return 0;
-
+      // 不设「等全部测完再排」的闸门：那个标志位一旦没翻上来，排序就整段失效，
+      // 用户看到的是「测完速了顺序还是乱的」。没有数据的源速度为 -1，天然排在
+      // 最后，边测边排也不会错乱。
       const aInfo = videoInfoMap.get(keyOf(a));
+
       const bInfo = videoInfoMap.get(keyOf(b));
       const speedDiff =
         (bInfo ? parseSpeedToKBps(bInfo.loadSpeed) : -1) -
@@ -1202,19 +1203,14 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
         ? bitrateDiff || speedDiff
         : speedDiff || bitrateDiff;
     });
-  }, [
-    availableSources,
-    initialTestingCompleted,
-    videoInfoMap,
-    parseSpeedToKBps,
-    sourceSortMode,
-  ]);
+  }, [availableSources, videoInfoMap, parseSpeedToKBps, sourceSortMode]);
 
   // 重新测试单个源
   const handleRetestSource = useCallback(
     async (source: SearchResult, e: React.MouseEvent) => {
       e.stopPropagation(); // 阻止事件冒泡，避免触发换源
       const sourceKey = `${source.source}-${source.id}`;
+
 
       // 标记为正在测试
       setRetestingSources((prev) => new Set(prev).add(sourceKey));

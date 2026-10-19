@@ -3261,8 +3261,10 @@ html[data-loading-style='grid'] .mtv-err-box {
   background-color: color-mix(in srgb, var(--ui-accent) 12%, transparent);
   cursor: default;
 }
-
 .mtv-play-epcard-art {
+  /* 必须显式 block：这是个 <span>，行内元素的 aspect-ratio 不生效，
+     高度会塌成 0（图片虽然 100% 宽但撑不开容器） */
+  display: block;
   position: relative;
   aspect-ratio: 16 / 9;
   background-color: #16161a;
@@ -3370,51 +3372,21 @@ html[data-loading-style='grid'] .mtv-err-box {
 
 
 @media (min-width: 1024px) {
-  /* 桌面端改成横排：剧照 170×96（≈16:9，几乎不裁），文字在右。
-     原来竖排时剧照要铺满 333 宽，按 16:9 就是 188 高 —— 一张卡占掉半屏，
-     想压矮就只能裁图，人被拦腰裁断。横排把这两个问题一起解决，一屏还能
-     多看几张卡 */
+  /* 桌面端保持上下结构，只把剧照收小一点：卡片左右各留 16px 内边距，
+     剧照从「铺满 335 宽 → 16:9 得 188 高」缩到 303×170。
+     注意不能靠压 aspect-ratio 来变矮 —— 那是裁图，人会拦腰裁断；
+     缩宽度才是「原图不变、只是小一点」。 */
   .mtv-play-epcard {
-    display: grid;
-    grid-template-columns: 170px minmax(0, 1fr);
-    align-items: stretch;
-    height: 96px;
+    padding: 16px 16px 0;
   }
 
   .mtv-play-epcard-art {
-    aspect-ratio: auto;
-    height: 100%;
+    border-radius: 10px;
   }
 
   .mtv-play-epcard-body {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding: 8px 12px;
-    min-width: 0;
+    padding: 10px 0 14px;
   }
-
-  /* 固定卡高 96，标题限一行，简介限两行，否则会撑破被裁 */
-  .mtv-play-epcard-t {
-    -webkit-line-clamp: 1;
-  }
-
-  .mtv-play-epcard-tag,
-  .mtv-play-epcard-watched {
-    padding: 1px 6px;
-    font-size: 10px;
-  }
-
-  .mtv-play-epcard-tag {
-    left: 6px;
-    bottom: 6px;
-  }
-
-  .mtv-play-epcard-watched {
-    top: 6px;
-    right: 6px;
-  }
-  color: var(--mtv-ink-3);
 }
 
 /* 播出日历 */
