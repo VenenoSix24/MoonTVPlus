@@ -355,6 +355,16 @@ function PlayPageClient() {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [showPlayActionMore]);
+  // 「更多」面板的锚点取的是「更多」按钮的 offsetLeft，窄容器（1024 那一档）
+  // 下按钮已经偏右，面板再往右铺就顶出视口。挂载后按实际宽度往回钳一次。
+  useEffect(() => {
+    if (!showPlayActionMore) return;
+    const panel = playActionMoreRef.current;
+    const host = panel?.offsetParent as HTMLElement | null;
+    if (!panel || !host) return;
+    const maxLeft = Math.max(0, host.clientWidth - panel.offsetWidth);
+    setPlayActionMoreLeft((left) => Math.min(left, maxLeft));
+  }, [showPlayActionMore]);
   // TMDB 分集名称（按 episode_number-1 索引），复用背景请求解析出的 tmdbId 获取
   const [tmdbEpisodeNames, setTmdbEpisodeNames] = useState<string[]>([]);
   // 背景请求解析出的 tmdbId 字符串（形如 "tv:123"），供拉取分集名复用
@@ -379,6 +389,31 @@ function PlayPageClient() {
   } | null>(null);
   // TMDB 剧照（最多 4 张）
   const [tmdbStills, setTmdbStills] = useState<string[]>([]);
+  // 灯箱用的大图：缩略图走 w500 省流量，点开时才加载 w1280
+  const [tmdbStillsLarge, setTmdbStillsLarge] = useState<string[]>([]);
+  // 剧照灯箱：点开的那张在 tmdbStills 里的下标，null 表示关着
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  // 灯箱开着时接管 Esc 关闭与 ← / → 翻页
+  useEffect(() => {
+    if (lightboxIndex === null) return;
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setLightboxIndex(null);
+        return;
+      }
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+        event.preventDefault();
+        const step = event.key === 'ArrowLeft' ? -1 : 1;
+        setLightboxIndex((index) =>
+          index === null
+            ? null
+            : (index + step + tmdbStills.length) % tmdbStills.length
+        );
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [lightboxIndex, tmdbStills.length]);
   // TMDB 详情里挑出来给「作品信息」用的三个字段
   const [tmdbDetailMeta, setTmdbDetailMeta] = useState<{
     production: string;
@@ -1857,6 +1892,7 @@ function PlayPageClient() {
     if (!resolvedTmdbRef) {
       setTmdbCredits(null);
       setTmdbStills([]);
+      setTmdbStillsLarge([]);
       return;
     }
     const { id, mediaType } = resolvedTmdbRef;
@@ -1889,11 +1925,19 @@ function PlayPageClient() {
 
         if (images) {
           const list: any[] = Array.isArray(images?.list) ? images.list : [];
-          const stills = list
+          const backdrops = list
             .filter((item) => item.imageType === 'backdrop' && item.file_path)
-            .slice(0, 4)
-            .map((item) => processImageUrl(getTMDBImageUrl(item.file_path)));
-          setTmdbStills(stills);
+            .slice(0, 4);
+          setTmdbStills(
+            backdrops.map((item) =>
+              processImageUrl(getTMDBImageUrl(item.file_path))
+            )
+          );
+          setTmdbStillsLarge(
+            backdrops.map((item) =>
+              processImageUrl(getTMDBImageUrl(item.file_path, 'w1280'))
+            )
+          );
         }
 
         if (meta) {
@@ -1952,9 +1996,10 @@ function PlayPageClient() {
     return list;
   }, [tmdbCredits]);
 
-  // 主演：最多 8 位
+  // 主演：TMDB 剧集走 aggregate_credits，人数可能很多；定稿的演职员是横向
+  // 滑动的一行，这里截到 20 位，够铺满一屏又不至于拉太长
   const tmdbCastList = useMemo(
-    () => (tmdbCredits?.cast || []).filter((p) => p?.name).slice(0, 8),
+    () => (tmdbCredits?.cast || []).filter((p) => p?.name).slice(0, 20),
     [tmdbCredits]
   );
 
@@ -11441,6 +11486,22 @@ function PlayPageClient() {
                     <button
                       onClick={(e) => {
                         e.preventDefault();
+                        handleToggleFavorite();
+                      }}
+                      className='mtv-play-act mtv-play-act-primary'
+                      title={favorited ? '取消收藏' : '收藏'}
+                      aria-pressed={favorited}
+                    >
+                      <Heart
+                        className={`h-4 w-4 flex-shrink-0 ${
+                          favorited ? 'fill-current' : ''
+                        }`}
+                      />
+                      <span>{favorited ? '已收藏' : '收藏'}</span>
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
                         setShowShortcutDialog(true);
                       }}
                       className='mtv-play-act mtv-play-act-secondary'
@@ -11549,72 +11610,11 @@ function PlayPageClient() {
                 {showPlayActionMore && (
                   <div
                     ref={playActionMoreRef}
-                    className='mtv-play-pop absolute top-full z-50 mt-2 flex max-h-[70vh] w-max max-w-[min(92vw,46rem)] flex-wrap items-center gap-1.5 overflow-y-auto rounded-xl p-2'
+                    className='mtv-play-pop mtv-play-morepanel'
                     style={{ left: playActionMoreLeft }}
                     role='menu'
                     onClick={() => setShowPlayActionMore(false)}
                   >
-
-                    {/* App打开 */}
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        // 获取当前浏览器URL去除域名部分，并去除开头的/
-                        const currentPath = (window.location.pathname + window.location.search).replace(/^\//, '');
-                        // 打开moontvplus协议
-                        window.open(`moontvplus://${currentPath}`, '_blank');
-                      }}
-                      className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-blue-600 dark:border-blue-700 flex-shrink-0'
-                      title='App打开'
-                    >
-                      <svg
-                        className='w-4 h-4 flex-shrink-0 text-white'
-                        fill='none'
-                        stroke='currentColor'
-                        viewBox='0 0 24 24'
-                        xmlns='http://www.w3.org/2000/svg'
-                      >
-                        <path
-                          strokeLinecap='round'
-                          strokeLinejoin='round'
-                          strokeWidth={2}
-                          d='M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z'
-                        />
-                      </svg>
-                      <span className='hidden lg:inline max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out text-white'>
-                        App打开
-                      </span>
-                    </button>
-
-                    {/* PC Client 打开 */}
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        const currentPath = (window.location.pathname + window.location.search).replace(/^\//, '');
-                        window.open(`moontvpluspc://${currentPath}`, '_blank');
-                      }}
-                      className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-ui-accent hover:brightness-110 dark:hover:brightness-110 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-ui-accent dark:border-ui-accent flex-shrink-0'
-                      title='PC Client打开'
-                    >
-                      <svg
-                        className='w-4 h-4 flex-shrink-0 text-white'
-                        fill='none'
-                        stroke='currentColor'
-                        viewBox='0 0 24 24'
-                        xmlns='http://www.w3.org/2000/svg'
-                      >
-                        <path
-                          strokeLinecap='round'
-                          strokeLinejoin='round'
-                          strokeWidth={2}
-                          d='M4 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm-2 15h20M8 20h8'
-                        />
-                      </svg>
-                      <span className='hidden lg:inline max-w-0 group-hover:max-w-[120px] overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out text-white'>
-                        PC Client打开
-                      </span>
-                    </button>
-
                     {/* 创建观影室（观影室开启且未加入房间时显示） */}
                     {watchRoomContext?.isEnabled && watchRoomContext.isConnected && (
                       <button
@@ -11954,7 +11954,7 @@ function PlayPageClient() {
 
             {/* 选集和换源 - 在移动端始终显示，在 lg 及以上可折叠 */}
             <div
-              className={`relative z-10 h-[350px] lg:h-full md:overflow-hidden transition-all duration-300 ease-in-out ${isEpisodeSelectorCollapsed
+              className={`mtv-play-rail-host transition-all duration-300 ease-in-out ${isEpisodeSelectorCollapsed
                 ? 'md:col-span-1 lg:hidden lg:opacity-0 lg:scale-95'
                 : 'md:col-span-1 lg:opacity-100 lg:scale-100'
                 }`}
@@ -12207,13 +12207,21 @@ function PlayPageClient() {
                     <>
                       <div className='mtv-play-sec mtv-play-sec-sub'>剧照</div>
                       <div className='mtv-play-stills'>
-                        {tmdbStills.map((still) => (
-                          <ProxyImage
+                        {tmdbStills.map((still, index) => (
+                          <button
                             key={still}
-                            originalSrc={still}
-                            alt={videoTitle}
-                            className='mtv-play-still'
-                          />
+                            type='button'
+                            className='mtv-play-still-btn'
+                            onClick={() => setLightboxIndex(index)}
+                            title='查看大图'
+                            aria-label={`查看第 ${index + 1} 张剧照`}
+                          >
+                            <ProxyImage
+                              originalSrc={still}
+                              alt={videoTitle}
+                              className='mtv-play-still'
+                            />
+                          </button>
                         ))}
                       </div>
                     </>
@@ -12580,6 +12588,42 @@ function PlayPageClient() {
           useDrawer={isLargeScreen}
           drawerWidth='w-[400px]'
         />
+      )}
+
+      {/* 剧照灯箱：点缩略图打开，点背景 / Esc 关闭，← → 翻页 */}
+      {lightboxIndex !== null && tmdbStills[lightboxIndex] && (
+        <div
+          className='mtv-play-lightbox'
+          role='dialog'
+          aria-modal='true'
+          aria-label='剧照预览'
+          onClick={() => setLightboxIndex(null)}
+        >
+          <button
+            type='button'
+            className='mtv-play-lightbox-close'
+            aria-label='关闭预览'
+            onClick={(event) => {
+              event.stopPropagation();
+              setLightboxIndex(null);
+            }}
+          >
+            <X className='h-5 w-5' />
+          </button>
+          <ProxyImage
+            originalSrc={
+              tmdbStillsLarge[lightboxIndex] || tmdbStills[lightboxIndex]
+            }
+            alt={`${videoTitle} 剧照 ${lightboxIndex + 1}`}
+            retryOnError={false}
+            onClick={(event) => event.stopPropagation()}
+          />
+          {tmdbStills.length > 1 && (
+            <div className='mtv-play-lightbox-count'>
+              {lightboxIndex + 1} / {tmdbStills.length}
+            </div>
+          )}
+        </div>
       )}
     </PageLayout>
   );

@@ -2380,12 +2380,12 @@ html[data-loading-style='grid'] .mtv-err-box {
 
 /* 右侧栏主 Tab（选集 / 换源 / 弹幕）：原来只靠字色区分，切过去没有落点。
    给每个 tab 一条居中的下划线，激活时才浮出来，压在栏的底边上。 */
+/* 侧栏根节点不再带左右内边距（各 tab 内容自己管），所以这里不需要再用负
+   外边距把自己撑到栏边 —— 直接整宽即可。 */
 .mtv-play-tabbar {
   display: flex;
   flex-shrink: 0;
-  margin-inline: calc(-1 * var(--ui-sp-4));
-  padding-inline: var(--ui-sp-4);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.075);
 }
 
 .mtv-play-tab {
@@ -2474,11 +2474,6 @@ html[data-loading-style='grid'] .mtv-err-box {
   align-items: center;
   gap: 8px;
   margin-top: 9px;
-
-/* 主要操作（下载 / 复制链接）的图标跟着品牌色走 —— 文字保持白色 */
-.mtv-play-act-primary > svg {
-  color: var(--ui-accent);
-}
   flex-wrap: wrap;
 }
 
@@ -2554,6 +2549,13 @@ html[data-loading-style='grid'] .mtv-err-box {
 }
 
 .mtv-play-act-primary .mtv-play-act-ic {
+  color: var(--ui-accent);
+}
+
+/* 主要操作的图标跟着品牌色走 —— 文字保持白色。这条规则曾经被脚本误插进
+   .mtv-play-badges 的块内；postcss 没有 nesting 插件，浏览器会按后代选择器
+   解析，等于整条失效。现在回到它该在的位置。 */
+.mtv-play-act-primary > svg {
   color: var(--ui-accent);
 }
 
@@ -2771,6 +2773,311 @@ html[data-loading-style='grid'] .mtv-err-box {
 }
 
 /* ==========================================================================
+   播放页 · 侧栏重做（选集 / 换源 / 弹幕）
+   --------------------------------------------------------------------------
+   原来的侧栏是「分类 tab 条 + 竖排带集名的列表」：分类 tab 是定宽 w-20 的
+   横向条，旁边两个图标按钮靠 translate-y-[-4px] 硬顶上去假装对齐；选集默认
+   列表视图，47 集就是 47 行要滚。
+   现在换成「工具条 + 集数网格」：范围选择器吃掉剩余宽度（点开菜单，不是原生
+   select —— 原生 select 的下拉面板在深色影院底上改不了配色），两个 34px 方
+   按钮和它同高；集数用等宽数字格，激活格走品牌色 + 投影。
+   ========================================================================== */
+.mtv-play-select,
+.mtv-play-mini {
+  cursor: pointer;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    border-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-play-select:hover,
+.mtv-play-mini:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.mtv-play-select svg {
+  flex: none;
+  transition: transform var(--ui-dur-2) var(--ui-ease);
+}
+
+.mtv-play-select[aria-expanded='true'] svg {
+  transform: rotate(180deg);
+}
+
+.mtv-play-mini:disabled {
+  color: var(--mtv-ink-3);
+  cursor: not-allowed;
+  border-color: var(--mtv-hair);
+}
+
+.mtv-play-ep {
+  position: relative;
+  cursor: pointer;
+}
+
+.mtv-play-ep-on {
+  cursor: default;
+}
+
+/* 已观看的集：右上角一个品牌色小点。定稿没有这个，但播放记录本来就在算，
+   丢掉等于退功能 */
+.mtv-play-ep-dot {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 5px;
+  height: 5px;
+  border-radius: 9999px;
+  background-color: var(--ui-accent);
+}
+
+.mtv-play-ep-on .mtv-play-ep-dot {
+  background-color: rgba(255, 255, 255, 0.85);
+}
+
+/* 集数网格的宿主。桌面端侧栏和播放器等高，网格要能滚；滚动条收窄到 6px，
+   免得在近黑底上切出一条亮边。 */
+.mtv-play-eps-host {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+}
+
+.mtv-play-eps-host::-webkit-scrollbar {
+  width: 6px;
+}
+
+.mtv-play-eps-host::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.16);
+  border-radius: 9999px;
+}
+
+.mtv-play-eps-host::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+/* 窄屏集数走横向滑动。横向条不产生竖向滚动容器，所以手指竖向拖动不再被这块
+   吃掉 —— 页面能正常往下滚。这是「手机端滑到侧栏里出不来」的根治办法。 */
+@media (max-width: 1023px) {
+  .mtv-play-eps-host {
+    flex: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mtv-play-eps-host::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mtv-play-eps {
+    display: flex;
+    gap: 8px;
+  }
+
+  .mtv-play-eps > * {
+    flex: none;
+    width: 52px;
+  }
+}
+
+/* 侧栏宿主：窄屏不给固定高度 —— 给了高度就必然要在里面塞一个竖向滚动条，
+   那个滚动条就是「往下滑结果滑进了选集里」的元凶。桌面端和播放器等高的
+   高度由 lg 断点补回来。 */
+.mtv-play-rail-host {
+  position: relative;
+  z-index: 10;
+}
+
+@media (min-width: 1024px) {
+  .mtv-play-rail-host {
+    height: 100%;
+  }
+}
+
+/* 弹幕面板自己需要确定高度才能布局（内部是 h-full + flex-1 overflow-y-auto），
+   窄屏下侧栏不再有固定高度，所以在这里给它一个。 */
+.mtv-play-danmaku-host {
+  height: 420px;
+}
+
+@media (min-width: 1024px) {
+  .mtv-play-danmaku-host {
+    height: auto;
+    flex: 1;
+    min-height: 0;
+  }
+}
+
+/* ==========================================================================
+   窄屏下换源列表默认只留前 4 个源：侧栏去掉内部滚动条之后，几十个源会把页面
+   撑到两千多 px，把详情推到很远。桌面端列表本来就在栏内滚，不裁剪。
+   ========================================================================== */
+.mtv-play-sources-more {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .mtv-play-sources.is-capped > *:nth-child(n + 5) {
+    display: none;
+  }
+
+  .mtv-play-sources-more {
+    display: block;
+  }
+}
+
+/* ==========================================================================
+   播放页 · 「更多」面板
+   --------------------------------------------------------------------------
+   原来直接沿用桌面端的形态：绝对定位 + 左偏移（跟着按钮的 offsetLeft）+ 自动
+   宽度，手机上按钮在第四位，偏移已经有 200 多 px，面板再一撑就顶出右边界；
+   而且面板里的标签是 hidden lg:inline，窄屏只剩一排 32px 图标。
+   窄屏改成整宽单列列表：标签常显、点哪行哪行高亮，不再有横向溢出。
+   ========================================================================== */
+.mtv-play-morepanel {
+  position: absolute;
+  top: 100%;
+  z-index: 50;
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  width: max-content;
+  max-width: min(92vw, 46rem);
+  max-height: 70vh;
+  overflow-y: auto;
+  border-radius: 14px;
+  padding: 8px;
+}
+
+@media (max-width: 1023px) {
+  .mtv-play-morepanel {
+    left: 0 !important;
+    right: 0;
+    width: auto;
+    max-width: none;
+    max-height: min(58vh, 400px);
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+    padding: 6px;
+    border-radius: 16px;
+  }
+
+  /* 窄屏下每项都是整宽行：图标 + 常显标签 */
+  .mtv-play-morepanel > button {
+    width: 100%;
+    height: auto;
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    font-size: 13.5px;
+    border-radius: 10px;
+    border: none;
+    background: none;
+    box-shadow: none;
+  }
+
+  .mtv-play-morepanel > button:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .mtv-play-morepanel > button > span {
+    display: inline;
+    max-width: none;
+    margin-left: 0;
+    overflow: visible;
+  }
+
+  .mtv-play-morepanel > button > img {
+    width: 16px;
+    height: 16px;
+    flex: none;
+  }
+}
+
+/* ==========================================================================
+   播放页 · 剧照灯箱
+   ========================================================================== */
+.mtv-play-still {
+  transition:
+    filter var(--ui-dur-2) var(--ui-ease),
+    transform var(--ui-dur-2) var(--ui-ease);
+}
+
+.mtv-play-still-btn {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: zoom-in;
+}
+
+.mtv-play-still-btn:hover .mtv-play-still,
+.mtv-play-still-btn:focus-visible .mtv-play-still {
+  filter: brightness(1);
+  transform: scale(1.04);
+}
+
+.mtv-play-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 4vh 4vw;
+  background-color: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(8px);
+  cursor: zoom-out;
+}
+
+.mtv-play-lightbox img {
+  max-width: 100%;
+  max-height: 92vh;
+  border-radius: 12px;
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.9);
+}
+
+.mtv-play-lightbox-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background-color: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  cursor: pointer;
+}
+
+.mtv-play-lightbox-count {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 5px 12px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background-color: rgba(0, 0, 0, 0.55);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* ==========================================================================
    播放页 · 窄屏回落
    --------------------------------------------------------------------------
    详情区是「左宽 + 右 320px」两栏，窄屏下 320px 会把左栏挤成一条竖线
@@ -2826,8 +3133,20 @@ html[data-loading-style='grid'] .mtv-err-box {
     padding: 16px;
   }
 
+  /* 作品信息：窄屏改成两列栅格。原来是 flex + wrap，每项宽度不同就随机折行
+     （一行很多、一行很少）；两列栅格保证稳定的 22 / 223 分组 */
   .mtv-play-meta {
-    gap: 20px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 16px;
+  }
+
+  .mtv-play-meta > div {
+    min-width: 0;
+  }
+
+  .mtv-play-meta dd {
+    overflow-wrap: anywhere;
   }
 
   .mtv-play-meta dd {
