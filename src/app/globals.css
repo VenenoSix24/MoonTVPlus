@@ -2542,6 +2542,14 @@ html[data-loading-style='grid'] .mtv-err-box {
   white-space: nowrap;
 }
 
+/* 手机端：标题独占一行，评分胶囊落到标题下方 ——
+   标题长的时候跟胶囊挤在同一行不好看 */
+@media (max-width: 640px) {
+  .mtv-play-title {
+    flex: 0 0 100%;
+  }
+}
+
 /* 操作区：纯文字按钮 —— 无底色、无胶囊。分隔符把「常用 / 更多 / 网盘与 AI」分开 */
 .mtv-play-acts {
   display: flex;
@@ -3489,7 +3497,8 @@ html[data-loading-style='grid'] .mtv-err-box {
 .mtv-play-lightbox img {
   max-width: 100%;
   max-height: 92vh;
-  border-radius: 12px;
+  /* 放大看的是原图，不裁圆角 —— 原图什么样就什么样 */
+  border-radius: 0;
   box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.9);
 }
 
@@ -4026,11 +4035,6 @@ html[data-loading-style='grid'] .mtv-err-box {
 
   .mtv-play-stills {
     grid-template-columns: repeat(2, 1fr);
-  }
-
-  /* 手机端放大看的是原图，不裁圆角 */
-  .mtv-play-lightbox img {
-    border-radius: 0;
   }
 
 }

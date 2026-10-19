@@ -12087,7 +12087,13 @@ function PlayPageClient() {
                       <div className='flex flex-col min-h-0'>
                         {/* 标题 */}
                         <h1 className="text-3xl font-bold mb-2 tracking-wide flex items-center flex-shrink-0 text-center md:text-left w-full flex-wrap gap-2 text-white">
-                          <span className={doubanAka.length > 0 ? 'relative group cursor-help' : ''}>
+                          <span
+                            className={`mtv-play-title ${
+                              doubanAka.length > 0
+                                ? 'relative group cursor-help'
+                                : ''
+                            }`}
+                          >
                             {videoTitle || '影片标题'}
                             {/* aka 悬浮提示 */}
                             {doubanAka.length > 0 && (
