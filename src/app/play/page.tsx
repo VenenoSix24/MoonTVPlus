@@ -11544,12 +11544,12 @@ function PlayPageClient() {
           <div
             className={`grid gap-4 lg:h-[500px] lg:grid-rows-[100%] xl:h-[650px] 2xl:h-[750px] transition-all duration-300 ease-in-out ${isEpisodeSelectorCollapsed
               ? 'grid-cols-1'
-              : 'grid-cols-1 md:grid-cols-4'
+              : 'grid-cols-1 md:grid-cols-4 lg:grid-cols-[minmax(0,1fr)_336px]'
               }`}
           >
             {/* 播放器 */}
             <div
-              className={`transition-all duration-300 ease-in-out flex flex-col ${isEpisodeSelectorCollapsed ? 'col-span-1' : 'md:col-span-3'
+              className={`transition-all duration-300 ease-in-out flex flex-col ${isEpisodeSelectorCollapsed ? 'col-span-1' : 'md:col-span-3 lg:col-span-1'
                 }`}
             >
               {/* 播放器容器 */}
@@ -12335,7 +12335,7 @@ function PlayPageClient() {
                     <div className='md:col-span-4 lg:col-span-5'>
                       <div className='flex flex-col min-h-0'>
                         {/* 标题 */}
-                        <h1 className="text-3xl font-bold mb-2 tracking-wide flex items-center flex-shrink-0 text-center md:text-left w-full flex-wrap gap-2 text-white">
+                        <h1 className="text-[20px] md:text-[26px] font-[750] leading-[1.15] tracking-[-0.02em] mb-2 flex items-center flex-shrink-0 text-center md:text-left w-full flex-wrap gap-2 text-white">
                           <span
                             className={`mtv-play-title ${
                               doubanAka.length > 0

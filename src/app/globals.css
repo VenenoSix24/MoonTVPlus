@@ -2365,8 +2365,8 @@ html[data-loading-style='grid'] .mtv-err-box {
 /* 右侧栏：和播放器同一套圆角/描边，另加一层极淡的承托面，让「选集 / 换源 /
    弹幕」这个面板和播放器读起来是一套东西，而不是一块裸内容。 */
 .mtv-play-rail {
-  border-radius: var(--ui-r-md);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.075);
   background-color: rgba(255, 255, 255, 0.035);
   /* 窄屏收起换源列表后会把侧栏滚回视口顶部（见 toggleAllSources），
      这里让开顶栏的高度 */
@@ -4055,6 +4055,20 @@ html[data-loading-style='grid'] .mtv-err-box {
 
   .mtv-play-col {
     gap: 12px;
+  }
+
+  /* 集数格：定稿手机端是 5 列栅格、40px 高。原来只有 ≤1023px 的横向条，
+     到手机上就只剩一排能横着划，30 集要划好几屏 */
+  .mtv-play-eps {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 7px;
+  }
+
+  .mtv-play-eps > * {
+    width: auto;
+    height: 40px;
+    font-size: 12.5px;
   }
 
   .mtv-play-card {
