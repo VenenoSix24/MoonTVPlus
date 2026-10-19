@@ -378,6 +378,11 @@ interface EpisodeSelectorProps {
   episodeCards?: (EpisodeCardData | undefined)[] | null;
   /** 播出日历汇总；为 null 表示已完结或没有播出日期，不显示这一行 */
   airCalendar?: AirCalendar | null;
+  /**
+   * 选集面板当前展示的集号区间。父组件据此按需拉取对应的 TMDB 季 ——
+   * 1000+ 集的剧只看当前这一段，不把二十多季全拉一遍
+   */
+  onVisibleEpisodesChange?: (range: { start: number; end: number }) => void;
   /** 每页显示多少集，默认 50 */
   episodesPerPage?: number;
   /** 当前选中的集数（1 开始） */
@@ -423,6 +428,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
   richEpisodeNames,
   episodeCards,
   airCalendar,
+  onVisibleEpisodesChange,
   episodesPerPage = 50,
   value = 1,
   onChange,
@@ -1311,6 +1317,26 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
 
   // 工具条上显示的当前范围文案
   const currentGroupLabel = formatEpisodeGroupLabel(currentEpisodeGroup.label);
+
+  // 把当前展示的集号区间报给父组件，让它只拉这一段覆盖到的 TMDB 季。
+  // 父组件那边用「值没变就返回 prev」的 setState 兜底，这里不必自己防抖
+  useEffect(() => {
+    if (!onVisibleEpisodesChange) return;
+    // 用 memo 化的分组表 + 下标取，别依赖 currentEpisodeGroup（那个是就地构造的
+    // 表达式，每次渲染都是新对象，会让这个 effect 每帧都跑）
+    const episodes = episodeGroupsAsc[currentPage]?.episodes;
+    if (!episodes || episodes.length === 0) return;
+    if (episodes.length === 0) return;
+    let start = Number.POSITIVE_INFINITY;
+    let end = 0;
+    for (const episodeNumber of episodes) {
+      if (isEpisodeFiltered(episodeNumber)) continue;
+      if (episodeNumber < start) start = episodeNumber;
+      if (episodeNumber > end) end = episodeNumber;
+    }
+    if (!Number.isFinite(start) || end === 0) return;
+    onVisibleEpisodesChange({ start, end });
+  }, [currentPage, episodeGroupsAsc, isEpisodeFiltered, onVisibleEpisodesChange]);
 
   // 定稿的选集是数字网格，所以不再「有分集名就自动切列表」——那个自动切换会
   // 让 47 集的剧变成 47 行要滚。分集名挪到每格的 title（悬停可见），网盘源下

@@ -50,6 +50,9 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const title = searchParams.get('title');
     const cachedId = searchParams.get('cachedId');
+    // 可选年份。中文别名在 TMDB 上经常对不上（CMS 的「海贼王」在 TMDB 叫「航海王」），
+    // 靠年份把搜索收窄才不会落到同名的另一部剧上
+    const year = searchParams.get('year');
 
     if (!title && !cachedId) {
       return NextResponse.json(
@@ -82,7 +85,8 @@ export async function GET(request: NextRequest) {
     } else {
       // 否则需要搜索获取ID
       const cleanedTitle = removeSeasonInfo(title!);
-      const cacheKey = `search_${cleanedTitle}`;
+      // 年份要进缓存键：同一部剧名配不同年份会命中完全不同的条目
+      const cacheKey = `search_${cleanedTitle}|y${year || ''}`;
 
       // 检查服务器缓存
       const cached = searchCache.get(cacheKey);
@@ -97,7 +101,8 @@ export async function GET(request: NextRequest) {
           tmdbApiKey,
           cleanedTitle,
           tmdbProxy,
-          tmdbReverseProxy
+          tmdbReverseProxy,
+          year
         );
 
         if (searchResult.code !== 200 || !searchResult.results.length) {
@@ -164,8 +169,19 @@ export async function GET(request: NextRequest) {
         : null,
       overview: details.overview || '',
       rating: details.vote_average ? details.vote_average.toFixed(1) : '',
-      releaseDate: details.release_date || details.first_air_date || '',
       genres: details.genres || [], // 添加类型标签
+      // 季度索引（含每季集数）。带上它，播放页就能把 CMS 的扁平集号映射到
+      // 「第几季第几集」，不必再单独打一次 /api/tmdb/seasons
+      seasons:
+        mediaType === 'tv'
+          ? ((details.seasons || []) as any[])
+              .filter((s) => s && s.season_number > 0)
+              .map((s) => ({
+                season_number: s.season_number,
+                episode_count: s.episode_count || 0,
+                name: s.name || '',
+              }))
+          : [],
     };
 
     return NextResponse.json(responseData, {

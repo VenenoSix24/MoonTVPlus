@@ -532,26 +532,73 @@ export function getGenreNames(genreIds: number[] = [], limit = 2): string[] {
 
 /**
  * 搜索多媒体内容
+ *
+ * 传了 year 时先按年份收窄：multi 端点不支持年份参数，所以改走
+ * `/3/search/tv?first_air_date_year=` 与 `/3/search/movie?primary_release_year=`，
+ * 两个都拿回来合成 multi 的形状；都没命中再退回无年份的 multi 搜索。
+ *
+ * 为什么必须收窄：中文别名在 TMDB 上经常对不上。CMS 里的「海贼王」在 TMDB 的
+ * zh-CN 正名是「航海王」，无年份搜索的第一条会落到 2021 年的《海贼王女》（12 集），
+ * 于是整部剧的分集元数据全错，看着像「只拉了 12 集」。
+ *
  * @param apiKey - TMDB API Key
  * @param query - 搜索关键词
  * @param proxy - 代理服务器地址
  * @param reverseProxyBaseUrl - 反代 Base URL
+ * @param year - 可选年份，用于收窄搜索（multi 端点本身不支持）
  * @returns 搜索结果列表
  */
 export async function searchTMDBMulti(
   apiKey: string,
   query: string,
   proxy?: string,
-  reverseProxyBaseUrl?: string
+  reverseProxyBaseUrl?: string,
+  year?: string | number | null
 ): Promise<{ code: number; results: any[] }> {
-  try {
-    const actualKey = getNextApiKey(apiKey);
-    if (!actualKey || !query) {
-      return { code: 400, results: [] };
-    }
+  const actualKey = getNextApiKey(apiKey);
+  if (!actualKey || !query) {
+    return { code: 400, results: [] };
+  }
 
-    const baseUrl = reverseProxyBaseUrl || DEFAULT_TMDB_BASE_URL;
-    const url = `${baseUrl}/3/search/multi?api_key=${actualKey}&language=zh-CN&query=${encodeURIComponent(query)}&page=1`;
+  const baseUrl = reverseProxyBaseUrl || DEFAULT_TMDB_BASE_URL;
+  const encodedQuery = encodeURIComponent(query);
+
+  // 先按年份收窄
+  const yearStr = year ? String(year).match(/\d{4}/)?.[0] : null;
+  if (yearStr) {
+    try {
+      const [tvResponse, movieResponse] = await Promise.all([
+        universalFetch(
+          `${baseUrl}/3/search/tv?api_key=${actualKey}&language=zh-CN&query=${encodedQuery}&first_air_date_year=${yearStr}&page=1`,
+          proxy
+        ),
+        universalFetch(
+          `${baseUrl}/3/search/movie?api_key=${actualKey}&language=zh-CN&query=${encodedQuery}&primary_release_year=${yearStr}&page=1`,
+          proxy
+        ),
+      ]);
+      const tvData: any = tvResponse.ok ? await tvResponse.json() : null;
+      const movieData: any = movieResponse.ok ? await movieResponse.json() : null;
+      const merged = [
+        ...((tvData?.results || []) as any[]).map((item) => ({
+          ...item,
+          media_type: 'tv',
+        })),
+        ...((movieData?.results || []) as any[]).map((item) => ({
+          ...item,
+          media_type: 'movie',
+        })),
+      ];
+      if (merged.length > 0) {
+        return { code: 200, results: merged };
+      }
+    } catch (error) {
+      console.error('按年份搜索 TMDB 失败，回退到普通搜索:', error);
+    }
+  }
+
+  try {
+    const url = `${baseUrl}/3/search/multi?api_key=${actualKey}&language=zh-CN&query=${encodedQuery}&page=1`;
 
     const response = await universalFetch(url, proxy);
 

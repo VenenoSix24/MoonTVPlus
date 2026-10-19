@@ -215,6 +215,56 @@ function buildAirCalendar(episodes: unknown): AirCalendar | null {
 }
 
 /**
+ * TMDB 季度区间：某一季覆盖的扁平集号范围。
+ *
+ * CMS 源给的分集列表是跨季拼在一起的扁平列表，而 TMDB 按季组织。
+ * 只按「第 1 季第 N 集」硬对应的话，第 1 季一满（海绵宝宝 41 集、航海王 61 集）
+ * 后面就全拿不到元数据 —— 看着像「只有前 N 集有剧照」。
+ */
+interface TmdbSeasonRange {
+  season: number;
+  /** 这一季第 1 集对应的扁平集号（1 起） */
+  start: number;
+  count: number;
+}
+
+/** 把 TMDB 的季度列表压成累计区间表 */
+function buildTmdbSeasonRanges(seasons: unknown): TmdbSeasonRange[] {
+  if (!Array.isArray(seasons)) return [];
+  const ranges: TmdbSeasonRange[] = [];
+  let cursor = 0;
+  for (const raw of seasons) {
+    const season = Number((raw as { season_number?: unknown })?.season_number);
+    const count = Number((raw as { episode_count?: unknown })?.episode_count) || 0;
+    if (!Number.isFinite(season) || season < 1 || count <= 0) continue;
+    ranges.push({ season, start: cursor + 1, count });
+    cursor += count;
+  }
+  return ranges;
+}
+
+/** 扁平集号（1 起）→ 落在第几季第几集。区间表按 start 升序，二分即可 */
+function resolveTmdbSeason(
+  ranges: TmdbSeasonRange[],
+  flatEpisode: number
+): { season: number; episode: number } | null {
+  let lo = 0;
+  let hi = ranges.length - 1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    const range = ranges[mid];
+    if (flatEpisode < range.start) {
+      hi = mid - 1;
+    } else if (flatEpisode >= range.start + range.count) {
+      lo = mid + 1;
+    } else {
+      return { season: range.season, episode: flatEpisode - range.start + 1 };
+    }
+  }
+  return null;
+}
+
+/**
  * 评分胶囊里跟在分数后面的来源标签。
  * 豆瓣有评分人数时带上人数；TMDB 兜底时如实写 TMDB —— 不要拿 TMDB 的分标「豆瓣」。
  */
@@ -439,6 +489,25 @@ function PlayPageClient() {
   const [tmdbEpisodeMeta, setTmdbEpisodeMeta] = useState<
     (TmdbEpisodeMeta | undefined)[]
   >([]);
+  // TMDB 季度区间表：把 CMS 的扁平集号映射到「第几季第几集」。
+  // 由 /api/tmdb-details 顺带返回，不额外打请求。
+  const [tmdbSeasonRanges, setTmdbSeasonRanges] = useState<TmdbSeasonRange[]>(
+    []
+  );
+  // 已经拉过的季（键是 `id#s季号`），避免重复请求
+  const tmdbSeasonLoadedRef = useRef<Set<string>>(new Set());
+  // 选集面板当前展示的集号区间。只拉它（和正在播的那一集）覆盖到的季 ——
+  // 季度索引已经为哪部剧拉过（键 = tv:id），避免重复请求
+  const tmdbSeasonIndexRef = useRef<string | null>(null);
+  // 打开一部 1000+ 集的剧也只打 1~2 个请求，而不是把二十多季全拉一遍。
+  //
+  // 存 ref + 版本号而不是对象 state：父组件只需要「变了就重跑一次」，
+  // 用数字版本号最不容易踩到引用相等 / 被重置的坑
+  const visibleEpisodeRangeRef = useRef<{ start: number; end: number }>({
+    start: 1,
+    end: 1,
+  });
+  const [visibleEpisodeVersion, setVisibleEpisodeVersion] = useState(0);
   // 播出日历：只对「还有未播集数」的剧显示。已播 / 总数来自 TMDB 该季，
   // 和 CMS 源实际有几集不一定一致，所以文案写「更新至」而不是「已完结」。
   const [airCalendar, setAirCalendar] = useState<AirCalendar | null>(null);
@@ -496,7 +565,6 @@ function PlayPageClient() {
     runtime: string;
   } | null>(null);
   // 已发起 TMDB 分集名请求的 id，避免重复拉取
-  const tmdbEpisodesFetchedIdRef = useRef<string | null>(null);
   // 「禁用集数标题获取并切换」全局开关（本地设置，进入播放页时读取一次）
   const [globalTitleFetchDisabled] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
@@ -1789,8 +1857,10 @@ function PlayPageClient() {
   // 获取TMDB背景图
   useEffect(() => {
     const fetchTMDBBackdrop = async () => {
-      // 换片时先清掉 TMDB 兜底评分，避免上一部片的分数残留
-      setTmdbRatingData(null);
+      // 换片时先清掉 TMDB 兜底评分与季度表，避免上一部片的残留。
+      // 季度表的归属权在这里 —— 换剧时由它清、由它填，别放进「换剧重置」那个
+      // effect：那个会在标题二次变化（详情回来后又 setVideoTitle 一次）时
+      // 晚于本 effect 的响应执行，把刚填好的表清空
       if (isDirectPlay) {
         setTmdbBackdrop(null);
         setTmdbEpisodeNames([]);
@@ -1819,7 +1889,10 @@ function PlayPageClient() {
       }
 
       try {
-        const mappingCacheKey = recommendationCacheKeys.tmdbTitleMapping(videoTitle);
+  const mappingCacheKey = recommendationCacheKeys.tmdbTitleMapping(
+    videoTitle,
+    videoYearRef.current || detailRef.current?.year || ''
+  );
         const cachedId = getRecommendationCache<string>(mappingCacheKey);
 
         if (cachedId) {
@@ -1844,10 +1917,11 @@ function PlayPageClient() {
           }
         }
 
-        // 构建请求URL
+        // 年份能显著改善匹配：中文别名在 TMDB 上经常对不上，靠年份收窄才不会落到同名的另一部剧
+        const matchYear = videoYearRef.current || detailRef.current?.year || '';
         const url = cachedId
           ? `/api/tmdb-details?cachedId=${encodeURIComponent(cachedId)}`
-          : `/api/tmdb-details?title=${encodeURIComponent(videoTitle)}`;
+          : `/api/tmdb-details?title=${encodeURIComponent(videoTitle)}&year=${encodeURIComponent(matchYear)}`;
 
         const response = await fetch(url);
 
@@ -1900,6 +1974,12 @@ function PlayPageClient() {
           id: parsedTmdbId,
           mediaType: tmdbData?.mediaType === 'movie' ? 'movie' : 'tv',
         });
+      }
+      // 季度索引：把 CMS 的扁平集号映射到「第几季第几集」。没有它就只能按
+      // 「第 1 季第 N 集」硬对应，第 1 季一满后面全没数据
+      const rawSeasons = tmdbData?.seasons;
+      if (Array.isArray(rawSeasons) && rawSeasons.length > 0) {
+        setTmdbSeasonRanges(buildTmdbSeasonRanges(rawSeasons));
       }
       const currentDetail = detailRef.current;
       if (!currentDetail || !isNetdiskSource(currentDetail.source)) {
@@ -2100,53 +2180,57 @@ function PlayPageClient() {
     [tmdbCredits]
   );
 
-  // 复用背景请求解析出的 tmdbId，拉取该剧集当前季的分集名称（懒加载，按需触发）
-  const loadTmdbEpisodeNames = useCallback(
-    async (tmdbIdStr: string, seasonOverride?: number) => {
+  // 拉取某一季的分集元数据，合并进扁平数组。
+  //
+  // 季号怎么来：
+  //   - 手动指定了季，或标题里写了「第N季」→ 单季模式：扁平集号 = 季内集号
+  //   - 否则走累计模式：按季度区间表把扁平集号映射到 (季, 季内集号)
+  //
+  // 为什么不能只拉第 1 季：TMDB 按季组织，而 CMS 给的是跨季拼起来的扁平列表，
+  // 第 1 季一满后面就全没数据（海绵宝宝 41 集、航海王 61 集）
+  const loadTmdbSeason = useCallback(
+    async (
+      tmdbIdStr: string,
+      seasonNumber: number,
+      options: { locked: boolean; flatStart: number; isPrimary: boolean }
+    ) => {
+      const [mediaType, idPart] = tmdbIdStr.split(':');
+      const id = parseInt(idPart, 10);
+      if (mediaType !== 'tv' || !id || seasonNumber < 1) return;
+
+      const fingerprint = `${id}#s${seasonNumber}`;
+      if (tmdbSeasonLoadedRef.current.has(fingerprint)) return;
+      tmdbSeasonLoadedRef.current.add(fingerprint);
+
       try {
-        const [mediaType, idPart] = tmdbIdStr.split(':');
-        const id = parseInt(idPart, 10);
-        if (mediaType !== 'tv' || !id) {
-          return;
-        }
-
-        // 季度：优先手动指定，否则从标题解析，缺省第 1 季
-        let seasonNumber = seasonOverride;
-        if (!seasonNumber || seasonNumber < 1) {
-          const seasonMatch =
-            videoTitle?.match(/第\s*(\d+)\s*[季部]/) ||
-            videoTitle?.match(/[Ss]eason\s*(\d+)/) ||
-            videoTitle?.match(/\bS(\d+)\b/);
-          const parsedSeason = seasonMatch ? parseInt(seasonMatch[1], 10) : NaN;
-          seasonNumber =
-            Number.isNaN(parsedSeason) || parsedSeason < 1 ? 1 : parsedSeason;
-        }
-
-        // 指纹含 id + 季，避免重复拉取；手动改季时可重新拉取
-        const fingerprint = `${tmdbIdStr}#s${seasonNumber}`;
-        if (tmdbEpisodesFetchedIdRef.current === fingerprint) {
-          return;
-        }
-        tmdbEpisodesFetchedIdRef.current = fingerprint;
-
         const resp = await fetch(
           `/api/tmdb/episodes?id=${id}&season=${seasonNumber}`
         );
-        if (!resp.ok) return;
-        const season = await resp.json();
-        const eps = season?.episodes;
+        if (!resp.ok) {
+          tmdbSeasonLoadedRef.current.delete(fingerprint);
+          return;
+        }
+        const data = await resp.json();
+        const eps = data?.episodes;
         if (!Array.isArray(eps) || eps.length === 0) return;
 
-        const names: string[] = [];
+        const names: (string | undefined)[] = [];
         const metas: (TmdbEpisodeMeta | undefined)[] = [];
+        // 按「相对第一集的偏移」落位，不能用 episode_number - 1：
+        // TMDB 有些季用的是跨季绝对编号（航海王 S13 是 422~522，不是 1~101），
+        // 直接减一会让整段错位
+        const firstNumber =
+          typeof eps[0]?.episode_number === 'number' ? eps[0].episode_number : 1;
         eps.forEach((ep: any) => {
           const num =
             typeof ep?.episode_number === 'number' ? ep.episode_number : NaN;
-          if (Number.isNaN(num) || num < 1) return;
+          if (Number.isNaN(num)) return;
+          const slot = num - firstNumber;
+          if (slot < 0) return;
           if (ep?.name) {
-            names[num - 1] = String(ep.name);
+            names[slot] = String(ep.name);
           }
-          metas[num - 1] = {
+          metas[slot] = {
             overview:
               typeof ep?.overview === 'string' && ep.overview.trim() !== ''
                 ? ep.overview.trim()
@@ -2162,23 +2246,45 @@ function PlayPageClient() {
               : undefined,
           };
         });
-        if (names.some((n) => n && n.trim() !== '')) {
-          setTmdbEpisodeNames(names);
+
+        // 合并进扁平数组。flatStart 是这一季第 1 集对应的扁平集号
+        const { flatStart } = options;
+        setTmdbEpisodeNames((prev) => {
+          const next = prev.slice();
+          for (let i = 0; i < names.length; i += 1) {
+            const flat = flatStart + i;
+            if (flat < 1 || !names[i]) continue;
+            next[flat - 1] = names[i] as string;
+          }
+          return next;
+        });
+        setTmdbEpisodeMeta((prev) => {
+          const next = prev.slice();
+          for (let i = 0; i < metas.length; i += 1) {
+            const flat = flatStart + i;
+            if (flat < 1 || !metas[i]) continue;
+            next[flat - 1] = metas[i];
+          }
+          return next;
+        });
+
+        // 播出日历跟着「正在播的那一季」走
+        if (options.isPrimary) {
+          setAirCalendar(buildAirCalendar(eps));
         }
-        if (metas.some((m) => m && (m.overview || m.still))) {
-          setTmdbEpisodeMeta(metas);
-        }
-        setAirCalendar(buildAirCalendar(eps));
       } catch (err) {
-        console.error('获取TMDB分集名称失败:', err);
+        tmdbSeasonLoadedRef.current.delete(fingerprint);
+        console.error('获取TMDB分集元数据失败:', err);
       }
     },
-    [videoTitle]
+    []
   );
 
-  // 换剧时重置分集名相关状态
+  // 换剧时重置分集名相关状态。
+  // 注意别顺手把 visibleEpisodeRange 也清回初始值 —— 它是选集面板上报的，
+  // 面板只在分组变化时上报一次，清掉之后没人会重报，按需拉季会永远停在 {1,1}
   useEffect(() => {
-    tmdbEpisodesFetchedIdRef.current = null;
+    tmdbSeasonLoadedRef.current = new Set();
     setTmdbEpisodeNames([]);
     setTmdbEpisodeMeta([]);
     setAirCalendar(null);
@@ -2232,6 +2338,66 @@ function PlayPageClient() {
     ? `tv:${titleCorrection.tmdbId}`
     : resolvedTmdbIdStr;
 
+  // 从标题解析出的季号（「第3季」/「Season 3」/「S3」）。有它就说明这个源是按季拆的，
+  // 走单季模式；没有才用季度区间表做累计映射
+  const parsedTitleSeason = useMemo(() => {
+    const matched =
+      videoTitle?.match(/第\s*(\d+)\s*[季部]/) ||
+      videoTitle?.match(/[Ss]eason\s*(\d+)/) ||
+      videoTitle?.match(/\bS(\d+)\b/);
+    const parsed = matched ? parseInt(matched[1], 10) : NaN;
+    return Number.isNaN(parsed) || parsed < 1 ? null : parsed;
+  }, [videoTitle]);
+
+  // 只有「CMS 集数明显多于 TMDB 第 1 季」才认为源给的是跨季扁平列表，走累计映射。
+  // 否则源大概率就是第 1 季本身（多出的一两集是计数口径差异），锁在第 1 季更准 ——
+  // 不然末尾那几集会串到第 2 季去，标题和剧照全对错季
+  const isFlatMultiSeason = useMemo(() => {
+    const first = tmdbSeasonRanges[0];
+    if (!first) return false;
+    const tolerance = Math.max(2, Math.round(first.count * 0.15));
+    return totalEpisodes > first.count + tolerance;
+  }, [tmdbSeasonRanges, totalEpisodes]);
+
+  // 锁定的季：手动指定优先，其次标题里的季号；都不成立且不是跨季列表时锁第 1 季。
+  // null = 走累计映射
+  const lockedTmdbSeason =
+    titleCorrection.season && titleCorrection.season >= 1
+      ? titleCorrection.season
+      : parsedTitleSeason ??
+        (isFlatMultiSeason ? null : (tmdbSeasonRanges[0]?.season ?? null));
+
+  // 手动「起始集数」：视频第 1 集对应 TMDB 的第几集
+  const tmdbStartEpisode = Math.max(1, titleCorrection.startEpisode ?? 1);
+
+  // 正在播的那一集落在哪一季 —— 播出日历跟着它走
+  const primaryTmdbSeason = useMemo(() => {
+    if (lockedTmdbSeason) return lockedTmdbSeason;
+    const flat = currentEpisodeIndex + tmdbStartEpisode;
+    return (
+      resolveTmdbSeason(tmdbSeasonRanges, flat)?.season ??
+      tmdbSeasonRanges[0]?.season ??
+      null
+    );
+  }, [
+    lockedTmdbSeason,
+    tmdbSeasonRanges,
+    currentEpisodeIndex,
+    tmdbStartEpisode,
+  ]);
+
+  // 选集面板报上来的可视集号区间。值没变就直接返回 —— 否则父组件每次重渲染都会
+  // 触发一次更新，直接转成无限循环
+  const handleVisibleEpisodesChange = useCallback(
+    (range: { start: number; end: number }) => {
+      const prev = visibleEpisodeRangeRef.current;
+      if (prev.start === range.start && prev.end === range.end) return;
+      visibleEpisodeRangeRef.current = range;
+      setVisibleEpisodeVersion((version) => version + 1);
+    },
+    []
+  );
+
   // 弹幕分集名（按番号对齐视频集，需完整分集列表；由 LRU 缓存或主动搜索提供）。
   // 去掉来源标记与集号后仍有实质内容才返回，否则返回 null（视为不可用）。
   const danmakuRichNames = useMemo<(string | undefined)[] | null>(() => {
@@ -2272,31 +2438,113 @@ function PlayPageClient() {
     detail?.episodes_titles,
   ]);
 
-  // 拉取 TMDB 分集名。TMDB 优先（非动漫或多季度动漫）：解析出 tmdbId 后即请求；
+  // 季度索引（每季几集 + 累计起点）。不依赖 tmdb-details 的响应 —— 那条路径上有
+  // localStorage 缓存与执行顺序两层坑，直接用专门接口拉一次更稳。
+  // 只在「累计模式」下、且换了剧时打一次请求。
+  useEffect(() => {
+    if (isDirectPlay) return;
+    if (!effectiveTmdbIdStr) return;
+    if (lockedTmdbSeason) return; // 单季模式不需要季度表
+
+    const [mediaType, idPart] = effectiveTmdbIdStr.split(':');
+    const id = parseInt(idPart, 10);
+    if (mediaType !== 'tv' || !id) return;
+
+    const key = `tv:${id}`;
+    if (tmdbSeasonIndexRef.current === key) return;
+    tmdbSeasonIndexRef.current = key;
+    setTmdbSeasonRanges([]); // 换剧：先清掉上一部的季度表
+
+    void (async () => {
+      try {
+        const resp = await fetch(`/api/tmdb/seasons?tvId=${id}`);
+        if (!resp.ok) {
+          tmdbSeasonIndexRef.current = null;
+          return;
+        }
+        const data = await resp.json();
+        const ranges = buildTmdbSeasonRanges(data?.seasons);
+        if (ranges.length > 0) {
+          setTmdbSeasonRanges(ranges);
+        } else {
+          tmdbSeasonIndexRef.current = null;
+        }
+      } catch (err) {
+        console.error('获取 TMDB 季度列表失败:', err);
+        tmdbSeasonIndexRef.current = null;
+      }
+    })();
+  }, [isDirectPlay, effectiveTmdbIdStr, lockedTmdbSeason]);
+
+  // 按需拉季。只看两件事落在哪几季：
+  //   1) 选集面板当前展示的那一段集号
+  //   2) 正在播的那一集
+  // 所以打开一部 1000+ 集的剧也只打 1~2 个请求，而不是把二十多季全拉一遍。
+  // TMDB 优先（非动漫或多季度动漫）：解析出 tmdbId 后即请求；
   // 弹幕优先（单季动漫）：先等弹幕自动装填「尘埃落定」，且仅在弹幕未产出可用标题时才降级拉 TMDB。
   // 手动「弹幕优先」时完全不搜 TMDB；手动指定 TMDB 时用指定的 id/季。
   useEffect(() => {
+    // ref 取值：效果器只依赖下面的版本号，不依赖对象引用
+    const visibleEpisodeRange = visibleEpisodeRangeRef.current;
     if (isDirectPlay) return;
     if (episodeTitleFetchDisabled) return;
     if (titleCorrection.preferDanmaku) return; // 弹幕优先：不搜 TMDB
     if (!detail) return; // 等类型判定就绪，避免误判非动漫而抢先拉 TMDB
     if (!effectiveTmdbIdStr) return;
-    if (!preferTmdbNames) {
-      if (danmakuRichNames) return; // 弹幕已够用，无需 TMDB
-      if (!danmakuAutoLoadSettled) return; // 弹幕优先：先等弹幕落定再决定是否降级
+
+    // 这里刻意不看 preferTmdbNames：分集「名字」的优先级由 richEpisodeNames 那边管，
+    // 而卡片要的剧照 / 简介 / 时长只来自 TMDB。原来名字一旦由弹幕提供就整段跳过 TMDB，
+    // 结果卡片只剩名字、没有剧照 —— 这正是「只有前几集有剧照」的另一半成因
+
+
+    const wanted = new Set<number>();
+    if (lockedTmdbSeason) {
+      wanted.add(lockedTmdbSeason);
+    } else {
+      if (tmdbSeasonRanges.length === 0) return; // 季度表还没回来
+      // 需要覆盖的扁平集号区间：可视段 ∪ 当前集
+      const flatMin = visibleEpisodeRange.start + tmdbStartEpisode - 1;
+      const flatMax =
+        Math.max(visibleEpisodeRange.end, currentEpisodeIndex + 1) +
+        tmdbStartEpisode -
+        1;
+      for (const range of tmdbSeasonRanges) {
+        if (range.start > flatMax) break;
+        if (range.start + range.count - 1 >= flatMin) wanted.add(range.season);
+      }
     }
-    loadTmdbEpisodeNames(effectiveTmdbIdStr, titleCorrection.season);
+    for (const season of Array.from(wanted)) {
+      let flatStart: number;
+      if (lockedTmdbSeason) {
+        // 单季模式：扁平集号 = 季内集号 - 起始集数 + 1
+        flatStart = 2 - tmdbStartEpisode;
+      } else {
+        const range = tmdbSeasonRanges.find((item) => item.season === season);
+        if (!range) continue;
+        flatStart = range.start;
+      }
+      void loadTmdbSeason(effectiveTmdbIdStr, season, {
+        locked: !!lockedTmdbSeason,
+        flatStart,
+        isPrimary: season === primaryTmdbSeason,
+      });
+    }
   }, [
     isDirectPlay,
     episodeTitleFetchDisabled,
     titleCorrection.preferDanmaku,
-    titleCorrection.season,
     detail,
     effectiveTmdbIdStr,
     preferTmdbNames,
     danmakuRichNames,
     danmakuAutoLoadSettled,
-    loadTmdbEpisodeNames,
+    lockedTmdbSeason,
+    tmdbSeasonRanges,
+    visibleEpisodeVersion,
+    currentEpisodeIndex,
+    tmdbStartEpisode,
+    primaryTmdbSeason,
+    loadTmdbSeason,
   ]);
 
   useEffect(() => {
@@ -12046,6 +12294,7 @@ function PlayPageClient() {
                 richEpisodeNames={richEpisodeNames}
                 episodeCards={episodeCards}
                 airCalendar={airCalendar}
+                onVisibleEpisodesChange={handleVisibleEpisodesChange}
                 value={currentEpisodeIndex + 1}
                 onChange={playSync.shouldDisableControls ? () => { /* disabled */ } : handleEpisodeChange}
                 onSourceChange={playSync.shouldDisableControls ? () => { /* disabled */ } : handleSourceChange}
