@@ -1356,6 +1356,15 @@ html[data-loading-style='grid'] .mtv-err-box {
   );
 }
 
+/* 手机端浅色模式：左右渐隐是把内容「擦」成透明，露出的是页面底色 ——
+   浅色底就是一层白雾糊在封面上，比直接切断还难看。这里关掉 */
+@media (max-width: 767px) {
+  html:not(.dark) .mtv-rail-fade {
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
+}
+
 /* ---------- 小节标题 ---------- */
 .mtv-row-head {
   display: flex;
@@ -2376,6 +2385,9 @@ html[data-loading-style='grid'] .mtv-err-box {
   border-radius: var(--ui-r-md);
   border: 1px solid rgba(255, 255, 255, 0.08);
   background-color: rgba(255, 255, 255, 0.035);
+  /* 窄屏收起换源列表后会把侧栏滚回视口顶部（见 toggleAllSources），
+     这里让开顶栏的高度 */
+  scroll-margin-top: 72px;
 }
 
 /* 右侧栏主 Tab（选集 / 换源 / 弹幕）：原来只靠字色区分，切过去没有落点。
@@ -2508,10 +2520,13 @@ html[data-loading-style='grid'] .mtv-err-box {
   letter-spacing: -0.02em;
 }
 
+/* 「豆瓣 · N 万人评」原来用的是 ink-3（40% 白），11px 在深色底上几乎看不见，
+     用户直接反馈「没看到评分」。提到 ink-2 并加一号 */
 .mtv-play-score i {
-  font-size: 11px;
-  color: var(--mtv-ink-3);
+  font-size: 11.5px;
+  color: var(--mtv-ink-2);
   font-style: normal;
+  white-space: nowrap;
 }
 
 /* 操作区：纯文字按钮 —— 无底色、无胶囊。分隔符把「常用 / 更多 / 网盘与 AI」分开 */
@@ -2738,6 +2753,39 @@ html[data-loading-style='grid'] .mtv-err-box {
   flex: none;
 }
 
+
+/* 桌面端侧栏右上角的「隐藏」按钮。原来是一枚 bg-white/80 + 灰描边的白色
+   胶囊，压在近黑的侧栏上很突兀；换成和工具条按钮同一套深色描边 */
+.mtv-play-hidebtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 11px;
+  border-radius: 9999px;
+  border: 1px solid var(--mtv-hair-2);
+  background-color: rgba(0, 0, 0, 0.3);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mtv-ink-2);
+  cursor: pointer;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    border-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-play-hidebtn:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.mtv-play-hidebtn-ic {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  transition: transform var(--ui-dur-2) var(--ui-ease);
+}
 .mtv-play-eps {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -2876,6 +2924,18 @@ html[data-loading-style='grid'] .mtv-err-box {
   .mtv-play-eps-host::-webkit-scrollbar {
     display: none;
   }
+
+/* 换源列表里标出「正在播的就是这个源」。排序不再把它置顶之后，需要一个
+   静态的标记 —— 行本身已经有品牌色底，再加一枚小胶囊更明确 */
+.mtv-play-srcnow {
+  flex: none;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  background-color: var(--ui-accent);
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+}
 
   .mtv-play-eps {
     display: flex;
@@ -3204,14 +3264,12 @@ html[data-loading-style='grid'] .mtv-err-box {
 
 .mtv-play-epcard-art {
   position: relative;
-  display: grid;
-  place-items: center;
   aspect-ratio: 16 / 9;
   background-color: #16161a;
   overflow: hidden;
 }
-
 .mtv-play-epcard-img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -3224,6 +3282,10 @@ html[data-loading-style='grid'] .mtv-err-box {
 
 /* 没有 TMDB 剧照时的回落：大号集数，不留一块空画面 */
 .mtv-play-epcard-num {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
   font-size: 30px;
   font-weight: 750;
   font-variant-numeric: tabular-nums;
@@ -3266,15 +3328,6 @@ html[data-loading-style='grid'] .mtv-err-box {
   color: #fff;
 }
 
-
-@media (min-width: 1024px) {
-  /* 桌面端卡片宽 335，16:9 的剧照要占 188px 高，整张卡太高。压到 140，
-     图片按 cover 裁中间 */
-  .mtv-play-epcard-art {
-    aspect-ratio: auto;
-    height: 140px;
-  }
-}
 .mtv-play-epcard-body {
   display: block;
   padding: 9px 11px 11px;
@@ -3312,6 +3365,55 @@ html[data-loading-style='grid'] .mtv-err-box {
   margin-top: 5px;
   font-size: 11.5px;
   line-height: 1.5;
+  color: var(--mtv-ink-3);
+}
+
+
+@media (min-width: 1024px) {
+  /* 桌面端改成横排：剧照 170×96（≈16:9，几乎不裁），文字在右。
+     原来竖排时剧照要铺满 333 宽，按 16:9 就是 188 高 —— 一张卡占掉半屏，
+     想压矮就只能裁图，人被拦腰裁断。横排把这两个问题一起解决，一屏还能
+     多看几张卡 */
+  .mtv-play-epcard {
+    display: grid;
+    grid-template-columns: 170px minmax(0, 1fr);
+    align-items: stretch;
+    height: 96px;
+  }
+
+  .mtv-play-epcard-art {
+    aspect-ratio: auto;
+    height: 100%;
+  }
+
+  .mtv-play-epcard-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 8px 12px;
+    min-width: 0;
+  }
+
+  /* 固定卡高 96，标题限一行，简介限两行，否则会撑破被裁 */
+  .mtv-play-epcard-t {
+    -webkit-line-clamp: 1;
+  }
+
+  .mtv-play-epcard-tag,
+  .mtv-play-epcard-watched {
+    padding: 1px 6px;
+    font-size: 10px;
+  }
+
+  .mtv-play-epcard-tag {
+    left: 6px;
+    bottom: 6px;
+  }
+
+  .mtv-play-epcard-watched {
+    top: 6px;
+    right: 6px;
+  }
   color: var(--mtv-ink-3);
 }
 

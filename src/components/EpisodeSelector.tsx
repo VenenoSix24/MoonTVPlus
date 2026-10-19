@@ -98,18 +98,16 @@ function formatEpisodeGroupLabel(label: string): string {
   return `${label.replace('-', ' - ')} 集`;
 }
 
-/** 画质档位权重，用于「画质优先」排序。探测失败 / 未知一律 0，排到最后。 */
-const QUALITY_RANK: Record<string, number> = {
-  '8K': 8,
-  '4K': 7,
-  '2K': 6,
-  '1440p': 5,
-  '1080p': 4,
-  '720p': 3,
-  '480p': 2,
-  '360p': 1,
-};
-
+/** 码率文案（"2.5 Mbps" / "1234 Kbps"）→ Kbps 数值，用于「画质优先」排序。
+ *  拿不到就返回 -1，自然排到最后。 */
+function parseBitrateToKbps(bitrate?: string): number {
+  if (!bitrate) return -1;
+  const match = bitrate.match(/([\d.]+)\s*(Kbps|Mbps|kb\/s|mb\/s)/i);
+  if (!match) return -1;
+  const value = Number.parseFloat(match[1]);
+  if (!Number.isFinite(value)) return -1;
+  return /^m/i.test(match[2]) ? value * 1000 : value;
+}
 interface EpisodeNamePopupState {
   title: string;
   x: number;
@@ -704,6 +702,9 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
   const [episodeViewMode, setEpisodeViewMode] = useState<'card' | 'grid'>('card');
   // 卡片横滑容器：播出日历选日期后要把卡片条滚到那一集
   const cardStripRef = useRef<HTMLDivElement>(null);
+  // 侧栏根节点：窄屏展开/收起换源列表时要拿它量位置（见 toggleAllSources）
+  const railRef = useRef<HTMLDivElement>(null);
+  const railTopBeforeRef = useRef<number | null>(null);
   const [showEpisodeMenu, setShowEpisodeMenu] = useState<boolean>(false);
   const episodeMenuRef = useRef<HTMLDivElement>(null);
 
@@ -735,6 +736,29 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
 
   // 窄屏换源列表默认只列前 4 个（见 .mtv-play-sources.is-capped）
   const [showAllSources, setShowAllSources] = useState<boolean>(false);
+
+  // 窄屏展开/收起换源列表：切换前记一下侧栏顶端的位置，收起后用它把视口拉回来
+  const toggleAllSources = useCallback(() => {
+    railTopBeforeRef.current =
+      railRef.current?.getBoundingClientRect().top ?? null;
+    setShowAllSources((v) => !v);
+  }, []);
+
+  useEffect(() => {
+    const before = railTopBeforeRef.current;
+    railTopBeforeRef.current = null;
+    const rail = railRef.current;
+    if (before === null || !rail) return;
+
+    // 收起时列表短了两千多 px，页面总高跟着变短，浏览器会把 scrollTop 夹到新的
+    // 最大值 —— 视口就飘到很下面去了（用户实测反馈）。直接把侧栏顶端滚回视口
+    // 顶部（顶栏高度由 .mtv-play-rail 的 scroll-margin-top 让开），也就是用户
+    // 开始往下翻列表之前的位置。展开时不干预。
+    if (showAllSources) return;
+    // 用 'auto' 不用 'smooth'：smooth 依赖渲染帧，面板/后台标签页里会静默失效，
+    // 结果就是「什么都不做」。这里是纠错性质的滚动，位置正确比动效重要。
+    rail.scrollIntoView({ block: 'start', behavior: 'auto' });
+  }, [showAllSources]);
 
   // 换源排序规则（见 sortedSources）
   const [sourceSortMode, setSourceSortMode] = useState<'speed' | 'quality'>(
@@ -921,7 +945,13 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
         return true;
       });
 
-      if (pendingSources.length === 0) return;
+      // 没有待测的源（例如已被预计算结果填满）也要把标志置上 —— 原来这里直接
+      // return，标志位永远停在 false，sortedSources 里的排序被整段挡掉，
+      // 表现就是「测完速了但排序跟没排一样」
+      if (pendingSources.length === 0) {
+        if (!initialTestingCompleted) setInitialTestingCompleted(true);
+        return;
+      }
 
       // 标记开始初始测速
       setIsInitialTesting(true);
@@ -1153,13 +1183,8 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
   // 测速未完成的源速度为 -1，自然落到最后。
   const sortedSources = useMemo(() => {
     const keyOf = (source: SearchResult) => `${source.source}-${source.id}`;
-    const isCurrent = (source: SearchResult) =>
-      source.source?.toString() === currentSource?.toString() &&
-      source.id?.toString() === currentId?.toString();
 
     return [...availableSources].sort((a, b) => {
-      if (isCurrent(a) && !isCurrent(b)) return -1;
-      if (!isCurrent(a) && isCurrent(b)) return 1;
       if (!initialTestingCompleted) return 0;
 
       const aInfo = videoInfoMap.get(keyOf(a));
@@ -1167,18 +1192,18 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
       const speedDiff =
         (bInfo ? parseSpeedToKBps(bInfo.loadSpeed) : -1) -
         (aInfo ? parseSpeedToKBps(aInfo.loadSpeed) : -1);
-      const qualityDiff =
-        (bInfo ? QUALITY_RANK[bInfo.quality] ?? 0 : 0) -
-        (aInfo ? QUALITY_RANK[aInfo.quality] ?? 0 : 0);
+      // 「画质优先」按码率排，不按 1080p / 4K 这种标称档位 —— 同样标 1080p
+      // 的源实际码率能差一倍，标称值说明不了清晰度
+      const bitrateDiff =
+        (bInfo ? parseBitrateToKbps(bInfo.bitrate) : -1) -
+        (aInfo ? parseBitrateToKbps(aInfo.bitrate) : -1);
 
       return sourceSortMode === 'quality'
-        ? qualityDiff || speedDiff
-        : speedDiff || qualityDiff;
+        ? bitrateDiff || speedDiff
+        : speedDiff || bitrateDiff;
     });
   }, [
     availableSources,
-    currentSource,
-    currentId,
     initialTestingCompleted,
     videoInfoMap,
     parseSpeedToKBps,
@@ -1248,7 +1273,10 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
   }, [showEpisodeMenu]);
 
   return (
-    <div className='mtv-play-rail flex h-full flex-col overflow-hidden'>
+    <div
+      ref={railRef}
+      className='mtv-play-rail flex h-full flex-col overflow-hidden'
+    >
       {/* 主要的 Tab 切换 - 无缝融入设计 */}
       <div className='mtv-play-tabbar'>
         {/* 选集选项卡 - 仅在多集时显示 */}
@@ -1732,10 +1760,13 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                         <div className='flex-1 min-w-0 flex flex-col justify-between h-20'>
                           {/* 标题和分辨率 - 顶部 */}
                           <div className='flex items-start justify-between gap-3 h-6'>
-                            <div className='flex-1 min-w-0 relative group/title'>
+                            <div className='relative flex min-w-0 flex-1 items-center gap-1.5 group/title'>
                               <h3 className={`font-medium text-base truncate ${sourceTitleClass} leading-none`}>
                                 {source.title}
                               </h3>
+                              {isCurrentSource && (
+                                <span className='mtv-play-srcnow'>当前</span>
+                              )}
                               {/* 标题级别的 tooltip - 第一个元素不显示 */}
                               {index !== 0 && (
                                 <div className='absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-800 text-white text-xs rounded-md shadow-lg opacity-0 invisible group-hover/title:opacity-100 group-hover/title:visible transition-all duration-200 ease-out delay-100 whitespace-nowrap z-[500] pointer-events-none'>
@@ -1879,7 +1910,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                   <button
                     type='button'
                     className='mtv-play-sources-more mtv-play-pop-item w-full rounded-lg px-3 py-2 text-center text-xs transition-colors'
-                    onClick={() => setShowAllSources((v) => !v)}
+                    onClick={toggleAllSources}
                   >
                     {showAllSources
                       ? '收起'
