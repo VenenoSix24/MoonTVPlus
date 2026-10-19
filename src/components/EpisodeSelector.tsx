@@ -5,6 +5,7 @@ import {
   CalendarDays,
   Check,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   GalleryHorizontal,
   LayoutGrid,
@@ -96,6 +97,18 @@ function formatEpisodeGroupLabel(label: string): string {
   }
   return `${label.replace('-', ' - ')} 集`;
 }
+
+/** 画质档位权重，用于「画质优先」排序。探测失败 / 未知一律 0，排到最后。 */
+const QUALITY_RANK: Record<string, number> = {
+  '8K': 8,
+  '4K': 7,
+  '2K': 6,
+  '1440p': 5,
+  '1080p': 4,
+  '720p': 3,
+  '480p': 2,
+  '360p': 1,
+};
 
 interface EpisodeNamePopupState {
   title: string;
@@ -207,6 +220,51 @@ function formatAirDate(date?: string): string {
   return match ? `${match[1]}-${match[2]}-${match[3]}` : date;
 }
 
+/** Date → 'YYYY-MM-DD'（本地时区）。播出日期只按日历日比较，不涉及时分秒 */
+function toDateKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+/** 把集号列表压成区间文案：[1,2,3,4] → '1-4'，[7] → '7'，不连续就逗号连起来 */
+function formatEpisodeRange(episodes: number[]): string {
+  if (episodes.length === 0) return '';
+  const sorted = [...episodes].sort((a, b) => a - b);
+  const contiguous = sorted.every((n, i) => n === sorted[0] + i);
+  if (!contiguous) return sorted.join(',');
+  return sorted.length === 1
+    ? `${sorted[0]}`
+    : `${sorted[0]}-${sorted[sorted.length - 1]}`;
+}
+
+interface CalendarCell {
+  /** 'YYYY-MM-DD' */
+  key: string;
+  day: number;
+  /** 是否属于当前展示的月份（首尾会补上邻月的日子） */
+  inMonth: boolean;
+  /** 这一天更新的集号 */
+  episodes: number[];
+}
+
+/** 生成 6×7 的月历网格。周日开头，首尾补齐邻月日期，保证行数固定不跳动。 */
+function buildMonthGrid(
+  monthKey: string,
+  airDates: Map<string, number[]>
+): CalendarCell[] {
+  const [year, month] = monthKey.split('-').map(Number);
+  const startOffset = new Date(year, month - 1, 1).getDay();
+  return Array.from({ length: 42 }, (_, i) => {
+    const date = new Date(year, month - 1, 1 - startOffset + i);
+    const key = toDateKey(date);
+    return {
+      key,
+      day: date.getDate(),
+      inMonth: date.getMonth() === month - 1,
+      episodes: airDates.get(key) ?? [],
+    };
+  });
+}
+
 /** 分集卡片用的数据（按集号-1 索引传入） */
 export interface EpisodeCardData {
   /** 分集名，弹幕 / TMDB 已合过优先级 */
@@ -281,7 +339,9 @@ const EpisodeCard: React.FC<EpisodeCardProps> = ({
         <span className='mtv-play-epcard-tag'>
           {isActive ? '正在播放' : `第 ${episodeNumber} 集`}
         </span>
-        {isWatched && !isActive && <span className='mtv-play-epcard-watched' />}
+        {isWatched && !isActive && (
+          <span className='mtv-play-epcard-watched'>已看过</span>
+        )}
       </span>
       <span className='mtv-play-epcard-body'>
         {hasMeta && (
@@ -642,9 +702,8 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
   // 集数视图模式：分集卡片（定稿，默认）/ 数字网格。原「列表」视图在卡片
   // 上线后是重复信息，已去掉。
   const [episodeViewMode, setEpisodeViewMode] = useState<'card' | 'grid'>('card');
-  // 卡片横滑容器：播出日历的「跳到最新」要滚到这里
+  // 卡片横滑容器：播出日历选日期后要把卡片条滚到那一集
   const cardStripRef = useRef<HTMLDivElement>(null);
-  const latestAiredCardRef = useRef<HTMLButtonElement>(null);
   const [showEpisodeMenu, setShowEpisodeMenu] = useState<boolean>(false);
   const episodeMenuRef = useRef<HTMLDivElement>(null);
 
@@ -676,6 +735,11 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
 
   // 窄屏换源列表默认只列前 4 个（见 .mtv-play-sources.is-capped）
   const [showAllSources, setShowAllSources] = useState<boolean>(false);
+
+  // 换源排序规则（见 sortedSources）
+  const [sourceSortMode, setSourceSortMode] = useState<'speed' | 'quality'>(
+    'speed'
+  );
 
   // 读取本地"优选和测速"开关，默认开启
   const [optimizationEnabled] = useState<boolean>(() => {
@@ -955,16 +1019,107 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
     [onChange, value]
   );
 
-  // 播出日历的「跳到最新已播」：只滚动卡片条，不改当前播放集 —— 点一下就
-  // 把正在看的剧切走太意外了。
-  const scrollToLatestAired = useCallback(() => {
+  // 播出日历：日期 → 该日更新的集号。用 episodeCards 的 airDate（TMDB 播出
+  // 日期），只统计当前源实际有的集数。
+  const airDateMap = useMemo(() => {
+    const map = new Map<string, number[]>();
+    if (!episodeCards) return map;
+    episodeCards.forEach((card, index) => {
+      const date = card?.airDate;
+      if (!date) return;
+      const key = date.slice(0, 10);
+      map.set(key, [...(map.get(key) ?? []), index + 1]);
+    });
+    return map;
+  }, [episodeCards]);
+
+  const todayKey = useMemo(() => toDateKey(new Date()), []);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState('');
+
+  // 默认落在「最新已播」那一集所在的月份。用源内实际有播出日期的集算，而不是
+  // TMDB 该季 —— 完结剧没有 airCalendar，落到「今天」会打开一个空月历。
+  const latestAirDate = useMemo(() => {
+    let latest = '';
+    airDateMap.forEach((_, date) => {
+      if (date > latest) latest = date;
+    });
+    return latest;
+  }, [airDateMap]);
+  const shownMonth = calendarMonth || (latestAirDate || todayKey).slice(0, 7);
+  const calendarCells = useMemo(
+    () => buildMonthGrid(shownMonth, airDateMap),
+    [shownMonth, airDateMap]
+  );
+  const [shownYear, shownMonthNumber] = shownMonth.split('-').map(Number);
+
+  // 当前正在播放那一集的播出日期，用于在日历上标出「你在这里」
+  const activeDayKey = episodeCards?.[value - 1]?.airDate?.slice(0, 10);
+
+  // 日历行的汇总。用源里实际有播出日期的集数算，而不是 TMDB 该季的总集数 ——
+  // 源里可能只上架了 2 集，拿 TMDB 的 8 集当分母会显示成「2 / 8」，误导。
+  const airSummary = useMemo(() => {
+    const entries = Array.from(airDateMap.entries()).sort(([a], [b]) =>
+      a.localeCompare(b)
+    );
+    if (entries.length === 0) return null;
+    let total = 0;
+    let aired = 0;
+    let latestAiredEpisode: number | undefined;
+    let latestAiredDate = '';
+    for (const [date, episodes] of entries) {
+      total += episodes.length;
+      if (date <= todayKey) {
+        aired += episodes.length;
+        latestAiredEpisode = episodes[episodes.length - 1];
+        latestAiredDate = date;
+      }
+    }
+    return {
+      total,
+      aired,
+      firstDate: entries[0][0],
+      lastDate: entries[entries.length - 1][0],
+      latestAiredEpisode,
+      latestAiredDate,
+    };
+  }, [airDateMap, todayKey]);
+
+  const shiftCalendarMonth = useCallback(
+    (delta: number) => {
+      const [year, month] = shownMonth.split('-').map(Number);
+      const next = new Date(year, month - 1 + delta, 1);
+
+      setCalendarMonth(
+        `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`
+      );
+    },
+    [shownMonth]
+  );
+
+  // 把卡片条滚到某一集（按 data-episode 找，不依赖渲染顺序）
+  const scrollStripToEpisode = useCallback((episodeNumber: number) => {
     const strip = cardStripRef.current;
-    const card = latestAiredCardRef.current;
-    if (!strip || !card) return;
+    const slot = strip?.querySelector(`[data-episode="${episodeNumber}"]`);
+    if (!strip || !slot) return;
     const delta =
-      card.getBoundingClientRect().left - strip.getBoundingClientRect().left;
+      slot.getBoundingClientRect().left - strip.getBoundingClientRect().left;
     strip.scrollTo({ left: strip.scrollLeft + delta - 12, behavior: 'smooth' });
   }, []);
+
+  // 点日历上的某一天 → 切到那天更新的第一集，并把卡片条滚过去
+  const handleCalendarDay = useCallback(
+    (episodes: number[]) => {
+      const target = episodes[0];
+      if (!target) return;
+      if (target !== value) {
+        onChange?.(target - 1);
+      }
+      scrollStripToEpisode(target);
+      setShowCalendar(false);
+    },
+    [onChange, value, scrollStripToEpisode]
+  );
 
   const handleSourceClick = useCallback(
     (source: SearchResult) => {
@@ -990,6 +1145,45 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
     // 统一转换为 KB/s
     return unit === 'MB/s' ? value * 1024 : value;
   }, []);
+
+  // 换源列表的排序结果。当前源始终置顶 —— 正在看哪个源需要一眼看到；其余
+  // 按所选规则：
+  //   速度优先 → 网速降序，网速相同再比画质
+  //   画质优先 → 画质降序，画质相同再比网速
+  // 测速未完成的源速度为 -1，自然落到最后。
+  const sortedSources = useMemo(() => {
+    const keyOf = (source: SearchResult) => `${source.source}-${source.id}`;
+    const isCurrent = (source: SearchResult) =>
+      source.source?.toString() === currentSource?.toString() &&
+      source.id?.toString() === currentId?.toString();
+
+    return [...availableSources].sort((a, b) => {
+      if (isCurrent(a) && !isCurrent(b)) return -1;
+      if (!isCurrent(a) && isCurrent(b)) return 1;
+      if (!initialTestingCompleted) return 0;
+
+      const aInfo = videoInfoMap.get(keyOf(a));
+      const bInfo = videoInfoMap.get(keyOf(b));
+      const speedDiff =
+        (bInfo ? parseSpeedToKBps(bInfo.loadSpeed) : -1) -
+        (aInfo ? parseSpeedToKBps(aInfo.loadSpeed) : -1);
+      const qualityDiff =
+        (bInfo ? QUALITY_RANK[bInfo.quality] ?? 0 : 0) -
+        (aInfo ? QUALITY_RANK[aInfo.quality] ?? 0 : 0);
+
+      return sourceSortMode === 'quality'
+        ? qualityDiff || speedDiff
+        : speedDiff || qualityDiff;
+    });
+  }, [
+    availableSources,
+    currentSource,
+    currentId,
+    initialTestingCompleted,
+    videoInfoMap,
+    parseSpeedToKBps,
+    sourceSortMode,
+  ]);
 
   // 重新测试单个源
   const handleRetestSource = useCallback(
@@ -1226,30 +1420,115 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
             </div>
           </div>
 
-          {/* 播出日历：只在还有未播集数时出现 —— 完结剧的日历是空的。
-              点右侧箭头把卡片条滚到最新已播那一集，不改当前播放集。 */}
-          {airCalendar && (
-            <div className='mtv-play-aircal'>
-              <CalendarDays className='mtv-play-aircal-ic' />
-              <div className='mtv-play-aircal-txt'>
-                <div className='mtv-play-aircal-t'>播出日历</div>
-                <div className='mtv-play-aircal-s'>
-                  更新至 第 {airCalendar.lastEpisodeNumber} 集 ·{' '}
-                  {formatAirDate(airCalendar.lastAirDate)}
-                </div>
-              </div>
-              <span className='mtv-play-aircal-prog'>
-                {airCalendar.airedCount} / {airCalendar.totalCount}
-              </span>
+          {/* 播出日历：只要有播出日期就出现（完结剧也能看到每集什么时候播的）。
+              点整行展开月历，月历里点某一天就切到那天更新的第一集。 */}
+          {airSummary && (
+            <div className='mtv-play-aircal-wrap'>
               <button
                 type='button'
-                className='mtv-play-aircal-go'
-                onClick={scrollToLatestAired}
-                title={`下一集 ${formatAirDate(airCalendar.nextAirDate)} 更新`}
-                aria-label='跳到最新已播的一集'
+                className='mtv-play-aircal'
+                onClick={() => setShowCalendar((v) => !v)}
+                aria-expanded={showCalendar}
+                aria-label='播出日历'
+                title={
+                  airCalendar
+                    ? `下一集 ${formatAirDate(airCalendar.nextAirDate)} 更新`
+                    : undefined
+                }
               >
-                <ChevronRight className='h-4 w-4' />
+                <CalendarDays className='mtv-play-aircal-ic' />
+                <div className='mtv-play-aircal-txt'>
+                  <div className='mtv-play-aircal-t'>播出日历</div>
+                  <div className='mtv-play-aircal-s'>
+                    {airSummary.latestAiredEpisode
+                      ? `更新至 第 ${airSummary.latestAiredEpisode} 集 · ${formatAirDate(airSummary.latestAiredDate)}`
+                      : `首播 ${formatAirDate(airSummary.firstDate)}`}
+                  </div>
+                </div>
+                <span className='mtv-play-aircal-prog'>
+                  {airSummary.aired} / {airSummary.total}
+                </span>
+                <ChevronDown
+                  className={`mtv-play-aircal-chev ${
+                    showCalendar ? 'mtv-play-aircal-chev-open' : ''
+                  }`}
+                />
               </button>
+
+              {showCalendar && (
+                <div className='mtv-play-cal'>
+                  <div className='mtv-play-cal-head'>
+                    <button
+                      type='button'
+                      className='mtv-play-cal-nav'
+                      onClick={() => shiftCalendarMonth(-1)}
+                      aria-label='上个月'
+                    >
+                      <ChevronLeft className='h-4 w-4' />
+                    </button>
+                    <div className='mtv-play-cal-title'>
+                      {shownYear} 年 {shownMonthNumber} 月
+                    </div>
+                    <button
+                      type='button'
+                      className='mtv-play-cal-nav'
+                      onClick={() => shiftCalendarMonth(1)}
+                      aria-label='下个月'
+                    >
+                      <ChevronRight className='h-4 w-4' />
+                    </button>
+                  </div>
+
+                  <div className='mtv-play-cal-week'>
+                    {['日', '一', '二', '三', '四', '五', '六'].map(
+                      (weekday) => (
+                        <span key={weekday}>{weekday}</span>
+                      )
+                    )}
+                  </div>
+
+                  <div className='mtv-play-cal-grid'>
+                    {calendarCells.map((cell) => {
+                      const hasEpisodes = cell.episodes.length > 0;
+                      const isAired = hasEpisodes && cell.key <= todayKey;
+                      return (
+                        <button
+                          key={cell.key}
+                          type='button'
+                          disabled={!hasEpisodes}
+                          onClick={() => handleCalendarDay(cell.episodes)}
+                          className={[
+                            'mtv-play-cal-day',
+                            cell.inMonth ? '' : 'mtv-play-cal-day-out',
+                            isAired ? 'mtv-play-cal-day-aired' : '',
+                            hasEpisodes && !isAired ? 'mtv-play-cal-day-up' : '',
+                            hasEpisodes && cell.key === activeDayKey
+                              ? 'mtv-play-cal-day-on'
+                              : '',
+                          ]
+                            .filter(Boolean)
+                            .join(' ')}
+                          title={
+                            hasEpisodes
+                              ? `第 ${formatEpisodeRange(cell.episodes)} 集`
+                              : undefined
+                          }
+                        >
+                          <span className='mtv-play-cal-num'>{cell.day}</span>
+                          {cell.key === todayKey && (
+                            <span className='mtv-play-cal-today' />
+                          )}
+                          {hasEpisodes && (
+                            <span className='mtv-play-cal-eps'>
+                              {formatEpisodeRange(cell.episodes)}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -1267,11 +1546,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                   .map((episodeNumber) => (
                     <span
                       key={episodeNumber}
-                      ref={
-                        episodeNumber === airCalendar?.lastEpisodeNumber
-                          ? latestAiredCardRef
-                          : undefined
-                      }
+                      data-episode={episodeNumber}
                       className='mtv-play-epcard-slot'
                     >
                       <EpisodeCard
@@ -1320,22 +1595,62 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
       {/* 换源 Tab 内容 */}
       {activeTab === 'sources' && (
         <div className='flex h-full flex-col px-4 py-4'>
-          {/* 全部重测按钮 - 右上角 */}
-          {!sourceSearchLoading && !sourceSearchError && availableSources.length > 0 && (
-            <div className='flex justify-end mb-2 px-2 pb-2 border-b border-white/10'>
-              <button
-                onClick={retestAllSources}
-                disabled={isRetestingAll || retestingSources.size > 0 || isInitialTesting}
-                className={`text-xs font-medium transition-colors ${
-                  isRetestingAll || retestingSources.size > 0 || isInitialTesting
-                    ? disabledTextClass
-                    : 'text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer'
-                }`}
-              >
-                {isRetestingAll ? '重测中...' : isInitialTesting ? '测速中...' : '全部重测'}
-              </button>
-            </div>
-          )}
+          {/* 工具条：排序规则 + 全部重测。排序只在测速完成后生效（没有测速
+              数据时无从比较），未完成时按源顺序展示。 */}
+          {!sourceSearchLoading &&
+            !sourceSearchError &&
+            availableSources.length > 0 && (
+              <div className='mtv-play-srctools'>
+                <div
+                  className='mtv-play-sortmode'
+                  role='group'
+                  aria-label='换源排序规则'
+                >
+                  <button
+                    type='button'
+                    className={`mtv-play-sortbtn ${
+                      sourceSortMode === 'speed' ? 'mtv-play-sortbtn-on' : ''
+                    }`}
+                    aria-pressed={sourceSortMode === 'speed'}
+                    onClick={() => setSourceSortMode('speed')}
+                  >
+                    速度优先
+                  </button>
+                  <button
+                    type='button'
+                    className={`mtv-play-sortbtn ${
+                      sourceSortMode === 'quality' ? 'mtv-play-sortbtn-on' : ''
+                    }`}
+                    aria-pressed={sourceSortMode === 'quality'}
+                    onClick={() => setSourceSortMode('quality')}
+                  >
+                    画质优先
+                  </button>
+                </div>
+                <button
+                  type='button'
+                  onClick={retestAllSources}
+                  disabled={
+                    isRetestingAll ||
+                    retestingSources.size > 0 ||
+                    isInitialTesting
+                  }
+                  className={`mtv-play-srcretest ${
+                    isRetestingAll ||
+                    retestingSources.size > 0 ||
+                    isInitialTesting
+                      ? disabledTextClass
+                      : ''
+                  }`}
+                >
+                  {isRetestingAll
+                    ? '重测中…'
+                    : isInitialTesting
+                      ? '测速中…'
+                      : '全部重测'}
+                </button>
+              </div>
+            )}
           {sourceSearchLoading && (
             <div className='flex items-center justify-center py-8'>
               <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-ui-accent'></div>
@@ -1372,41 +1687,13 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
           {!sourceSearchLoading &&
             !sourceSearchError &&
             availableSources.length > 0 && (
-              <div className='flex-1 overflow-y-auto space-y-2 pb-20'>
+              <div className='flex-1 overflow-y-auto space-y-2 pb-2'>
                 <div
                   className={`mtv-play-sources ${
                     showAllSources ? '' : 'is-capped'
                   }`}
                 >
-                {availableSources
-                  .sort((a, b) => {
-                    const aIsCurrent =
-                      a.source?.toString() === currentSource?.toString() &&
-                      a.id?.toString() === currentId?.toString();
-                    const bIsCurrent =
-                      b.source?.toString() === currentSource?.toString() &&
-                      b.id?.toString() === currentId?.toString();
-
-                    // 当前源始终置顶
-                    if (aIsCurrent && !bIsCurrent) return -1;
-                    if (!aIsCurrent && bIsCurrent) return 1;
-
-                    // 如果初始测速已完成，按网速排序（快的在前）
-                    if (initialTestingCompleted) {
-                      const aKey = `${a.source}-${a.id}`;
-                      const bKey = `${b.source}-${b.id}`;
-                      const aInfo = videoInfoMap.get(aKey);
-                      const bInfo = videoInfoMap.get(bKey);
-
-                      const aSpeed = aInfo ? parseSpeedToKBps(aInfo.loadSpeed) : -1;
-                      const bSpeed = bInfo ? parseSpeedToKBps(bInfo.loadSpeed) : -1;
-
-                      // 速度快的排在前面（降序）
-                      return bSpeed - aSpeed;
-                    }
-
-                    return 0;
-                  })
+                {sortedSources
                   .map((source, index) => {
                     const isCurrentSource =
                       source.source?.toString() === currentSource?.toString() &&
@@ -1584,20 +1871,23 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                       </div>
                     );
                   })}
-                {/* 后台加载提示 */}
                 </div>
                 {/* 窄屏默认只列前 4 个源：侧栏去掉内部滚动条之后，几十个源会
                     把页面撑到两千多 px，把详情推到很远。桌面端列表本来就在
                     栏内滚，不裁剪。 */}
-                {!showAllSources && availableSources.length > 4 && (
+                {availableSources.length > 4 && (
                   <button
                     type='button'
                     className='mtv-play-sources-more mtv-play-pop-item w-full rounded-lg px-3 py-2 text-center text-xs transition-colors'
-                    onClick={() => setShowAllSources(true)}
+                    onClick={() => setShowAllSources((v) => !v)}
                   >
-                    展开全部 {availableSources.length} 个播放源
+                    {showAllSources
+                      ? '收起'
+                      : `展开全部 ${availableSources.length} 个播放源`}
                   </button>
                 )}
+
+                {/* 后台加载提示 */}
                 {backgroundSourcesLoading && (
                   <div className='flex items-center justify-center py-6 border-t border-white/10'>
                     <div className='animate-spin rounded-full h-6 w-6 border-b-2 border-ui-accent'></div>

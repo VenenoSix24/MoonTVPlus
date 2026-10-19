@@ -19,6 +19,25 @@ import type {
   DanmakuSettings,
 } from './types';
 
+/**
+ * 从失败响应里取出服务端的真实原因。
+ *
+ * 代理路由已经把上游的报错放进 errorMessage（例如「HTTP error! status: 503」），
+ * 但原来一律被换成「弹幕服务器连接异常，请检查你的设置」——出问题的时候界面上
+ * 完全看不出是上游挂了、被 WAF 挡了，还是配置填错了。这里优先用服务端的文案。
+ */
+async function readApiError(response: Response): Promise<string> {
+  try {
+    const data = await response.clone().json();
+    const message =
+      typeof data?.errorMessage === 'string' ? data.errorMessage.trim() : '';
+    if (message) return message;
+  } catch {
+    /* 响应不是 JSON，退回下面的通用文案 */
+  }
+  return `弹幕服务器连接异常（HTTP ${response.status}），请检查你的设置`;
+}
+
 // 初始化弹幕模块（清理过期缓存）
 let _cacheCleanupInitialized = false;
 
@@ -60,7 +79,7 @@ export async function searchAnime(
     const response = await fetch(url);
 
     if (!response.ok) {
-      throw new Error('弹幕服务器连接异常，请检查你的设置');
+      throw new Error(await readApiError(response));
     }
 
     const data = (await response.json()) as DanmakuSearchResponse;
@@ -93,7 +112,7 @@ export async function matchAnime(
     });
 
     if (!response.ok) {
-      throw new Error('弹幕服务器连接异常，请检查你的设置');
+      throw new Error(await readApiError(response));
     }
 
     const data = (await response.json()) as DanmakuMatchResponse;
@@ -119,7 +138,7 @@ export async function getEpisodes(
     const response = await fetch(url);
 
     if (!response.ok) {
-      throw new Error('弹幕服务器连接异常，请检查你的设置');
+      throw new Error(await readApiError(response));
     }
 
     const data = (await response.json()) as DanmakuEpisodesResponse;
@@ -175,7 +194,7 @@ export async function getDanmakuById(
     const response = await fetch(url);
 
     if (!response.ok) {
-      throw new Error('弹幕服务器连接异常，请检查你的设置');
+      throw new Error(await readApiError(response));
     }
 
     const data = (await response.json()) as DanmakuCommentsResponse;
@@ -216,7 +235,7 @@ export async function getDanmakuByUrl(url: string): Promise<DanmakuComment[]> {
     const response = await fetch(apiUrl);
 
     if (!response.ok) {
-      throw new Error('弹幕服务器连接异常，请检查你的设置');
+      throw new Error(await readApiError(response));
     }
 
     const data = (await response.json()) as DanmakuCommentsResponse;

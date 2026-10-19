@@ -2711,16 +2711,6 @@ function PlayPageClient() {
   // 换源相关状态
   const [availableSources, setAvailableSources] = useState<SearchResult[]>([]);
 
-  // 「播放资源」卡上的源名。availableSources 里带 source_name，用它比直接显示
-  // source 标识（dyttzyapi.com 这种）可读
-  const currentSourceName = useMemo(() => {
-    const hit = availableSources.find(
-      (item) =>
-        item.source?.toString() === currentSource?.toString() &&
-        item.id?.toString() === currentId?.toString()
-    );
-    return hit?.source_name || '';
-  }, [availableSources, currentSource, currentId]);
   const [sourceSearchLoading, setSourceSearchLoading] = useState(false);
   const [sourceSearchError, setSourceSearchError] = useState<string | null>(
     null
@@ -2781,14 +2771,6 @@ function PlayPageClient() {
   const [precomputedVideoInfo, setPrecomputedVideoInfo] = useState<
     Map<string, { quality: string; loadSpeed: string; pingTime: number; bitrate: string }>
   >(new Map());
-
-  // 当前源的视频信息（用于标题旁边显示）
-  const [currentSourceVideoInfo, setCurrentSourceVideoInfo] = useState<{
-    quality: string;
-    loadSpeed: string;
-    pingTime: number;
-    bitrate: string;
-  } | null>(null);
 
   // 折叠状态（仅在 lg 及以上屏幕有效）
   const [isEpisodeSelectorCollapsed, setIsEpisodeSelectorCollapsed] =
@@ -3531,56 +3513,6 @@ function PlayPageClient() {
 
     // 无法判断，返回 unknown
     return 'unknown';
-  };
-
-  // 获取当前源的视频信息（分辨率和码率）
-  const fetchCurrentSourceVideoInfo = async () => {
-    if (!detail || !detail.episodes || detail.episodes.length === 0) {
-      return;
-    }
-
-    // 获取当前集数的播放地址
-    let episodeUrl = detail.episodes[currentEpisodeIndex];
-    if (!episodeUrl) {
-      return;
-    }
-
-    // openlist 的 lazy 播放地址或已确认的单文件直链（如 mkv），解析前无法探测分辨率（内部 hls.js XHR 还会触发 CORS 误报），跳过
-    if (
-      episodeUrl.startsWith('/api/openlist/play') ||
-      videoMediaTypeRef.current === 'file'
-    ) {
-      setCurrentSourceVideoInfo(null);
-      return;
-    }
-
-    // 简单的正则或者后缀判断，如果明确不是 m3u8 (比如 mp4)，则不走 m3u8 代理
-    const isM3u8 = episodeUrl.toLowerCase().includes('.m3u') || !episodeUrl.toLowerCase().match(/\.(mp4|flv|webm|mkv|avi|mov)(\?.*)?$/);
-
-    if (currentSource === 'directplay' && isM3u8) {
-      // 仅当 localStorage 记忆了该域名需要代理时才走代理
-      if (isDirectplayDomainProxied(episodeUrl)) {
-        const tokenParam = proxyToken ? `&token=${encodeURIComponent(proxyToken)}` : '';
-        episodeUrl = `/api/proxy-m3u8?url=${encodeURIComponent(episodeUrl)}&source=directplay${tokenParam}`;
-      } else {
-        // 直链模式且未走代理：跳过 HLS.js 探测。
-        // getVideoResolutionFromM3u8 内部使用 HLS.js (XMLHttpRequest) 加载，
-        // 而 XHR 受 CORS 限制，探测必然失败。实际播放器通过 <video src> 加载不受 CORS 影响。
-        console.log('[视频信息] 直链直连模式，跳过分辨率探测（避免 CORS 误报）');
-        setCurrentSourceVideoInfo(null);
-        return;
-      }
-    } else if (sourceProxyMode && isM3u8) {
-      episodeUrl = `/api/proxy/vod/m3u8?url=${encodeURIComponent(episodeUrl)}&source=${encodeURIComponent(currentSource)}`;
-    }
-
-    try {
-      const info = await getVideoResolutionFromM3u8(episodeUrl, 4000);
-      setCurrentSourceVideoInfo(info);
-    } catch (error) {
-      console.error('获取视频信息失败:', error);
-      setCurrentSourceVideoInfo(null);
-    }
   };
 
   // 播放源优选函数
@@ -6043,15 +5975,17 @@ function PlayPageClient() {
         // 异步获取其他源信息，不阻塞播放
         setBackgroundSourcesLoading(true);
         fetchSourcesData(searchTitle || videoTitle).then((sources) => {
-          // 合并当前源和搜索到的其他源
-          const allSources = [...sourcesInfo];
-          sources.forEach((source) => {
-            // 避免重复添加当前源
-            if (!(source.source === currentSource && source.id === currentId)) {
-              allSources.push(source);
-            }
-          });
-          setAvailableSources(applyCorrectionsToSources(allSources));
+          // 按 source + id 去重合并。原来只跳过「当前源」这一条，其余逐条 push ——
+          // 缓存热的时候 sourcesInfo 本身就是完整列表（getCachedSourcesData 返回
+          // 的是过滤后的缓存），再 push 一遍会让每个源在换源列表里出现两次。
+          const merged = new Map<string, SearchResult>();
+          const putSource = (source: SearchResult) => {
+            const key = `${source.source}-${source.id}`;
+            if (!merged.has(key)) merged.set(key, source);
+          };
+          sourcesInfo.forEach(putSource);
+          sources.forEach(putSource);
+          setAvailableSources(applyCorrectionsToSources(Array.from(merged.values())));
           setBackgroundSourcesLoading(false);
         }).catch((err) => {
           console.error('异步获取其他源失败:', err);
@@ -6352,13 +6286,6 @@ function PlayPageClient() {
       }
     }
   }, [searchParams, currentSource, currentId, availableSources, currentEpisodeIndex]);
-
-  // 监听 detail 和 currentEpisodeIndex 变化，自动获取视频信息
-  useEffect(() => {
-    if (detail && detail.episodes && detail.episodes.length > 0) {
-      fetchCurrentSourceVideoInfo();
-    }
-  }, [detail, currentEpisodeIndex]);
 
   // 监听 detail 和 currentEpisodeIndex 变化，动态更新字幕
   useEffect(() => {
@@ -12148,6 +12075,18 @@ function PlayPageClient() {
                               </div>
                             )}
                           </span>
+                          {/* 评分跟在标题后面。原来排在徽章行末尾，离标题太远，手机上
+                              还会被挤到换行后的角落 */}
+                          {doubanRating && doubanRating.value > 0 && (
+                            <span className='mtv-play-score flex-shrink-0'>
+                              <b>{doubanRating.value.toFixed(1)}</b>
+                              <i>
+                                {doubanRating.count > 0
+                                  ? `豆瓣 · ${(doubanRating.count / 10000).toFixed(1)} 万人评`
+                                  : '豆瓣'}
+                              </i>
+                            </span>
+                          )}
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -12185,7 +12124,8 @@ function PlayPageClient() {
                           )}
                         </h1>
 
-                        {/* 标题行徽章：完结状态 / 年份 / 类型标签，评分排在最后（定稿 A 版） */}
+                        {/* 标题行徽章：完结状态 / 年份 / 类型标签。评分不在这里，
+                            跟在标题后面；画质角标也去掉了（换源列表里能看到） */}
                         <div className='mtv-play-badges'>
                           {detail?.vod_remarks && (
                             <span className='mtv-play-badge mtv-play-badge-done'>
@@ -12203,32 +12143,6 @@ function PlayPageClient() {
                               {genre}
                             </span>
                           ))}
-                          {/* 原来这里是「来源」角标，各数据源填的值不一致，改成只显示画质 */}
-                          <span
-                            className='mtv-play-badge relative group cursor-pointer'
-                            onClick={fetchCurrentSourceVideoInfo}
-                          >
-                            {currentSourceVideoInfo?.quality || '画质'}
-                            {currentSourceVideoInfo && (
-                              <div className='absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 dark:bg-gray-900 text-white text-sm rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 ease-out whitespace-nowrap z-[100] pointer-events-none'>
-                                <div className='text-sm'>
-                                  <div>分辨率: {currentSourceVideoInfo.quality}</div>
-                                  <div>码率: {currentSourceVideoInfo.bitrate}</div>
-                                </div>
-                                <div className='absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800 dark:border-t-gray-900'></div>
-                              </div>
-                            )}
-                          </span>
-                          {doubanRating && doubanRating.value > 0 && (
-                            <span className='mtv-play-score'>
-                              <b>{doubanRating.value.toFixed(1)}</b>
-                              <i>
-                                {doubanRating.count > 0
-                                  ? `豆瓣 · ${(doubanRating.count / 10000).toFixed(1)} 万人评`
-                                  : '豆瓣'}
-                              </i>
-                            </span>
-                          )}
                         </div>
                         {/* 剧情简介：只有简介文字 —— 和封面并排、标题下边 */}
                         <div>
@@ -12356,56 +12270,6 @@ function PlayPageClient() {
                     </>
                   )}
                 </div>
-
-                {/* 播放资源：画质 / 码率 / 网速 / 延迟都是实测值。CMS 源只能探到
-                    画质与码率，私人影库 / 网盘源可能探不到 —— 探不到就给个探测按钮 */}
-                <div className='mtv-play-card'>
-                  <div className='mtv-play-sec'>播放资源</div>
-                  <div className='mtv-play-res'>
-                    <div className='mtv-play-res-head'>
-                      <span className='mtv-play-res-q'>
-                        {currentSourceVideoInfo?.quality || '未知画质'}
-                      </span>
-                      {currentSourceVideoInfo?.loadSpeed && (
-                        <span className='mtv-play-res-speed'>
-                          {currentSourceVideoInfo.loadSpeed}
-                        </span>
-                      )}
-                    </div>
-                    <dl className='mtv-play-res-meta'>
-                      <div>
-                        <dt>码率</dt>
-                        <dd>{currentSourceVideoInfo?.bitrate || '—'}</dd>
-                      </div>
-                      <div>
-                        <dt>延迟</dt>
-                        <dd>
-                          {currentSourceVideoInfo?.pingTime
-                            ? `${currentSourceVideoInfo.pingTime} ms`
-                            : '—'}
-                        </dd>
-                      </div>
-                    </dl>
-                    <div className='mtv-play-res-foot'>
-                      <span
-                        className='mtv-play-res-src'
-                        title={currentSourceName}
-                      >
-                        {currentSourceName || '当前播放源'}
-                      </span>
-                      {!currentSourceVideoInfo && !isDirectPlay && (
-                        <button
-                          type='button'
-                          className='mtv-play-res-probe'
-                          onClick={fetchCurrentSourceVideoInfo}
-                        >
-                          探测画质
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
 
                 {/* 演职员：圆形头像 + 姓名 + 角色（定稿 C） */}
                 {tmdbCastList.length > 0 && (

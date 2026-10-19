@@ -2474,6 +2474,8 @@ html[data-loading-style='grid'] .mtv-err-box {
   align-items: center;
   gap: 8px;
   margin-top: 9px;
+  /* 徽章行下面就是「剧情简介」，原来两者贴着（实测间距 0），挤成一团 */
+  margin-bottom: 16px;
   flex-wrap: wrap;
 }
 
@@ -2933,6 +2935,66 @@ html[data-loading-style='grid'] .mtv-err-box {
 }
 
 /* ==========================================================================
+   播放页 · 换源工具条（排序规则 + 全部重测）
+   ========================================================================== */
+.mtv-play-srctools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex: none;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.075);
+}
+
+.mtv-play-sortmode {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 9px;
+  border: 1px solid var(--mtv-hair-2);
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.mtv-play-sortbtn {
+  padding: 4px 10px;
+  border-radius: 7px;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--mtv-ink-3);
+  cursor: pointer;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-play-sortbtn:hover {
+  color: var(--mtv-ink);
+}
+
+.mtv-play-sortbtn-on,
+.mtv-play-sortbtn-on:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.mtv-play-srcretest {
+  flex: none;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ui-accent);
+  cursor: pointer;
+  transition: opacity var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-play-srcretest:hover {
+  opacity: 0.8;
+}
+
+/* ==========================================================================
    播放页 · 「更多」面板
    --------------------------------------------------------------------------
    原来直接沿用桌面端的形态：绝对定位 + 左偏移（跟着按钮的 offsetLeft）+ 自动
@@ -3190,17 +3252,29 @@ html[data-loading-style='grid'] .mtv-err-box {
   background-color: var(--ui-accent);
 }
 
+/* 已看过的集：剧照右上角一个标签。原来是个 6px 的小圆点，太小认不出来 */
 .mtv-play-epcard-watched {
   position: absolute;
   top: 8px;
   right: 8px;
-  width: 6px;
-  height: 6px;
+  padding: 2px 8px;
   border-radius: 9999px;
-  background-color: var(--ui-accent);
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.45);
+  background-color: rgba(0, 0, 0, 0.62);
+  backdrop-filter: blur(6px);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #fff;
 }
 
+
+@media (min-width: 1024px) {
+  /* 桌面端卡片宽 335，16:9 的剧照要占 188px 高，整张卡太高。压到 140，
+     图片按 cover 裁中间 */
+  .mtv-play-epcard-art {
+    aspect-ratio: auto;
+    height: 140px;
+  }
+}
 .mtv-play-epcard-body {
   display: block;
   padding: 9px 11px 11px;
@@ -3242,16 +3316,29 @@ html[data-loading-style='grid'] .mtv-err-box {
 }
 
 /* 播出日历 */
-.mtv-play-aircal {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+/* 播出日历入口 + 月历。整行是个按钮，点开/收起下面的月历 */
+.mtv-play-aircal-wrap {
   flex: none;
   margin-bottom: 10px;
+}
+
+.mtv-play-aircal {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
   padding: 9px 10px;
   border-radius: 11px;
   border: 1px solid var(--mtv-hair-2);
   background-color: rgba(0, 0, 0, 0.28);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-play-aircal:hover {
+  border-color: rgba(255, 255, 255, 0.22);
 }
 
 .mtv-play-aircal-ic {
@@ -3290,7 +3377,43 @@ html[data-loading-style='grid'] .mtv-err-box {
   color: var(--mtv-ink-2);
 }
 
-.mtv-play-aircal-go {
+.mtv-play-aircal-chev {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--mtv-ink-3);
+  transition: transform var(--ui-dur-2) var(--ui-ease);
+}
+
+.mtv-play-aircal-chev-open {
+  transform: rotate(180deg);
+}
+
+/* ---- 月历：7 列 × 6 行固定网格，首尾补邻月日期，切月不跳动 ---- */
+.mtv-play-cal {
+  margin-top: 8px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--mtv-hair-2);
+  background-color: rgba(0, 0, 0, 0.28);
+}
+
+.mtv-play-cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.mtv-play-cal-title {
+  font-size: 13.5px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--mtv-ink);
+}
+
+.mtv-play-cal-nav {
   display: grid;
   place-items: center;
   width: 26px;
@@ -3301,14 +3424,111 @@ html[data-loading-style='grid'] .mtv-err-box {
   background-color: rgba(255, 255, 255, 0.04);
   color: var(--mtv-ink-2);
   cursor: pointer;
-  transition:
-    color var(--ui-dur-1) var(--ui-ease),
-    border-color var(--ui-dur-1) var(--ui-ease);
+  transition: color var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-play-aircal-go:hover {
+.mtv-play-cal-nav:hover {
   color: #fff;
-  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.mtv-play-cal-week,
+.mtv-play-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
+}
+
+.mtv-play-cal-week {
+  margin-bottom: 4px;
+}
+
+.mtv-play-cal-week span {
+  text-align: center;
+  font-size: 10.5px;
+  color: var(--mtv-ink-3);
+}
+
+.mtv-play-cal-day {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  min-height: 40px;
+  padding: 4px 1px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: none;
+  font-family: inherit;
+  color: var(--mtv-ink-2);
+}
+
+.mtv-play-cal-day:not(:disabled) {
+  cursor: pointer;
+}
+
+.mtv-play-cal-num {
+  font-size: 12.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+/* 邻月的日子压暗但保留占位 */
+.mtv-play-cal-day-out .mtv-play-cal-num,
+.mtv-play-cal-day-out .mtv-play-cal-eps {
+  opacity: 0.32;
+}
+
+/* 已播：底色托起来；未播：只描边，表示「排上了但还没到」 */
+.mtv-play-cal-day-aired {
+  background-color: rgba(255, 255, 255, 0.09);
+  color: var(--mtv-ink);
+}
+
+.mtv-play-cal-day-up {
+  border-color: var(--mtv-hair-2);
+}
+
+.mtv-play-cal-day-aired:hover,
+.mtv-play-cal-day-up:hover {
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+/* 当前播放那一集所在的那天 */
+.mtv-play-cal-day-on,
+.mtv-play-cal-day-on:hover {
+  background-color: var(--ui-accent);
+  border-color: var(--ui-accent);
+  color: #fff;
+}
+
+.mtv-play-cal-eps {
+  font-size: 9.5px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--mtv-ink-3);
+}
+
+.mtv-play-cal-day-aired .mtv-play-cal-eps,
+.mtv-play-cal-day-on .mtv-play-cal-eps {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+/* 今天：右上角一个小点 */
+.mtv-play-cal-today {
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  width: 4px;
+  height: 4px;
+  border-radius: 9999px;
+  background-color: var(--ui-accent);
+}
+
+.mtv-play-cal-day-on .mtv-play-cal-today {
+  background-color: #fff;
 }
 
 @media (max-width: 1023px) {
@@ -3332,86 +3552,6 @@ html[data-loading-style='grid'] .mtv-err-box {
     width: clamp(140px, 62%, 248px);
     scroll-snap-align: start;
   }
-}
-
-/* 播放资源卡：画质是实测出来的，所以给到 22px 当主角，其余是辅助指标 */
-.mtv-play-res-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.mtv-play-res-q {
-  font-size: 22px;
-  font-weight: 750;
-  letter-spacing: -0.02em;
-  color: var(--mtv-ink);
-}
-
-.mtv-play-res-speed {
-  font-size: 12.5px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: var(--ui-accent);
-}
-
-.mtv-play-res-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 24px;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--mtv-hair);
-}
-
-.mtv-play-res-meta dt {
-  font-size: 11.5px;
-  color: var(--mtv-ink-3);
-  margin-bottom: 4px;
-}
-
-.mtv-play-res-meta dd {
-  font-size: 13.5px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: var(--mtv-ink);
-}
-
-.mtv-play-res-foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 14px;
-}
-
-.mtv-play-res-src {
-  min-width: 0;
-  overflow: hidden;
-  font-size: 12px;
-  color: var(--mtv-ink-3);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.mtv-play-res-probe {
-  flex: none;
-  padding: 5px 12px;
-  border-radius: 9px;
-  border: 1px solid var(--mtv-hair-2);
-  background-color: rgba(255, 255, 255, 0.04);
-  font-size: 12px;
-  color: var(--mtv-ink-2);
-  cursor: pointer;
-  transition:
-    color var(--ui-dur-1) var(--ui-ease),
-    border-color var(--ui-dur-1) var(--ui-ease);
-}
-
-.mtv-play-res-probe:hover {
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.22);
 }
 
 /* ==========================================================================
@@ -3484,9 +3624,6 @@ html[data-loading-style='grid'] .mtv-err-box {
 
   .mtv-play-meta dd {
     overflow-wrap: anywhere;
-  }
-
-  .mtv-play-meta dd {
     font-size: 13px;
   }
 
@@ -3494,14 +3631,9 @@ html[data-loading-style='grid'] .mtv-err-box {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  /* 播放资源：窄屏两列，指标别挤成一行 */
-  .mtv-play-res-meta {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px 16px;
+  /* 手机端放大看的是原图，不裁圆角 */
+  .mtv-play-lightbox img {
+    border-radius: 0;
   }
 
-  .mtv-play-res-q {
-    font-size: 19px;
-  }
 }

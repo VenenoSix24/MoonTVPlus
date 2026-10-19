@@ -357,7 +357,9 @@ export default function DanmakuPanel({
       </div>
 
       {/* 可滚动内容区域 */}
-      <div className='flex-1 overflow-y-auto min-h-0'>
+      {/* 可滚动内容区域。做成 flex 列，空状态才能 flex-1 撑满并居中 ——
+          原来空状态是顶部对齐的，下面留一大片空白 */}
+      <div className='flex flex-1 min-h-0 flex-col overflow-y-auto'>
         {/* 当前选择的弹幕信息 */}
         {currentSelection && (
           <div
@@ -631,8 +633,9 @@ export default function DanmakuPanel({
         )}
 
         {/* 空状态 */}
+        {/* 空状态：撑满剩余空间并居中 */}
         {!selectedAnime && searchResults.length === 0 && !isSearching && (
-          <div className='flex flex-col items-center justify-center py-12 text-center'>
+          <div className='flex flex-1 flex-col items-center justify-center py-12 text-center'>
             <MagnifyingGlassIcon className='mb-3 h-12 w-12 text-gray-400' />
             <p className='text-sm text-gray-500 dark:text-gray-400'>
               输入剧集名称搜索弹幕
