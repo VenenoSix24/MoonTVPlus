@@ -214,6 +214,22 @@ function buildAirCalendar(episodes: unknown): AirCalendar | null {
   };
 }
 
+/**
+ * 评分胶囊里跟在分数后面的来源标签。
+ * 豆瓣有评分人数时带上人数；TMDB 兜底时如实写 TMDB —— 不要拿 TMDB 的分标「豆瓣」。
+ */
+function formatRatingSource(rating: {
+  count: number;
+  source: 'douban' | 'tmdb';
+}): string {
+  if (rating.source !== 'douban') return 'TMDB';
+  if (rating.count <= 0) return '豆瓣';
+  if (rating.count >= 10000) {
+    return `豆瓣 ${(rating.count / 10000).toFixed(1)} 万人评`;
+  }
+  return `豆瓣 ${rating.count} 人评`;
+}
+
 interface CustomSubtitleState {
   name: string;
   format: string;
@@ -984,12 +1000,28 @@ function PlayPageClient() {
       document.title = siteName;
     }
   }, [videoTitle, siteName]);
-  // 豆瓣评分数据
-  const [doubanRating, setDoubanRating] = useState<{
+  // 评分：豆瓣优先，豆瓣条目没评分（或请求失败）时用 TMDB 兜底。
+  // 拆成两个槽位再合并 —— 原来只有豆瓣往这个 state 里写，且「没有豆瓣 ID」的
+  // 分支会直接置空，把 TMDB 已经填好的分也一起擦掉（两个 effect 谁先回来决定结果）
+  const [doubanRatingData, setDoubanRatingData] = useState<{
     value: number;
     count: number;
     star_count: number;
   } | null>(null);
+  const [tmdbRatingData, setTmdbRatingData] = useState<{
+    value: number;
+    count: number;
+    star_count: number;
+  } | null>(null);
+  const doubanRating = useMemo(() => {
+    if (doubanRatingData && doubanRatingData.value > 0) {
+      return { ...doubanRatingData, source: 'douban' as const };
+    }
+    if (tmdbRatingData && tmdbRatingData.value > 0) {
+      return { ...tmdbRatingData, source: 'tmdb' as const };
+    }
+    return null;
+  }, [doubanRatingData, tmdbRatingData]);
   // 豆瓣额外信息
   const [doubanCardSubtitle, setDoubanCardSubtitle] = useState<string>('');
   const [doubanAka, setDoubanAka] = useState<string[]>([]);
@@ -1691,7 +1723,7 @@ function PlayPageClient() {
   useEffect(() => {
     const fetchDoubanRating = async () => {
       if (isDirectPlay) {
-        setDoubanRating(null);
+        setDoubanRatingData(null);
         setDoubanCardSubtitle('');
         setDoubanAka([]);
         setDoubanYear('');
@@ -1699,7 +1731,8 @@ function PlayPageClient() {
       }
 
       if (!videoDoubanId || videoDoubanId === 0) {
-        setDoubanRating(null);
+        // 没有豆瓣 ID：评分交给 TMDB 兜底，这里只清豆瓣自己的槽位
+        setDoubanRatingData(null);
         setDoubanCardSubtitle('');
         setDoubanAka([]);
         setDoubanYear('');
@@ -1709,15 +1742,16 @@ function PlayPageClient() {
       try {
         const doubanData = await getDoubanDetail(videoDoubanId.toString());
 
-        // 设置评分
-        if (doubanData.rating) {
-          setDoubanRating({
+        // 设置评分。豆瓣条目还没有评分时 value 就是 0，这种「0 分」不能写进去 ——
+        // 写进去之后标题行按 value > 0 的门槛会直接不渲染，看着就像评分没了
+        if (doubanData.rating && doubanData.rating.value > 0) {
+          setDoubanRatingData({
             value: doubanData.rating.value,
             count: doubanData.rating.count,
             star_count: doubanData.rating.star_count,
           });
         } else {
-          setDoubanRating(null);
+          setDoubanRatingData(null);
         }
 
         // 设置 card_subtitle
@@ -1741,7 +1775,8 @@ function PlayPageClient() {
         }
       } catch (error) {
         console.error('获取豆瓣评分失败:', error);
-        setDoubanRating(null);
+        // 豆瓣请求失败也只清豆瓣槽位，TMDB 兜底的分留着
+        setDoubanRatingData(null);
         setDoubanCardSubtitle('');
         setDoubanAka([]);
         setDoubanYear('');
@@ -1754,6 +1789,8 @@ function PlayPageClient() {
   // 获取TMDB背景图
   useEffect(() => {
     const fetchTMDBBackdrop = async () => {
+      // 换片时先清掉 TMDB 兜底评分，避免上一部片的分数残留
+      setTmdbRatingData(null);
       if (isDirectPlay) {
         setTmdbBackdrop(null);
         setTmdbEpisodeNames([]);
@@ -1800,9 +1837,8 @@ function PlayPageClient() {
               setTmdbBackdrop(null);
             }
 
-            if (!videoDoubanId || videoDoubanId === 0) {
-              populateDoubanFieldsFromTMDB(detailsCache);
-            }
+            // TMDB 评分只作兜底：豆瓣条目没评分（或请求失败）时由它顶上
+            populateDoubanFieldsFromTMDB(detailsCache);
             populatePlayMetadataFromTMDB(detailsCache);
             return;
           }
@@ -1828,10 +1864,8 @@ function PlayPageClient() {
           setTmdbBackdrop(null);
         }
 
-        // 如果没有豆瓣ID，使用TMDb数据补充
-        if (!videoDoubanId || videoDoubanId === 0) {
-          populateDoubanFieldsFromTMDB(result);
-        }
+        // TMDB 评分只作兜底：豆瓣条目没评分（或请求失败）时由它顶上
+        populateDoubanFieldsFromTMDB(result);
         populatePlayMetadataFromTMDB(result);
 
         // 保存title到tmdbId的映射到localStorage（1个月）
@@ -1917,12 +1951,12 @@ function PlayPageClient() {
       }
     };
 
-    // 辅助函数：使用TMDb数据填充豆瓣字段
+    // 辅助函数：豆瓣没数据时，用 TMDb 数据填充
     const populateDoubanFieldsFromTMDB = (tmdbData: any) => {
-      // 设置评分
+      // 评分写进 TMDB 槽位，豆瓣槽位有分时它自然会被让位
       if (tmdbData.rating) {
         const ratingValue = parseFloat(tmdbData.rating);
-        setDoubanRating({
+        setTmdbRatingData({
           value: ratingValue,
           count: 0, // TMDb不提供评分人数
           star_count: Math.round(ratingValue / 2), // 转换为5星制
@@ -12068,16 +12102,16 @@ function PlayPageClient() {
                               </div>
                             )}
                           </span>
-                          {/* 评分跟在标题后面。原来排在徽章行末尾，离标题太远，手机上
-                              还会被挤到换行后的角落 */}
-                          {doubanRating && doubanRating.value > 0 && (
-                            <span className='mtv-play-score flex-shrink-0'>
+                          {/* 评分胶囊：贴在标题右侧。原来是一列裸文字（数字在上、
+                              来源在下），既不好看也不好读 */}
+                          {doubanRating && (
+                            <span
+                              className='mtv-play-score flex-shrink-0'
+                              title={`${formatRatingSource(doubanRating)}评分 ${doubanRating.value.toFixed(1)}`}
+                            >
+                              <Star className='mtv-play-score-star' aria-hidden='true' />
                               <b>{doubanRating.value.toFixed(1)}</b>
-                              <i>
-                                {doubanRating.count > 0
-                                  ? `豆瓣 · ${(doubanRating.count / 10000).toFixed(1)} 万人评`
-                                  : '豆瓣'}
-                              </i>
+                              <i>{formatRatingSource(doubanRating)}</i>
                             </span>
                           )}
                           <button
@@ -12295,6 +12329,15 @@ function PlayPageClient() {
                     </div>
                   </div>
                 )}
+
+                {/* 豆瓣短评：跟着左栏走，和演职员表同宽。桌面端落在演职员下方；
+                    手机上左栏是单栏，它自然排在相关推荐前面 */}
+                {videoDoubanId !== 0 && enableComments && (
+                  <div className='mtv-play-card'>
+                    <div className='mtv-play-sec'>豆瓣评论</div>
+                    <DoubanComments doubanId={videoDoubanId} />
+                  </div>
+                )}
               </div>
               <div className='lg:sticky lg:top-6'>
                 <SmartRecommendations
@@ -12304,28 +12347,6 @@ function PlayPageClient() {
                 />
               </div>
             </div>
-            {/* 豆瓣评论区域 */}
-            {videoDoubanId !== 0 && enableComments && (
-              <div className='mt-6 -mx-3 md:mx-0 md:px-4'>
-                <div className='bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden'>
-                  {/* 标题 */}
-                  <div className='px-3 md:px-6 py-4 border-b border-gray-200 dark:border-gray-700'>
-                    <h3 className='text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2'>
-                      <svg className='w-5 h-5' fill='currentColor' viewBox='0 0 24 24'>
-                        <path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z' />
-                      </svg>
-                      豆瓣评论
-                    </h3>
-                  </div>
-
-                  {/* 评论内容 */}
-                  <div className='p-3 md:p-6'>
-                    <DoubanComments doubanId={videoDoubanId} />
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* AI评论区域 */}
             {videoTitle && enableAIComments && (
               <div className='mt-6 -mx-3 md:mx-0 md:px-4'>
@@ -12405,67 +12426,63 @@ function PlayPageClient() {
       {/* 快捷键说明弹窗 */}
       {showShortcutDialog && (
         <div
-          className='fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 px-4 py-6 backdrop-blur-sm'
+          className='mtv-dialog-scrim px-4 py-6'
           onClick={() => setShowShortcutDialog(false)}
         >
           <div
-            className='relative w-full max-w-lg overflow-hidden rounded-2xl border border-gray-200 bg-white text-gray-900 shadow-2xl shadow-black/20 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:shadow-black/40'
+            className='mtv-dialog dark max-w-lg'
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
             role='dialog'
             aria-modal='true'
             aria-labelledby='shortcut-dialog-title'
           >
-            <div className='absolute inset-x-0 top-0 h-24 mtv-play-glow pointer-events-none' />
-            <div className='relative flex items-start justify-between gap-4 border-b border-gray-200 px-5 py-4 dark:border-gray-700'>
+            <div className='mtv-dialog-head'>
               <div className='flex items-center gap-3'>
-                <div className='flex h-10 w-10 items-center justify-center rounded-xl border mtv-play-hair-soft bg-ui-accent-soft text-ui-accent'>
+                <div className='flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-ui-accent-soft text-ui-accent'>
                   <Keyboard className='h-5 w-5' />
                 </div>
-                <div>
-                  <h2 id='shortcut-dialog-title' className='text-base font-semibold text-gray-950 dark:text-white'>
-                    播放快捷键
-                  </h2>
-                </div>
+                <h2
+                  id='shortcut-dialog-title'
+                  className='mtv-dialog-title self-center'
+                >
+                  播放快捷键
+                </h2>
               </div>
               <button
                 onClick={() => setShowShortcutDialog(false)}
-                className='rounded-lg p-2 text-gray-500 transition-colors duration-200 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-ui-accent cursor-pointer dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white'
+                className='mtv-dialog-close'
                 aria-label='关闭快捷键说明'
               >
                 <X className='h-5 w-5' />
               </button>
             </div>
 
-            <div className='relative max-h-[70vh] overflow-y-auto px-5 py-4'>
+            <div className='mtv-dialog-body max-h-[70vh] overflow-y-auto'>
               <div className='grid gap-3'>
                 {PLAY_SHORTCUT_GROUPS.map((group) => (
-                  <section
-                    key={group.title}
-                    className='rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800/60'
-                  >
-                    <h3 className='mb-3 text-sm font-medium text-gray-800 dark:text-gray-200'>
-                      {group.title}
-                    </h3>
-                    <div className='space-y-2'>
+                  <section key={group.title} className='mtv-key-group'>
+                    <h3 className='mtv-key-group-t'>{group.title}</h3>
+                    <div className='space-y-1'>
                       {group.items.map((item) => (
                         <div
                           key={`${group.title}-${item.description}`}
-                          className='flex items-center justify-between gap-4 rounded-lg px-2 py-1.5 transition-colors duration-200 hover:bg-white dark:hover:bg-gray-700/70'
+                          className='mtv-key-row'
                         >
                           <div className='flex flex-wrap items-center gap-1.5'>
                             {item.keys.map((key, index) => (
-                              <span key={`${item.description}-${key}`} className='flex items-center gap-1.5'>
+                              <span
+                                key={`${item.description}-${key}`}
+                                className='flex items-center gap-1.5'
+                              >
                                 {index > 0 && (
-                                  <span className='text-xs text-gray-400 dark:text-gray-500'>+</span>
+                                  <span className='mtv-key-plus'>+</span>
                                 )}
-                                <kbd className='min-w-7 rounded-md border border-gray-300 bg-white px-2 py-1 text-center text-xs font-semibold text-gray-800 shadow-sm dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100 dark:shadow-inner dark:shadow-white/5'>
-                                  {key}
-                                </kbd>
+                                <kbd className='mtv-key-cap'>{key}</kbd>
                               </span>
                             ))}
                           </div>
-                          <span className='text-right text-xs text-gray-600 dark:text-gray-300'>
+                          <span className='mtv-key-desc'>
                             {item.description}
                           </span>
                         </div>
@@ -12497,28 +12514,29 @@ function PlayPageClient() {
           </Drawer>
         ) : (
           <div
-            className='fixed inset-0 z-[10000] flex items-center justify-center bg-black/50'
+            className='mtv-dialog-scrim p-4'
             onClick={() => setShowPansouDialog(false)}
           >
             <div
-              className='relative w-full max-w-4xl max-h-[80vh] overflow-y-auto bg-white dark:bg-gray-900 rounded-lg shadow-xl m-4'
+              className='mtv-dialog dark flex max-h-[80vh] max-w-4xl flex-col'
               onClick={(e) => e.stopPropagation()}
             >
               {/* 弹窗头部 */}
-              <div className='sticky top-0 z-10 flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900'>
-                <h2 className='text-xl font-bold text-gray-900 dark:text-gray-100'>
+              <div className='mtv-dialog-head flex-none items-center'>
+                <h2 className='mtv-dialog-title truncate'>
                   搜索网盘资源: {detail?.title || ''}
                 </h2>
                 <button
                   onClick={() => setShowPansouDialog(false)}
-                  className='p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors'
+                  className='mtv-dialog-close flex-none'
+                  aria-label='关闭网盘搜索'
                 >
-                  <X className='h-5 w-5 text-gray-600 dark:text-gray-400' />
+                  <X className='h-5 w-5' />
                 </button>
               </div>
 
               {/* 弹窗内容 */}
-              <div className='p-4'>
+              <div className='mtv-dialog-body flex-1 overflow-y-auto'>
                 <PansouSearch
                   keyword={detail?.title || ''}
                   triggerSearch={showPansouDialog}
@@ -12622,6 +12640,7 @@ function PlayPageClient() {
           source={detail.source}
           useDrawer={isLargeScreen}
           drawerWidth='w-[400px]'
+          forceDark
         />
       )}
 

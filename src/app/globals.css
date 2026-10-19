@@ -18,6 +18,8 @@
   --ui-surface: #ffffff;
   --ui-surface-2: #ffffff;
   --ui-surface-3: #eef0f4;
+  /* 悬停面：控件 hover 时需要比静息态再深一档，否则 bg 与 hover:bg 会落成同一个色 */
+  --ui-surface-hover: #e2e6ee;
 
   /* 文本层级 */
   --ui-ink: #0e1524;
@@ -99,7 +101,8 @@
   --ui-surface: #141414;
   --ui-surface-2: #1f1f1f;
   --ui-surface-3: #2a2a2a;
-
+  --ui-surface-3: #2a2a2a;
+  --ui-surface-hover: #343434;
   --ui-ink: #ffffff;
   --ui-ink-2: #b3b3b3;
   --ui-ink-3: #777777;
@@ -1336,33 +1339,13 @@ html[data-loading-style='grid'] .mtv-err-box {
    既有的 mtv-load / mtv-rate 区分开。颜色只取自 --ui-* 令牌。
    ========================================================================== */
 
-/* ---------- 内容行：横向吸附 + 两端渐隐 ---------- */
+/* ---------- 内容行：横向吸附 ---------- */
 .mtv-rail {
   scroll-snap-type: x proximity;
 }
 
 .mtv-rail > * {
   scroll-snap-align: start;
-}
-
-/* 两端渐隐：提示"还能继续滑"，同时把滚出视口的卡片边缘化掉 */
-.mtv-rail-fade {
-  mask-image: linear-gradient(
-    90deg,
-    transparent 0,
-    #000 14px,
-    #000 calc(100% - 32px),
-    transparent 100%
-  );
-}
-
-/* 手机端浅色模式：左右渐隐是把内容「擦」成透明，露出的是页面底色 ——
-   浅色底就是一层白雾糊在封面上，比直接切断还难看。这里关掉 */
-@media (max-width: 767px) {
-  html:not(.dark) .mtv-rail-fade {
-    mask-image: none;
-    -webkit-mask-image: none;
-  }
 }
 
 /* ---------- 小节标题 ---------- */
@@ -2478,6 +2461,19 @@ html[data-loading-style='grid'] .mtv-err-box {
   --mtv-ink: #f5f5f7;
   --mtv-ink-2: rgba(255, 255, 255, 0.62);
   --mtv-ink-3: rgba(255, 255, 255, 0.4);
+  /*
+   * 播放页恒为深色，但 html 上挂的是用户主题（可能是 light），
+   * 于是挂在页面里的子组件（弹幕面板 / 选集过滤 / 矫正标题）读 ui-* 会拿到浅色值，
+   * 变成「深色页面里嵌一块浅色控件」。这里把 ui-* 也一并钉成深色。
+   */
+  --ui-surface-2: #1f1f1f;
+  --ui-surface-3: #2a2a2a;
+  --ui-surface-hover: #343434;
+  --ui-ink: #ffffff;
+  --ui-ink-2: #b3b3b3;
+  --ui-ink-3: #777777;
+  --ui-hair: rgba(255, 255, 255, 0.1);
+  --ui-hair-strong: rgba(255, 255, 255, 0.18);
 }
 
 /* 标题行徽章：年份 / 类型是描边胶囊，完结状态另有一套强调色；评分排在最后 */
@@ -2506,25 +2502,42 @@ html[data-loading-style='grid'] .mtv-err-box {
   background-color: color-mix(in srgb, var(--ui-accent) 10%, transparent);
 }
 
+/* 评分胶囊：琥珀色淡底 + 细描边。原来是一列裸文字（数字在上、来源在下），
+   贴在标题后面像两行小字堆着，既不好看也不好读 */
 .mtv-play-score {
-  display: flex;
-  align-items: baseline;
+  display: inline-flex;
+  align-items: center;
   gap: 5px;
-  margin-left: 2px;
+  padding: 4px 10px 4px 8px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 176, 32, 0.32);
+  background-color: rgba(255, 176, 32, 0.12);
+  line-height: 1;
+}
+
+.mtv-play-score-star {
+  width: 12px;
+  height: 12px;
+  color: #ffb020;
+  fill: currentColor;
+  stroke: none;
+  flex-shrink: 0;
 }
 
 .mtv-play-score b {
-  font-size: 19px;
+  font-size: 15px;
   font-weight: 750;
   color: #ffb020;
   letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
 }
 
-/* 「豆瓣 · N 万人评」原来用的是 ink-3（40% 白），11px 在深色底上几乎看不见，
-     用户直接反馈「没看到评分」。提到 ink-2 并加一号 */
+/* 来源标签：「豆瓣 · N 万人评」原来用的是 ink-3（40% 白），11px 在深色底上
+   几乎看不见，用户直接反馈「没看到评分」。这里跟着琥珀色走 */
 .mtv-play-score i {
   font-size: 11.5px;
-  color: var(--mtv-ink-2);
+  font-weight: 500;
+  color: rgba(255, 176, 32, 0.82);
   font-style: normal;
   white-space: nowrap;
 }
@@ -2713,6 +2726,316 @@ html[data-loading-style='grid'] .mtv-err-box {
   font-size: 11px;
   color: var(--mtv-ink-3);
   margin-top: 2px;
+}
+
+/* ---------- 豆瓣短评 ---------- */
+/* 短评原来是一堆 bg-gray-50 灰盒子套在浅色卡片壳里，和播放页的
+   「深色承托面 + 细描边」不是一套。改成细线分隔的列表 */
+.mtv-play-cmts {
+  display: flex;
+  flex-direction: column;
+}
+
+.mtv-play-cmt-stat {
+  font-size: 12px;
+  color: var(--mtv-ink-3);
+  margin-bottom: 2px;
+}
+
+.mtv-play-cmt {
+  padding: 16px 0;
+  border-top: 1px solid var(--mtv-hair);
+}
+
+.mtv-play-cmt:first-child {
+  border-top: 0;
+  padding-top: 2px;
+}
+
+.mtv-play-cmt-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 9px;
+}
+
+.mtv-play-cmt-avatar {
+  display: block;
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  object-fit: cover;
+  background-color: var(--mtv-hair-2);
+}
+
+.mtv-play-cmt-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--mtv-ink);
+  text-decoration: none;
+  transition: color 0.16s ease;
+}
+
+.mtv-play-cmt-name:hover {
+  color: var(--ui-accent);
+}
+
+.mtv-play-cmt-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.mtv-play-cmt-star {
+  width: 13px;
+  height: 13px;
+  fill: rgba(255, 255, 255, 0.16);
+  flex: none;
+}
+
+.mtv-play-cmt-star-on {
+  fill: #ffb020;
+}
+
+.mtv-play-cmt-time {
+  font-size: 11.5px;
+  color: var(--mtv-ink-3);
+  margin-top: 3px;
+}
+
+.mtv-play-cmt-votes {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  color: var(--mtv-ink-3);
+  flex: none;
+}
+
+.mtv-play-cmt-votes-ic {
+  width: 14px;
+  height: 14px;
+}
+
+.mtv-play-cmt-body {
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--mtv-ink-2);
+  white-space: pre-wrap;
+}
+
+.mtv-play-cmt-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+  padding: 30px 0 26px;
+  text-align: center;
+}
+
+.mtv-play-cmt-empty-ic {
+  width: 42px;
+  height: 42px;
+  color: var(--mtv-ink-3);
+  opacity: 0.7;
+}
+
+.mtv-play-cmt-empty-t {
+  font-size: 13px;
+  color: var(--mtv-ink-3);
+}
+
+.mtv-play-cmt-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 9999px;
+  background-color: var(--ui-accent);
+  color: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.16s ease;
+}
+
+.mtv-play-cmt-btn:hover {
+  filter: brightness(1.1);
+}
+
+.mtv-play-cmt-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.mtv-play-cmt-btn-ic {
+  width: 15px;
+  height: 15px;
+}
+
+.mtv-play-cmt-spin {
+  width: 26px;
+  height: 26px;
+  border-radius: 9999px;
+  border: 2px solid var(--mtv-hair-2);
+  border-top-color: var(--ui-accent);
+  animation: mtv-play-cmt-spin 0.8s linear infinite;
+}
+
+@keyframes mtv-play-cmt-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.mtv-play-cmt-foot {
+  padding: 16px 0 2px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--mtv-ink-3);
+}
+
+/* 侧滑抽屉：播放页专属，同样是固定深色 */
+.mtv-drawer {
+  background-color: #141416;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: -24px 0 60px -20px rgba(0, 0, 0, 0.85);
+}
+
+.mtv-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mtv-drawer-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* ---------- 播放页浮层外壳：弹窗 / 抽屉 ---------- */
+/* 这些浮层挂在 .mtv-play-root 之外，拿不到 --mtv-* 令牌，所以这里写死深色值 ——
+   播放页本身就是固定深色，不随主题走 */
+.mtv-dialog-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.62);
+  backdrop-filter: blur(6px);
+}
+
+.mtv-dialog {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: #141416;
+  color: #fff;
+  box-shadow: 0 32px 80px -24px rgba(0, 0, 0, 0.9);
+}
+
+.mtv-dialog-head {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mtv-dialog-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.mtv-dialog-close {
+  border: 0;
+  border-radius: 8px;
+  padding: 7px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  transition:
+    color 0.16s ease,
+    background-color 0.16s ease;
+}
+
+.mtv-dialog-close:hover {
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.mtv-dialog-body {
+  position: relative;
+  padding: 16px 20px;
+}
+
+/* 快捷键分组与键帽 */
+.mtv-key-group {
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background-color: rgba(255, 255, 255, 0.03);
+  padding: 12px;
+}
+
+.mtv-key-group-t {
+  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.mtv-key-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  transition: background-color 0.16s ease;
+}
+
+.mtv-key-row:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.mtv-key-cap {
+  display: inline-block;
+  min-width: 28px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background-color: rgba(255, 255, 255, 0.07);
+  text-align: center;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.mtv-key-plus {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.mtv-key-desc {
+  text-align: right;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.62);
 }
 
 /* 右侧栏工具条与集数网格 */

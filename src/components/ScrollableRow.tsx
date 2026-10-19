@@ -7,8 +7,6 @@ interface ScrollableRowProps {
   bottomPadding?: string;
   /** 横向吸附滚动 */
   snap?: boolean;
-  /** 两端渐隐遮罩 */
-  fade?: boolean;
 }
 
 export default function ScrollableRow({
@@ -16,7 +14,6 @@ export default function ScrollableRow({
   scrollDistance = 1000,
   bottomPadding = 'pb-12 sm:pb-14',
   snap = false,
-  fade = false,
 }: ScrollableRowProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [showLeftScroll, setShowLeftScroll] = useState(false);
@@ -112,7 +109,7 @@ export default function ScrollableRow({
         ref={containerRef}
         className={`flex space-x-2 sm:space-x-4 overflow-x-auto scrollbar-hide py-1 sm:py-2 ${bottomPadding} px-4 sm:px-6 ${
           snap ? 'mtv-rail' : ''
-        } ${fade ? 'mtv-rail-fade' : ''}`}
+        }`}
         onScroll={checkScroll}
       >
         {children}

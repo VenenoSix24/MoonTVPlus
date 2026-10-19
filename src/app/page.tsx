@@ -578,7 +578,7 @@ function HomeClient() {
                 <ChevronRight className='w-4 h-4 ml-1' />
               </Link>
             </div>
-            <ScrollableRow snap fade>
+            <ScrollableRow snap>
               {loading
                 ? Array.from({ length: 8 }).map((_, index) => (
                     <div key={index} className='mtv-card-md'>
@@ -616,7 +616,7 @@ function HomeClient() {
                 <ChevronRight className='w-4 h-4 ml-1' />
               </Link>
             </div>
-            <ScrollableRow snap fade>
+            <ScrollableRow snap>
               {loading
                 ? Array.from({ length: 8 }).map((_, index) => (
                     <div key={index} className='mtv-card-md'>
@@ -674,7 +674,7 @@ function HomeClient() {
                 <ChevronRight className='w-4 h-4 ml-1' />
               </Link>
             </div>
-            <ScrollableRow snap fade>
+            <ScrollableRow snap>
               {loading
                 ? Array.from({ length: 8 }).map((_, index) => (
                     <div key={index} className='mtv-card-md'>
@@ -721,7 +721,7 @@ function HomeClient() {
                 <ChevronRight className='w-4 h-4 ml-1' />
               </Link>
             </div>
-            <ScrollableRow snap fade>
+            <ScrollableRow snap>
               {loading
                 ? Array.from({ length: 8 }).map((_, index) => (
                     <div key={index} className='mtv-card-md'>
@@ -759,7 +759,7 @@ function HomeClient() {
                 <ChevronRight className='w-4 h-4 ml-1' />
               </Link>
             </div>
-            <ScrollableRow snap fade>
+            <ScrollableRow snap>
               {loading
                 ? Array.from({ length: 8 }).map((_, index) => (
                     <div key={index} className='mtv-card-md'>
@@ -795,7 +795,7 @@ function HomeClient() {
             <div className='mb-4 flex items-center justify-between'>
               <h2 className='mtv-row-title'>即将上映</h2>
             </div>
-            <ScrollableRow snap fade>
+            <ScrollableRow snap>
               {upcomingContent.map((item) => (
                 <div
                   key={`${item.media_type}-${item.id}`}

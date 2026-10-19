@@ -285,7 +285,7 @@ export default function EpisodeFilterSettings({
 
       {/* 弹窗主体 */}
       <div
-        className="relative w-full bg-white dark:bg-gray-900 rounded-t-3xl shadow-2xl transition-all duration-300 ease-out max-h-[85vh] flex flex-col"
+        className="relative w-full bg-ui-surface-2 rounded-t-3xl shadow-2xl transition-all duration-300 ease-out max-h-[85vh] flex flex-col"
         onTouchMove={(e) => {
           // 允许弹窗内部滚动，阻止事件冒泡到外层
           e.stopPropagation();
@@ -302,35 +302,35 @@ export default function EpisodeFilterSettings({
         }}
       >
         {/* 顶部拖拽指示器 */}
-        <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 pt-3 pb-2">
+        <div className="sticky top-0 z-10 bg-ui-surface-2 pt-3 pb-2">
           <div className="flex justify-center">
-            <div className="w-12 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+            <div className="w-12 h-1.5 bg-ui-surface-3 rounded-full"></div>
           </div>
         </div>
 
         {/* 头部 */}
-        <div className="flex items-center justify-between px-4 pb-3 border-b border-gray-100 dark:border-gray-800">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+        <div className="flex items-center justify-between px-4 pb-3 border-b border-ui-hair">
+          <h2 className="text-lg font-semibold text-ui-ink">
             集数屏蔽设置
           </h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-150"
+            className="p-2 rounded-full hover:bg-ui-surface-hover transition-colors duration-150"
           >
-            <X size={20} className="text-gray-500 dark:text-gray-400" />
+            <X size={20} className="text-ui-ink-3" />
           </button>
         </div>
 
         {/* 内容区域 */}
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 min-h-0">
           {/* 添加规则 */}
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 space-y-3">
-            <div className="flex items-start justify-between gap-3 rounded-xl bg-white dark:bg-gray-700/60 border border-gray-200 dark:border-gray-600 px-4 py-3">
+          <div className="bg-ui-surface-3 rounded-xl p-4 space-y-3">
+            <div className="flex items-start justify-between gap-3 rounded-xl bg-ui-surface-2 border border-ui-hair px-4 py-3">
               <div className="min-w-0">
-                <h3 className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                <h3 className="text-sm font-medium text-ui-ink">
                   相反模式
                 </h3>
-                <p className="mt-1 text-xs leading-relaxed text-gray-500 dark:text-gray-400">
+                <p className="mt-1 text-xs leading-relaxed text-ui-ink-3">
                   开启后，将屏蔽改为仅显示符合规则的集数。
                 </p>
                 <p className="mt-1 text-xs leading-relaxed text-amber-600 dark:text-amber-400">
@@ -350,13 +350,13 @@ export default function EpisodeFilterSettings({
                 ) : (
                   <ToggleLeft
                     size={28}
-                    className="text-gray-400 hover:text-gray-300 transition-colors duration-150"
+                    className="text-ui-ink-3 hover:text-ui-ink-3 transition-colors duration-150"
                   />
                 )}
               </button>
             </div>
 
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <h3 className="text-sm font-medium text-ui-ink-2">
               添加屏蔽规则
             </h3>
             <div className="space-y-3">
@@ -374,13 +374,13 @@ export default function EpisodeFilterSettings({
                 spellCheck="false"
                 data-form-type="other"
                 data-lpignore="true"
-                className="w-full px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg border border-gray-200 dark:border-gray-600 focus:border-ui-accent focus:outline-none focus:ring-2 focus:ring-ui-accent transition-all duration-200"
+                className="w-full px-4 py-3 bg-ui-surface-2 text-ui-ink rounded-lg border border-ui-hair focus:border-ui-accent focus:outline-none focus:ring-2 focus:ring-ui-accent transition-all duration-200"
               />
               <div className="flex gap-2">
                 <select
                   value={newType}
                   onChange={(e) => setNewType(e.target.value as 'normal' | 'regex')}
-                  className="flex-1 px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg border border-gray-200 dark:border-gray-600 focus:border-ui-accent focus:outline-none focus:ring-2 focus:ring-ui-accent transition-all duration-200"
+                  className="flex-1 px-4 py-3 bg-ui-surface-2 text-ui-ink rounded-lg border border-ui-hair focus:border-ui-accent focus:outline-none focus:ring-2 focus:ring-ui-accent transition-all duration-200"
                 >
                   <option value="normal">普通模式</option>
                   <option value="regex">正则模式</option>
@@ -394,7 +394,7 @@ export default function EpisodeFilterSettings({
                 </button>
               </div>
             </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+            <p className="text-xs text-ui-ink-3 leading-relaxed">
               💡 普通模式：集数标题包含关键字即命中规则<br/>
               🔄 相反模式：仅显示命中规则的集数<br/>
               🔧 正则模式：支持正则表达式匹配（如：^预告.*匹配以"预告"开头的集数）
@@ -404,26 +404,26 @@ export default function EpisodeFilterSettings({
           {/* 规则列表 */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <h3 className="text-sm font-medium text-ui-ink-2">
                 当前规则
               </h3>
-              <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-full">
+              <span className="text-xs text-ui-ink-3 bg-ui-surface-3 px-2 py-1 rounded-full">
                 {config.rules.length}
               </span>
             </div>
 
             {loading ? (
-              <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+              <div className="text-center py-12 text-ui-ink-3">
                 <div className="inline-flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-gray-300 border-t-ui-accent rounded-full animate-spin"></div>
+                  <div className="w-4 h-4 border-2 border-ui-hair-strong border-t-ui-accent rounded-full animate-spin"></div>
                   <span>加载中...</span>
                 </div>
               </div>
             ) : config.rules.length === 0 ? (
-              <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+              <div className="text-center py-12 text-ui-ink-3">
                 <div className="inline-flex flex-col items-center gap-3">
-                  <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
-                    <Plus size={24} className="text-gray-400" />
+                  <div className="w-16 h-16 bg-ui-surface-3 rounded-full flex items-center justify-center">
+                    <Plus size={24} className="text-ui-ink-3" />
                   </div>
                   <div>
                     <p className="font-medium">暂无屏蔽规则</p>
@@ -436,7 +436,7 @@ export default function EpisodeFilterSettings({
                 {config.rules.map((rule) => (
                   <div
                     key={rule.id}
-                    className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 flex items-center gap-3 active:bg-gray-100 dark:active:bg-gray-750 transition-colors duration-150"
+                    className="bg-ui-surface-3 rounded-xl p-4 flex items-center gap-3 active:bg-ui-surface-hover transition-colors duration-150"
                   >
                     {/* 启用/禁用按钮 */}
                     <button
@@ -451,7 +451,7 @@ export default function EpisodeFilterSettings({
                       ) : (
                         <ToggleLeft
                           size={28}
-                          className="text-gray-400 hover:text-gray-300 transition-colors duration-150"
+                          className="text-ui-ink-3 hover:text-ui-ink-3 transition-colors duration-150"
                         />
                       )}
                     </button>
@@ -461,7 +461,7 @@ export default function EpisodeFilterSettings({
                       <div className="flex flex-col gap-1.5">
                         <span
                           className={`font-mono text-sm break-all leading-relaxed ${
-                            rule.enabled ? 'text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400'
+                            rule.enabled ? 'text-ui-ink ' : 'text-ui-ink-3 '
                           }`}
                         >
                           {rule.keyword}
@@ -493,18 +493,18 @@ export default function EpisodeFilterSettings({
         </div>
 
         {/* 底部按钮 */}
-        <div className="sticky bottom-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 px-4 py-4">
+        <div className="sticky bottom-0 bg-ui-surface-2 border-t border-ui-hair px-4 py-4">
           <div className="flex gap-3">
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700 dark:active:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-medium transition-all duration-200 active:scale-[0.98]"
+              className="flex-1 px-4 py-3 bg-ui-surface-3 hover:bg-ui-surface-hover active:bg-ui-surface-hover text-ui-ink-2 rounded-xl font-medium transition-all duration-200 active:scale-[0.98]"
             >
               取消
             </button>
             <button
               onClick={handleSave}
               disabled={saving}
-              className="flex-1 px-4 py-3 bg-ui-accent hover:brightness-110 active:brightness-95 disabled:bg-gray-300 disabled:cursor-not-allowed dark:disabled:bg-gray-700 text-white rounded-xl font-medium transition-all duration-200 active:scale-[0.98] shadow-sm hover:shadow-md disabled:shadow-none"
+              className="flex-1 px-4 py-3 bg-ui-accent hover:brightness-110 active:brightness-95 disabled:bg-ui-surface-3 disabled:cursor-not-allowed text-white rounded-xl font-medium transition-all duration-200 active:scale-[0.98] shadow-sm hover:shadow-md disabled:shadow-none"
             >
               {saving ? (
                 <span className="inline-flex items-center gap-2">

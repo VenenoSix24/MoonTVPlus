@@ -141,6 +141,7 @@ const config: Config = {
           surface: 'var(--ui-surface)',
           'surface-2': 'var(--ui-surface-2)',
           'surface-3': 'var(--ui-surface-3)',
+          'surface-hover': 'var(--ui-surface-hover)',
           ink: 'var(--ui-ink)',
           'ink-2': 'var(--ui-ink-2)',
           'ink-3': 'var(--ui-ink-3)',

@@ -318,10 +318,10 @@ export default function DanmakuPanel({
             spellCheck='false'
             data-form-type='other'
             data-lpignore='true'
-            className='flex-1 min-w-[220px] rounded-lg border border-gray-300 px-3 py-2 text-sm
+            className='flex-1 min-w-[220px] rounded-lg border border-ui-hair-strong px-3 py-2 text-sm
                      transition-colors focus:border-ui-accent focus:outline-none
                      focus:ring-2 focus:ring-ui-accent
-                     dark:border-gray-600 dark:bg-gray-800 dark:text-white
+                      bg-ui-surface-3 text-ui-ink
                      sm:px-4'
             disabled={isSearching}
           />
@@ -369,14 +369,14 @@ export default function DanmakuPanel({
             <p className='font-semibold text-ui-accent'>
               当前弹幕
             </p>
-            <p className='mt-1 text-gray-700 dark:text-gray-300'>
+            <p className='mt-1 text-ui-ink-2'>
               {currentSelection.animeTitle}
             </p>
-            <p className='text-xs text-gray-600 dark:text-gray-400'>
+            <p className='text-xs text-ui-ink-2'>
               {stripDanmakuSource(currentSelection.episodeTitle)}
             </p>
             {currentSelection.danmakuCount !== undefined && (
-              <p className='mt-1 text-xs text-gray-500 dark:text-gray-500'>
+              <p className='mt-1 text-xs text-ui-ink-3'>
                 弹幕数量: {currentSelection.danmakuCount}
                 {currentSelection.danmakuOriginalCount && ` (原始 ${currentSelection.danmakuOriginalCount} 条)`}
               </p>
@@ -398,7 +398,7 @@ export default function DanmakuPanel({
             </button>
 
             {/* 动漫标题 */}
-            <h3 className='mb-3 text-base font-semibold text-gray-800 dark:text-white'>
+            <h3 className='mb-3 text-base font-semibold text-ui-ink'>
               {selectedAnime.animeTitle}
             </h3>
 
@@ -407,7 +407,7 @@ export default function DanmakuPanel({
               <div className='flex items-center justify-center py-8'>
                 <div
                   className='h-8 w-8 animate-spin rounded-full border-4
-                              border-gray-300 border-t-ui-accent'
+                              border-ui-hair-strong border-t-ui-accent'
                 />
               </div>
             )}
@@ -415,7 +415,7 @@ export default function DanmakuPanel({
             {/* 剧集列表 */}
             {!isLoadingEpisodes && episodes.length > 0 && (
               <div className='pb-4'>
-                <div className='mb-4 border-b border-gray-300 dark:border-gray-700'>
+                <div className='mb-4 border-b border-ui-hair-strong'>
                   <div
                     ref={episodeGroupContainerRef}
                     className='flex items-center gap-4 overflow-x-auto pb-3'
@@ -438,7 +438,7 @@ export default function DanmakuPanel({
                           className={`relative w-20 py-2 text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 text-center ${
                             isActive
                               ? 'text-ui-accent'
-                              : 'text-gray-700 hover:text-ui-accent dark:text-gray-300 dark:hover:text-ui-accent'
+                              : 'text-ui-ink-2 hover:text-ui-accent dark:hover:text-ui-accent'
                           }`}
                         >
                           {label}
@@ -450,21 +450,21 @@ export default function DanmakuPanel({
                     })}
                     <button
                       onClick={() => setEpisodeDescending((prev) => !prev)}
-                      className='flex-shrink-0 rounded-md p-2 text-gray-700 hover:bg-gray-100 hover:text-ui-accent dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-ui-accent'
+                      className='flex-shrink-0 rounded-md p-2 text-ui-ink-2 hover:bg-ui-surface-hover hover:text-ui-accent dark:hover:text-ui-accent'
                       title={episodeDescending ? '切换正序' : '切换倒序'}
                     >
                       <svg className='h-4 w-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                         <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4' />
                       </svg>
                     </button>
-                    <div className='ml-auto flex items-center gap-1 rounded-md bg-gray-100 p-1 dark:bg-gray-800'>
+                    <div className='ml-auto flex items-center gap-1 rounded-md bg-ui-surface-3 p-1'>
                       <button
                         onClick={() => setEpisodeViewMode('list')}
                         title='列表视图'
                         className={`rounded px-2 py-1 text-xs font-medium transition-colors ${
                           episodeViewMode === 'list'
-                            ? 'bg-white text-ui-accent shadow-sm dark:bg-gray-700 text-ui-accent'
-                            : 'text-gray-600 dark:text-gray-400'
+                            ? 'bg-ui-surface-2 text-ui-accent shadow-sm text-ui-accent'
+                            : 'text-ui-ink-2 '
                         }`}
                       >
                         <svg className='h-4 w-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
@@ -476,8 +476,8 @@ export default function DanmakuPanel({
                         title='格子视图'
                         className={`rounded px-2 py-1 text-xs font-medium transition-colors ${
                           episodeViewMode === 'grid'
-                            ? 'bg-white text-ui-accent shadow-sm dark:bg-gray-700 text-ui-accent'
-                            : 'text-gray-600 dark:text-gray-400'
+                            ? 'bg-ui-surface-2 text-ui-accent shadow-sm text-ui-accent'
+                            : 'text-ui-ink-2 '
                         }`}
                       >
                         <svg className='h-4 w-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
@@ -499,7 +499,7 @@ export default function DanmakuPanel({
                           className={`rounded-lg px-3 py-2 text-sm font-medium transition-all ${
                             isSelected
                               ? 'bg-ui-accent text-white shadow-md'
-                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
+                              : 'bg-ui-surface-3 text-ui-ink-2 hover:bg-ui-surface-hover '
                           }`}
                           title={stripDanmakuSource(episode.episodeTitle)}
                         >
@@ -521,7 +521,7 @@ export default function DanmakuPanel({
                           className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all duration-200 group border ${
                             isSelected
                               ? 'bg-ui-accent text-white border-ui-accent shadow-md'
-                              : 'bg-gray-100 hover:bg-gray-200 border-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 dark:border-gray-700 hover:border-ui-accent hover:shadow-sm'
+                              : 'bg-ui-surface-3 hover:bg-ui-surface-hover border-ui-hair hover:border-ui-accent hover:shadow-sm'
                           }`}
                         >
                           <div
@@ -540,7 +540,7 @@ export default function DanmakuPanel({
                             </div>
                             <div
                               className={`flex items-center gap-2 text-xs ${
-                                isSelected ? 'text-white/80' : 'text-gray-500 dark:text-gray-400'
+                                isSelected ? 'text-white/80' : 'text-ui-ink-3 '
                               }`}
                             >
                               <span className='flex items-center gap-1'>
@@ -557,7 +557,7 @@ export default function DanmakuPanel({
                             </div>
                           ) : (
                             <div className='flex-shrink-0'>
-                              <svg className='w-5 h-5 text-gray-400 group-hover:text-ui-accent transition-colors' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                              <svg className='w-5 h-5 text-ui-ink-3 group-hover:text-ui-accent transition-colors' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                                 <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M9 5l7 7-7 7' />
                               </svg>
                             </div>
@@ -571,7 +571,7 @@ export default function DanmakuPanel({
             )}
 
             {!isLoadingEpisodes && episodes.length === 0 && (
-              <div className='py-8 text-center text-sm text-gray-500'>
+              <div className='py-8 text-center text-sm text-ui-ink-3'>
                 暂无剧集信息
               </div>
             )}
@@ -586,8 +586,7 @@ export default function DanmakuPanel({
                 key={anime.animeId}
                 onClick={() => handleAnimeSelect(anime)}
                 className='flex cursor-pointer items-start gap-3 rounded-lg
-                         bg-gray-100 p-3 transition-colors hover:bg-gray-200
-                         dark:bg-gray-800 dark:hover:bg-gray-700'
+                         bg-ui-surface-3 p-3 transition-colors hover:bg-ui-surface-hover'
               >
                 {/* 封面 */}
                 {anime.imageUrl && (
@@ -606,7 +605,7 @@ export default function DanmakuPanel({
                 {/* 信息 */}
                 <div className='min-w-0 flex-1'>
                   <div className='relative'>
-                    <p className='truncate font-semibold text-gray-800 dark:text-white peer'>
+                    <p className='truncate font-semibold text-ui-ink peer'>
                       {anime.animeTitle}
                     </p>
                     {/* 自定义 tooltip */}
@@ -617,8 +616,8 @@ export default function DanmakuPanel({
                       <div className='absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800' />
                     </div>
                   </div>
-                  <div className='mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-600 dark:text-gray-400'>
-                    <span className='rounded bg-gray-200 px-2 py-0.5 dark:bg-gray-700'>
+                  <div className='mt-1 flex flex-wrap items-center gap-2 text-xs text-ui-ink-2'>
+                    <span className='rounded bg-ui-surface-3 px-2 py-0.5'>
                       {anime.typeDescription || anime.type}
                     </span>
                     {anime.episodeCount && (
@@ -636,8 +635,8 @@ export default function DanmakuPanel({
         {/* 空状态：撑满剩余空间并居中 */}
         {!selectedAnime && searchResults.length === 0 && !isSearching && (
           <div className='flex flex-1 flex-col items-center justify-center py-12 text-center'>
-            <MagnifyingGlassIcon className='mb-3 h-12 w-12 text-gray-400' />
-            <p className='text-sm text-gray-500 dark:text-gray-400'>
+            <MagnifyingGlassIcon className='mb-3 h-12 w-12 text-ui-ink-3' />
+            <p className='text-sm text-ui-ink-3'>
               输入剧集名称搜索弹幕
             </p>
           </div>
@@ -646,7 +645,7 @@ export default function DanmakuPanel({
 
         {/* 上传弹幕区域 - 移动端：在滚动容器内 */}
         {onUploadDanmaku && (
-          <div className='mt-3 border-t border-gray-200 pt-3 dark:border-gray-700 md:hidden'>
+          <div className='mt-3 border-t border-ui-hair pt-3 md:hidden'>
             <input
               ref={fileInputRef}
               type='file'
@@ -656,7 +655,7 @@ export default function DanmakuPanel({
             />
             <button
               onClick={() => fileInputRef.current?.click()}
-              className='w-full text-center text-xs text-gray-500 dark:text-gray-400 hover:text-ui-accent dark:hover:text-ui-accent transition-colors py-2'
+              className='w-full text-center text-xs text-ui-ink-3 hover:text-ui-accent dark:hover:text-ui-accent transition-colors py-2'
             >
               搜不到想要的弹幕？自行上传
             </button>
@@ -666,10 +665,10 @@ export default function DanmakuPanel({
 
       {/* 上传弹幕区域 - PC端：固定在底部 */}
       {onUploadDanmaku && (
-        <div className='mt-3 flex-shrink-0 border-t border-gray-200 pt-3 dark:border-gray-700 hidden md:block'>
+        <div className='mt-3 flex-shrink-0 border-t border-ui-hair pt-3 hidden md:block'>
           <button
             onClick={() => fileInputRef.current?.click()}
-            className='w-full text-center text-xs text-gray-500 dark:text-gray-400 hover:text-ui-accent dark:hover:text-ui-accent transition-colors py-2'
+            className='w-full text-center text-xs text-ui-ink-3 hover:text-ui-accent dark:hover:text-ui-accent transition-colors py-2'
           >
             搜不到想要的弹幕？自行上传
           </button>
