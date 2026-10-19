@@ -113,7 +113,10 @@ import DetailPanel from '@/components/DetailPanel';
 import DoubanComments from '@/components/DoubanComments';
 import DownloadEpisodeSelector from '@/components/DownloadEpisodeSelector';
 import Drawer from '@/components/Drawer';
-import EpisodeSelector from '@/components/EpisodeSelector';
+import EpisodeSelector, {
+  type AirCalendar,
+  type EpisodeCardData,
+} from '@/components/EpisodeSelector';
 import LoadingStyle, {
   type LoadingStep,
   LoadingErrorStyle,
@@ -163,6 +166,53 @@ type CustomSubtitleEngine = 'native' | 'jassub' | 'bitsub';
 type PlaybackSourceBadge = 'local' | 'offline' | null;
 type HarmonyHlsPlaybackMode = 'hlsjs' | 'native';
 type NetdiskHlsPlaybackMode = 'hlsjs' | 'native';
+
+/** TMDB 分集里给「分集卡片」用的字段（按 episode_number-1 索引） */
+interface TmdbEpisodeMeta {
+  overview?: string;
+  runtime?: number;
+  airDate?: string;
+  /** 已拼好 TMDB 图片地址的剧照 */
+  still?: string;
+}
+
+/** 播出日历的汇总类型定义在 EpisodeSelector（那里是消费方），这里只做工具函数 */
+
+/** 播出日历：按「今天」把该季分集切成已播 / 未播。没有未播集数就返回 null ——
+ *  完结剧的日历是空的，占一行没意义。日期是 YYYY-MM-DD，字符串直接比大小即可。 */
+function buildAirCalendar(episodes: unknown): AirCalendar | null {
+  if (!Array.isArray(episodes) || episodes.length === 0) return null;
+  const now = new Date();
+  const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+  let airedCount = 0;
+  let totalCount = 0;
+  let lastAired: { n: number; d: string } | null = null;
+  let nextAir: { n: number; d: string } | null = null;
+
+  for (const ep of episodes as any[]) {
+    const num = typeof ep?.episode_number === 'number' ? ep.episode_number : NaN;
+    const date = typeof ep?.air_date === 'string' ? ep.air_date : '';
+    if (Number.isNaN(num) || num < 1 || !date) continue;
+    totalCount += 1;
+    if (date <= todayKey) {
+      airedCount += 1;
+      if (!lastAired || num > lastAired.n) lastAired = { n: num, d: date };
+    } else if (!nextAir || num < nextAir.n) {
+      nextAir = { n: num, d: date };
+    }
+  }
+
+  if (!lastAired || !nextAir) return null;
+  return {
+    airedCount,
+    totalCount,
+    lastEpisodeNumber: lastAired.n,
+    lastAirDate: lastAired.d,
+    nextEpisodeNumber: nextAir.n,
+    nextAirDate: nextAir.d,
+  };
+}
 
 interface CustomSubtitleState {
   name: string;
@@ -367,6 +417,15 @@ function PlayPageClient() {
   }, [showPlayActionMore]);
   // TMDB 分集名称（按 episode_number-1 索引），复用背景请求解析出的 tmdbId 获取
   const [tmdbEpisodeNames, setTmdbEpisodeNames] = useState<string[]>([]);
+  // TMDB 分集的完整信息（按 episode_number-1 索引）。分集卡片要用的剧照 /
+  // 简介 / 时长 / 播出日期都在这里；标题仍走上面的 tmdbEpisodeNames，
+  // 因为它还要和弹幕分集名做优先级合并。
+  const [tmdbEpisodeMeta, setTmdbEpisodeMeta] = useState<
+    (TmdbEpisodeMeta | undefined)[]
+  >([]);
+  // 播出日历：只对「还有未播集数」的剧显示。已播 / 总数来自 TMDB 该季，
+  // 和 CMS 源实际有几集不一定一致，所以文案写「更新至」而不是「已完结」。
+  const [airCalendar, setAirCalendar] = useState<AirCalendar | null>(null);
   // 背景请求解析出的 tmdbId 字符串（形如 "tv:123"），供拉取分集名复用
   const [resolvedTmdbIdStr, setResolvedTmdbIdStr] = useState<string | null>(
     null
@@ -1698,6 +1757,8 @@ function PlayPageClient() {
       if (isDirectPlay) {
         setTmdbBackdrop(null);
         setTmdbEpisodeNames([]);
+        setTmdbEpisodeMeta([]);
+        setAirCalendar(null);
         setResolvedTmdbIdStr(null);
         return;
       }
@@ -1714,6 +1775,8 @@ function PlayPageClient() {
       if (!videoTitle) {
         setTmdbBackdrop(null);
         setTmdbEpisodeNames([]);
+        setTmdbEpisodeMeta([]);
+        setAirCalendar(null);
         setResolvedTmdbIdStr(null);
         return;
       }
@@ -2041,16 +2104,37 @@ function PlayPageClient() {
         if (!Array.isArray(eps) || eps.length === 0) return;
 
         const names: string[] = [];
+        const metas: (TmdbEpisodeMeta | undefined)[] = [];
         eps.forEach((ep: any) => {
           const num =
             typeof ep?.episode_number === 'number' ? ep.episode_number : NaN;
-          if (!Number.isNaN(num) && num >= 1 && ep?.name) {
+          if (Number.isNaN(num) || num < 1) return;
+          if (ep?.name) {
             names[num - 1] = String(ep.name);
           }
+          metas[num - 1] = {
+            overview:
+              typeof ep?.overview === 'string' && ep.overview.trim() !== ''
+                ? ep.overview.trim()
+                : undefined,
+            runtime: typeof ep?.runtime === 'number' ? ep.runtime : undefined,
+            airDate:
+              typeof ep?.air_date === 'string' && ep.air_date !== ''
+                ? ep.air_date
+                : undefined,
+            // 卡片上的剧照只要 w300，一屏七八张，别按 w780 拉
+            still: ep?.still_path
+              ? processImageUrl(getTMDBImageUrl(ep.still_path, 'w300'))
+              : undefined,
+          };
         });
         if (names.some((n) => n && n.trim() !== '')) {
           setTmdbEpisodeNames(names);
         }
+        if (metas.some((m) => m && (m.overview || m.still))) {
+          setTmdbEpisodeMeta(metas);
+        }
+        setAirCalendar(buildAirCalendar(eps));
       } catch (err) {
         console.error('获取TMDB分集名称失败:', err);
       }
@@ -2062,6 +2146,8 @@ function PlayPageClient() {
   useEffect(() => {
     tmdbEpisodesFetchedIdRef.current = null;
     setTmdbEpisodeNames([]);
+    setTmdbEpisodeMeta([]);
+    setAirCalendar(null);
     setDanmakuAutoLoadSettled(false);
   }, [videoTitle]);
 
@@ -2443,6 +2529,36 @@ function PlayPageClient() {
     }
     return [];
   }, [preferTmdbNames, danmakuRichNames, tmdbRichNames]);
+
+  // 分集卡片的数据。标题沿用 richEpisodeNames（弹幕 / TMDB 的优先级已经合过），
+  // 剧照 / 简介 / 时长 / 播出日期只有 TMDB 有；起始集数偏移和 tmdbRichNames 一致。
+  const episodeCards = useMemo<(EpisodeCardData | undefined)[] | null>(() => {
+    if (totalEpisodes <= 1) return null;
+    if (episodeTitleFetchDisabled) return null;
+    const offset = Math.max(1, titleCorrection.startEpisode ?? 1) - 1;
+    const list = Array.from({ length: totalEpisodes }, (_, i) => {
+      const meta = tmdbEpisodeMeta[offset + i];
+      const name = richEpisodeNames[i];
+      if (!meta && !name) return undefined;
+      return {
+        name,
+        overview: meta?.overview,
+        runtime: meta?.runtime,
+        airDate: meta?.airDate,
+        still: meta?.still,
+      };
+    });
+    return list.some((card) => card && (card.still || card.overview || card.name))
+      ? list
+      : null;
+  }, [
+    totalEpisodes,
+    episodeTitleFetchDisabled,
+    tmdbEpisodeMeta,
+    titleCorrection.startEpisode,
+    richEpisodeNames,
+  ]);
+
   const directEpisodeLabel = detail?.episodes_titles?.[currentEpisodeIndex] || '直链';
   const shouldShowEpisodeLabel = totalEpisodes > 1 || isDirectPlay;
   const episodeLabel = isDirectPlay
@@ -2594,6 +2710,17 @@ function PlayPageClient() {
 
   // 换源相关状态
   const [availableSources, setAvailableSources] = useState<SearchResult[]>([]);
+
+  // 「播放资源」卡上的源名。availableSources 里带 source_name，用它比直接显示
+  // source 标识（dyttzyapi.com 这种）可读
+  const currentSourceName = useMemo(() => {
+    const hit = availableSources.find(
+      (item) =>
+        item.source?.toString() === currentSource?.toString() &&
+        item.id?.toString() === currentId?.toString()
+    );
+    return hit?.source_name || '';
+  }, [availableSources, currentSource, currentId]);
   const [sourceSearchLoading, setSourceSearchLoading] = useState(false);
   const [sourceSearchError, setSourceSearchError] = useState<string | null>(
     null
@@ -11213,7 +11340,7 @@ function PlayPageClient() {
           </div>
 
           <div
-            className={`grid gap-4 lg:h-[500px] xl:h-[650px] 2xl:h-[750px] transition-all duration-300 ease-in-out ${isEpisodeSelectorCollapsed
+            className={`grid gap-4 lg:h-[500px] lg:grid-rows-[100%] xl:h-[650px] 2xl:h-[750px] transition-all duration-300 ease-in-out ${isEpisodeSelectorCollapsed
               ? 'grid-cols-1'
               : 'grid-cols-1 md:grid-cols-4'
               }`}
@@ -11963,6 +12090,8 @@ function PlayPageClient() {
                 totalEpisodes={totalEpisodes}
                 episodes_titles={detail?.episodes_titles || []}
                 richEpisodeNames={richEpisodeNames}
+                episodeCards={episodeCards}
+                airCalendar={airCalendar}
                 value={currentEpisodeIndex + 1}
                 onChange={playSync.shouldDisableControls ? () => { /* disabled */ } : handleEpisodeChange}
                 onSourceChange={playSync.shouldDisableControls ? () => { /* disabled */ } : handleSourceChange}
@@ -12226,6 +12355,55 @@ function PlayPageClient() {
                       </div>
                     </>
                   )}
+                </div>
+
+                {/* 播放资源：画质 / 码率 / 网速 / 延迟都是实测值。CMS 源只能探到
+                    画质与码率，私人影库 / 网盘源可能探不到 —— 探不到就给个探测按钮 */}
+                <div className='mtv-play-card'>
+                  <div className='mtv-play-sec'>播放资源</div>
+                  <div className='mtv-play-res'>
+                    <div className='mtv-play-res-head'>
+                      <span className='mtv-play-res-q'>
+                        {currentSourceVideoInfo?.quality || '未知画质'}
+                      </span>
+                      {currentSourceVideoInfo?.loadSpeed && (
+                        <span className='mtv-play-res-speed'>
+                          {currentSourceVideoInfo.loadSpeed}
+                        </span>
+                      )}
+                    </div>
+                    <dl className='mtv-play-res-meta'>
+                      <div>
+                        <dt>码率</dt>
+                        <dd>{currentSourceVideoInfo?.bitrate || '—'}</dd>
+                      </div>
+                      <div>
+                        <dt>延迟</dt>
+                        <dd>
+                          {currentSourceVideoInfo?.pingTime
+                            ? `${currentSourceVideoInfo.pingTime} ms`
+                            : '—'}
+                        </dd>
+                      </div>
+                    </dl>
+                    <div className='mtv-play-res-foot'>
+                      <span
+                        className='mtv-play-res-src'
+                        title={currentSourceName}
+                      >
+                        {currentSourceName || '当前播放源'}
+                      </span>
+                      {!currentSourceVideoInfo && !isDirectPlay && (
+                        <button
+                          type='button'
+                          className='mtv-play-res-probe'
+                          onClick={fetchCurrentSourceVideoInfo}
+                        >
+                          探测画质
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
 

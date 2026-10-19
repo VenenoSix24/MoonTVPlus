@@ -3078,6 +3078,343 @@ html[data-loading-style='grid'] .mtv-err-box {
 }
 
 /* ==========================================================================
+   播放页 · 分集卡片与播出日历
+   --------------------------------------------------------------------------
+   定稿（参考 App）的选集是「剧照 + 播出日期 / 时长 + 分集名 + 简介」的卡片。
+   侧栏在桌面 375×750、窄屏全宽但高度自适应，所以同一张卡按断点换排布：
+   桌面单列竖向铺满栏高，窄屏横滑（横条不产生竖向滚动容器，不吃竖向拖动）。
+   ========================================================================== */
+.mtv-play-epcards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+}
+
+.mtv-play-epcards::-webkit-scrollbar {
+  width: 6px;
+}
+
+.mtv-play-epcards::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.16);
+  border-radius: 9999px;
+}
+
+.mtv-play-epcard-slot {
+  flex: none;
+  width: 100%;
+  min-width: 0;
+}
+
+.mtv-play-epcard {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 1px solid var(--mtv-hair-2);
+  border-radius: 12px;
+  background-color: var(--mtv-card);
+  overflow: hidden;
+  text-align: left;
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition:
+    border-color var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-play-epcard:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+  background-color: rgba(255, 255, 255, 0.07);
+}
+
+.mtv-play-epcard-on,
+.mtv-play-epcard-on:hover {
+  border-color: var(--ui-accent);
+  background-color: color-mix(in srgb, var(--ui-accent) 12%, transparent);
+  cursor: default;
+}
+
+.mtv-play-epcard-art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 9;
+  background-color: #16161a;
+  overflow: hidden;
+}
+
+.mtv-play-epcard-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.9);
+}
+
+.mtv-play-epcard-on .mtv-play-epcard-img {
+  filter: brightness(1);
+}
+
+/* 没有 TMDB 剧照时的回落：大号集数，不留一块空画面 */
+.mtv-play-epcard-num {
+  font-size: 30px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--mtv-ink-3);
+}
+
+.mtv-play-epcard-on .mtv-play-epcard-num {
+  color: #fff;
+}
+
+.mtv-play-epcard-tag {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background-color: rgba(0, 0, 0, 0.62);
+  backdrop-filter: blur(6px);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.mtv-play-epcard-on .mtv-play-epcard-tag {
+  background-color: var(--ui-accent);
+}
+
+.mtv-play-epcard-watched {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background-color: var(--ui-accent);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.45);
+}
+
+.mtv-play-epcard-body {
+  display: block;
+  padding: 9px 11px 11px;
+}
+
+.mtv-play-epcard-meta {
+  display: flex;
+  gap: 8px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--mtv-ink-3);
+}
+
+.mtv-play-epcard-t {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--mtv-ink);
+}
+
+.mtv-play-epcard-on .mtv-play-epcard-t {
+  color: #fff;
+}
+
+.mtv-play-epcard-syn {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin-top: 5px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--mtv-ink-3);
+}
+
+/* 播出日历 */
+.mtv-play-aircal {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+  margin-bottom: 10px;
+  padding: 9px 10px;
+  border-radius: 11px;
+  border: 1px solid var(--mtv-hair-2);
+  background-color: rgba(0, 0, 0, 0.28);
+}
+
+.mtv-play-aircal-ic {
+  width: 17px;
+  height: 17px;
+  flex: none;
+  color: var(--ui-accent);
+}
+
+.mtv-play-aircal-txt {
+  flex: 1;
+  min-width: 0;
+}
+
+.mtv-play-aircal-t {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--mtv-ink);
+}
+
+.mtv-play-aircal-s {
+  margin-top: 1px;
+  overflow: hidden;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--mtv-ink-3);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mtv-play-aircal-prog {
+  flex: none;
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--mtv-ink-2);
+}
+
+.mtv-play-aircal-go {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 8px;
+  border: 1px solid var(--mtv-hair-2);
+  background-color: rgba(255, 255, 255, 0.04);
+  color: var(--mtv-ink-2);
+  cursor: pointer;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    border-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-play-aircal-go:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+@media (max-width: 1023px) {
+  /* 窄屏卡片横滑 */
+  .mtv-play-epcards {
+    flex: none;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 4px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mtv-play-epcards::-webkit-scrollbar {
+    display: none;
+  }
+  .mtv-play-epcard-slot {
+    /* 最小宽度压到 140：768 那一档侧栏只有 165px 宽，196 会让卡片比容器还宽 */
+    width: clamp(140px, 62%, 248px);
+    scroll-snap-align: start;
+  }
+}
+
+/* 播放资源卡：画质是实测出来的，所以给到 22px 当主角，其余是辅助指标 */
+.mtv-play-res-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mtv-play-res-q {
+  font-size: 22px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  color: var(--mtv-ink);
+}
+
+.mtv-play-res-speed {
+  font-size: 12.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ui-accent);
+}
+
+.mtv-play-res-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--mtv-hair);
+}
+
+.mtv-play-res-meta dt {
+  font-size: 11.5px;
+  color: var(--mtv-ink-3);
+  margin-bottom: 4px;
+}
+
+.mtv-play-res-meta dd {
+  font-size: 13.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--mtv-ink);
+}
+
+.mtv-play-res-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.mtv-play-res-src {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 12px;
+  color: var(--mtv-ink-3);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mtv-play-res-probe {
+  flex: none;
+  padding: 5px 12px;
+  border-radius: 9px;
+  border: 1px solid var(--mtv-hair-2);
+  background-color: rgba(255, 255, 255, 0.04);
+  font-size: 12px;
+  color: var(--mtv-ink-2);
+  cursor: pointer;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    border-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-play-res-probe:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+/* ==========================================================================
    播放页 · 窄屏回落
    --------------------------------------------------------------------------
    详情区是「左宽 + 右 320px」两栏，窄屏下 320px 会把左栏挤成一条竖线
@@ -3155,5 +3492,16 @@ html[data-loading-style='grid'] .mtv-err-box {
 
   .mtv-play-stills {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* 播放资源：窄屏两列，指标别挤成一行 */
+  .mtv-play-res-meta {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 16px;
+  }
+
+  .mtv-play-res-q {
+    font-size: 19px;
   }
 }

@@ -2,11 +2,13 @@
 
 import {
   ArrowUpDown,
+  CalendarDays,
   Check,
   ChevronDown,
+  ChevronRight,
+  GalleryHorizontal,
   LayoutGrid,
   Link as LinkIcon,
-  List as ListIcon,
   MoreVertical,
   Settings,
   Wand2,
@@ -198,25 +200,59 @@ const EpisodeChip: React.FC<EpisodeChipProps> = ({
   );
 };
 
-interface EpisodeListItemProps {
+/** 播出日期只保留 YYYY-MM-DD；没有或格式不对就原样返回 */
+function formatAirDate(date?: string): string {
+  if (!date) return '';
+  const match = date.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return match ? `${match[1]}-${match[2]}-${match[3]}` : date;
+}
+
+/** 分集卡片用的数据（按集号-1 索引传入） */
+export interface EpisodeCardData {
+  /** 分集名，弹幕 / TMDB 已合过优先级 */
+  name?: string;
+  overview?: string;
+  runtime?: number;
+  airDate?: string;
+  /** 已拼好图片地址的剧照 */
+  still?: string;
+}
+
+/** 播出日历汇总。只有存在未播集数时才有值 —— 完结剧不显示这一行。 */
+export interface AirCalendar {
+  airedCount: number;
+  totalCount: number;
+  lastEpisodeNumber: number;
+  lastAirDate: string;
+  nextEpisodeNumber: number;
+  nextAirDate: string;
+}
+
+interface EpisodeCardProps {
   episodeNumber: number;
   isActive: boolean;
   isWatched: boolean;
-  /** 弹幕/TMDB 提供的分集名称 */
-  name: string;
-  inactiveRowClass: string;
+  data?: EpisodeCardData;
+  /** TMDB 没有数据时的分集名回落（弹幕分集名） */
+  fallbackName?: string;
   onSelect: (zeroBasedIndex: number) => void;
 }
 
-/** 单集列表行：有分集名称（弹幕/TMDB）时用列表形式展示，序号 + 名称 */
-const EpisodeListItem: React.FC<EpisodeListItemProps> = ({
+/** 分集卡片：剧照 + 播出日期 / 时长 + 分集名 + 简介。
+ *  没有 TMDB 数据时退回「大号集数」，不会留一块空画面。 */
+const EpisodeCard: React.FC<EpisodeCardProps> = ({
   episodeNumber,
   isActive,
   isWatched,
-  name,
-  inactiveRowClass,
+  data,
+  fallbackName,
   onSelect,
 }) => {
+  const title =
+    data?.name?.trim() || fallbackName?.trim() || `第 ${episodeNumber} 集`;
+  const airDate = formatAirDate(data?.airDate);
+  const hasMeta = Boolean(airDate) || Boolean(data?.runtime);
+
   return (
     <button
       type='button'
@@ -227,30 +263,38 @@ const EpisodeListItem: React.FC<EpisodeListItemProps> = ({
           onSelect(episodeNumber - 1);
         }
       }}
-      title={name}
-      className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg border text-left transition-all duration-200 ${
-        isActive
-          ? 'bg-ui-accent text-white border-ui-accent shadow-lg mtv-shadow-accent cursor-default'
-          : isWatched
-            ? 'bg-ui-accent-soft text-ui-accent border-ui-accent-soft hover:bg-ui-accent-soft'
-            : inactiveRowClass
-      }`.trim()}
+      title={title}
+      className={`mtv-play-epcard ${isActive ? 'mtv-play-epcard-on' : ''}`.trim()}
     >
-      <span
-        className={`flex-shrink-0 h-7 min-w-[1.75rem] px-1.5 flex items-center justify-center rounded-md text-xs font-mono font-semibold ${
-          isActive
-            ? 'bg-white/20 text-white'
-            : isWatched
-              ? 'bg-ui-accent-soft text-ui-accent'
-              : 'bg-black/5 dark:bg-white/10'
-        }`}
-      >
-        {episodeNumber}
+      <span className='mtv-play-epcard-art'>
+        {data?.still ? (
+          <ProxyImage
+            originalSrc={data.still}
+            alt={title}
+            className='mtv-play-epcard-img'
+          />
+        ) : (
+          <span className='mtv-play-epcard-num'>
+            {String(episodeNumber).padStart(2, '0')}
+          </span>
+        )}
+        <span className='mtv-play-epcard-tag'>
+          {isActive ? '正在播放' : `第 ${episodeNumber} 集`}
+        </span>
+        {isWatched && !isActive && <span className='mtv-play-epcard-watched' />}
       </span>
-      <span className='flex-1 truncate text-sm font-medium'>{name}</span>
-      {isWatched && !isActive && (
-        <span className='flex-shrink-0 h-1.5 w-1.5 rounded-full bg-ui-accent' />
-      )}
+      <span className='mtv-play-epcard-body'>
+        {hasMeta && (
+          <span className='mtv-play-epcard-meta'>
+            {airDate && <span>{airDate}</span>}
+            {data?.runtime ? <span>{data.runtime} 分钟</span> : null}
+          </span>
+        )}
+        <span className='mtv-play-epcard-t'>{title}</span>
+        {data?.overview && (
+          <span className='mtv-play-epcard-syn'>{data.overview}</span>
+        )}
+      </span>
     </button>
   );
 };
@@ -272,6 +316,10 @@ interface EpisodeSelectorProps {
   episodes_titles: string[];
   /** 弹幕/TMDB 提供的分集名称（按 episodeNumber-1 索引）；存在时选集以列表形式展示 */
   richEpisodeNames?: (string | undefined)[];
+  /** 分集卡片的数据（剧照 / 简介 / 时长 / 播出日期），按 episodeNumber-1 索引 */
+  episodeCards?: (EpisodeCardData | undefined)[] | null;
+  /** 播出日历汇总；为 null 表示已完结或没有播出日期，不显示这一行 */
+  airCalendar?: AirCalendar | null;
   /** 每页显示多少集，默认 50 */
   episodesPerPage?: number;
   /** 当前选中的集数（1 开始） */
@@ -315,6 +363,8 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
   totalEpisodes,
   episodes_titles,
   richEpisodeNames,
+  episodeCards,
+  airCalendar,
   episodesPerPage = 50,
   value = 1,
   onChange,
@@ -348,9 +398,6 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
   const inactiveTabClass = useLightTextOnBackdrop
     ? 'text-white/85 hover:text-white bg-white/10 dark:bg-white/5 hover:bg-white/15 dark:hover:bg-white/10'
     : 'text-gray-700 hover:text-ui-accent bg-black/5 dark:bg-white/5 dark:text-gray-300 dark:hover:text-ui-accent hover:bg-black/3 dark:hover:bg-white/3';
-  const inactiveEpisodeRowClass = useLightTextOnBackdrop
-    ? 'bg-white/10 text-white border-white/10 hover:bg-white/20'
-    : 'bg-gray-100 text-gray-700 border-transparent hover:bg-gray-200 dark:bg-gray-800/60 dark:text-gray-200 dark:border-white/5 dark:hover:bg-gray-700/70';
   const sourceTitleClass = useLightTextOnBackdrop
     ? 'text-white'
     : 'text-gray-900 dark:text-gray-100';
@@ -592,12 +639,12 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
   // 手动矫正标题弹窗状态（矫正配置按 videoTitle 存 localStorage，由播放页消费）
   const [showTitleCorrect, setShowTitleCorrect] = useState<boolean>(false);
 
-  // 集数视图模式（列表/网格）与三点菜单
-  const [episodeViewMode, setEpisodeViewMode] = useState<'grid' | 'list'>(
-    'grid'
-  );
-  // 用户是否手动切过视图（切过后不再随分集名自动切换）
-  const userSetViewModeRef = useRef<boolean>(false);
+  // 集数视图模式：分集卡片（定稿，默认）/ 数字网格。原「列表」视图在卡片
+  // 上线后是重复信息，已去掉。
+  const [episodeViewMode, setEpisodeViewMode] = useState<'card' | 'grid'>('card');
+  // 卡片横滑容器：播出日历的「跳到最新」要滚到这里
+  const cardStripRef = useRef<HTMLDivElement>(null);
+  const latestAiredCardRef = useRef<HTMLButtonElement>(null);
   const [showEpisodeMenu, setShowEpisodeMenu] = useState<boolean>(false);
   const episodeMenuRef = useRef<HTMLDivElement>(null);
 
@@ -908,6 +955,17 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
     [onChange, value]
   );
 
+  // 播出日历的「跳到最新已播」：只滚动卡片条，不改当前播放集 —— 点一下就
+  // 把正在看的剧切走太意外了。
+  const scrollToLatestAired = useCallback(() => {
+    const strip = cardStripRef.current;
+    const card = latestAiredCardRef.current;
+    if (!strip || !card) return;
+    const delta =
+      card.getBoundingClientRect().left - strip.getBoundingClientRect().left;
+    strip.scrollTo({ left: strip.scrollLeft + delta - 12, behavior: 'smooth' });
+  }, []);
+
   const handleSourceClick = useCallback(
     (source: SearchResult) => {
       onSourceChange?.(source.source, source.id, source.title);
@@ -1092,6 +1150,25 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
               )}
             </div>
 
+            {/* 视图切换：分集卡片（默认）/ 数字网格 */}
+            <button
+              type='button'
+              className='mtv-play-mini'
+              onClick={() =>
+                setEpisodeViewMode((mode) => (mode === 'card' ? 'grid' : 'card'))
+              }
+              title={
+                episodeViewMode === 'card' ? '切换到数字网格' : '切换到分集卡片'
+              }
+              aria-pressed={episodeViewMode === 'card'}
+            >
+              {episodeViewMode === 'card' ? (
+                <LayoutGrid className='h-4 w-4' />
+              ) : (
+                <GalleryHorizontal className='h-4 w-4' />
+              )}
+            </button>
+
             {/* 正序 / 倒序 */}
             <button
               type='button'
@@ -1125,27 +1202,6 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                     role='menuitem'
                     className='mtv-play-pop-item flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors'
                     onClick={() => {
-                      userSetViewModeRef.current = true;
-                      setEpisodeViewMode((m) =>
-                        m === 'list' ? 'grid' : 'list'
-                      );
-                      setShowEpisodeMenu(false);
-                    }}
-                  >
-                    {episodeViewMode === 'list' ? (
-                      <LayoutGrid className='h-4 w-4' />
-                    ) : (
-                      <ListIcon className='h-4 w-4' />
-                    )}
-                    <span>
-                      {episodeViewMode === 'list' ? '网格视图' : '列表视图'}
-                    </span>
-                  </button>
-                  <button
-                    type='button'
-                    role='menuitem'
-                    className='mtv-play-pop-item flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors'
-                    onClick={() => {
                       setShowFilterSettings(true);
                       setShowEpisodeMenu(false);
                     }}
@@ -1170,12 +1226,69 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
             </div>
           </div>
 
-          {/* 集数：桌面端 4 列网格（栏内滚动）；窄屏横向滑动 —— 横向条不产生
-              竖向滚动容器，手指竖向拖动不再被这一块吃掉，页面能正常往下滚。
-              列表视图只在桌面端生效：窄屏下它是横条里并排的行，反而更难用。 */}
-          <div className='mtv-play-eps-host'>
-            {episodeViewMode === 'list' && (
-              <div className='hidden flex-col gap-2 pb-1 lg:flex'>
+          {/* 播出日历：只在还有未播集数时出现 —— 完结剧的日历是空的。
+              点右侧箭头把卡片条滚到最新已播那一集，不改当前播放集。 */}
+          {airCalendar && (
+            <div className='mtv-play-aircal'>
+              <CalendarDays className='mtv-play-aircal-ic' />
+              <div className='mtv-play-aircal-txt'>
+                <div className='mtv-play-aircal-t'>播出日历</div>
+                <div className='mtv-play-aircal-s'>
+                  更新至 第 {airCalendar.lastEpisodeNumber} 集 ·{' '}
+                  {formatAirDate(airCalendar.lastAirDate)}
+                </div>
+              </div>
+              <span className='mtv-play-aircal-prog'>
+                {airCalendar.airedCount} / {airCalendar.totalCount}
+              </span>
+              <button
+                type='button'
+                className='mtv-play-aircal-go'
+                onClick={scrollToLatestAired}
+                title={`下一集 ${formatAirDate(airCalendar.nextAirDate)} 更新`}
+                aria-label='跳到最新已播的一集'
+              >
+                <ChevronRight className='h-4 w-4' />
+              </button>
+            </div>
+          )}
+
+          {/* 集数：分集卡片（默认）/ 数字网格。两者在窄屏都是横向滚动 ——
+              横向条不产生竖向滚动容器，手指竖向拖动不再被这一块吃掉。 */}
+          {episodeViewMode === 'card' ? (
+            <div className='mtv-play-epcards' ref={cardStripRef}>
+              {(() => {
+                const episodes = descending
+                  ? [...currentEpisodeGroup.episodes].reverse()
+                  : currentEpisodeGroup.episodes;
+                // 过滤掉被屏蔽的集数，但保持原有索引
+                return episodes
+                  .filter((episodeNumber) => !isEpisodeFiltered(episodeNumber))
+                  .map((episodeNumber) => (
+                    <span
+                      key={episodeNumber}
+                      ref={
+                        episodeNumber === airCalendar?.lastEpisodeNumber
+                          ? latestAiredCardRef
+                          : undefined
+                      }
+                      className='mtv-play-epcard-slot'
+                    >
+                      <EpisodeCard
+                        episodeNumber={episodeNumber}
+                        isActive={episodeNumber === value}
+                        isWatched={watchedEpisodes.has(episodeNumber)}
+                        data={episodeCards?.[episodeNumber - 1]}
+                        fallbackName={richEpisodeNames?.[episodeNumber - 1]}
+                        onSelect={handleEpisodeClick}
+                      />
+                    </span>
+                  ));
+              })()}
+            </div>
+          ) : (
+            <div className='mtv-play-eps-host'>
+              <div className='mtv-play-eps'>
                 {(() => {
                   const episodes = descending
                     ? [...currentEpisodeGroup.episodes].reverse()
@@ -1185,55 +1298,22 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                     .filter(
                       (episodeNumber) => !isEpisodeFiltered(episodeNumber)
                     )
-                    .map((episodeNumber) => {
-                      const rawName = richEpisodeNames?.[episodeNumber - 1];
-                      const name =
-                        rawName && rawName.trim() !== ''
-                          ? rawName.trim()
-                          : `第 ${episodeNumber} 集`;
-                      return (
-                        <EpisodeListItem
-                          key={episodeNumber}
-                          episodeNumber={episodeNumber}
-                          isActive={episodeNumber === value}
-                          isWatched={watchedEpisodes.has(episodeNumber)}
-                          name={name}
-                          inactiveRowClass={inactiveEpisodeRowClass}
-                          onSelect={handleEpisodeClick}
-                        />
-                      );
-                    });
+                    .map((episodeNumber) => (
+                      <EpisodeChip
+                        key={episodeNumber}
+                        episodeNumber={episodeNumber}
+                        isActive={episodeNumber === value}
+                        isWatched={watchedEpisodes.has(episodeNumber)}
+                        originalTitle={episodes_titles?.[episodeNumber - 1]}
+                        enableOriginalNamePopup={isNetdiskSource(currentSource)}
+                        onSelect={handleEpisodeClick}
+                        onShowOriginalName={showEpisodeNamePopup}
+                      />
+                    ));
                 })()}
               </div>
-            )}
-
-            <div
-              className={`mtv-play-eps ${
-                episodeViewMode === 'list' ? 'lg:hidden' : ''
-              }`}
-            >
-              {(() => {
-                const episodes = descending
-                  ? [...currentEpisodeGroup.episodes].reverse()
-                  : currentEpisodeGroup.episodes;
-                // 过滤掉被屏蔽的集数，但保持原有索引
-                return episodes
-                  .filter((episodeNumber) => !isEpisodeFiltered(episodeNumber))
-                  .map((episodeNumber) => (
-                    <EpisodeChip
-                      key={episodeNumber}
-                      episodeNumber={episodeNumber}
-                      isActive={episodeNumber === value}
-                      isWatched={watchedEpisodes.has(episodeNumber)}
-                      originalTitle={episodes_titles?.[episodeNumber - 1]}
-                      enableOriginalNamePopup={isNetdiskSource(currentSource)}
-                      onSelect={handleEpisodeClick}
-                      onShowOriginalName={showEpisodeNamePopup}
-                    />
-                  ));
-              })()}
             </div>
-          </div>
+          )}
         </div>
       )}
 
@@ -1256,7 +1336,6 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
               </button>
             </div>
           )}
-
           {sourceSearchLoading && (
             <div className='flex items-center justify-center py-8'>
               <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-ui-accent'></div>
