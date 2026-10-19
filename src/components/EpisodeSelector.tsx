@@ -1127,15 +1127,79 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
     [shownMonth]
   );
 
-  // 把卡片条滚到某一集（按 data-episode 找，不依赖渲染顺序）
+  // 把卡片条滚到某一集并居中。按 data-episode 找，不依赖渲染顺序。
+  // 桌面端是竖排（滚 top）、窄屏是横排（滚 left），按实际的 flex-direction 决定
+  // 滚哪个方向 —— 另一个方向虽然 overflow 是 hidden，程序化滚动仍然会生效，
+  // 不判断的话会把内容推歪。
+  // 用 'auto' 不用 'smooth'：smooth 依赖渲染帧，面板 / 后台标签页里会静默失效。
   const scrollStripToEpisode = useCallback((episodeNumber: number) => {
     const strip = cardStripRef.current;
-    const slot = strip?.querySelector(`[data-episode="${episodeNumber}"]`);
-    if (!strip || !slot) return;
-    const delta =
-      slot.getBoundingClientRect().left - strip.getBoundingClientRect().left;
-    strip.scrollTo({ left: strip.scrollLeft + delta - 12, behavior: 'smooth' });
+    if (!strip) return;
+    const slot = strip.querySelector<HTMLElement>(
+      `[data-episode="${episodeNumber}"]`
+    );
+    if (!slot) return;
+
+    const stripRect = strip.getBoundingClientRect();
+    const slotRect = slot.getBoundingClientRect();
+
+    if (getComputedStyle(strip).flexDirection === 'column') {
+      strip.scrollTo({
+        top:
+          strip.scrollTop +
+          (slotRect.top - stripRect.top) -
+          (strip.clientHeight - slotRect.height) / 2,
+      });
+    } else {
+      strip.scrollTo({
+        left:
+          strip.scrollLeft +
+          (slotRect.left - stripRect.left) -
+          (strip.clientWidth - slotRect.width) / 2,
+      });
+    }
   }, []);
+
+  // 进入播放页（含从播放记录 / 历史恢复）时，把卡片条滚到正在播的那一集 ——
+  // 否则不管在播第几集，卡片列表永远停在第一集。
+  //
+  // 首屏几帧内 detail 还没到、栅格高度也没定，卡片尺寸量出来是 0，直接滚会算出
+  // 位移 0 什么也不做。所以轮询到「卡片条有高度且真的能滚」再执行。
+  // 用 setTimeout 而不是 requestAnimationFrame：rAF 依赖渲染帧，面板 / 后台
+  // 标签页里不产生帧，回调永远不触发（'smooth' 滚动失效也是同一个原因）。
+  useEffect(() => {
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let attempts = 0;
+
+    const tick = () => {
+      if (cancelled) return;
+
+      const strip = cardStripRef.current;
+      const slot = strip?.querySelector(`[data-episode="${value}"]`);
+      const ready =
+        strip &&
+        slot &&
+        strip.clientHeight > 0 &&
+        (strip.scrollHeight > strip.clientHeight ||
+          strip.scrollWidth > strip.clientWidth);
+
+      if (ready) {
+        scrollStripToEpisode(value);
+        return;
+      }
+      // 最多等 20 次 × 80ms ≈ 1.6s，避免分集数据一直不来时空转
+      if (attempts++ < 20) {
+        timer = setTimeout(tick, 80);
+      }
+    };
+
+    tick();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [value, episodeViewMode, totalEpisodes, scrollStripToEpisode]);
 
   // 点日历上的某一天 → 切到那天更新的第一集，并把卡片条滚过去
   const handleCalendarDay = useCallback(
