@@ -75,7 +75,13 @@ export const API_CONFIG = {
 };
 
 // 在模块加载时根据环境决定配置来源
+// 配置内存缓存的存活时间。缓存命中即返回，省掉每次请求都读库；但没有这个
+// 上限，缓存就永不失效 —— 多实例部署、或外部直接改库之后，本进程会一直
+// 返回旧配置，直到重启
+const CONFIG_CACHE_TTL = 30_000;
+
 let cachedConfig: AdminConfig;
+let cachedConfigAt = 0;
 let configInitPromise: Promise<AdminConfig> | null = null;
 
 // 从配置文件文本里读 special_source_apis（兼容驼峰写法）
@@ -437,7 +443,7 @@ async function getInitConfig(
 
 export async function getConfig(): Promise<AdminConfig> {
   // 直接使用内存缓存
-  if (cachedConfig) {
+  if (cachedConfig && Date.now() - cachedConfigAt < CONFIG_CACHE_TTL) {
     return cachedConfig;
   }
 
@@ -455,6 +461,7 @@ export async function getConfig(): Promise<AdminConfig> {
       console.log('localStorage 模式：从环境变量初始化配置');
       const adminConfig = await getInitConfig('');
       cachedConfig = configSelfCheck(adminConfig);
+      cachedConfigAt = Date.now();
       configInitPromise = null;
       return cachedConfig;
     }
@@ -491,6 +498,7 @@ export async function getConfig(): Promise<AdminConfig> {
 
     adminConfig = configSelfCheck(adminConfig);
     cachedConfig = adminConfig;
+    cachedConfigAt = Date.now();
 
     // 如果进行了Emby配置迁移，保存到数据库
     if (!dbReadFailed && needsEmbyMigration) {
@@ -518,6 +526,7 @@ export async function getConfig(): Promise<AdminConfig> {
           adminConfig.UserConfig.Users = [];
           await db.saveAdminConfig(adminConfig);
           cachedConfig = adminConfig;
+          cachedConfigAt = Date.now();
           console.log('用户自动迁移完成');
         }
       } catch (error) {
@@ -531,7 +540,14 @@ export async function getConfig(): Promise<AdminConfig> {
     return cachedConfig;
   })();
 
-  return configInitPromise;
+  // 初始化失败时必须把这个 Promise 清掉。否则它一直是同一个已 reject 的
+  // Promise，后续每个请求都会 await 到同一个错误，进程要重启才能恢复
+  try {
+    return await configInitPromise;
+  } catch (error) {
+    configInitPromise = null;
+    throw error;
+  }
 }
 
 export function configSelfCheck(adminConfig: AdminConfig): AdminConfig {
@@ -1243,6 +1259,7 @@ export async function resetConfig() {
     originConfig.ConfigSubscribtion
   );
   cachedConfig = adminConfig;
+  cachedConfigAt = Date.now();
   await db.saveAdminConfig(adminConfig);
 
   return;
@@ -1329,9 +1346,11 @@ export async function getAvailableApiSites(
 
 export async function setCachedConfig(config: AdminConfig) {
   cachedConfig = config;
+  cachedConfigAt = Date.now();
 }
 
 export async function clearConfigCache() {
   cachedConfig = null as any;
+  cachedConfigAt = 0;
   configInitPromise = null;
 }
