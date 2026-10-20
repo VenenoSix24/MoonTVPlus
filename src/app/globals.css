@@ -2907,43 +2907,29 @@ html[data-loading-style='grid'] .mtv-err-box {
   line-height: 1;
 }
 
-.mtv-rating-badge svg {
-  width: 16px;
-  height: 16px;
-  fill: currentColor;
+.mtv-rating.is-imdb .mtv-rating-badge {
+  background-color: #f5c518;
+  color: #000;
 }
 
-/* 有官方图形 logo 的源：图标直接上品牌色，不再垫色块 ——
-   方底和图形叠在一起会显脏，也盖掉了 logo 本身的识别度 */
-.mtv-rating.is-imdb .mtv-rating-badge,
-.mtv-rating.is-douban .mtv-rating-badge,
+.mtv-rating.is-tmdb .mtv-rating-badge {
+  background-image: linear-gradient(90deg, #90cea1 0%, #01b4e4 100%);
+  color: #03233a;
+}
+
+.mtv-rating.is-douban .mtv-rating-badge {
+  background-color: #2e963d;
+  color: #fff;
+}
+
+/* 烂番茄与 Metacritic 保留 emoji：图形 logo 缩到 16px 认不出，
+   这两个源的 emoji 反而更直观，也省掉图片资源 */
 .mtv-rating.is-rt .mtv-rating-badge,
 .mtv-rating.is-metacritic .mtv-rating-badge {
   min-width: 0;
   padding: 0;
   background: none;
-}
-
-.mtv-rating.is-imdb .mtv-rating-badge {
-  color: #f5c518;
-}
-
-.mtv-rating.is-douban .mtv-rating-badge {
-  color: #2e963d;
-}
-
-.mtv-rating.is-rt .mtv-rating-badge {
-  color: #fa320a;
-}
-
-.mtv-rating.is-metacritic .mtv-rating-badge {
-  color: #66cc33;
-}
-
-/* TMDB 没有官方单色 logo，保留渐变文字块 */
-.mtv-rating.is-tmdb .mtv-rating-badge {
-  background-image: linear-gradient(90deg, #90cea1 0%, #01b4e4 100%);
-  color: #03233a;
+  font-size: 13px;
 }
 
 .mtv-rating-val,
@@ -3351,7 +3337,11 @@ html[data-loading-style='grid'] .mtv-err-box {
 /* 封面上的播放键。苹果那套是「半透明深色 + 强模糊 + 白色图形」，
    既没有描边也没有纯白底：白色圆底压在彩色海报上会抢色，
    一圈白描边则把它变成一张贴纸。
-   blur 用 18px，让底下海报的颜色透上来但不带细节。 */
+
+   显隐刻意不走 opacity：祖先或元素自身 opacity < 1 时 Chrome 不渲染
+   backdrop-filter，于是整个透明度渐变期间按钮都是清晰的，看起来就是
+   「hover 之后过一会儿才糊上」。改用 visibility 做离散切换、transform
+   负责弹出感 —— 全程没有半透明中间态，模糊第一时间就到位。 */
 .mtv-card-play {
   display: flex;
   align-items: center;
@@ -3364,10 +3354,10 @@ html[data-loading-style='grid'] .mtv-err-box {
   -webkit-backdrop-filter: blur(18px) saturate(160%);
   color: #fff;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.24);
-  /* 提前建好合成层：backdrop-filter 首帧要等层建立才采样，
-     不预先建层就会出现「刚 hover 不糊、过一会儿才糊上」的跳变 */
-  transform: translateZ(0);
-  transition: background-color var(--ui-dur-2) var(--ui-ease-out),
+  visibility: hidden;
+  transform: translateZ(0) scale(0.92);
+  transition: transform var(--ui-dur-2) var(--ui-ease-out),
+    background-color var(--ui-dur-2) var(--ui-ease-out),
     box-shadow var(--ui-dur-2) var(--ui-ease-out);
 }
 
@@ -3381,9 +3371,9 @@ html[data-loading-style='grid'] .mtv-err-box {
 }
 
 @media (hover: hover) {
-  /* 只提亮玻璃层：不改 transform —— 缩放会触发合成层重建，
-     backdrop-filter 得重新采样，表现出来就是「模糊慢半拍」 */
   .group:hover .mtv-card-play {
+    visibility: visible;
+    transform: translateZ(0) scale(1);
     background: rgba(52, 52, 56, 0.46);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.32);
   }

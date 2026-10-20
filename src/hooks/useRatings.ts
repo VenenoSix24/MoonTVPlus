@@ -8,29 +8,51 @@ export interface OmdbRatings {
   metacritic: number | null;
 }
 
+/** TMDB 侧能提供的评分线索：优先 imdb_id，缺失时用原名 + 年份兜底 */
+export interface RatingRef {
+  imdbId: string | null;
+  originalTitle: string | null;
+  year: string | null;
+}
+
 const EMPTY: OmdbRatings = {
   imdb: null,
   rottenTomatoes: null,
   metacritic: null,
 };
 
+export const EMPTY_REF: RatingRef = {
+  imdbId: null,
+  originalTitle: null,
+  year: null,
+};
+
 /* 三层缓存都在模块级：Hero 轮播切回上一张、Hero 与播放页同时看同一部片子、
    以及预加载与组件同时要同一份数据，都不该重复打网络。
    进行中的请求单独登记，避免「预加载刚发出、组件又发一次」。 */
 const omdbCache = new Map<string, OmdbRatings>();
-const imdbIdCache = new Map<string, string | null>();
-const imdbIdInflight = new Map<string, Promise<string | null>>();
+const refCache = new Map<string, RatingRef>();
+const refInflight = new Map<string, Promise<RatingRef>>();
 const omdbInflight = new Map<string, Promise<OmdbRatings>>();
 
-async function fetchImdbId(
+/** imdb_id 优先；没有就用「原名 + 年份」作为缓存键，和后端查询口径一致 */
+const omdbKey = (ref: RatingRef) =>
+  ref.imdbId
+    ? `i:${ref.imdbId}`
+    : ref.originalTitle
+      ? `t:${ref.originalTitle}|${ref.year || ''}`
+      : null;
+
+async function fetchRatingRef(
   mediaType: 'movie' | 'tv',
   tmdbId: number
-): Promise<string | null> {
+): Promise<RatingRef> {
   const key = `${mediaType}:${tmdbId}`;
 
-  if (imdbIdCache.has(key)) return imdbIdCache.get(key) ?? null;
+  const cached = refCache.get(key);
+  if (cached) return cached;
 
-  const running = imdbIdInflight.get(key);
+  const running = refInflight.get(key);
   if (running) return running;
 
   const task = (async () => {
@@ -38,47 +60,58 @@ async function fetchImdbId(
       const res = await fetch(
         `/api/tmdb/external-ids?type=${mediaType}&id=${tmdbId}`
       );
-      const json: { imdbId?: string | null } = await res.json();
-      const next = json?.imdbId || null;
-      // 查不到也缓存成 null：TMDB 上确实没映射的条目不该被反复重试
-      imdbIdCache.set(key, next);
+      const json: Partial<RatingRef> = await res.json();
+      const next: RatingRef = {
+        imdbId: json?.imdbId || null,
+        originalTitle: json?.originalTitle || null,
+        year: json?.year || null,
+      };
+      // 查不到也缓存：没有 imdb 映射的条目不该被反复重试
+      refCache.set(key, next);
       return next;
     } catch {
       // 网络失败不写缓存，下次还能再试
-      return null;
+      return EMPTY_REF;
     } finally {
-      imdbIdInflight.delete(key);
+      refInflight.delete(key);
     }
   })();
 
-  imdbIdInflight.set(key, task);
+  refInflight.set(key, task);
   return task;
 }
 
-async function fetchOmdbRatings(imdbId: string): Promise<OmdbRatings> {
-  const hit = omdbCache.get(imdbId);
-  if (hit) return hit;
+async function fetchOmdbRatings(ref: RatingRef): Promise<OmdbRatings> {
+  const key = omdbKey(ref);
+  if (!key) return EMPTY;
 
-  const running = omdbInflight.get(imdbId);
+  const cached = omdbCache.get(key);
+  if (cached) return cached;
+
+  const running = omdbInflight.get(key);
   if (running) return running;
+
+  const query = ref.imdbId
+    ? `imdb_id=${encodeURIComponent(ref.imdbId)}`
+    : `title=${encodeURIComponent(ref.originalTitle as string)}${
+        ref.year ? `&year=${encodeURIComponent(ref.year)}` : ''
+      }`;
 
   const task = (async () => {
     try {
-      const res = await fetch(
-        `/api/omdb/ratings?imdb_id=${encodeURIComponent(imdbId)}`
-      );
+      const res = await fetch(`/api/omdb/ratings?${query}`);
       const json: OmdbRatings = await res.json();
       const next = { ...EMPTY, ...json };
-      omdbCache.set(imdbId, next);
+      omdbCache.set(key, next);
       return next;
     } catch {
       return EMPTY;
     } finally {
-      omdbInflight.delete(imdbId);
+      omdbInflight.delete(key);
     }
   })();
 
-  omdbInflight.set(imdbId, task);
+  omdbInflight.set(key, task);
   return task;
 }
 
@@ -90,25 +123,26 @@ export function prefetchRatings(
   mediaType: 'movie' | 'tv',
   tmdbId: number
 ): Promise<void> {
-  return fetchImdbId(mediaType, tmdbId).then((imdbId) => {
-    if (!imdbId) return;
-    return fetchOmdbRatings(imdbId).then(() => undefined);
-  });
+  return fetchRatingRef(mediaType, tmdbId).then((ref) =>
+    fetchOmdbRatings(ref).then(() => undefined)
+  );
 }
 
-export function useOmdbRatings(imdbId?: string | null): OmdbRatings {
+export function useOmdbRatings(ref: RatingRef): OmdbRatings {
+  const key = omdbKey(ref);
+
   const [data, setData] = useState<OmdbRatings>(() => {
-    const hit = imdbId ? omdbCache.get(imdbId) : undefined;
+    const hit = key ? omdbCache.get(key) : undefined;
     return hit || EMPTY;
   });
 
   useEffect(() => {
-    if (!imdbId || !/^tt\d+$/.test(imdbId)) {
+    if (!key) {
       setData(EMPTY);
       return;
     }
 
-    const hit = omdbCache.get(imdbId);
+    const hit = omdbCache.get(key);
     if (hit) {
       setData(hit);
       return;
@@ -117,7 +151,7 @@ export function useOmdbRatings(imdbId?: string | null): OmdbRatings {
     let alive = true;
     setData(EMPTY);
 
-    fetchOmdbRatings(imdbId).then((next) => {
+    fetchOmdbRatings(ref).then((next) => {
       if (!alive) return;
       setData(next);
     });
@@ -125,36 +159,39 @@ export function useOmdbRatings(imdbId?: string | null): OmdbRatings {
     return () => {
       alive = false;
     };
-  }, [imdbId]);
+    // ref 是每次渲染新建的对象，用 key + 字段逐个比较避免死循环
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
 
   return data;
 }
 
-export function useImdbId(
+export function useRatingRef(
   mediaType?: 'movie' | 'tv' | null,
   tmdbId?: number | null
-): string | null {
+): RatingRef {
   const key = mediaType && tmdbId ? `${mediaType}:${tmdbId}` : undefined;
 
-  const [imdbId, setImdbId] = useState<string | null>(() =>
-    key ? imdbIdCache.get(key) ?? null : null
+  const [ref, setRef] = useState<RatingRef>(() =>
+    key ? refCache.get(key) ?? EMPTY_REF : EMPTY_REF
   );
 
   useEffect(() => {
     if (!key || !mediaType || !tmdbId) {
-      setImdbId(null);
+      setRef(EMPTY_REF);
       return;
     }
 
-    if (imdbIdCache.has(key)) {
-      setImdbId(imdbIdCache.get(key) ?? null);
+    const cached = refCache.get(key);
+    if (cached) {
+      setRef(cached);
       return;
     }
 
     let alive = true;
-    fetchImdbId(mediaType, tmdbId).then((next) => {
+    fetchRatingRef(mediaType, tmdbId).then((next) => {
       if (!alive) return;
-      setImdbId(next);
+      setRef(next);
     });
 
     return () => {
@@ -162,5 +199,5 @@ export function useImdbId(
     };
   }, [key, mediaType, tmdbId]);
 
-  return imdbId;
+  return ref;
 }

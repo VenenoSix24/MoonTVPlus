@@ -104,7 +104,7 @@ import {
   isRemoteRoomRateActive,
   usePlaySync,
 } from '@/hooks/usePlaySync';
-import { useImdbId, useOmdbRatings } from '@/hooks/useRatings';
+import { useOmdbRatings, useRatingRef } from '@/hooks/useRatings';
 
 import AIChatPanel from '@/components/AIChatPanel';
 import AIComments from '@/components/AIComments';
@@ -1085,8 +1085,11 @@ function PlayPageClient() {
 
   // 多源评分：先由 TMDB 的 external_ids 反查 imdb_id，再据此问 OMDb 要
   // IMDb / 烂番茄 / Metacritic。两步各自带内存缓存，切换剧集不会重复打网络
-  const imdbId = useImdbId(resolvedTmdbRef?.mediaType, resolvedTmdbRef?.id);
-  const omdbRatings = useOmdbRatings(imdbId);
+  const ratingRef = useRatingRef(
+    resolvedTmdbRef?.mediaType,
+    resolvedTmdbRef?.id
+  );
+  const omdbRatings = useOmdbRatings(ratingRef);
 
   const ratingSources = useMemo<RatingSource[]>(() => {
     const list: RatingSource[] = [];

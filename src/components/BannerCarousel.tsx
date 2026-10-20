@@ -32,7 +32,11 @@ import RatingRow, {
   type RatingSource,
   formatScore,
 } from '@/components/RatingRow';
-import { useImdbId, useOmdbRatings, prefetchRatings } from '@/hooks/useRatings';
+import {
+  useOmdbRatings,
+  useRatingRef,
+  prefetchRatings,
+} from '@/hooks/useRatings';
 
 interface BannerCarouselProps {
   autoPlayInterval?: number; // 自动播放间隔（毫秒）
@@ -89,11 +93,11 @@ function HeroRatings({
   dataSource: string;
 }) {
   const isTmdb = dataSource === 'TMDB';
-  const imdbId = useImdbId(
+  const ratingRef = useRatingRef(
     isTmdb ? item.media_type : null,
     isTmdb ? item.id : null
   );
-  const omdb = useOmdbRatings(imdbId);
+  const omdb = useOmdbRatings(ratingRef);
 
   const sources: RatingSource[] = [];
 

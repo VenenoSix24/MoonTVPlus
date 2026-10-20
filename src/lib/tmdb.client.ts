@@ -788,37 +788,60 @@ export async function getTMDBTVDetails(
   }
 }
 
+/** 评分需要的 TMDB 侧信息：imdb_id 缺失时还要靠原名和年份去 OMDb 兜底 */
+export interface TMDBRatingRef {
+  imdbId: string | null;
+  /** 原始语言标题（国产剧是中文、日漫是日文、美剧是英文） */
+  originalTitle: string | null;
+  /** 上映 / 首播年份，给 OMDb 的标题搜索收窄范围 */
+  year: string | null;
+}
+
 /**
- * 获取 TMDB 条目的外部 ID（只取 imdb_id）。
- * Hero 每切一张片都要查一次，所以走 /external_ids 这个轻量端点，
- * 而不是把整个详情拉回来。
+ * 一次拿齐评分所需的信息。
+ *
+ * 为什么不走 /external_ids 那个更轻的端点：很多国产剧、日韩剧在 TMDB 上
+ * 根本没有 imdb_id 映射，这时只能退回「按原名 + 年份去 OMDb 搜」，
+ * 而原名只在详情里。用 append_to_response 把两个请求并成一个。
  */
-export async function getTMDBExternalIds(
+export async function getTMDBRatingRef(
   apiKey: string,
   mediaType: 'movie' | 'tv',
   id: number,
   proxy?: string,
   reverseProxyBaseUrl?: string
-): Promise<{ code: number; imdbId: string | null }> {
+): Promise<{ code: number; ref: TMDBRatingRef | null }> {
   try {
     const actualKey = getNextApiKey(apiKey);
     if (!actualKey) {
-      return { code: 400, imdbId: null };
+      return { code: 400, ref: null };
     }
 
     const baseUrl = reverseProxyBaseUrl || DEFAULT_TMDB_BASE_URL;
-    const url = `${baseUrl}/3/${mediaType}/${id}/external_ids?api_key=${actualKey}`;
+    const url = `${baseUrl}/3/${mediaType}/${id}?api_key=${actualKey}&append_to_response=external_ids`;
 
     const response = await universalFetch(url, proxy);
     if (!response.ok) {
-      return { code: response.status, imdbId: null };
+      return { code: response.status, ref: null };
     }
 
     const data: any = await response.json();
-    return { code: 200, imdbId: data?.imdb_id || null };
+    const date = data?.release_date || data?.first_air_date || '';
+
+    return {
+      code: 200,
+      ref: {
+        imdbId: data?.external_ids?.imdb_id || null,
+        originalTitle: data?.original_title || data?.original_name || null,
+        year:
+          typeof date === 'string' && date.length >= 4
+            ? date.slice(0, 4)
+            : null,
+      },
+    };
   } catch (error) {
-    console.error('获取 TMDB 外部 ID 失败:', error);
-    return { code: 500, imdbId: null };
+    console.error('获取 TMDB 评分引用失败:', error);
+    return { code: 500, ref: null };
   }
 }
 

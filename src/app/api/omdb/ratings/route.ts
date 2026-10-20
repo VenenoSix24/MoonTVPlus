@@ -10,6 +10,10 @@ import { getConfig } from '@/lib/config';
  * 2. 免费档每天只有 1000 次，Hero 轮播一次就要看 5 部片子的评分，
  *    不做服务端缓存很快就会打满配额；
  * 3. 客户端直连会撞跨域。
+ *
+ * 支持两种入参：
+ *   ?imdb_id=tt3896198              优先，最准
+ *   ?title=Inception&year=2010      兜底，用于 TMDB 上没有 imdb_id 映射的条目
  */
 
 interface OmdbRatings {
@@ -58,11 +62,27 @@ function writeCache(key: string, data: OmdbRatings) {
 }
 
 export async function GET(request: NextRequest) {
-  const imdbId = request.nextUrl.searchParams.get('imdb_id');
+  const params = request.nextUrl.searchParams;
+  const rawImdbId = params.get('imdb_id');
+  const rawTitle = params.get('title');
+  const rawYear = params.get('year');
 
-  // imdb_id 形如 tt3896198，格式不对就当没有数据，省掉一次上游请求
-  if (!imdbId || !/^tt\d+$/.test(imdbId)) {
+  const imdbId =
+    rawImdbId && /^tt\d+$/.test(rawImdbId) ? rawImdbId : null;
+  const title = rawTitle ? rawTitle.trim() : null;
+  const year = rawYear && /^\d{4}$/.test(rawYear) ? rawYear : null;
+
+  // 两个入口都没有就当没有数据，省掉一次上游请求
+  if (!imdbId && !title) {
     return NextResponse.json(EMPTY);
+  }
+
+  const cacheKey = imdbId ? `i:${imdbId}` : `t:${title}|${year || ''}`;
+  const cached = readCache(cacheKey);
+  if (cached) {
+    return NextResponse.json(cached, {
+      headers: { 'Cache-Control': 'public, max-age=86400' },
+    });
   }
 
   // 管理端配置优先（不需要碰 .env），环境变量作为部署侧兜底
@@ -74,22 +94,20 @@ export async function GET(request: NextRequest) {
     // 配置读取失败不该影响评分降级，直接用 env 里的
   }
 
-  const cached = readCache(imdbId);
-  if (cached) {
-    return NextResponse.json(cached, {
-      headers: { 'Cache-Control': 'public, max-age=86400' },
-    });
-  }
-
   if (!apiKey) {
     // 没配 key 不算错误：前端按「无评分」降级，页面照常渲染
     return NextResponse.json(EMPTY);
   }
 
   try {
-    const url = `https://www.omdbapi.com/?i=${encodeURIComponent(
-      imdbId
-    )}&apikey=${encodeURIComponent(apiKey)}`;
+    const query = imdbId
+      ? `i=${encodeURIComponent(imdbId)}`
+      : `t=${encodeURIComponent(title as string)}${
+          year ? `&y=${encodeURIComponent(year)}` : ''
+        }`;
+    const url = `https://www.omdbapi.com/?${query}&apikey=${encodeURIComponent(
+      apiKey
+    )}`;
 
     const response = await fetch(url, { signal: AbortSignal.timeout(8000) });
     if (!response.ok) {
@@ -100,7 +118,10 @@ export async function GET(request: NextRequest) {
     if (data?.Response === 'False') {
       // 常见原因：key 没激活（注册邮件里的链接没点）或当天配额用尽。
       // 不抛错，只留一条日志线索，前端照常按「无评分」降级
-      console.warn('OMDb 未返回数据:', data?.Error || '未知原因');
+      console.warn(
+        `OMDb 未返回数据（${query}）:`,
+        data?.Error || '未知原因'
+      );
       return NextResponse.json(EMPTY);
     }
 
@@ -117,7 +138,7 @@ export async function GET(request: NextRequest) {
 
     // 全空不写缓存：否则上游一次抖动会被锁住 24 小时
     if (payload.imdb !== null || payload.rottenTomatoes !== null) {
-      writeCache(imdbId, payload);
+      writeCache(cacheKey, payload);
     }
 
     return NextResponse.json(payload, {
