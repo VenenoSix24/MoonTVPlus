@@ -5117,3 +5117,67 @@ html[data-loading-style='grid'] .mtv-err-box {
     animation-duration: 1ms !important;
   }
 }
+
+/* ==========================================================================
+   路由级骨架（app/loading.tsx）
+   --------------------------------------------------------------------------
+   切 tab 时的占位。只给"形状"，不给真内容——目标是让眼睛立刻看到"在加载"，
+   而不是盯着静止画面猜点了没有。颜色只走 --ui-* 令牌，深浅主题都成立。
+   ========================================================================== */
+.mtv-skel {
+  padding: var(--ui-sp-5) var(--ui-gutter) var(--ui-sp-7);
+}
+
+.mtv-skel-hero {
+  height: min(34vh, 300px);
+  border-radius: var(--ui-r-lg);
+}
+
+.mtv-skel-row {
+  margin-top: var(--ui-sp-6);
+}
+
+.mtv-skel-title {
+  width: 128px;
+  height: 18px;
+  border-radius: var(--ui-r-xs);
+}
+
+.mtv-skel-cards {
+  display: flex;
+  gap: var(--ui-sp-3);
+  margin-top: var(--ui-sp-4);
+  overflow: hidden;
+}
+
+.mtv-skel-card {
+  flex: none;
+  width: var(--ui-card-md);
+  aspect-ratio: 2 / 3;
+  border-radius: var(--ui-r-md);
+}
+
+.mtv-skel-hero,
+.mtv-skel-title,
+.mtv-skel-card {
+  background-color: color-mix(in srgb, var(--ui-ink) 7%, transparent);
+  animation: mtv-skel-pulse 1.4s var(--ui-ease) infinite;
+}
+
+@keyframes mtv-skel-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mtv-skel-hero,
+  .mtv-skel-title,
+  .mtv-skel-card {
+    animation: none;
+  }
+}
