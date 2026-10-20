@@ -152,6 +152,8 @@ const config: Config = {
           'accent-soft': 'var(--ui-accent-soft)',
           success: 'var(--ui-success)',
           'success-soft': 'var(--ui-success-soft)',
+          danger: 'var(--ui-danger)',
+          'danger-soft': 'var(--ui-danger-soft)',
         },
       },
       borderRadius: {

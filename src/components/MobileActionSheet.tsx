@@ -217,22 +217,22 @@ const MobileActionSheet: React.FC<MobileActionSheetProps> = ({
   const getActionColor = (color: ActionItem['color']) => {
     switch (color) {
       case 'danger':
-        return 'text-red-600 dark:text-red-400';
+        return 'text-ui-danger';
       case 'primary':
         return 'text-ui-accent';
       default:
-        return 'text-gray-700 dark:text-gray-300';
+        return 'text-ui-ink-2';
     }
   };
 
   const getActionHoverColor = (color: ActionItem['color']) => {
     switch (color) {
       case 'danger':
-        return 'hover:bg-red-50/50 dark:hover:bg-red-900/10';
+        return 'hover:bg-ui-danger-soft';
       case 'primary':
         return 'hover:bg-ui-accent-soft';
       default:
-        return 'hover:bg-gray-50/50 dark:hover:bg-gray-800/20';
+        return 'hover:bg-ui-surface-hover';
     }
   };
 
@@ -255,7 +255,7 @@ const MobileActionSheet: React.FC<MobileActionSheetProps> = ({
 
   const content = (
     <div
-      className="fixed inset-0 z-[9999] flex items-end justify-center"
+      className='fixed inset-0 z-[9999] flex items-end justify-center'
       onTouchMove={(e) => {
         // 阻止最外层容器的触摸移动，防止背景滚动
         e.preventDefault();
@@ -267,8 +267,9 @@ const MobileActionSheet: React.FC<MobileActionSheetProps> = ({
     >
       {/* 背景遮罩 */}
       <div
-        className={`absolute inset-0 bg-black/50 transition-opacity duration-200 ease-out ${isAnimating ? 'opacity-100' : 'opacity-0'
-          }`}
+        className={`absolute inset-0 bg-black/50 transition-opacity duration-200 ease-out ${
+          isAnimating ? 'opacity-100' : 'opacity-0'
+        }`}
         onPointerDown={armBackdropClose}
         onTouchStart={armBackdropClose}
         onClick={handleBackdropClick}
@@ -289,7 +290,7 @@ const MobileActionSheet: React.FC<MobileActionSheetProps> = ({
 
       {/* 操作表单 */}
       <div
-        className="relative w-full max-w-lg mx-4 mb-4 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl transition-all duration-200 ease-out"
+        className='relative w-full max-w-lg mx-3 mb-3 bg-ui-surface rounded-ui-lg shadow-ui-3 transition-all duration-200 ease-out max-h-[85vh] overflow-hidden flex flex-col'
         onTouchMove={(e) => {
           // 允许操作表单内部滚动，阻止事件冒泡到外层
           e.stopPropagation();
@@ -305,12 +306,17 @@ const MobileActionSheet: React.FC<MobileActionSheetProps> = ({
           touchAction: 'auto', // 允许操作表单内的正常触摸操作
         }}
       >
+        {/* 抓手：手机上一眼看出这是块可以往下收的面板 */}
+        <div className='flex justify-center pt-2.5 pb-0.5 sm:hidden'>
+          <div className='h-1 w-9 rounded-full bg-ui-hair-strong' />
+        </div>
+
         {/* 头部 */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800">
-          <div className="flex items-center gap-3 flex-1 min-w-0">
+        <div className='flex items-center justify-between gap-3 px-4 py-3.5 border-b border-ui-hair shrink-0'>
+          <div className='flex items-center gap-3 flex-1 min-w-0'>
             {poster && (
               <div
-                className="relative w-12 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 flex-shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
+                className='relative w-12 h-16 rounded-ui-sm overflow-hidden bg-ui-surface-2 flex-shrink-0 cursor-pointer hover:opacity-90 transition-opacity'
                 onClick={(e) => {
                   e.stopPropagation();
                   onPosterClick?.();
@@ -321,59 +327,58 @@ const MobileActionSheet: React.FC<MobileActionSheetProps> = ({
                   alt={title}
                   fill
                   className={origin === 'live' ? 'object-contain' : 'object-cover'}
-                  loading="lazy"
+                  loading='lazy'
                 />
               </div>
             )}
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 mb-1 min-w-0">
-                <div className="relative min-w-0 flex-1 group/title">
+            <div className='min-w-0 flex-1'>
+              <div className='flex items-center gap-2 mb-1 min-w-0'>
+                <div className='relative min-w-0 flex-1 group/title'>
                   <h3
                     ref={titleRef}
-                    className="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate"
+                    className='text-lg font-semibold text-ui-ink truncate'
                   >
                     {title}
                   </h3>
                   {isTitleOverflowing && (
-                    <div className="absolute bottom-full left-1/2 z-10 mb-2 w-max max-w-[min(20rem,calc(100vw-2rem))] -translate-x-1/2 rounded-lg bg-gray-800 px-3 py-2 text-center text-sm text-white shadow-xl opacity-0 invisible transition-all duration-200 ease-out whitespace-normal break-words pointer-events-none group-hover/title:opacity-100 group-hover/title:visible dark:bg-gray-900">
+                    <div className='absolute bottom-full left-1/2 z-10 mb-2 w-max max-w-[min(20rem,calc(100vw-2rem))] -translate-x-1/2 rounded-ui-sm bg-ui-ink px-3 py-2 text-center text-sm text-ui-bg shadow-ui-2 opacity-0 invisible transition-all duration-200 ease-out whitespace-normal break-words pointer-events-none group-hover/title:opacity-100 group-hover/title:visible'>
                       {title}
-                      <div className="absolute top-full left-1/2 h-0 w-0 -translate-x-1/2 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800 dark:border-t-gray-900"></div>
+                      <div className='absolute top-full left-1/2 h-0 w-0 -translate-x-1/2 border-l-4 border-r-4 border-t-4 border-transparent border-t-ui-ink'></div>
                     </div>
                   )}
                 </div>
                 {sourceName && (
-                  <span className="flex-shrink-0 text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">
+                  <span className='flex-shrink-0 text-xs px-2 py-1 border border-ui-hair-strong rounded-ui-sm text-ui-ink-2 bg-ui-surface-2'>
                     {origin === 'live' && (
-                      <Radio size={12} className="inline-block text-gray-500 dark:text-gray-400 mr-1.5" />
+                      <Radio size={12} className='inline-block text-ui-ink-3 mr-1.5' />
                     )}
                     {sourceName}
                   </span>
                 )}
               </div>
               {directLinkUrl && (
-                <p className="mb-2 text-xs text-gray-500 dark:text-gray-400 break-all">
+                <p className='mb-2 text-xs text-ui-ink-3 break-all'>
                   {directLinkUrl}
                 </p>
               )}
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {description}
-              </p>
+              <p className='text-sm text-ui-ink-2'>{description}</p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-150"
+            aria-label='关闭'
+            className='shrink-0 p-2 rounded-full hover:bg-ui-surface-hover active:bg-ui-surface-3 transition-colors duration-150'
           >
-            <X size={20} className="text-gray-500 dark:text-gray-400" />
+            <X size={20} className='text-ui-ink-2' />
           </button>
         </div>
 
         {/* 操作列表：有源最多 4 项 / 无源最多 6 项，超出可滑动（支持触控与鼠标滚轮） */}
-        <div className="px-4 py-2">
+        <div className='px-3 py-1.5 min-h-0'>
           <div
             ref={actionsListRef}
-            className="overflow-y-auto overscroll-contain"
+            className='overflow-y-auto overscroll-contain'
             style={{
               maxHeight: actionsMaxHeight,
               WebkitOverflowScrolling: 'touch',
@@ -392,48 +397,49 @@ const MobileActionSheet: React.FC<MobileActionSheetProps> = ({
                   }}
                   disabled={action.disabled}
                   className={`
-                    w-full flex items-center gap-4 py-4 px-2 transition-all duration-150 ease-out
-                    ${action.disabled
-                      ? 'opacity-50 cursor-not-allowed'
-                      : `${getActionHoverColor(action.color)} active:scale-[0.98]`
+                    w-full flex items-center gap-4 py-3.5 px-3 rounded-ui-sm transition-all duration-150 ease-out
+                    ${
+                      action.disabled
+                        ? 'opacity-50 cursor-not-allowed'
+                        : `${getActionHoverColor(action.color)} active:scale-[0.98]`
                     }
                   `}
                   style={{ willChange: 'transform, background-color' }}
                 >
                   {/* 图标 - 使用线条风格 */}
-                  <div className="w-6 h-6 flex items-center justify-center flex-shrink-0">
-                    <span className={`transition-colors duration-150 ${action.disabled
-                      ? 'text-gray-400 dark:text-gray-600'
-                      : getActionColor(action.color)
-                      }`}>
+                  <div className='w-6 h-6 flex items-center justify-center flex-shrink-0'>
+                    <span
+                      className={`transition-colors duration-150 ${
+                        action.disabled
+                          ? 'text-ui-ink-3'
+                          : getActionColor(action.color)
+                      }`}
+                    >
                       {action.icon}
                     </span>
                   </div>
 
                   {/* 文字 */}
-                  <span className={`
+                  <span
+                    className={`
                     text-left font-medium text-base flex-1
-                    ${action.disabled
-                      ? 'text-gray-400 dark:text-gray-600'
-                      : 'text-gray-900 dark:text-gray-100'
-                    }
-                  `}>
+                    ${action.disabled ? 'text-ui-ink-3' : 'text-ui-ink'}
+                  `}
+                  >
                     {action.label}
                   </span>
 
                   {/* 播放进度 - 只在播放按钮且有播放记录时显示 */}
                   {action.id === 'play' && currentEpisode && totalEpisodes && (
-                    <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">
+                    <span className='text-sm text-ui-ink-3 font-medium tabular-nums'>
                       {currentEpisode}/{totalEpisodes}
                     </span>
                   )}
-
-
                 </button>
 
                 {/* 分割线 - 最后一项不显示 */}
                 {index < actions.length - 1 && (
-                  <div className="border-b border-gray-100 dark:border-gray-800 ml-10"></div>
+                  <div className='border-b border-ui-hair ml-12'></div>
                 )}
               </div>
             ))}
@@ -442,27 +448,27 @@ const MobileActionSheet: React.FC<MobileActionSheetProps> = ({
 
         {/* 播放源信息展示区域 */}
         {isAggregate && sources && sources.length > 0 && (
-          <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-800">
+          <div className='px-4 py-3 border-t border-ui-hair shrink-0 pb-[calc(0.75rem+env(safe-area-inset-bottom))]'>
             {/* 标题区域 */}
-            <div className="mb-3">
-              <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
+            <div className='mb-2.5'>
+              <h4 className='text-sm font-medium text-ui-ink mb-1'>
                 可用播放源
               </h4>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <p className='text-xs text-ui-ink-3'>
                 共 {sources.length} 个播放源
               </p>
             </div>
 
             {/* 播放源列表 */}
-            <div className="max-h-32 overflow-y-auto">
-              <div className="grid grid-cols-2 gap-2">
+            <div className='max-h-32 overflow-y-auto'>
+              <div className='grid grid-cols-2 gap-2'>
                 {sources.map((source, index) => (
                   <div
                     key={index}
-                    className="flex items-center gap-2 py-2 px-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50/30 dark:bg-gray-800/30"
+                    className='flex items-center gap-2 py-2 px-3 rounded-ui-sm border border-ui-hair bg-ui-surface-2'
                   >
-                    <div className="w-1 h-1 bg-gray-400 dark:bg-gray-500 rounded-full flex-shrink-0" />
-                    <span className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                    <div className='w-1 h-1 bg-ui-ink-3 rounded-full flex-shrink-0' />
+                    <span className='text-xs text-ui-ink-2 truncate'>
                       {source}
                     </span>
                   </div>
