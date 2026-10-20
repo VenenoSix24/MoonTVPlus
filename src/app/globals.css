@@ -2960,9 +2960,19 @@ html[data-loading-style='grid'] .mtv-err-box {
   color: var(--rating-ink);
 }
 
+/* 不跟主题走：Hero 底是剧照。浅色主题下 --hero-ink 是深色字，而「提亮画面」
+   只在有标题 logo 时才生效（.mtv-hero:has(.mtv-hero-logo)），纯文字标题的片子
+   不走那条分支，深色数字会直接糊进暗海报 —— 评分比标题小、又没有描边兜底，
+   最先看不见。这里固定亮色 + 一层暗投影，暗海报和亮海报两边都读得出来。 */
 .mtv-hero-ratings {
-  --rating-ink: var(--hero-ink);
-  --rating-ink-2: var(--hero-ink-2);
+  --rating-ink: #fff;
+  --rating-ink-2: rgba(255, 255, 255, 0.82);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+}
+
+/* 品牌角标自带底色，再叠投影会显脏 */
+.mtv-hero-ratings .mtv-rating-badge {
+  text-shadow: none;
 }
 
 /* 桌面只留 logo 版、手机只留 text 版。
@@ -3881,13 +3891,17 @@ html[data-loading-style='grid'] .mtv-err-box {
   height: 17px;
 }
 
-/* 手机端：标题独占一行，评分胶囊落到标题下方 ——
-   标题长的时候跟胶囊挤在同一行不好看 */
+/* 允许标题收缩：超长标题自己换行，不要把收藏 / 详情挤出去 */
+.mtv-play-title {
+  min-width: 0;
+}
+
+/* 手机端：标题占剩下的宽度，图标留在右侧同一行。
+   原来这里是 flex: 0 0 100% 让标题独占整行 —— 那时标题行还挂着评分胶囊，
+   实在挤不下才这么办；评分搬到独立行之后，这条规则只会把图标顶到标题下方 */
 @media (max-width: 640px) {
   .mtv-play-title {
-    flex: 0 0 100%;
-    /* 标题独占整行之后，h1 上的 text-center 才显形（原来 span 只有内容宽，
-       居中看不出来）。按定稿改回居左 */
+    flex: 1 1 auto;
     text-align: left;
   }
 }

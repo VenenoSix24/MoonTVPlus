@@ -98,6 +98,9 @@ export async function GET(request: NextRequest) {
 
     const data: any = await response.json();
     if (data?.Response === 'False') {
+      // 常见原因：key 没激活（注册邮件里的链接没点）或当天配额用尽。
+      // 不抛错，只留一条日志线索，前端照常按「无评分」降级
+      console.warn('OMDb 未返回数据:', data?.Error || '未知原因');
       return NextResponse.json(EMPTY);
     }
 

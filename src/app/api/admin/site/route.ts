@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
       TMDBProxy,
       TMDBReverseProxy,
       TMDBImageBaseUrl,
+      OMDbApiKey,
       BangumiDataSource,
       BangumiApiBaseUrl,
       BangumiImageBaseUrl,
@@ -112,6 +113,7 @@ export async function POST(request: NextRequest) {
       TMDBProxy?: string;
       TMDBReverseProxy?: string;
       TMDBImageBaseUrl?: string;
+      OMDbApiKey?: string;
       BangumiDataSource?:
         | 'direct'
         | 'server-proxy'
@@ -189,6 +191,7 @@ export async function POST(request: NextRequest) {
         typeof TMDBReverseProxy !== 'string') ||
       (TMDBImageBaseUrl !== undefined &&
         typeof TMDBImageBaseUrl !== 'string') ||
+      (OMDbApiKey !== undefined && typeof OMDbApiKey !== 'string') ||
       (BangumiDataSource !== undefined &&
         BangumiDataSource !== 'direct' &&
         BangumiDataSource !== 'server-proxy' &&
@@ -299,6 +302,8 @@ export async function POST(request: NextRequest) {
       TMDBProxy: normalizeApiBaseUrl(TMDBProxy),
       TMDBReverseProxy: normalizeApiBaseUrl(TMDBReverseProxy),
       TMDBImageBaseUrl: normalizeApiBaseUrl(TMDBImageBaseUrl),
+      // 不是 URL，别过 normalizeApiBaseUrl；去空格是为了防止粘贴时带上空白导致 OMDb 返回 401
+      OMDbApiKey: OMDbApiKey?.trim() || undefined,
       BangumiDataSource,
       BangumiApiBaseUrl: normalizeApiBaseUrl(BangumiApiBaseUrl),
       BangumiImageBaseUrl: normalizeApiBaseUrl(BangumiImageBaseUrl),

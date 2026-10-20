@@ -12363,7 +12363,7 @@ function PlayPageClient() {
                     <div className='md:col-span-4 lg:col-span-5'>
                       <div className='flex flex-col min-h-0'>
                         {/* 标题 */}
-                        <h1 className="text-[20px] md:text-[26px] font-[750] leading-[1.15] tracking-[-0.02em] mb-2 flex items-center flex-shrink-0 text-center md:text-left w-full flex-wrap gap-2 text-white">
+                        <h1 className="text-[20px] md:text-[26px] font-[750] leading-[1.15] tracking-[-0.02em] mb-2 flex items-center flex-shrink-0 text-center md:text-left w-full gap-2 text-white">
                           <span
                             className={`mtv-play-title ${
                               doubanAka.length > 0
