@@ -2,7 +2,7 @@
 
 'use client';
 
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Megaphone } from 'lucide-react';
 import Link from 'next/link';
 import { Suspense, useEffect, useState } from 'react';
 
@@ -616,20 +616,48 @@ function HomeClient() {
 
       {/* 公告弹窗 */}
       {showAnnouncement && (
-        <div className='fixed inset-0 bg-black bg-opacity-50 z-[var(--ui-z-modal)] flex items-center justify-center p-4'>
-          <div className='bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6'>
-            <h3 className='text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3'>
-              公告
-            </h3>
-            <div className='text-gray-700 dark:text-gray-300 mb-4 whitespace-pre-wrap'>
-              {announcement}
+        <div
+          className='fixed inset-0 z-[var(--ui-z-modal)] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm'
+          onClick={() => handleCloseAnnouncement(announcement || '')}
+        >
+          <div
+            role='dialog'
+            aria-modal='true'
+            aria-labelledby='announcement-title'
+            className='animate-slide-up w-full max-w-md overflow-hidden rounded-ui-lg border border-ui-hair bg-ui-surface shadow-ui-3'
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* 顶部强调线：一条就够，再多就成了装饰 */}
+            <div className='h-[3px] w-full bg-ui-accent' />
+
+            <div className='p-5 sm:p-6'>
+              <div className='mb-3 flex items-start gap-3'>
+                <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ui-accent-soft text-ui-accent'>
+                  <Megaphone className='h-4 w-4' />
+                </div>
+                <div className='min-w-0 pt-0.5'>
+                  <h3
+                    id='announcement-title'
+                    className='text-base font-semibold text-ui-ink'
+                  >
+                    公告
+                  </h3>
+                  <p className='mt-0.5 text-xs text-ui-ink-3'>来自站点的通知</p>
+                </div>
+              </div>
+
+              {/* 长公告在框内滚动，不把弹窗撑出屏幕 */}
+              <div className='max-h-[46vh] overflow-y-auto overscroll-contain whitespace-pre-wrap break-words pr-1 text-sm leading-relaxed text-ui-ink-2'>
+                {announcement}
+              </div>
+
+              <button
+                onClick={() => handleCloseAnnouncement(announcement || '')}
+                className='mt-5 w-full rounded-ui-md bg-ui-accent py-2.5 text-sm font-semibold text-ui-accent-ink transition-opacity hover:opacity-90 active:opacity-80'
+              >
+                知道了
+              </button>
             </div>
-            <button
-              onClick={() => handleCloseAnnouncement(announcement || '')}
-              className='w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors'
-            >
-              知道了
-            </button>
           </div>
         </div>
       )}

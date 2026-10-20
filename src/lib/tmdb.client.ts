@@ -1004,3 +1004,80 @@ export async function getTMDBImages(
     return { code: 500, images: null };
   }
 }
+
+/**
+ * 按片名 + 年份在 TMDB 里反查条目。
+ *
+ * 豆瓣只给压缩过的封面（s_ratio_poster，实测 540×771），更没有发行方的官方标题字。
+ * 同一部片在 TMDB 上有 key art logo 和 original 尺寸的剧照 —— 这就是 IMDb 体系
+ * 那套资产（TMDB 的图源和 IMDb 同源，发行方提交的物料）。数据源选豆瓣时也要按
+ * 这套标准出图，就得先把「豆瓣条目」映射到「TMDB 条目」。
+ *
+ * 打分只看两件事：年份是否对上、有没有海报。同名不同年的片子太多，年份对不上的
+ * 排后面；都没有年份时退回第一个有海报的。
+ */
+export async function searchTMDBByTitle(
+  apiKey: string,
+  title: string,
+  year: string | number | undefined,
+  mediaType: 'movie' | 'tv' = 'movie',
+  proxy?: string,
+  reverseProxyBaseUrl?: string
+): Promise<{
+  id: number;
+  media_type: 'movie' | 'tv';
+  poster_path: string | null;
+  backdrop_path: string | null;
+  vote_average?: number;
+} | null> {
+  try {
+    const actualKey = getNextApiKey(apiKey);
+    if (!actualKey || !title) return null;
+
+    const baseUrl = reverseProxyBaseUrl || DEFAULT_TMDB_BASE_URL;
+    const params = new URLSearchParams({
+      api_key: actualKey,
+      query: title,
+      language: 'zh-CN',
+      include_adult: 'false',
+    });
+    if (year) {
+      params.set(
+        mediaType === 'movie' ? 'year' : 'first_air_date_year',
+        String(year)
+      );
+    }
+
+    const response = await universalFetch(
+      `${baseUrl}/3/search/${mediaType}?${params.toString()}`,
+      proxy
+    );
+    if (!response.ok) return null;
+
+    const data: any = await response.json();
+    const results: any[] = Array.isArray(data?.results) ? data.results : [];
+    const scored = results
+      .filter((item) => item && item.id)
+      .map((item) => {
+        const date: string = item.release_date || item.first_air_date || '';
+        const yearHit = year && date.startsWith(String(year)) ? 2 : 0;
+        const hasPoster = item.poster_path ? 1 : 0;
+        return { item, score: yearHit + hasPoster };
+      })
+      .sort((a, b) => b.score - a.score);
+
+    const best = scored[0]?.item;
+    if (!best) return null;
+
+    return {
+      id: best.id,
+      media_type: mediaType,
+      poster_path: best.poster_path || null,
+      backdrop_path: best.backdrop_path || null,
+      vote_average: best.vote_average,
+    };
+  } catch (error) {
+    console.error('TMDB 片名反查失败:', error);
+    return null;
+  }
+}

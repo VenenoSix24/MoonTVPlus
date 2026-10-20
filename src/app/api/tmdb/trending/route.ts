@@ -8,6 +8,7 @@ import {
   getTMDBImages,
   getTMDBTrendingContent,
   getTMDBVideos,
+  searchTMDBByTitle,
 } from '@/lib/tmdb.client';
 import { pickLogo, pickTextlessPoster, titlePrefersZh } from '@/lib/tmdb.logo';
 
@@ -67,7 +68,7 @@ export async function GET() {
     // 根据配置的数据源获取数据
     if (bannerDataSource === 'Douban') {
       // 使用豆瓣数据源
-      result = await getDoubanBannerContent();
+      result = await getDoubanBannerContent(config);
       // 添加数据源标识
       result.source = 'Douban';
       // 更新豆瓣缓存
@@ -275,7 +276,9 @@ function parseTXBannerData(data: any): any[] {
 /**
  * 获取豆瓣轮播图内容
  */
-async function getDoubanBannerContent(): Promise<{ code: number; list: any[] }> {
+async function getDoubanBannerContent(
+  config?: any
+): Promise<{ code: number; list: any[] }> {
   try {
     // 获取豆瓣热门电影
     const hotMoviesUrl = 'https://m.douban.com/rexxar/api/v2/subject/recent_hot/movie?start=0&limit=10&category=热门&type=全部';
@@ -400,8 +403,17 @@ async function getDoubanBannerContent(): Promise<{ code: number; list: any[] }> 
       })
     );
 
+    // 数据源是豆瓣，但出图按 TMDB 那一套来：豆瓣只给压缩过的封面（540×771），
+    // 也没有发行方做的官方标题字。先按片名 + 年份反查 TMDB，命中就把图换成
+    // 它的资产 —— 那是 original 尺寸的剧照和 key art，和 IMDb 同一批物料。
+    const withTmdbAssets = await Promise.all(
+      bannerItems.map((item) => enrichWithTmdbAssets(config, item))
+    );
+
     // 过滤掉没有图片的项目
-    const validBannerItems = bannerItems.filter(item => item.backdrop_path);
+    const validBannerItems = withTmdbAssets.filter(
+      (item) => item.backdrop_path
+    );
 
     return {
       code: 200,
@@ -487,9 +499,10 @@ function normalizeTitle(title: string): string {
  * 它的资产更全）。
  */
 async function getMixedBannerContent(config: any): Promise<any> {
-  const [tmdb, douban] = await Promise.all([
+  const [tmdb, douban, tx] = await Promise.all([
     getTMDBBannerContent(config).catch(() => null),
-    getDoubanBannerContent().catch(() => null),
+    getDoubanBannerContent(config).catch(() => null),
+    getTXBannerContent().catch(() => null),
   ]);
 
   const tmdbList: any[] =
@@ -500,8 +513,17 @@ async function getMixedBannerContent(config: any): Promise<any> {
     douban && douban.code === 200 && Array.isArray(douban.list)
       ? douban.list.map((item: any) => ({ ...item, origin_source: 'Douban' }))
       : [];
+  // TX 的 id 是本地序号，和 TMDB 的数字 id 会撞 React key，统一加前缀
+  const txList: any[] =
+    tx && tx.code === 200 && Array.isArray(tx.list)
+      ? tx.list.map((item: any) => ({
+          ...item,
+          id: `tx-${item.id}`,
+          origin_source: 'TX',
+        }))
+      : [];
 
-  if (!tmdbList.length && !doubanList.length) {
+  if (!tmdbList.length && !doubanList.length && !txList.length) {
     return {
       code: tmdb && tmdb.code !== 200 ? tmdb.code : 500,
       message: '没有可用的轮播数据',
@@ -518,19 +540,114 @@ async function getMixedBannerContent(config: any): Promise<any> {
     list.push(item);
   };
 
-  let doubanIndex = 0;
-  for (let i = 0; i < tmdbList.length; i += 1) {
-    tryPush(tmdbList[i]);
-    if ((i + 1) % 3 === 0 && doubanIndex < doubanList.length) {
-      tryPush(doubanList[doubanIndex]);
-      doubanIndex += 1;
+  // 固定出场节奏：每 6 屏里 TMDB 占 4、豆瓣 1、TX 1。
+  // TX 只给图和标题（没有能对上的 id，也没有标题字），排多了会把整体观感拉回去；
+  // 但它能补上另外两家都没收录的内容，所以留这一格。
+  const pattern: Array<'T' | 'D' | 'X'> = ['T', 'T', 'D', 'T', 'T', 'X'];
+  let ti = 0;
+  let di = 0;
+  let xi = 0;
+  let slot = 0;
+
+  while (ti < tmdbList.length || di < doubanList.length || xi < txList.length) {
+    const want = pattern[slot % pattern.length];
+    slot += 1;
+
+    if (want === 'T' && ti < tmdbList.length) {
+      tryPush(tmdbList[ti]);
+      ti += 1;
+      continue;
     }
-  }
-  // TMDB 用完还没排上的豆瓣条目接在尾部，数据少了总比丢掉强
-  while (doubanIndex < doubanList.length) {
-    tryPush(doubanList[doubanIndex]);
-    doubanIndex += 1;
+    if (want === 'D' && di < doubanList.length) {
+      tryPush(doubanList[di]);
+      di += 1;
+      continue;
+    }
+    if (want === 'X' && xi < txList.length) {
+      tryPush(txList[xi]);
+      xi += 1;
+      continue;
+    }
+
+    // 该出场的位置已经没数据了，用还有剩的顶上，避免留空档
+    if (ti < tmdbList.length) {
+      tryPush(tmdbList[ti]);
+      ti += 1;
+    } else if (di < doubanList.length) {
+      tryPush(doubanList[di]);
+      di += 1;
+    } else if (xi < txList.length) {
+      tryPush(txList[xi]);
+      xi += 1;
+    } else {
+      break;
+    }
   }
 
   return { code: 200, list };
+}
+
+/**
+ * 把一条豆瓣条目补上 TMDB 的资产。
+ *
+ * 豆瓣给的封面是 s_ratio_poster（实测 540×771）这种压缩图，而且完全没有发行方
+ * 的官方标题字。同一部片在 TMDB 上有 original 尺寸的剧照和 key art logo ——
+ * 这批物料和 IMDb 是同一套。所以即使数据源选豆瓣，出图也走 TMDB 的标准。
+ *
+ * 反查分两次：先按电影搜，没命中再按剧集搜一次（豆瓣的「热门电影」里也常混着剧）。
+ * 两边都没有就原样返回，让豆瓣的图兜底，不至于因为查不到就没图。
+ */
+async function enrichWithTmdbAssets(config: any, item: any): Promise<any> {
+  const apiKey = config?.SiteConfig?.TMDBApiKey;
+  if (!apiKey) return item;
+
+  const proxy = config?.SiteConfig?.TMDBProxy;
+  const reverseProxy = config?.SiteConfig?.TMDBReverseProxy;
+  const year = String(item.release_date || '').match(/\d{4}/)?.[0];
+
+  let hit = await searchTMDBByTitle(
+    apiKey,
+    item.title,
+    year,
+    'movie',
+    proxy,
+    reverseProxy
+  );
+  if (!hit) {
+    hit = await searchTMDBByTitle(
+      apiKey,
+      item.title,
+      year,
+      'tv',
+      proxy,
+      reverseProxy
+    );
+  }
+  if (!hit) return item;
+
+  const imagesRes = await withBudget(
+    getTMDBImages(apiKey, hit.id, hit.media_type, proxy, reverseProxy),
+    ASSET_BUDGET_MS
+  );
+  const images =
+    imagesRes && imagesRes.code === 200 && imagesRes.images
+      ? imagesRes.images
+      : null;
+  const logo = images
+    ? pickLogo(images.logos || [], titlePrefersZh(item.title))
+    : null;
+  const textless = images
+    ? pickTextlessPoster(images.posters || [])
+    : null;
+
+  return {
+    ...item,
+    // 换成 TMDB 的路径形式，前端 getImageUrl 会按 original 尺寸拼
+    backdrop_path: hit.backdrop_path || hit.poster_path || item.backdrop_path,
+    poster_path: hit.poster_path || item.poster_path,
+    media_type: hit.media_type,
+    tmdb_id: hit.id,
+    title_logo_path: logo ? logo.file_path : null,
+    textless_poster_path: textless ? textless.file_path : null,
+  };
 }
