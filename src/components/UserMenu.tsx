@@ -6226,7 +6226,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
           onClick={handleMenuClick}
           className={
             className ||
-            'flex h-10 w-10 items-center justify-center rounded-full text-ui-ink-2 transition-colors hover:bg-ui-surface-3 hover:text-ui-ink'
+            'flex h-10 w-10 items-center justify-center rounded-full p-2 text-ui-ink-2 transition-colors hover:bg-ui-surface-3 hover:text-ui-ink'
           }
           aria-label='用户菜单'
           aria-haspopup='menu'

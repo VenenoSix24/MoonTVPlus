@@ -17,14 +17,13 @@ import {
   Users,
 } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 
 import { SPECIAL_SOURCE_PATH } from '@/lib/special-source.client';
 
 import MoreMenuTrigger from './MoreMenu';
 import { useSite } from './SiteProvider';
-import { ThemeToggle } from './ThemeToggle';
 import { UpdateNotification } from './UpdateNotification';
 import { UserMenu } from './UserMenu';
 import { useWatchRoomContextSafe } from './WatchRoomProvider';
@@ -45,6 +44,7 @@ interface NavItem {
 const TopNav = () => {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const watchRoomContext = useWatchRoomContextSafe();
   const { siteName } = useSite();
 
@@ -60,6 +60,47 @@ const TopNav = () => {
     pathname === SPECIAL_SOURCE_PATH ||
     pathname.startsWith(`${SPECIAL_SOURCE_PATH}/`);
   const searchHref = isUnderPath ? SPECIAL_SOURCE_PATH : '/search';
+
+  // 压在 Hero 上时整条栏透明，滚过首屏才转实底
+  const [scrolled, setScrolled] = useState(false);
+  // 搜索：收起时是个圆形图标，点开在原位长成胶囊
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState('');
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    // 页面实际滚动的是 body（globals 里 body 带 overflow-x:hidden，纵向滚动就落到
+    // body 上），window.scrollY 一直是 0；scroll 事件又不冒泡，所以用捕获阶段收，
+    // 取值把三个可能的滚动容器一起算上。
+    const readScroll = () =>
+      Math.max(
+        window.scrollY,
+        document.scrollingElement?.scrollTop ?? 0,
+        document.body.scrollTop
+      );
+    const handleScroll = () => setScrolled(readScroll() > 40);
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, true);
+    return () => window.removeEventListener('scroll', handleScroll, true);
+  }, []);
+
+  // 展开后直接把焦点交给输入框，不用再点一次
+  useEffect(() => {
+    if (searchOpen) searchInputRef.current?.focus();
+  }, [searchOpen]);
+
+  const closeSearch = () => {
+    setSearchValue('');
+    setSearchOpen(false);
+  };
+
+  const submitSearch = () => {
+    const keyword = searchValue.trim();
+    router.push(
+      keyword ? `${searchHref}?q=${encodeURIComponent(keyword)}` : searchHref
+    );
+    closeSearch();
+  };
 
   const [menuItems, setMenuItems] = useState<NavItem[]>([
     { icon: Film, label: '电影', href: '/douban?type=movie' },
@@ -128,7 +169,7 @@ const TopNav = () => {
   };
 
   return (
-    <header className='mtv-topnav'>
+    <header className={scrolled ? 'mtv-topnav is-scrolled' : 'mtv-topnav'}>
       <Link href='/' className='mtv-topnav-brand' prefetch={false}>
         {siteName}
       </Link>
@@ -162,16 +203,50 @@ const TopNav = () => {
       </nav>
 
       <div className='mtv-topnav-right'>
-        <Link
-          href={searchHref}
-          className='mtv-topnav-icon'
-          aria-label='搜索'
-          prefetch={false}
+        <form
+          className={searchOpen ? 'mtv-search is-open' : 'mtv-search'}
+          onSubmit={(event) => {
+            event.preventDefault();
+            submitSearch();
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') closeSearch();
+          }}
         >
-          <Search />
-        </Link>
+          <button
+            type={searchOpen ? 'submit' : 'button'}
+            className='mtv-topnav-icon'
+            aria-label='搜索'
+            aria-expanded={searchOpen}
+            onClick={() => {
+              if (!searchOpen) setSearchOpen(true);
+            }}
+          >
+            <Search />
+          </button>
+          <input
+            ref={searchInputRef}
+            type='search'
+            className='mtv-search-input'
+            value={searchValue}
+            onChange={(event) => setSearchValue(event.target.value)}
+            onBlur={() => {
+              if (!searchValue.trim()) setSearchOpen(false);
+            }}
+            placeholder='搜索影片、剧集'
+            aria-label='搜索关键词'
+            tabIndex={searchOpen ? 0 : -1}
+          />
+          <button
+            type='button'
+            className='mtv-search-cancel'
+            onClick={closeSearch}
+            tabIndex={searchOpen ? 0 : -1}
+          >
+            取消
+          </button>
+        </form>
         <MoreMenuTrigger variant='desktop' />
-        <ThemeToggle className='mtv-topnav-icon' />
         <UpdateNotification />
         <UserMenu className='mtv-topnav-icon' />
       </div>

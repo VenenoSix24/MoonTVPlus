@@ -1452,9 +1452,40 @@ html[data-loading-style='grid'] .mtv-err-box {
   gap: 26px;
   height: 64px;
   padding: 0 var(--ui-gutter);
+  background-color: transparent;
+  transition:
+    background-color var(--ui-dur-2) var(--ui-ease),
+    box-shadow var(--ui-dur-2) var(--ui-ease);
+}
+
+/* 刚进页面时整条栏是透明的、压在 Hero 上，只留一层从上往下的暗角，保证导航文字
+   在亮画面上也能读。用 --ui-bg 混透明而不是写死黑色：深色主题下就是
+   rgba(0,0,0,.72)，浅色主题下自动变成一层淡底，压着深色文字同样成立。
+   z-index:-1 让它落在顶栏自身背景之上、内容之下，不会盖住导航文字。 */
+.mtv-topnav::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 132px;
+  z-index: -1;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-bg) 72%, transparent),
+    transparent
+  );
+  pointer-events: none;
+  transition: opacity var(--ui-dur-2) var(--ui-ease);
+}
+
+/* 滚过首屏：实底 + 模糊 + 一条发丝线，暗角退场 */
+.mtv-topnav.is-scrolled {
   background-color: var(--ui-nav);
   backdrop-filter: blur(16px) saturate(150%);
   box-shadow: 0 1px 0 var(--ui-hair);
+}
+
+.mtv-topnav.is-scrolled::before {
+  opacity: 0;
 }
 
 .mtv-topnav-brand {
@@ -1504,15 +1535,15 @@ html[data-loading-style='grid'] .mtv-err-box {
   height: 16px;
 }
 
+/* hover 只提亮文字，不加底色 —— 实心色块压在深色栏上很脏 */
 .mtv-topnav-link:hover {
   color: var(--ui-ink);
-  background-color: var(--ui-surface-3);
 }
 
+/* 选中态：纯白 + 700，不加底色。原来是强调色文字 + 强调色底片，一整块红太吵 */
 .mtv-topnav-link[aria-current='page'] {
-  font-weight: 600;
-  color: var(--ui-accent);
-  background-color: var(--ui-accent-soft);
+  font-weight: 700;
+  color: var(--ui-ink);
 }
 
 .mtv-topnav-right {
@@ -1546,13 +1577,82 @@ html[data-loading-style='grid'] .mtv-err-box {
 
 .mtv-topnav-icon:hover {
   color: var(--ui-ink);
-  background-color: var(--ui-surface-3);
+  background-color: color-mix(in srgb, var(--ui-ink) 8%, transparent);
 }
 
 .mtv-topnav-icon:focus-visible {
   outline: 2px solid var(--ui-accent);
   outline-offset: 2px;
 }
+/* ---------- 顶栏搜索：点开展成输入框 ---------- */
+/* 收起时就是一个圆形图标按钮（和右侧其它图标同尺寸），点开在原位长成 270px 的胶囊，
+   Esc 或清空后收起。提交仍跳 /search?q=，和原来那个链接的落点一致。 */
+
+.mtv-search {
+  display: flex;
+  flex: none;
+  align-items: center;
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  border-radius: var(--ui-r-full);
+  transition:
+    width var(--ui-dur-2) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-search.is-open {
+  width: 270px;
+  padding-right: 4px;
+  background-color: var(--ui-surface-3);
+}
+
+.mtv-search-input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--ui-ink);
+  outline: none;
+  opacity: 0;
+  transition: opacity var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-search.is-open .mtv-search-input {
+  padding-left: 2px;
+  opacity: 1;
+}
+
+.mtv-search-input::placeholder {
+  color: var(--ui-ink-3);
+}
+
+.mtv-search-cancel {
+  flex: none;
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--ui-ink-3);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    opacity var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-search-cancel:hover {
+  color: var(--ui-ink);
+}
+
+.mtv-search.is-open .mtv-search-cancel {
+  opacity: 1;
+}
+
 
 /* ---------- 「更多」入口 ---------- */
 /* 首页 Hero 下方原来那排彩色图标（直链播放 / 音乐 / 漫画 / 电子书 / 源站寻片 /
