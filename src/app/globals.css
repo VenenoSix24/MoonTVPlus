@@ -3298,7 +3298,9 @@ html[data-loading-style='grid'] .mtv-err-box {
 }
 
 .mtv-card-panel-meta .mtv-card-panel-match {
-  color: #4ade80;
+  /* 评分数字只做强调，不承载"高分/低分"语义，所以不给它颜色。这条原本是
+     硬编码的 #4ade80，扫 green-* 类名时漏掉的残留。 */
+  color: #fff;
   font-weight: 700;
 }
 
