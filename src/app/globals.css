@@ -2497,6 +2497,25 @@ html[data-loading-style='grid'] .mtv-err-box {
   --hero-panel-pad: 0;
 }
 
+/* Hero 底部收边：让画面自己溶解进页面底色，而不是在上面刷一层页面色。
+   原来底部是一条「--ui-bg → 黑」的短渐变，深色下 --ui-bg 就是黑，看不出来；
+   浅色下等于把 #f5f6f9 直接涂在海报底部和分页点上，就是那条白雾。
+   改成给画面层加纵向 mask：最后 24px 渐隐到透明，露出页面本身。
+   mask 只能给 24px —— 分页点离底边只有 16px，再长就把点泡进浅色里了。
+   遮罩层也在这个 wrapper 内，所以会被一起溶解，底部不会留下一条硬黑边。 */
+.mtv-hero-art {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 calc(100% - 24px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    #000 calc(100% - 24px),
+    transparent 100%
+  );
+}
+
 /* 只给画面本身提亮/压灰。遮罩和画面在同一个 wrapper 里，
    所以不能把 filter 加在 wrapper 上，否则遮罩会一起被提亮。 */
 .mtv-hero-art img,
@@ -2627,7 +2646,7 @@ html[data-loading-style='grid'] .mtv-err-box {
       rgba(0, 0, 0, 0.28) 55%,
       transparent 78%
     ),
-    linear-gradient(0deg, var(--ui-bg) 0%, transparent 6%);
+    linear-gradient(0deg, rgba(0, 0, 0, 0.55) 0%, transparent 7%);
   --hero-ink: #ffffff;
   --hero-ink-2: rgba(255, 255, 255, 0.78);
   --hero-title-shadow: rgba(0, 0, 0, 0.55);
@@ -2697,7 +2716,7 @@ html[data-loading-style='grid'] .mtv-err-box {
       ),
       linear-gradient(
         0deg,
-        var(--ui-bg) 0%,
+        rgba(0, 0, 0, 0.78) 0%,
         rgba(0, 0, 0, 0.72) 7%,
         transparent 60%
       );
