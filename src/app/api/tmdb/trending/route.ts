@@ -34,69 +34,58 @@ function withBudget<T>(promise: Promise<T>, ms: number): Promise<T | null> {
   });
 }
 
-// 为不同数据源分别维护缓存
-let tmdbCache: { data: any; timestamp: number } | null = null;
-let txCache: { data: any; timestamp: number } | null = null;
-let doubanCache: { data: any; timestamp: number } | null = null;
-let mixedCache: { data: any; timestamp: number } | null = null;
+// 缓存按「数据源组合」分开存：选了哪几个源，结果就不同，不能共用一份。
+const sourceCaches = new Map<string, { data: any; timestamp: number }>();
 
 export const dynamic = 'force-dynamic';
+
+const KNOWN_SOURCES = ['TMDB', 'Douban', 'TX'] as const;
+type SourceName = (typeof KNOWN_SOURCES)[number];
+
+/**
+ * 解析轮播数据源配置。
+ *
+ * 两种写法都认：
+ *   - 单个值：'TMDB' / 'Douban' / 'TX'
+ *   - 组合：'TMDB,Douban' —— 管理端勾几个就存几个，逗号分隔，顺序无所谓
+ * 旧配置里的 'Mixed' 等价于三个源全要，留着兼容。
+ */
+function parseBannerSources(raw: string): Set<SourceName> {
+  if (raw === 'Mixed') {
+    return new Set<SourceName>(KNOWN_SOURCES);
+  }
+  const picked = raw
+    .split(',')
+    .map((name) => name.trim())
+    .filter((name): name is SourceName =>
+      (KNOWN_SOURCES as readonly string[]).includes(name)
+    );
+  return new Set<SourceName>(picked.length ? picked : ['Douban']);
+}
 
 export async function GET() {
   try {
     // 获取配置
     const config = await getConfig();
     const bannerDataSource = config.SiteConfig?.BannerDataSource || 'Douban';
+    const sources = parseBannerSources(bannerDataSource);
+    const cacheKey = Array.from(sources).sort().join(',');
 
-    // 根据数据源选择对应的缓存
-    const cache =
-      bannerDataSource === 'TX'
-        ? txCache
-        : bannerDataSource === 'Douban'
-          ? doubanCache
-          : bannerDataSource === 'Mixed'
-            ? mixedCache
-            : tmdbCache;
-
-    // 检查缓存
-    if (cache && Date.now() - cache.timestamp < CACHE_DURATION) {
-      return NextResponse.json(cache.data);
+    const cached = sourceCaches.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      return NextResponse.json(cached.data);
     }
 
     let result: any;
 
-    // 根据配置的数据源获取数据
-    if (bannerDataSource === 'Douban') {
-      // 使用豆瓣数据源
+    if (sources.size > 1) {
+      // 组合模式，出场节奏见 getMixedBannerContent
+      result = await getMixedBannerContent(config, sources);
+    } else if (sources.has('Douban')) {
       result = await getDoubanBannerContent(config);
-      // 添加数据源标识
-      result.source = 'Douban';
-      // 更新豆瓣缓存
-      doubanCache = {
-        data: result,
-        timestamp: Date.now(),
-      };
-    } else if (bannerDataSource === 'TX') {
-      // 使用TX数据源
+    } else if (sources.has('TX')) {
       result = await getTXBannerContent();
-      // 添加数据源标识
-      result.source = 'TX';
-      // 更新TX缓存
-      txCache = {
-        data: result,
-        timestamp: Date.now(),
-      };
-    } else if (bannerDataSource === 'Mixed') {
-      // 单一数据源看久了就那么几部在转。混合模式让 TMDB 和豆瓣交替出场：
-      // TMDB 带官方标题字和预告片，豆瓣带它自己的热点，两边各补一半视角。
-      result = await getMixedBannerContent(config);
-      result.source = 'Mixed';
-      mixedCache = {
-        data: result,
-        timestamp: Date.now(),
-      };
     } else {
-      // 使用TMDB数据源（默认）
       result = await getTMDBBannerContent(config);
       if (result.code !== 200) {
         return NextResponse.json(
@@ -104,14 +93,11 @@ export async function GET() {
           { status: result.code }
         );
       }
-      // 添加数据源标识
-      result.source = 'TMDB';
-      // 更新TMDB缓存
-      tmdbCache = {
-        data: result,
-        timestamp: Date.now(),
-      };
     }
+
+    // 多个源时统一报 Mixed，前端按条目的 origin_source 判断具体来自哪
+    result.source = sources.size > 1 ? 'Mixed' : Array.from(sources)[0];
+    sourceCaches.set(cacheKey, { data: result, timestamp: Date.now() });
 
     return NextResponse.json(result);
   } catch (error) {
@@ -498,11 +484,18 @@ function normalizeTitle(title: string): string {
  * 同一个片两边都可能出现，按归一后的片名去重，先到先得（TMDB 在前，
  * 它的资产更全）。
  */
-async function getMixedBannerContent(config: any): Promise<any> {
+async function getMixedBannerContent(
+  config: any,
+  sources: Set<string>
+): Promise<any> {
+  const wantTmdb = sources.has('TMDB');
+  const wantDouban = sources.has('Douban');
+  const wantTx = sources.has('TX');
+
   const [tmdb, douban, tx] = await Promise.all([
-    getTMDBBannerContent(config).catch(() => null),
-    getDoubanBannerContent(config).catch(() => null),
-    getTXBannerContent().catch(() => null),
+    wantTmdb ? getTMDBBannerContent(config).catch(() => null) : null,
+    wantDouban ? getDoubanBannerContent(config).catch(() => null) : null,
+    wantTx ? getTXBannerContent().catch(() => null) : null,
   ]);
 
   const tmdbList: any[] =
@@ -534,7 +527,14 @@ async function getMixedBannerContent(config: any): Promise<any> {
   const list: any[] = [];
   const seen = new Set<string>();
   const tryPush = (item: any) => {
-    const key = normalizeTitle(item.title);
+    // 去重键优先用 TMDB 的 id：豆瓣条目反查命中后也带着这个 id，于是《希望》这种
+    // 两边都收录的片只会留一条，而且是信息更全的 TMDB 那条。没有 id 的（没反查
+    // 到的豆瓣条目、TX 条目）才退回片名比对。
+    const tmdbId =
+      item.tmdb_id ?? (item.origin_source === 'TMDB' ? item.id : null);
+    const key = tmdbId
+      ? `tmdb:${tmdbId}`
+      : `title:${normalizeTitle(item.title)}`;
     if (!key || seen.has(key)) return;
     seen.add(key);
     list.push(item);
@@ -543,7 +543,12 @@ async function getMixedBannerContent(config: any): Promise<any> {
   // 固定出场节奏：每 6 屏里 TMDB 占 4、豆瓣 1、TX 1。
   // TX 只给图和标题（没有能对上的 id，也没有标题字），排多了会把整体观感拉回去；
   // 但它能补上另外两家都没收录的内容，所以留这一格。
-  const pattern: Array<'T' | 'D' | 'X'> = ['T', 'T', 'D', 'T', 'T', 'X'];
+  // 出场节奏按选中的源来，具体见 buildMixedPattern
+  const pattern: Array<'T' | 'D' | 'X'> = buildMixedPattern(
+    sources.has('TMDB'),
+    sources.has('Douban'),
+    sources.has('TX')
+  );
   let ti = 0;
   let di = 0;
   let xi = 0;
@@ -647,7 +652,26 @@ async function enrichWithTmdbAssets(config: any, item: any): Promise<any> {
     poster_path: hit.poster_path || item.poster_path,
     media_type: hit.media_type,
     tmdb_id: hit.id,
+    tmdb_vote: hit.vote_average,
     title_logo_path: logo ? logo.file_path : null,
     textless_poster_path: textless ? textless.file_path : null,
   };
+}
+
+/**
+ * 混合出场节奏。
+ *
+ * 三家全选时 TMDB 4 / 豆瓣 1 / TX 1。两家则按 2:1，让资产更全的那个多占一格。
+ * TX 永远只占最少的格 —— 它只给图和标题，对不上 id、也没有标题字。
+ */
+function buildMixedPattern(
+  wantTmdb: boolean,
+  wantDouban: boolean,
+  wantTx: boolean
+): Array<'T' | 'D' | 'X'> {
+  if (wantTmdb && wantDouban && wantTx) return ['T', 'T', 'D', 'T', 'T', 'X'];
+  if (wantTmdb && wantDouban) return ['T', 'T', 'D'];
+  if (wantTmdb && wantTx) return ['T', 'T', 'X'];
+  if (wantDouban && wantTx) return ['D', 'D', 'X'];
+  return [];
 }

@@ -81,6 +81,8 @@ interface BannerItem extends TMDBItem {
   title_logo_path?: string | null; // 官方标题字（key art logo）
   textless_poster_path?: string | null; // 无字海报
   origin_source?: 'TMDB' | 'Douban' | 'TX'; // 混合数据源下来自哪个源
+  tmdb_id?: number; // 豆瓣条目反查到的 TMDB id
+  tmdb_vote?: number; // TMDB 评分（豆瓣条目反查命中后一并带回）
 }
 
 /* Hero 的多源评分。能拿到几个源就显示几个，不硬凑：
@@ -95,18 +97,14 @@ function HeroRatings({
   item: BannerItem;
   dataSource: string;
 }) {
-  // 混合数据源下每一屏来源不同，按条目判断；没有标记时退回全局配置
+  // 混合数据源下每一屏来源不同，按条目判断；没有标记时退回全局配置。
+  // 豆瓣条目反查过 TMDB 的会带 tmdb_id，同样能走完整的 IMDb / RT / Trakt 链路。
   const origin = item.origin_source || dataSource;
-  const isTmdb = origin === 'TMDB';
-  const ratingRef = useRatingRef(
-    isTmdb ? item.media_type : null,
-    isTmdb ? item.id : null
-  );
+  const tmdbId = item.tmdb_id ?? (origin === 'TMDB' ? item.id : null);
+  const isTmdb = Boolean(tmdbId);
+  const ratingRef = useRatingRef(isTmdb ? item.media_type : null, tmdbId);
   const omdb = useOmdbRatings(ratingRef);
-  const trakt = useTraktRating(
-    isTmdb ? item.media_type : null,
-    isTmdb ? item.id : null
-  );
+  const trakt = useTraktRating(isTmdb ? item.media_type : null, tmdbId);
 
   const sources: RatingSource[] = [];
 
@@ -120,6 +118,13 @@ function HeroRatings({
       key: origin === 'Douban' ? 'douban' : 'tmdb',
       value: own,
     });
+  }
+
+  // 豆瓣条目反查 TMDB 后一并带上 TMDB 自己的分数。两套评分体系口径不同
+  // （豆瓣偏中文观众、TMDB 偏全球），都给比只给一个更有参考价值。
+  if (origin !== 'TMDB' && item.tmdb_vote) {
+    const tmdbScore = formatScore(item.tmdb_vote);
+    if (tmdbScore) sources.push({ key: 'tmdb', value: tmdbScore });
   }
 
   if (trakt.rating) {
@@ -180,17 +185,20 @@ function HeroRatingPrefetch({
 
       for (const item of items) {
         if (cancelled) return;
-        // 豆瓣条目的 id 不是 TMDB id，拿去查会查到另一部片，宁可不显示
-        if (!item?.id || item.origin_source === 'Douban') continue;
+        // 豆瓣条目反查过 TMDB 的也带着 tmdb_id，可以一起预取；没有的就跳过 ——
+        // 拿豆瓣 id 去查 TMDB 会查到另一部片。
+        const tmdbId =
+          item.tmdb_id ?? (item.origin_source === 'TMDB' ? item.id : null);
+        if (!tmdbId) continue;
 
         const mediaType: 'movie' | 'tv' =
           item.media_type === 'tv' ? 'tv' : 'movie';
-        const key = `${mediaType}:${item.id}`;
+        const key = `${mediaType}:${tmdbId}`;
         if (doneRef.current.has(key)) continue;
         doneRef.current.add(key);
 
         try {
-          await prefetchRatings(mediaType, item.id);
+          await prefetchRatings(mediaType, tmdbId);
         } catch {
           // 单张失败不影响其它张
         }
@@ -577,7 +585,10 @@ export default function BannerCarousel({
   // 不能等轮到某一屏才去取——那时背景已经切过去了、标题字还在路上，看起来就是
   // 「左边慢半拍」。豆瓣 / TX 没有这个资产，取不到就是 null，标题回落到文字。
   useEffect(() => {
-    if (dataSource !== 'TMDB' || !items.length) return;
+    // 混合数据源里 TMDB 条目同样要判标题字深浅，否则深色 logo 在暗底上不反色。
+    // 豆瓣条目在数据落地时就已经带上了 title_logo_path，命中缓存后不会重复请求。
+    if ((dataSource !== 'TMDB' && dataSource !== 'Mixed') || !items.length)
+      return;
 
     /** 预判标题字深浅。留到轮播切过去才做的话，会先黑一下再闪成白。 */
     const warmTone = (key: string, src: string) => {
@@ -726,6 +737,7 @@ export default function BannerCarousel({
         </div>
       </div>
     );
+
   }
 
   if (!items.length) {
@@ -733,6 +745,16 @@ export default function BannerCarousel({
   }
 
   const currentItem = items[currentIndex];
+
+  // 指示条最多显示 7 个。数据源一多，平铺一排点会横贯整个画面；这里只渲染
+  // 当前前后各三个，窗口随进度滑动 —— 位置仍然反映进度，但不随条目总数变长。
+  const DOT_WINDOW = 7;
+  const dotCount = Math.min(items.length, DOT_WINDOW);
+  const dotStart = Math.max(
+    0,
+    Math.min(currentIndex - Math.floor(dotCount / 2), items.length - dotCount)
+  );
+  const visibleDots = Array.from({ length: dotCount }, (_, i) => dotStart + i);
 
   // 外部详情页：豆瓣条目跳豆瓣，TMDB 条目跳 TMDB。TX 数据源的 id 是本地序号，
   // 没有对应的公开页面，那种情况下不显示这个按钮。
@@ -1004,7 +1026,8 @@ export default function BannerCarousel({
 
       {/* 指示器：未到的是圆点，当前那张拉长成进度条并按自动播放时长填充 */}
       <div className='absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2'>
-        {items.map((_, index) => {
+        {/* 窗口式：只渲染当前前后各三个。数据一多，平铺一排点会横贯整个画面 */}
+        {visibleDots.map((index) => {
           const distance = Math.abs(index - currentIndex);
           const isActive = distance === 0;
           return (

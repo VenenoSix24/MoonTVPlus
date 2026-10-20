@@ -2865,6 +2865,10 @@ html[data-loading-style='grid'] .mtv-err-box {
   aspect-ratio: var(--logo-r, 3);
   height: auto;
   object-fit: contain;
+  /* 盒子的宽高比取自原图，正常情况图形正好填满。但 SVG 标题字的声明尺寸和浏览器
+     实际渲染的比例偶尔对不上，contain 会把图形缩进中间、左右各留一条空档 ——
+     看起来就是「这个 logo 没有贴左」。把图形按左边对齐，留白就都跑到右侧去了。 */
+  object-position: center left;
   /* 透明 PNG 用 drop-shadow 才贴着字形轮廓，box-shadow 会描出一个矩形 */
   filter: drop-shadow(0 2px 12px var(--hero-title-shadow));
   transition: filter var(--ui-dur-2) var(--ui-ease-out);

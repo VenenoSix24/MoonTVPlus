@@ -12019,10 +12019,14 @@ const SiteConfigComponent = ({
               <option value='Douban'>豆瓣</option>
               <option value='TMDB'>TMDB</option>
               <option value='TX'>TX</option>
-              <option value='Mixed'>混合（TMDB + 豆瓣）</option>
+              <option value='TMDB,Douban'>TMDB + 豆瓣（不含 TX）</option>
+              <option value='TMDB,TX'>TMDB + TX</option>
+              <option value='Douban,TX'>豆瓣 + TX</option>
+              <option value='Mixed'>TMDB + 豆瓣 + TX</option>
             </select>
             <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
-              选择首页轮播图的数据来源
+              选组合时按比例交替出现：两个源 2:1，三个源是 TMDB 4 : 豆瓣 1 : TX 1。
+              TX 只给图和标题、没有片名 logo，所以排得少。
             </p>
           </div>
 
