@@ -2105,7 +2105,7 @@ html[data-loading-style='grid'] .mtv-err-box {
    浮起来 10px 之后底下永远压着内容，模糊才有意义。
    五格等分（flex:1 1 0; min-width:0），不再用 20vw + 横向滚动那套 —— 项数一变就会
    把后面的格推出屏幕外，变成谁也发现不了的盲区。
-   限宽 384：五格各 76px 出头。再宽每格就散开了，图标之间空得发慌。 */
+   限宽 360：五格各 68px 出头。再宽每格就散开了，图标之间空得发慌。 */
 
 .mtv-bnav {
   position: fixed;
@@ -2113,7 +2113,7 @@ html[data-loading-style='grid'] .mtv-err-box {
   bottom: calc(10px + env(safe-area-inset-bottom));
   z-index: var(--ui-z-nav);
   width: calc(100% - 24px);
-  max-width: 384px;
+  max-width: 360px;
   height: 64px;
   border-radius: var(--ui-r-full);
   border: 1px solid var(--ui-hair);
@@ -2132,7 +2132,7 @@ html[data-loading-style='grid'] .mtv-err-box {
   padding: 6px;
 }
 
-/* 选中底片：一块平底片跟着当前格平移，不用品牌红 */
+/* 选中底片：跟着当前格平移的一块强调色底片 */
 .mtv-bnav-pill {
   position: absolute;
   top: 6px;
@@ -2140,7 +2140,7 @@ html[data-loading-style='grid'] .mtv-err-box {
   left: 6px;
   width: calc((100% - 12px) / 5);
   border-radius: var(--ui-r-full);
-  background-color: color-mix(in srgb, var(--ui-ink) 10%, transparent);
+  background-color: var(--ui-accent);
   transition: transform 220ms var(--ui-ease);
   pointer-events: none;
 }
@@ -2181,7 +2181,7 @@ html[data-loading-style='grid'] .mtv-err-box {
 }
 
 .mtv-bnav-item.is-active {
-  color: var(--ui-ink);
+  color: var(--ui-accent-ink);
 }
 
 .mtv-bnav-item.is-active span {

@@ -39,6 +39,14 @@ const MorePage = () => {
 
   const [channels, setChannels] = useState<MoreEntry[]>([]);
   const [tools, setTools] = useState<MoreEntry[]>([]);
+  // next-themes 在客户端首次渲染时已经能读到本地存的主题，服务端只能看到 undefined，
+  // 直接渲染会把「跟随系统」和「深色」渲染成两份不同的文本，触发水合不一致。
+  // 挂载完成前统一按兜底文案走，两边首帧就一致了。
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -47,8 +55,9 @@ const MorePage = () => {
     setTools(buildToolEntries(config));
   }, [watchRoom?.isEnabled]);
 
-  const themeLabel =
-    THEME_OPTIONS.find((option) => option.value === theme)?.label ?? '跟随系统';
+  const themeLabel = mounted
+    ? THEME_OPTIONS.find((option) => option.value === theme)?.label ?? '跟随系统'
+    : '跟随系统';
 
   const renderRow = (entry: MoreEntry) => {
     const Icon = entry.icon;
@@ -121,7 +130,7 @@ const MorePage = () => {
                   <button
                     key={option.value}
                     type='button'
-                    aria-pressed={theme === option.value}
+                    aria-pressed={mounted && theme === option.value}
                     onClick={() => setTheme(option.value)}
                   >
                     {option.label}
