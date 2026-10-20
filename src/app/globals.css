@@ -3305,6 +3305,77 @@ html[data-loading-style='grid'] .mtv-err-box {
 }
 
 /* ==========================================================================
+   分类页筛选器（douban / search 共用的胶囊控件）
+   --------------------------------------------------------------------------
+   容器定了「无容器」：筛选行直接铺在页面上，不再套一层毛玻璃卡。层级全靠
+   胶囊轨道自己的底片表达，跟首页「标题直接领着内容走」是一个路子。
+
+   选中态不给品牌色：分类筛选不是主操作，一屏里有多组同时选中，红色会在画面
+   上散成好几块。这里只用底片 + 文字提亮，品牌色留给真正的行动按钮。
+   ========================================================================== */
+.mtv-caps {
+  position: relative;
+  display: inline-flex;
+  padding: 3px;
+  border-radius: var(--ui-r-full);
+  background: color-mix(in srgb, var(--ui-ink) 8%, transparent);
+}
+
+/* 滑动指示块。位置与宽度由 JS 量按钮的实际像素得出，这里的 transition
+   只负责跟手，所以只需过渡 left 和 width。 */
+.mtv-caps-ind {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  border-radius: var(--ui-r-full);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-elev-1);
+  transition: left var(--ui-dur-2) var(--ui-ease-out),
+    width var(--ui-dur-2) var(--ui-ease-out);
+}
+
+/* 深色下 --ui-surface(#141414) 落在轨道(#1f1f1f)上几乎看不出来，
+   改半透明墨色，和底栏选中态同一套做法。 */
+.dark .mtv-caps-ind {
+  background: color-mix(in srgb, var(--ui-ink) 12%, transparent);
+  box-shadow: none;
+}
+
+.mtv-cap {
+  position: relative;
+  z-index: 1;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  padding: 6px 13px;
+  border: 0;
+  border-radius: var(--ui-r-full);
+  background: transparent;
+  color: var(--ui-ink-2);
+  white-space: nowrap;
+  transition: color var(--ui-dur-2) var(--ui-ease);
+}
+
+.mtv-cap:hover {
+  color: var(--ui-ink);
+}
+
+.mtv-cap.is-on {
+  color: var(--ui-ink);
+  font-weight: 650;
+}
+
+/* 横滚条藏滚动条：筛选行在窄屏必溢出，露出滚动条很难看 */
+.mtv-caps-wrap {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.mtv-caps-wrap::-webkit-scrollbar {
+  display: none;
+}
+
+/* ==========================================================================
    播放页强调色
    --------------------------------------------------------------------------
    播放页此前整套用的是原版 MoonTV 的绿（green-* / emerald-*，共 70 处），而站点
@@ -5242,6 +5313,12 @@ html[data-loading-style='grid'] .mtv-err-box {
   height: 14px;
   margin-top: var(--ui-sp-2);
   border-radius: var(--ui-r-xs);
+}
+
+/* 居中版：分类页的骨架标题条比首页行骨架窄，且要居中 */
+.mtv-skel-line.is-center {
+  width: 68%;
+  margin-inline: auto;
 }
 
 .mtv-hero-skel {

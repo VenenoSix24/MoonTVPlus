@@ -780,22 +780,22 @@ function DoubanPageClient() {
 
   return (
     <PageLayout activePath={getActivePath()}>
-      <div className='px-4 sm:px-10 py-4 sm:py-8 overflow-visible'>
+      <div className='px-[var(--ui-gutter)] py-6 overflow-visible'>
         {/* 页面标题和选择器 */}
         <div className='mb-6 sm:mb-8 space-y-4 sm:space-y-6'>
           {/* 页面标题 */}
           <div>
-            <h1 className='text-2xl sm:text-3xl font-bold text-gray-800 mb-1 sm:mb-2 dark:text-gray-200'>
+            <h1 className='text-2xl sm:text-3xl font-bold text-ui-ink mb-1 sm:mb-2'>
               {getPageTitle()}
             </h1>
-            <p className='text-sm sm:text-base text-gray-600 dark:text-gray-400'>
+            <p className='text-sm sm:text-base text-ui-ink-2'>
               {getPageDescription()}
             </p>
           </div>
 
           {/* 选择器组件 */}
           {type !== 'custom' ? (
-            <div className='bg-white/60 dark:bg-gray-800/40 rounded-2xl p-4 sm:p-6 border border-gray-200/30 dark:border-gray-700/30 backdrop-blur-sm'>
+            <div>
               <DoubanSelector
                 type={type as 'movie' | 'tv' | 'show' | 'anime'}
                 primarySelection={primarySelection}
@@ -809,7 +809,7 @@ function DoubanPageClient() {
               />
             </div>
           ) : (
-            <div className='bg-white/60 dark:bg-gray-800/40 rounded-2xl p-4 sm:p-6 border border-gray-200/30 dark:border-gray-700/30 backdrop-blur-sm'>
+            <div>
               <DoubanCustomSelector
                 customCategories={customCategories}
                 primarySelection={primarySelection}
@@ -822,7 +822,7 @@ function DoubanPageClient() {
         </div>
 
         {/* 内容展示区域 */}
-        <div ref={contentRef} className='max-w-[95%] mx-auto mt-8 overflow-visible'>
+        <div ref={contentRef} className='mt-6 overflow-visible'>
           {/* 时刻表视图（每日放送） */}
           {isScheduleView ? (
             <BangumiScheduleTimeline weekday={selectedWeekday} />
@@ -870,7 +870,7 @@ function DoubanPageClient() {
               {isLoadingMore && (
                 <div className='flex items-center gap-2'>
                   <div className='animate-spin rounded-full h-6 w-6 border-b-2 border-ui-accent'></div>
-                  <span className='text-gray-600'>加载中...</span>
+                  <span className='text-ui-ink-2'>加载中...</span>
                 </div>
               )}
             </div>
@@ -878,12 +878,12 @@ function DoubanPageClient() {
 
           {/* 没有更多数据提示 */}
           {!isScheduleView && !hasMore && doubanData.length > 0 && (
-            <div className='text-center text-gray-500 py-8'>已加载全部内容</div>
+            <div className='text-center text-ui-ink-3 py-8'>已加载全部内容</div>
           )}
 
           {/* 空状态 */}
           {!isScheduleView && !loading && doubanData.length === 0 && (
-            <div className='text-center text-gray-500 py-8'>暂无相关内容</div>
+            <div className='text-center text-ui-ink-3 py-8'>暂无相关内容</div>
           )}
         </div>
       </div>
