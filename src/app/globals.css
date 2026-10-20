@@ -2896,6 +2896,7 @@ html[data-loading-style='grid'] .mtv-err-box {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex: none;
   height: 17px;
   min-width: 17px;
   padding: 0 4px;
@@ -2906,28 +2907,43 @@ html[data-loading-style='grid'] .mtv-err-box {
   line-height: 1;
 }
 
-.mtv-rating.is-imdb .mtv-rating-badge {
-  background-color: #f5c518;
-  color: #000;
+.mtv-rating-badge svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
 }
 
-.mtv-rating.is-tmdb .mtv-rating-badge {
-  background-image: linear-gradient(90deg, #90cea1 0%, #01b4e4 100%);
-  color: #03233a;
-}
-
-.mtv-rating.is-douban .mtv-rating-badge {
-  background-color: #2e963d;
-  color: #fff;
-}
-
-/* 烂番茄和 Metacritic 直接用 emoji：比再画一个色块更认得出，也省掉图片资源 */
+/* 有官方图形 logo 的源：图标直接上品牌色，不再垫色块 ——
+   方底和图形叠在一起会显脏，也盖掉了 logo 本身的识别度 */
+.mtv-rating.is-imdb .mtv-rating-badge,
+.mtv-rating.is-douban .mtv-rating-badge,
 .mtv-rating.is-rt .mtv-rating-badge,
 .mtv-rating.is-metacritic .mtv-rating-badge {
   min-width: 0;
   padding: 0;
-  background-color: transparent;
-  font-size: 13px;
+  background: none;
+}
+
+.mtv-rating.is-imdb .mtv-rating-badge {
+  color: #f5c518;
+}
+
+.mtv-rating.is-douban .mtv-rating-badge {
+  color: #2e963d;
+}
+
+.mtv-rating.is-rt .mtv-rating-badge {
+  color: #fa320a;
+}
+
+.mtv-rating.is-metacritic .mtv-rating-badge {
+  color: #66cc33;
+}
+
+/* TMDB 没有官方单色 logo，保留渐变文字块 */
+.mtv-rating.is-tmdb .mtv-rating-badge {
+  background-image: linear-gradient(90deg, #90cea1 0%, #01b4e4 100%);
+  color: #03233a;
 }
 
 .mtv-rating-val,
@@ -2967,30 +2983,52 @@ html[data-loading-style='grid'] .mtv-err-box {
 .mtv-hero-ratings {
   --rating-ink: #fff;
   --rating-ink-2: rgba(255, 255, 255, 0.82);
+  display: flex;
+  justify-content: center;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
 }
 
-/* 品牌角标自带底色，再叠投影会显脏 */
 .mtv-hero-ratings .mtv-rating-badge {
   text-shadow: none;
 }
 
-/* 桌面只留 logo 版、手机只留 text 版。
-   用媒体查询而不是 JS 判断窗口宽度，避免首帧在服务端与客户端之间闪一下。 */
-.mtv-hero-ratings .mtv-rating-row {
+/* 手机放三个源、桌面放五个。两版都渲染、显隐交给媒体查询，
+   避免首帧在服务端与客户端之间闪一下。 */
+.mtv-hero-ratings .is-wide {
   display: none;
 }
 
-.mtv-hero-ratings .mtv-rating-text {
+.mtv-hero-ratings .is-narrow {
   display: flex;
 }
 
-@media (min-width: 768px) {
+/* 手机上收一档：字号 12px、图标 14px、间距 10px，三个源才排得开 */
+@media (max-width: 767px) {
   .mtv-hero-ratings .mtv-rating-row {
+    gap: 10px;
+  }
+
+  .mtv-hero-ratings .mtv-rating {
+    gap: 4px;
+    font-size: 12px;
+  }
+
+  .mtv-hero-ratings .mtv-rating-badge svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+@media (min-width: 768px) {
+  .mtv-hero-ratings {
+    justify-content: flex-start;
+  }
+
+  .mtv-hero-ratings .is-wide {
     display: flex;
   }
 
-  .mtv-hero-ratings .mtv-rating-text {
+  .mtv-hero-ratings .is-narrow {
     display: none;
   }
 }
@@ -3310,9 +3348,10 @@ html[data-loading-style='grid'] .mtv-err-box {
   pointer-events: none;
 }
 
-/* 封面上的播放键。原来的 PlayCircleIcon 是 0.8 描边的空心圆+三角，缩到
-   50px 后线条细得几乎看不见，hover 填充品牌红又跟海报抢色。换成流媒体
-   站通行的做法：磨砂圆底 + 实心三角，hover 反白。 */
+/* 封面上的播放键。苹果那套是「半透明深色 + 强模糊 + 白色图形」，
+   既没有描边也没有纯白底：白色圆底压在彩色海报上会抢色，
+   一圈白描边则把它变成一张贴纸。
+   blur 用 18px，让底下海报的颜色透上来但不带细节。 */
 .mtv-card-play {
   display: flex;
   align-items: center;
@@ -3320,14 +3359,16 @@ html[data-loading-style='grid'] .mtv-err-box {
   width: 46px;
   height: 46px;
   border-radius: var(--ui-r-full);
-  background: rgba(0, 0, 0, 0.42);
-  border: 1px solid rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(6px);
+  background: rgba(24, 24, 27, 0.34);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
   color: #fff;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.24);
+  /* 提前建好合成层：backdrop-filter 首帧要等层建立才采样，
+     不预先建层就会出现「刚 hover 不糊、过一会儿才糊上」的跳变 */
+  transform: translateZ(0);
   transition: background-color var(--ui-dur-2) var(--ui-ease-out),
-    border-color var(--ui-dur-2) var(--ui-ease-out),
-    color var(--ui-dur-2) var(--ui-ease-out),
-    transform var(--ui-dur-2) var(--ui-ease-out);
+    box-shadow var(--ui-dur-2) var(--ui-ease-out);
 }
 
 /* 三角的几何重心偏左，右移 2px 才是视觉居中 */
@@ -3340,13 +3381,11 @@ html[data-loading-style='grid'] .mtv-err-box {
 }
 
 @media (hover: hover) {
-  /* hover 只提亮玻璃层，不反白：纯白圆底压在剧照上太抢眼，
-     和苹果那套「半透明磨砂 + 白图形」不是一回事 */
+  /* 只提亮玻璃层：不改 transform —— 缩放会触发合成层重建，
+     backdrop-filter 得重新采样，表现出来就是「模糊慢半拍」 */
   .group:hover .mtv-card-play {
-    background: rgba(0, 0, 0, 0.26);
-    border-color: rgba(255, 255, 255, 0.78);
-    color: #fff;
-    transform: scale(1.06);
+    background: rgba(52, 52, 56, 0.46);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.32);
   }
 }
 

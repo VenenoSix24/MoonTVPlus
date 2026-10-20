@@ -129,8 +129,8 @@ function HeroRatings({
   // 两个版本都渲染，显隐交给 CSS 媒体查询，避免首帧闪动
   return (
     <div className='mtv-hero-ratings'>
-      <RatingRow sources={sources} variant='logo' />
-      <RatingRow sources={compact} variant='text' />
+      <RatingRow sources={sources} className='is-wide' />
+      <RatingRow sources={compact} className='is-narrow' />
     </div>
   );
 }
