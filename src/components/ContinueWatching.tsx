@@ -123,11 +123,11 @@ export default function ContinueWatching({ className }: ContinueWatchingProps) {
               <span className='mtv-cw-divider' aria-hidden='true' />
               <button
                 type='button'
-                className='mtv-cw-all'
+                className='mtv-row-more'
                 onClick={() => setShowPlayRecordsPanel(true)}
-                aria-label='查看全部播放记录'
               >
-                <ChevronRight className='h-4 w-4' />
+                查看更多
+                <ChevronRight className='w-4 h-4 ml-1' />
               </button>
             </div>
           )}

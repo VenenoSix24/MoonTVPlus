@@ -1375,7 +1375,10 @@ html[data-loading-style='grid'] .mtv-err-box {
   align-items: center;
   gap: 2px;
   padding: 4px 8px;
+  border: 0;
   border-radius: var(--ui-r-sm);
+  background: none;
+  cursor: pointer;
   font-size: var(--ui-fs-meta);
   font-weight: 500;
   color: var(--ui-ink-3);
@@ -1388,14 +1391,19 @@ html[data-loading-style='grid'] .mtv-err-box {
   background-color: var(--ui-surface-3);
 }
 
+.mtv-row-more:focus-visible {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: 2px;
+}
 
-/* 「继续观看」标题行右侧：清空 / 查看全部 是两个不同的可点目标。
-   原来「清空」是裸文字，紧贴着 32px 的圆形箭头，间距只有 4px，很容易按错。
-   现在各自有完整的点击面，中间再插一条细分割线拉开距离。 */
+/* 「继续观看」标题行右侧：清空 与 查看更多 是两个不同的可点目标。
+   原来「清空」是裸文字、紧贴着一个小圆箭头，间距只有 4px，很容易按错。
+   现在「查看更多」和下面各区块共用 .mtv-row-more 那颗胶囊，「清空」自带点击面，
+   中间再插一条细分割线把「清除」和「跳转」两类动作分开。 */
 .mtv-cw-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .mtv-cw-clear {
@@ -1424,30 +1432,11 @@ html[data-loading-style='grid'] .mtv-err-box {
   background-color: var(--ui-hair-strong);
 }
 
-.mtv-cw-all {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--ui-r-full);
-  color: var(--ui-ink-3);
-  transition:
-    color var(--ui-dur-1) var(--ui-ease),
-    background-color var(--ui-dur-1) var(--ui-ease);
-}
-
-.mtv-cw-all:hover {
-  color: var(--ui-ink);
-  background-color: var(--ui-surface-3);
-}
-
-.mtv-cw-clear:focus-visible,
-.mtv-cw-all:focus-visible {
+.mtv-cw-clear:focus-visible {
   outline: 2px solid var(--ui-accent);
   outline-offset: 2px;
 }
+
 /* ==========================================================================
    桌面端顶部导航（取代固定侧栏）
    --------------------------------------------------------------------------
