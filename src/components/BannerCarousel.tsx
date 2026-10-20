@@ -32,7 +32,7 @@ import RatingRow, {
   type RatingSource,
   formatScore,
 } from '@/components/RatingRow';
-import { useImdbId, useOmdbRatings } from '@/hooks/useRatings';
+import { useImdbId, useOmdbRatings, prefetchRatings } from '@/hooks/useRatings';
 
 interface BannerCarouselProps {
   autoPlayInterval?: number; // 自动播放间隔（毫秒）
@@ -133,6 +133,59 @@ function HeroRatings({
       <RatingRow sources={compact} variant='text' />
     </div>
   );
+}
+
+/* 只负责预热，不渲染任何东西：Hero 手里本来就有整份 items，
+   数据到手后按顺序把每张片的评分备好，切过去时首帧就是完整数据。
+   串行 + 90ms 间隔是刻意的 —— 同时发 N×2 个请求会和标题 logo 抢带宽，
+   反而让首屏更慢，这也正是之前「切过去才加载、logo 也变慢」的来源。 */
+function HeroRatingPrefetch({
+  items,
+  dataSource,
+}: {
+  items: BannerItem[];
+  dataSource: string;
+}) {
+  const doneRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (dataSource !== 'TMDB' || items.length === 0) return;
+
+    let cancelled = false;
+
+    const run = async () => {
+      // 先把首屏让给标题字预取：logo 决定第一眼观感，评分晚一两秒没人会察觉
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+
+      for (const item of items) {
+        if (cancelled) return;
+        if (!item?.id) continue;
+
+        const mediaType: 'movie' | 'tv' =
+          item.media_type === 'tv' ? 'tv' : 'movie';
+        const key = `${mediaType}:${item.id}`;
+        if (doneRef.current.has(key)) continue;
+        doneRef.current.add(key);
+
+        try {
+          await prefetchRatings(mediaType, item.id);
+        } catch {
+          // 单张失败不影响其它张
+        }
+
+        if (cancelled) return;
+        await new Promise((resolve) => setTimeout(resolve, 90));
+      }
+    };
+
+    void run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [items, dataSource]);
+
+  return null;
 }
 export default function BannerCarousel({
   autoPlayInterval = 5000,
@@ -663,6 +716,8 @@ export default function BannerCarousel({
         }
       }}
     >
+
+      <HeroRatingPrefetch items={items} dataSource={dataSource} />
       {/* 背景图片或视频 */}
       <div className='absolute inset-0'>
         {items.map((item, index) => (

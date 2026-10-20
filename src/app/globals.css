@@ -3340,10 +3340,12 @@ html[data-loading-style='grid'] .mtv-err-box {
 }
 
 @media (hover: hover) {
+  /* hover 只提亮玻璃层，不反白：纯白圆底压在剧照上太抢眼，
+     和苹果那套「半透明磨砂 + 白图形」不是一回事 */
   .group:hover .mtv-card-play {
-    background: #fff;
-    border-color: #fff;
-    color: #000;
+    background: rgba(0, 0, 0, 0.26);
+    border-color: rgba(255, 255, 255, 0.78);
+    color: #fff;
     transform: scale(1.06);
   }
 }

@@ -318,7 +318,7 @@ export function markBangumiImageFallbackActive(): void {
 }
 
 /**
- * 探测主源图片域是否可达：请求 origin 主页（常见 404），5s 超时 + 防缓存。
+ * 探测主源图片域是否可达：请求一个存在的静态图，5s 超时 + 防缓存。
  * no-cors 下任意完成（含 404）视为可达；超时/DNS/断网视为不可达。
  * 失败时写入 sticky 降级（若有备源）。全局单飞 + 成功缓存 15 分钟。
  * @returns true=主源可用，false=应走备源
@@ -354,7 +354,9 @@ export async function ensureBangumiImagePrimaryProbed(): Promise<boolean> {
   }
 
   const probePromise = (async (): Promise<boolean> => {
-    const url = `${origin}/?_cb=${Date.now()}_${Math.random()
+    // 打一个确实存在的静态资源，而不是站点根路径：根路径在 lain.bgm.tv 是 404，
+    // no-cors 下虽然不影响判断，但浏览器控制台会记一条红色错误，容易被误当成故障
+    const url = `${origin}/img/no_icon_subject.png?_cb=${Date.now()}_${Math.random()
       .toString(36)
       .slice(2, 10)}`;
     try {

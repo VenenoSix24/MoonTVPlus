@@ -14,10 +14,87 @@ const EMPTY: OmdbRatings = {
   metacritic: null,
 };
 
-/* Hero 轮播切回上一张、以及 Hero 与播放页同时展示同一部片子时，
-   这两层内存缓存能挡掉重复请求。进程内即可，不需要持久化。 */
+/* 三层缓存都在模块级：Hero 轮播切回上一张、Hero 与播放页同时看同一部片子、
+   以及预加载与组件同时要同一份数据，都不该重复打网络。
+   进行中的请求单独登记，避免「预加载刚发出、组件又发一次」。 */
 const omdbCache = new Map<string, OmdbRatings>();
 const imdbIdCache = new Map<string, string | null>();
+const imdbIdInflight = new Map<string, Promise<string | null>>();
+const omdbInflight = new Map<string, Promise<OmdbRatings>>();
+
+async function fetchImdbId(
+  mediaType: 'movie' | 'tv',
+  tmdbId: number
+): Promise<string | null> {
+  const key = `${mediaType}:${tmdbId}`;
+
+  if (imdbIdCache.has(key)) return imdbIdCache.get(key) ?? null;
+
+  const running = imdbIdInflight.get(key);
+  if (running) return running;
+
+  const task = (async () => {
+    try {
+      const res = await fetch(
+        `/api/tmdb/external-ids?type=${mediaType}&id=${tmdbId}`
+      );
+      const json: { imdbId?: string | null } = await res.json();
+      const next = json?.imdbId || null;
+      // 查不到也缓存成 null：TMDB 上确实没映射的条目不该被反复重试
+      imdbIdCache.set(key, next);
+      return next;
+    } catch {
+      // 网络失败不写缓存，下次还能再试
+      return null;
+    } finally {
+      imdbIdInflight.delete(key);
+    }
+  })();
+
+  imdbIdInflight.set(key, task);
+  return task;
+}
+
+async function fetchOmdbRatings(imdbId: string): Promise<OmdbRatings> {
+  const hit = omdbCache.get(imdbId);
+  if (hit) return hit;
+
+  const running = omdbInflight.get(imdbId);
+  if (running) return running;
+
+  const task = (async () => {
+    try {
+      const res = await fetch(
+        `/api/omdb/ratings?imdb_id=${encodeURIComponent(imdbId)}`
+      );
+      const json: OmdbRatings = await res.json();
+      const next = { ...EMPTY, ...json };
+      omdbCache.set(imdbId, next);
+      return next;
+    } catch {
+      return EMPTY;
+    } finally {
+      omdbInflight.delete(imdbId);
+    }
+  })();
+
+  omdbInflight.set(imdbId, task);
+  return task;
+}
+
+/**
+ * 预热一部片子的评分。Hero 轮播在数据到手后就按顺序把后面几张备好，
+ * 切过去时首帧就是完整数据，不会再「先空一下再闪出来」。
+ */
+export function prefetchRatings(
+  mediaType: 'movie' | 'tv',
+  tmdbId: number
+): Promise<void> {
+  return fetchImdbId(mediaType, tmdbId).then((imdbId) => {
+    if (!imdbId) return;
+    return fetchOmdbRatings(imdbId).then(() => undefined);
+  });
+}
 
 export function useOmdbRatings(imdbId?: string | null): OmdbRatings {
   const [data, setData] = useState<OmdbRatings>(() => {
@@ -40,17 +117,10 @@ export function useOmdbRatings(imdbId?: string | null): OmdbRatings {
     let alive = true;
     setData(EMPTY);
 
-    fetch(`/api/omdb/ratings?imdb_id=${encodeURIComponent(imdbId)}`)
-      .then((res) => res.json())
-      .then((json: OmdbRatings) => {
-        if (!alive) return;
-        const next = { ...EMPTY, ...json };
-        omdbCache.set(imdbId, next);
-        setData(next);
-      })
-      .catch(() => {
-        // 拿不到就等于没有评分，评分行会自己跳过空源
-      });
+    fetchOmdbRatings(imdbId).then((next) => {
+      if (!alive) return;
+      setData(next);
+    });
 
     return () => {
       alive = false;
@@ -60,17 +130,11 @@ export function useOmdbRatings(imdbId?: string | null): OmdbRatings {
   return data;
 }
 
-/**
- * 从 TMDB 的 id 反查 imdb_id。
- * 只走 /external_ids 这个轻量端点，不拉完整详情——Hero 每切一张都要查，
- * 拉详情就太重了。查不到的条目会缓存成 null，避免反复重试。
- */
 export function useImdbId(
   mediaType?: 'movie' | 'tv' | null,
   tmdbId?: number | null
 ): string | null {
-  const key =
-    mediaType && tmdbId ? `${mediaType}:${tmdbId}` : undefined;
+  const key = mediaType && tmdbId ? `${mediaType}:${tmdbId}` : undefined;
 
   const [imdbId, setImdbId] = useState<string | null>(() =>
     key ? imdbIdCache.get(key) ?? null : null
@@ -88,20 +152,10 @@ export function useImdbId(
     }
 
     let alive = true;
-
-    fetch(
-      `/api/tmdb/external-ids?type=${mediaType}&id=${encodeURIComponent(tmdbId)}`
-    )
-      .then((res) => res.json())
-      .then((json: { imdbId?: string | null }) => {
-        if (!alive) return;
-        const next = json?.imdbId || null;
-        imdbIdCache.set(key, next);
-        setImdbId(next);
-      })
-      .catch(() => {
-        // 失败不写缓存，下次还能再试
-      });
+    fetchImdbId(mediaType, tmdbId).then((next) => {
+      if (!alive) return;
+      setImdbId(next);
+    });
 
     return () => {
       alive = false;
