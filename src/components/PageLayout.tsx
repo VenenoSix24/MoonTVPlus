@@ -97,9 +97,11 @@ const PageLayout = ({
 
               {/* 主内容 */}
               <main
-                className='mt-[calc(3rem+env(safe-area-inset-top))] mb-14 md:mt-0 md:mb-0 md:pt-16'
+                className='mt-[calc(48px+env(safe-area-inset-top))] mb-14 md:mt-0 md:mb-0 md:pt-16'
                 style={{
-                  paddingBottom: 'calc(3.5rem + env(safe-area-inset-bottom))',
+                  /* 底栏是 64px 的悬浮胶囊，离底 10px，再留 10px 呼吸 */
+                  paddingBottom:
+                    'calc(64px + 10px + 10px + env(safe-area-inset-bottom))',
                 }}
               >
                 {children}

@@ -2032,6 +2032,250 @@ html[data-loading-style='grid'] .mtv-err-box {
   background-color: color-mix(in srgb, var(--ui-ink) 5%, transparent);
 }
 
+/* ---------- /more 页（手机底栏第 5 格） ---------- */
+/* 底栏固定成五格之后，综艺、直播、影库、自定义这些挤不进去，全部收到这一页；
+   桌面也能直接访问，所以限宽居中，不铺满整行。 */
+
+.mtv-mp {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 4px var(--ui-gutter) 8px;
+}
+
+.mtv-mp-h1 {
+  padding: 8px 2px 18px;
+  font-size: var(--ui-fs-h1);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ui-ink);
+}
+
+.mtv-mp-group + .mtv-mp-group {
+  margin-top: 22px;
+}
+
+.mtv-mp-title {
+  padding: 0 14px 8px;
+  font-size: var(--ui-fs-micro);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--ui-ink-3);
+}
+
+.mtv-mp-list {
+  overflow: hidden;
+  border-radius: var(--ui-r-lg);
+  border: 1px solid var(--ui-hair);
+  background-color: var(--ui-surface-2);
+}
+
+.mtv-mp-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  height: 50px;
+  padding: 0 14px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.875rem;
+  text-align: left;
+  color: var(--ui-ink);
+  cursor: pointer;
+  transition: background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-mp-row + .mtv-mp-row {
+  border-top: 1px solid var(--ui-hair);
+}
+
+.mtv-mp-row:hover {
+  background-color: color-mix(in srgb, var(--ui-ink) 5%, transparent);
+}
+
+/* 「外观主题」这一行只显示当前值，点由下面的三段式负责 */
+.mtv-mp-row.is-static {
+  cursor: default;
+}
+
+
+/* ---------- 手机底栏：悬浮胶囊 ---------- */
+/* 不贴边：贴底时下层是纯色，backdrop-filter 糊不出东西，看着就是一条实心色带；
+   浮起来 10px 之后底下永远压着内容，模糊才有意义。
+   五格等分（flex:1 1 0; min-width:0），不再用 20vw + 横向滚动那套 —— 项数一变就会
+   把后面的格推出屏幕外，变成谁也发现不了的盲区。
+   限宽 384：五格各 76px 出头。再宽每格就散开了，图标之间空得发慌。 */
+
+.mtv-bnav {
+  position: fixed;
+  left: 50%;
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  z-index: var(--ui-z-nav);
+  width: calc(100% - 24px);
+  max-width: 384px;
+  height: 64px;
+  border-radius: var(--ui-r-full);
+  border: 1px solid var(--ui-hair);
+  /* 颜色全走令牌：深色是近黑的半透明，浅色自动变成白玻璃 */
+  background-color: color-mix(in srgb, var(--ui-surface) 76%, transparent);
+  backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: var(--ui-elev-2);
+  transform: translateX(-50%);
+}
+
+.mtv-bnav-list {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  height: 100%;
+  padding: 6px;
+}
+
+/* 选中底片：一块平底片跟着当前格平移，不用品牌红 */
+.mtv-bnav-pill {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 6px;
+  width: calc((100% - 12px) / 5);
+  border-radius: var(--ui-r-full);
+  background-color: color-mix(in srgb, var(--ui-ink) 10%, transparent);
+  transition: transform 220ms var(--ui-ease);
+  pointer-events: none;
+}
+
+.mtv-bnav-item {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--ui-ink-2);
+  transition: color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-bnav-item svg {
+  width: 20px;
+  height: 20px;
+  transition: transform 120ms var(--ui-ease);
+}
+
+.mtv-bnav-item:active svg {
+  transform: scale(0.9);
+}
+
+/* line-height:1 是关键：正文行高（1.5 以上）会让字盒比字形高出一截，
+   居中之后图标被顶到贴边、文字离底很远，两边不对称。 */
+.mtv-bnav-item span {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: var(--ui-fs-micro);
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.mtv-bnav-item.is-active {
+  color: var(--ui-ink);
+}
+
+.mtv-bnav-item.is-active span {
+  font-weight: 650;
+}
+
+/* ---------- 手机顶栏 ---------- */
+/* 只留 搜索 / 站名 / 头像 三件东西，其余（更多、主题、更新通知）都搬走了：
+   更多进底栏第 5 格，主题进用户菜单，更新通知手机端本来就没有。
+   分割线用 inset 阴影而不是 border —— border 会把 48px 撑成 49px，顶栏下面的
+   留白就得跟着写成小数。 */
+
+.mtv-mheader {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: var(--ui-z-nav);
+  width: 100%;
+  background-color: color-mix(in srgb, var(--ui-surface) 80%, transparent);
+  backdrop-filter: blur(20px) saturate(150%);
+  box-shadow: inset 0 -1px 0 var(--ui-hair);
+}
+
+.mtv-mp-row.is-static:hover {
+  background: none;
+}
+
+.mtv-mp-ic {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--ui-ink-2);
+}
+
+.mtv-mp-chev {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-left: auto;
+  color: var(--ui-ink-3);
+}
+
+.mtv-mp-row-t {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.mtv-mp-row-v {
+  flex: none;
+  margin-left: auto;
+  font-size: var(--ui-fs-meta);
+  color: var(--ui-ink-3);
+}
+
+.mtv-mp-theme {
+  padding: 0 14px 14px;
+}
+
+/* 主题三选：和用户菜单里那个同一个样子 */
+.mtv-mp-seg {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 10px;
+  background-color: var(--ui-surface-3);
+}
+
+.mtv-mp-seg button {
+  flex: 1;
+  height: 30px;
+  border: 0;
+  border-radius: var(--ui-r-sm);
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ui-ink-3);
+  cursor: pointer;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-mp-seg button:hover {
+    background-color: var(--ui-surface);
+}
+
+.mtv-mp-seg button[aria-pressed='true'] {
+  color: var(--ui-ink);
+  background-color: var(--ui-surface-2);
+  box-shadow: var(--ui-elev-1);
+}
+
 /* ---------- 通用弹窗外壳（跟随主题） ---------- */
 /* 播放页那套 .mtv-dialog 是写死深色的，只能给固定深色的播放页用；
    这里给全站通用弹窗用，颜色必须跟着 --ui-* 令牌走。 */
@@ -4758,4 +5002,44 @@ html[data-loading-style='grid'] .mtv-err-box {
     grid-template-columns: repeat(2, 1fr);
   }
 
+}
+
+/* ==========================================================================
+   导航无障碍兜底
+   ========================================================================== */
+/* 系统里关掉「透明效果」时，悬浮/毛玻璃一律退回纯色并去掉 backdrop-filter：
+   模糊层在低端设备上本来就卡，而且纯色底可读性只高不低。 */
+@media (prefers-reduced-transparency: reduce) {
+  .mtv-topnav.is-scrolled,
+  .mtv-mheader,
+  .mtv-bnav,
+  .mtv-umenu {
+    backdrop-filter: none;
+  }
+
+  .mtv-topnav.is-scrolled,
+  .mtv-mheader {
+    background-color: var(--ui-surface);
+  }
+
+  .mtv-bnav {
+    background-color: #161618;
+  }
+}
+
+/* 关掉动效时，底片平移、搜索展开、顶栏透明→实底都直接切 */
+@media (prefers-reduced-motion: reduce) {
+  .mtv-topnav,
+  .mtv-topnav::before,
+  .mtv-search,
+  .mtv-search-input,
+  .mtv-search-cancel,
+  .mtv-bnav-pill,
+  .mtv-bnav-item svg,
+  .mtv-mheader,
+  .mtv-umenu,
+  .mtv-mp-row {
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
+  }
 }

@@ -2,16 +2,7 @@
 
 'use client';
 
-import {
-  BookMarked,
-  BookOpen,
-  Bot,
-  LayoutGrid,
-  Link2,
-  ListVideo,
-  Music,
-  X,
-} from 'lucide-react';
+import { LayoutGrid, X } from 'lucide-react';
 import Link from 'next/link';
 import {
   createContext,
@@ -23,6 +14,9 @@ import {
   useState,
 } from 'react';
 import { createPortal } from 'react-dom';
+
+import { buildToolEntries } from '@/lib/more-entries';
+import type { MoreEntry } from '@/lib/more-entries';
 
 import AIChatPanel from './AIChatPanel';
 import DirectPlayDialog from './DirectPlayDialog';
@@ -47,6 +41,9 @@ interface MoreMenuActions {
 
 const MoreMenuContext = createContext<MoreMenuActions | null>(null);
 
+
+/** 给 /more 页面用：拿到直链播放 / AI 问片这两个弹窗的开关 */
+export const useMoreMenuActions = () => useContext(MoreMenuContext);
 export const MoreMenuProvider = ({
   children,
 }: {
@@ -90,25 +87,11 @@ export const MoreMenuProvider = ({
   );
 };
 
-interface MoreMenuItem {
-  key: string;
-  label: string;
-  icon: typeof Link2;
-  href?: string;
-  action?: 'direct-play' | 'ai';
-}
 
 const MoreMenuTrigger = ({ variant }: { variant: 'desktop' | 'mobile' }) => {
   const actions = useContext(MoreMenuContext);
   const [open, setOpen] = useState(false);
-  const [items, setItems] = useState<MoreMenuItem[]>([
-    {
-      key: 'direct-play',
-      label: '直链播放',
-      icon: Link2,
-      action: 'direct-play',
-    },
-  ]);
+  const [items, setItems] = useState<MoreEntry[]>([]);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -118,51 +101,8 @@ const MoreMenuTrigger = ({ variant }: { variant: 'desktop' | 'mobile' }) => {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const config = (window as any).RUNTIME_CONFIG;
-    const list: MoreMenuItem[] = [
-      {
-        key: 'direct-play',
-        label: '直链播放',
-        icon: Link2,
-        action: 'direct-play',
-      },
-    ];
-    if (config?.MUSIC_ENABLED) {
-      list.push({
-        key: 'music',
-        label: '音乐视听',
-        icon: Music,
-        href: '/music',
-      });
-    }
-    if (config?.SUWAYOMI_ENABLED) {
-      list.push({
-        key: 'manga',
-        label: '漫画展馆',
-        icon: BookOpen,
-        href: '/manga',
-      });
-    }
-    if (config?.BOOKS_ENABLED) {
-      list.push({
-        key: 'books',
-        label: '电子书馆',
-        icon: BookMarked,
-        href: '/books',
-      });
-    }
-    if (config?.ENABLE_SOURCE_SEARCH !== false) {
-      list.push({
-        key: 'source-search',
-        label: '源站寻片',
-        icon: ListVideo,
-        href: '/source-search',
-      });
-    }
-    if (config?.AI_ENABLED && config?.AI_ENABLE_HOMEPAGE_ENTRY) {
-      list.push({ key: 'ai', label: 'AI 问片', icon: Bot, action: 'ai' });
-    }
-    setItems(list);
+    // 桌面下拉和手机 /more 共用同一份工具表，条件只写在 lib 里一处
+    setItems(buildToolEntries((window as any).RUNTIME_CONFIG));
   }, []);
 
   const close = useCallback(() => setOpen(false), []);
@@ -184,7 +124,7 @@ const MoreMenuTrigger = ({ variant }: { variant: 'desktop' | 'mobile' }) => {
     };
   }, [open, variant, close]);
 
-  const run = (item: MoreMenuItem) => {
+  const run = (item: MoreEntry) => {
     close();
     if (item.action === 'direct-play') actions?.openDirectPlay();
     if (item.action === 'ai') actions?.openAI();
