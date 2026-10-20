@@ -860,7 +860,12 @@ export default function BannerCarousel({
                 alt=''
                 aria-hidden='true'
                 className={`mtv-hero-logo${logoDark ? ' is-dark' : ''}`}
-                style={{ '--logo-h': logoRem } as CSSProperties}
+                style={
+                  {
+                    '--logo-h': logoRem,
+                    '--logo-ratio': ratio || 3,
+                  } as CSSProperties
+                }
                 loading='eager'
                 decoding='sync'
               />
