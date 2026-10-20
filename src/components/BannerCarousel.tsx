@@ -750,13 +750,13 @@ export default function BannerCarousel({
   // 高度一样时，近方形的 logo（泥面人 1.5:1）宽度太小、显得弱；
   // 长条片名（登峰传奇 8.89:1）宽度又太大、横贯画面。按面积开方反推高度，
   // 再夹住宽度上限与上下界，几档下来占地才真的接近。
-  const LOGO_AREA = 11000; // 目标视觉面积（px²）
-  const LOGO_MAX_W = 384; // 与 CSS 的 max-width 保持一致
+  const LOGO_AREA = 16000; // 目标视觉面积（px²）
+  const LOGO_MAX_W = 440; // 与 CSS 的 max-width 保持一致
   const logoHeight = (() => {
     const r = ratio || 3;
     const ideal = Math.sqrt(LOGO_AREA / r);
     // 宽度顶到上限时的高度也要夹住，否则长条图会溢出
-    return Math.max(Math.min(ideal, LOGO_MAX_W / r, 92), 36);
+    return Math.max(Math.min(ideal, LOGO_MAX_W / r, 104), 42);
   })();
 
   // TMDB 源下标题字是异步取的。落地之前先把文字藏起来（占位仍在，不跳版），
