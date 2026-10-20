@@ -2907,14 +2907,20 @@ html[data-loading-style='grid'] .mtv-err-box {
   line-height: 1;
 }
 
-.mtv-rating.is-imdb .mtv-rating-badge {
-  background-color: #f5c518;
-  color: #000;
+.mtv-rating-badge img {
+  display: block;
+  width: 17px;
+  height: 17px;
 }
 
-.mtv-rating.is-tmdb .mtv-rating-badge {
-  background-image: linear-gradient(90deg, #90cea1 0%, #01b4e4 100%);
-  color: #03233a;
+/* IMDb / TMDB / Trakt 用彩色官方 logo：图标自带底色和圆角，
+   再垫一层色块就糊成一团，所以这里把底色和 padding 全部去掉 */
+.mtv-rating.is-imdb .mtv-rating-badge,
+.mtv-rating.is-tmdb .mtv-rating-badge,
+.mtv-rating.is-trakt .mtv-rating-badge {
+  min-width: 0;
+  padding: 0;
+  background: none;
 }
 
 .mtv-rating.is-douban .mtv-rating-badge {
@@ -2922,8 +2928,7 @@ html[data-loading-style='grid'] .mtv-err-box {
   color: #fff;
 }
 
-/* 烂番茄与 Metacritic 保留 emoji：图形 logo 缩到 16px 认不出，
-   这两个源的 emoji 反而更直观，也省掉图片资源 */
+/* 烂番茄与 Metacritic 保留 emoji：图形 logo 缩到 17px 认不出 */
 .mtv-rating.is-rt .mtv-rating-badge,
 .mtv-rating.is-metacritic .mtv-rating-badge {
   min-width: 0;

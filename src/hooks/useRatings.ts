@@ -115,6 +115,86 @@ async function fetchOmdbRatings(ref: RatingRef): Promise<OmdbRatings> {
   return task;
 }
 
+export interface TraktValue {
+  rating: number | null;
+  votes: number;
+}
+
+const EMPTY_TRAKT: TraktValue = { rating: null, votes: 0 };
+
+const traktCache = new Map<string, TraktValue>();
+const traktInflight = new Map<string, Promise<TraktValue>>();
+
+/** Trakt 评分只需要 TMDB id，走服务端代理（Client ID 不落前端） */
+async function fetchTraktRating(
+  mediaType: 'movie' | 'tv',
+  tmdbId: number
+): Promise<TraktValue> {
+  const key = `${mediaType}:${tmdbId}`;
+
+  const cached = traktCache.get(key);
+  if (cached) return cached;
+
+  const running = traktInflight.get(key);
+  if (running) return running;
+
+  const task = (async () => {
+    try {
+      const res = await fetch(
+        `/api/trakt/ratings?type=${mediaType}&id=${tmdbId}`
+      );
+      const json: TraktValue = await res.json();
+      const next = { ...EMPTY_TRAKT, ...json };
+      // 没有分数不写缓存，下次还有机会补上
+      if (next.rating !== null) traktCache.set(key, next);
+      return next;
+    } catch {
+      return EMPTY_TRAKT;
+    } finally {
+      traktInflight.delete(key);
+    }
+  })();
+
+  traktInflight.set(key, task);
+  return task;
+}
+
+export function useTraktRating(
+  mediaType?: 'movie' | 'tv' | null,
+  tmdbId?: number | null
+): TraktValue {
+  const key = mediaType && tmdbId ? `${mediaType}:${tmdbId}` : undefined;
+
+  const [data, setData] = useState<TraktValue>(() =>
+    key ? traktCache.get(key) || EMPTY_TRAKT : EMPTY_TRAKT
+  );
+
+  useEffect(() => {
+    if (!key || !mediaType || !tmdbId) {
+      setData(EMPTY_TRAKT);
+      return;
+    }
+
+    const cached = traktCache.get(key);
+    if (cached) {
+      setData(cached);
+      return;
+    }
+
+    let alive = true;
+    fetchTraktRating(mediaType, tmdbId).then((next) => {
+      if (!alive) return;
+      setData(next);
+    });
+
+    return () => {
+      alive = false;
+    };
+  }, [key, mediaType, tmdbId]);
+
+  return data;
+}
+
 /**
  * 预热一部片子的评分。Hero 轮播在数据到手后就按顺序把后面几张备好，
  * 切过去时首帧就是完整数据，不会再「先空一下再闪出来」。
@@ -123,9 +203,12 @@ export function prefetchRatings(
   mediaType: 'movie' | 'tv',
   tmdbId: number
 ): Promise<void> {
-  return fetchRatingRef(mediaType, tmdbId).then((ref) =>
-    fetchOmdbRatings(ref).then(() => undefined)
-  );
+  return Promise.all([
+    fetchRatingRef(mediaType, tmdbId).then((ref) =>
+      fetchOmdbRatings(ref).then(() => undefined)
+    ),
+    fetchTraktRating(mediaType, tmdbId).then(() => undefined),
+  ]).then(() => undefined);
 }
 
 export function useOmdbRatings(ref: RatingRef): OmdbRatings {

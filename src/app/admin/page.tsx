@@ -386,6 +386,7 @@ interface SiteConfig {
   TMDBProxy?: string;
   TMDBReverseProxy?: string;
   OMDbApiKey?: string;
+  TraktClientId?: string;
   TMDBImageBaseUrl?: string;
   BangumiDataSource?:
     | 'direct'
@@ -11278,6 +11279,7 @@ const SiteConfigComponent = ({
     TMDBProxy: '',
     TMDBReverseProxy: '',
     OMDbApiKey: '',
+    TraktClientId: '',
     TMDBImageBaseUrl: 'https://image.tmdb.org',
     BangumiDataSource: 'direct',
     BangumiApiBaseUrl: 'https://api.bgm.tv',
@@ -11405,6 +11407,7 @@ const SiteConfigComponent = ({
         TMDBProxy: config.SiteConfig.TMDBProxy || '',
         TMDBReverseProxy: config.SiteConfig.TMDBReverseProxy || '',
         OMDbApiKey: config.SiteConfig.OMDbApiKey || '',
+        TraktClientId: config.SiteConfig.TraktClientId || '',
         TMDBImageBaseUrl:
           config.SiteConfig.TMDBImageBaseUrl || 'https://image.tmdb.org',
         BangumiDataSource: config.SiteConfig.BangumiDataSource || 'direct',
@@ -12317,6 +12320,37 @@ const SiteConfigComponent = ({
                 className='text-ui-accent hover:underline'
               >
                 omdbapi.com
+              </a>
+            </p>
+          </div>
+
+          {/* Trakt.tv Client ID */}
+          <div>
+            <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2'>
+              Trakt Client ID
+            </label>
+            <input
+              type='text'
+              placeholder='请输入 Trakt Client ID'
+              value={siteSettings.TraktClientId}
+              onChange={(e) =>
+                setSiteSettings((prev) => ({
+                  ...prev,
+                  TraktClientId: e.target.value,
+                }))
+              }
+              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
+            />
+            <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
+              用于显示 Trakt.tv 的用户评分。在 Trakt 创建应用后即可拿到，只读公开数据不需要
+              OAuth。留空则不显示该项。获取地址{' '}
+              <a
+                href='https://trakt.tv/oauth/applications/new'
+                target='_blank'
+                rel='noopener noreferrer'
+                className='text-ui-accent hover:underline'
+              >
+                trakt.tv
               </a>
             </p>
           </div>

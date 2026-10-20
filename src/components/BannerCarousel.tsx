@@ -35,6 +35,7 @@ import RatingRow, {
 import {
   useOmdbRatings,
   useRatingRef,
+  useTraktRating,
   prefetchRatings,
 } from '@/hooks/useRatings';
 
@@ -98,6 +99,10 @@ function HeroRatings({
     isTmdb ? item.id : null
   );
   const omdb = useOmdbRatings(ratingRef);
+  const trakt = useTraktRating(
+    isTmdb ? item.media_type : null,
+    isTmdb ? item.id : null
+  );
 
   const sources: RatingSource[] = [];
 
@@ -111,6 +116,10 @@ function HeroRatings({
       key: dataSource === 'Douban' ? 'douban' : 'tmdb',
       value: own,
     });
+  }
+
+  if (trakt.rating) {
+    sources.push({ key: 'trakt', value: trakt.rating.toFixed(1) });
   }
 
   if (omdb.rottenTomatoes) {

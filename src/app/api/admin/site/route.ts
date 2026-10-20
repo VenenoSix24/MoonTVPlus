@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
       TMDBReverseProxy,
       TMDBImageBaseUrl,
       OMDbApiKey,
+      TraktClientId,
       BangumiDataSource,
       BangumiApiBaseUrl,
       BangumiImageBaseUrl,
@@ -114,6 +115,7 @@ export async function POST(request: NextRequest) {
       TMDBReverseProxy?: string;
       TMDBImageBaseUrl?: string;
       OMDbApiKey?: string;
+      TraktClientId?: string;
       BangumiDataSource?:
         | 'direct'
         | 'server-proxy'
@@ -192,6 +194,7 @@ export async function POST(request: NextRequest) {
       (TMDBImageBaseUrl !== undefined &&
         typeof TMDBImageBaseUrl !== 'string') ||
       (OMDbApiKey !== undefined && typeof OMDbApiKey !== 'string') ||
+      (TraktClientId !== undefined && typeof TraktClientId !== 'string') ||
       (BangumiDataSource !== undefined &&
         BangumiDataSource !== 'direct' &&
         BangumiDataSource !== 'server-proxy' &&
@@ -304,6 +307,8 @@ export async function POST(request: NextRequest) {
       TMDBImageBaseUrl: normalizeApiBaseUrl(TMDBImageBaseUrl),
       // 不是 URL，别过 normalizeApiBaseUrl；去空格是为了防止粘贴时带上空白导致 OMDb 返回 401
       OMDbApiKey: OMDbApiKey?.trim() || undefined,
+      // Trakt 的 Client ID 是 40 位左右的十六进制串，和 OMDb 一样不是 URL
+      TraktClientId: TraktClientId?.trim() || undefined,
       BangumiDataSource,
       BangumiApiBaseUrl: normalizeApiBaseUrl(BangumiApiBaseUrl),
       BangumiImageBaseUrl: normalizeApiBaseUrl(BangumiImageBaseUrl),

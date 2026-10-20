@@ -29,6 +29,8 @@ export interface AdminConfig {
     TMDBReverseProxy?: string;
     // OMDb 评分接口 Key（可选）：配了才显示 IMDb / 烂番茄 / Metacritic 评分
     OMDbApiKey?: string;
+    // Trakt.tv API 的 Client ID（可选）：配了才显示 Trakt 用户评分
+    TraktClientId?: string;
     // TMDB 图片默认地址：用户未在本地数据源设置中配置时，图片默认使用该地址
     TMDBImageBaseUrl?: string;
     // 动漫/Bangumi配置

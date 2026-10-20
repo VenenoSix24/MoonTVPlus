@@ -104,7 +104,11 @@ import {
   isRemoteRoomRateActive,
   usePlaySync,
 } from '@/hooks/usePlaySync';
-import { useOmdbRatings, useRatingRef } from '@/hooks/useRatings';
+import {
+  useOmdbRatings,
+  useRatingRef,
+  useTraktRating,
+} from '@/hooks/useRatings';
 
 import AIChatPanel from '@/components/AIChatPanel';
 import AIComments from '@/components/AIComments';
@@ -1090,6 +1094,10 @@ function PlayPageClient() {
     resolvedTmdbRef?.id
   );
   const omdbRatings = useOmdbRatings(ratingRef);
+  const traktRating = useTraktRating(
+    resolvedTmdbRef?.mediaType,
+    resolvedTmdbRef?.id
+  );
 
   const ratingSources = useMemo<RatingSource[]>(() => {
     const list: RatingSource[] = [];
@@ -1102,6 +1110,10 @@ function PlayPageClient() {
 
     const douban = formatScore(doubanRatingData?.value);
     if (douban) list.push({ key: 'douban', value: douban });
+
+    if (traktRating.rating) {
+      list.push({ key: 'trakt', value: traktRating.rating.toFixed(1) });
+    }
 
     if (omdbRatings.rottenTomatoes) {
       list.push({
@@ -1116,7 +1128,7 @@ function PlayPageClient() {
     }
 
     return list;
-  }, [omdbRatings, tmdbRatingData, doubanRatingData]);
+  }, [omdbRatings, traktRating, tmdbRatingData, doubanRatingData]);
   // 豆瓣额外信息
   const [doubanCardSubtitle, setDoubanCardSubtitle] = useState<string>('');
   const [doubanAka, setDoubanAka] = useState<string[]>([]);
