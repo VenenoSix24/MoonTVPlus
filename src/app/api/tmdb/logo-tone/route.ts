@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
 import { getTMDBImagesWithLang, getTMDBImageUrl } from '@/lib/tmdb.client';
-import { logoRank, TMDBImageAsset } from '@/lib/tmdb.logo';
+import { logoLangRank, TMDBImageAsset } from '@/lib/tmdb.logo';
 
 /**
  * 标题字（logo）分析。
@@ -204,8 +204,14 @@ async function handleBySrc(sharp: any, src: string) {
 /**
  * 在同片的多个 logo 里挑一张。
  *
- * 按语言 / 票数排好序之后逐个量，第一个「读得出来」的就是结果 —— 原生的浅色
- * 版本优先于反相出来的。全都读不出来才退回排第一的那张，并标记 dark 让前端反相。
+ * 语言只认中文和原产国语言（见 tmdb.logo.ts 的 logoLangRank），两样都没有就不挂
+ * logo，让前端回退文字标题 —— 中文站挂英文片名是硬伤。
+ *
+ * 组内保持 TMDB 的原始顺序逐个量，第一张「在暗底上读得出来」的胜出：
+ * 《偷天父子兵》的中文第一张就是浅色，《登峰传奇》的中文第一张是深色、第二张才
+ * 浅色。用户核对 TMDB 时说的「第一个」「第二个」就是这个原始顺序，所以这里绝不能
+ * 按票数重排 —— logo 的 vote_average 实测几乎全是 0，重排只会打乱它。
+ * 整组都读不出来才退回组内第一张，并标记 dark 让前端反相。
  */
 async function handleById(
   sharp: any,
@@ -213,9 +219,8 @@ async function handleById(
   id: string
 ) {
   const type = params.get('type') === 'tv' ? 'tv' : 'movie';
-  const preferZh = params.get('zh') === '1';
-  // pick3：换成「语言白名单 + 回退文字标题」，旧缓存不能再用
-  const cacheKey = `pick3:${type}:${id}:${preferZh ? 1 : 0}`;
+  // pick4：换 /images 全集端点 + 语言白名单 + 组内原始顺序，旧缓存全部作废
+  const cacheKey = `pick4:${type}:${id}`;
 
   const cached = readCache(cacheKey);
   if (cached) {
@@ -240,23 +245,12 @@ async function handleById(
       res.code === 200 && res.images?.logos ? res.images.logos : [];
     if (!logos.length) return NextResponse.json(EMPTY);
 
-    const originalLang = res.originalLanguage || '';
+    const originalLanguage = res.originalLanguage || '';
 
-    /**
-     * 语言候选只有两个：中文（站点语言）和影片的原产国语言。
-     *
-     * 这是白名单不是优先级 —— 两者都没有就不用 logo，回退成文字标题。
-     * 中文站显示英文片名是错的：《时光代理人》一张中文 logo 都没有，之前会
-     * 退而求其次拿英文的，页面上就成了英文片名。
-     */
-    const langRank = (asset: TMDBImageAsset): number | null => {
-      const lang = (asset.iso_639_1 || '').toLowerCase();
-      if (preferZh && lang.startsWith('zh')) return 0;
-      if (originalLang && lang.startsWith(originalLang)) return 1;
-      return null;
-    };
+    const rankOf = (asset: TMDBImageAsset) =>
+      logoLangRank(asset, originalLanguage);
 
-    const eligible = logos.filter((asset) => langRank(asset) !== null);
+    const eligible = logos.filter((asset) => rankOf(asset) !== null);
     if (!eligible.length) {
       const none: ToneResult = {
         noLogo: true,
@@ -270,22 +264,10 @@ async function handleById(
       });
     }
 
-    const ranked = [...eligible].sort((a, b) => {
-      const rank = (langRank(a) ?? 9) - (langRank(b) ?? 9);
-      if (rank !== 0) return rank;
-      const vote = (b.vote_average || 0) - (a.vote_average || 0);
-      if (vote !== 0) return vote;
-      return (b.vote_count || 0) - (a.vote_count || 0);
-    });
-
     // 只取优先级最高的那一组，一个都不跨组挑
-    const topRank = langRank(ranked[0]);
-    const group = ranked
-      .filter((asset) => langRank(asset) === topRank)
-      .slice(0, 4);
+    const topRank = Math.min(...eligible.map((asset) => rankOf(asset) ?? 9));
+    const group = eligible.filter((asset) => rankOf(asset) === topRank).slice(0, 8);
 
-    // 组内并发量一遍，找第一张「在暗底上读得出来」的：
-    // 中文有浅色版就用浅色版，没有就反相中文那张 —— 但始终是中文。
     const analyzed = await Promise.all(
       group.map(async (asset) => {
         try {

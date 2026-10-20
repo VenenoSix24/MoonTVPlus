@@ -16,27 +16,47 @@ export interface TMDBImageAsset {
   iso_639_1?: string | null;
 }
 
-/** 排序权重：片名是中文时优先中文标题字，否则中文/英文/无语言标记依次退让。 */
-export function logoRank(logo: TMDBImageAsset, preferZh: boolean): number {
+/**
+ * 语言白名单：只认中文和影片的原产国语言。
+ *
+ * 这是白名单不是排序权重 —— 两样都没有的片就不挂 logo，回退文字标题。
+ * 中文站上显示英文片名是硬伤，而 TMDB 的偏门片经常只有英/俄/韩版本，
+ * 按权重退让就会一路退到英文上去。
+ *
+ * 没有语言标记的多半是纯图形标题（不含文字），放最后兜底不会引入外语。
+ */
+export function logoLangRank(
+  logo: TMDBImageAsset,
+  originalLanguage?: string
+): number | null {
   const lang = (logo.iso_639_1 || '').toLowerCase();
-  if (lang.startsWith('zh')) return preferZh ? 0 : 1;
-  if (lang.startsWith('en')) return 2;
-  if (!lang) return 3; // 无语言标记的多半是纯图形标题，任何语言下都能用
-  return 4;
+  if (!lang) return 2;
+  if (lang.startsWith('zh')) return 0;
+  const origin = (originalLanguage || '').toLowerCase();
+  if (origin && lang.startsWith(origin)) return 1;
+  return null;
 }
 
+/**
+ * 挑标题字：白名单内取优先级最高的第一张。
+ *
+ * 组内保持 TMDB 返回的顺序，不按票数重排 —— logo 的 vote_average 实测几乎全是 0，
+ * 排序没有意义，反而会打乱官方提交的先后（用户核对 TMDB 时说的「第一个」就是它）。
+ */
 export function pickLogo(
   logos: TMDBImageAsset[],
-  preferZh: boolean
+  originalLanguage?: string
 ): TMDBImageAsset | null {
-  const sorted = [...logos].sort((a, b) => {
-    const rank = logoRank(a, preferZh) - logoRank(b, preferZh);
-    if (rank !== 0) return rank;
-    const vote = (b.vote_average || 0) - (a.vote_average || 0);
-    if (vote !== 0) return vote;
-    return (b.vote_count || 0) - (a.vote_count || 0);
-  });
-  return sorted[0] || null;
+  let best: TMDBImageAsset | null = null;
+  let bestRank = Number.POSITIVE_INFINITY;
+  for (const logo of logos) {
+    const rank = logoLangRank(logo, originalLanguage);
+    if (rank === null || rank >= bestRank) continue;
+    best = logo;
+    bestRank = rank;
+    if (rank === 0) break;
+  }
+  return best;
 }
 
 /**

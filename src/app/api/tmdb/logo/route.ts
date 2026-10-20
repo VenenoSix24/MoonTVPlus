@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getConfig } from '@/lib/config';
-import { getTMDBImages } from '@/lib/tmdb.client';
+import { getTMDBImagesWithLang } from '@/lib/tmdb.client';
 import { pickLogo, pickTextlessPoster, TMDBImageAsset } from '@/lib/tmdb.logo';
 
 export const runtime = 'nodejs';
@@ -17,7 +17,7 @@ export const runtime = 'nodejs';
  */
 
 /**
- * GET /api/tmdb/logo?id=xxx&type=movie|tv&zh=1
+ * GET /api/tmdb/logo?id=xxx&type=movie|tv
  * 返回 { logo_path, aspect_ratio }。没有标题字时 logo_path 为 null，
  * 前端据此回落到文字标题。
  */
@@ -31,7 +31,6 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     const type = searchParams.get('type') || 'movie';
-    const preferZh = searchParams.get('zh') === '1';
 
     if (!id) {
       return NextResponse.json({ error: '缺少ID参数' }, { status: 400 });
@@ -53,7 +52,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const response = await getTMDBImages(
+    const response = await getTMDBImagesWithLang(
       tmdbApiKey,
       parseInt(id, 10),
       type as 'movie' | 'tv',
@@ -69,7 +68,7 @@ export async function GET(request: NextRequest) {
     }
 
     const logos: TMDBImageAsset[] = response.images.logos || [];
-    const picked = pickLogo(logos, preferZh);
+    const picked = pickLogo(logos, response.originalLanguage);
     const textlessPoster = pickTextlessPoster(response.images.posters || []);
 
     return NextResponse.json({

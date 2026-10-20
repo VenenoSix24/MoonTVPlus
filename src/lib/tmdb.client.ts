@@ -1029,6 +1029,7 @@ export async function searchTMDBByTitle(
   poster_path: string | null;
   backdrop_path: string | null;
   vote_average?: number;
+  original_language?: string;
 } | null> {
   try {
     const actualKey = getNextApiKey(apiKey);
@@ -1075,6 +1076,7 @@ export async function searchTMDBByTitle(
       poster_path: best.poster_path || null,
       backdrop_path: best.backdrop_path || null,
       vote_average: best.vote_average,
+      original_language: best.original_language || '',
     };
   } catch (error) {
     console.error('TMDB 片名反查失败:', error);
@@ -1083,12 +1085,12 @@ export async function searchTMDBByTitle(
 }
 
 /**
- * 取图片列表，同时带上影片的原标题语言。
+ * 取图片列表，同时带上影片的原产国语言。
  *
- * 挑标题字时「同语言优先」不够用：《祈念守护人》的 logo 全是日/俄/韩，没有一个
- * 中文版，按语言排序会先挑到日文深色那张，而真正的白色版是同一语言里的第三张。
- * 原标题语言能告诉我们「这部片本来就是哪国的」，同语言内再按票数找，
- * 就不会跨到韩文去。
+ * 挑标题字要用全集，所以必须走 `/images` 端点。`append_to_response=images`
+ * 会按 include_image_language 过滤，默认只留英文那一小撮：《偷天父子兵》
+ * 的 /images 有 42 张（含 6 张中文），append 只回几张英文 —— 中文标题字
+ * 整组被吞掉，前端就只能显示英文片名。详情另外请求一次只为拿 original_language。
  */
 export async function getTMDBImagesWithLang(
   apiKey: string,
@@ -1104,19 +1106,29 @@ export async function getTMDBImagesWithLang(
     }
 
     const baseUrl = reverseProxyBaseUrl || DEFAULT_TMDB_BASE_URL;
-    const url = `${baseUrl}/3/${mediaType}/${mediaId}?append_to_response=images&api_key=${actualKey}`;
+    const [imagesRes, detailRes] = await Promise.all([
+      universalFetch(
+        `${baseUrl}/3/${mediaType}/${mediaId}/images?api_key=${actualKey}`,
+        proxy
+      ),
+      universalFetch(
+        `${baseUrl}/3/${mediaType}/${mediaId}?api_key=${actualKey}`,
+        proxy
+      ),
+    ]);
 
-    const response = await universalFetch(url, proxy);
-    if (!response.ok) {
-      return { code: response.status, images: null, originalLanguage: '' };
+    if (!imagesRes.ok) {
+      return { code: imagesRes.status, images: null, originalLanguage: '' };
     }
 
-    const data: any = await response.json();
+    const images: any = await imagesRes.json();
+    // 原产国语言拿不到不致命，只是白名单里少一条，仍能按中文挑
+    const detail: any = detailRes.ok ? await detailRes.json() : {};
 
     return {
       code: 200,
-      images: data.images ?? null,
-      originalLanguage: data.original_language || '',
+      images,
+      originalLanguage: detail.original_language || '',
     };
   } catch (error) {
     console.error('获取 TMDB 图片与原语言失败:', error);

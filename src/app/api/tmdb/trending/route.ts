@@ -10,7 +10,7 @@ import {
   getTMDBVideos,
   searchTMDBByTitle,
 } from '@/lib/tmdb.client';
-import { pickLogo, pickTextlessPoster, titlePrefersZh } from '@/lib/tmdb.logo';
+import { pickLogo, pickTextlessPoster } from '@/lib/tmdb.logo';
 
 // 缓存配置 - 服务器内存缓存3小时
 const CACHE_DURATION = 3 * 60 * 60 * 1000; // 3小时
@@ -447,7 +447,7 @@ async function getTMDBBannerContent(config: any): Promise<any> {
             ? imagesRes.images
             : null;
         const logo = images
-          ? pickLogo(images.logos || [], titlePrefersZh(item.title))
+          ? pickLogo(images.logos || [], item.original_language)
           : null;
         const textless = images
           ? pickTextlessPoster(images.posters || [])
@@ -660,7 +660,7 @@ async function enrichWithTmdbAssets(config: any, item: any): Promise<any> {
       ? imagesRes.images
       : null;
   const logo = images
-    ? pickLogo(images.logos || [], titlePrefersZh(item.title))
+    ? pickLogo(images.logos || [], hit.original_language)
     : null;
   const textless = images
     ? pickTextlessPoster(images.posters || [])

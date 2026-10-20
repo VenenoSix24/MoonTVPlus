@@ -622,7 +622,7 @@ export default function BannerCarousel({
       const kind = item.media_type === 'tv' ? 'tv' : 'movie';
       const zh = /[\u3400-\u9fff\uf900-\ufaff]/.test(item.title) ? 1 : 0;
 
-      fetch(`/api/tmdb/logo-tone?id=${tmdbId}&type=${kind}&zh=${zh}&v=7`)
+      fetch(`/api/tmdb/logo-tone?id=${tmdbId}&type=${kind}&zh=${zh}&v=8`)
         .then((res) => res.json())
         .then((data) => {
           // 没有中文、也没有原产国语言的标题字：回退文字标题。
