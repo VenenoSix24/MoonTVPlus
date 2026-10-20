@@ -19,6 +19,10 @@ function headers(clientId: string) {
     'Content-Type': 'application/json',
     'trakt-api-version': '2',
     'trakt-api-key': clientId,
+    // Trakt 会拒绝没有 User-Agent 的请求：Node 的 fetch 默认 UA 是 "node"，
+    // 不带 UA 一律 403。浏览器和 PowerShell 自带 UA，所以手测时看着是通的。
+    'User-Agent': 'MoonTVPlus/1.0',
+    Accept: 'application/json',
   };
 }
 

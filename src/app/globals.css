@@ -1487,6 +1487,16 @@ html[data-loading-style='grid'] .mtv-err-box {
   --nav-hover-bg: rgba(255, 255, 255, 0.12);
 }
 
+/* 播放页 / 直播页：没有 Hero 可以「透明压在上面」，底是固定的深色画布。
+   这里给一层深色磨砂实底 —— 内容滚过顶栏时不会直接穿过去，
+   同时保留一点透光，不至于变成一条生硬的黑条。 */
+.mtv-mheader.is-on-dark {
+  background-color: rgba(10, 10, 12, 0.62);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 /* 顶部暗角：只在压着 Hero 时出现。
    暗角必须是暗的 —— 之前写成「页面底色混透明」，深色下刚好等于 rgba(0,0,0,.72)
    看不出问题，浅色下就变成在海报顶上糊了一条白带，和「顶栏透明」直接打架。
@@ -2844,7 +2854,7 @@ html[data-loading-style='grid'] .mtv-err-box {
   width: auto;
   height: auto;
   max-width: min(100%, 34rem);
-  max-height: clamp(2.25rem, 5vw, 5rem);
+  max-height: clamp(2.5rem, 5.5vw, 5.5rem);
   object-fit: contain;
   /* 透明 PNG 用 drop-shadow 才贴着字形轮廓，box-shadow 会描出一个矩形 */
   filter: drop-shadow(0 2px 12px var(--hero-title-shadow));
@@ -2993,20 +3003,25 @@ html[data-loading-style='grid'] .mtv-err-box {
   display: flex;
 }
 
-/* 手机上收一档：字号 12px、图标 14px、间距 10px，三个源才排得开 */
+/* Hero 里的评分要看得清图标：手机基准 13.5px / 图标 17px，
+   桌面 15px / 图标 20px。原来手机是 12px + 14px，压在剧照上糊成一条。 */
 @media (max-width: 767px) {
   .mtv-hero-ratings .mtv-rating-row {
-    gap: 10px;
+    gap: 12px;
   }
 
   .mtv-hero-ratings .mtv-rating {
-    gap: 4px;
-    font-size: 12px;
+    gap: 5px;
+    font-size: 13.5px;
   }
 
-  .mtv-hero-ratings .mtv-rating-badge svg {
-    width: 14px;
-    height: 14px;
+  .mtv-hero-ratings .mtv-rating-badge {
+    height: 17px;
+  }
+
+  .mtv-hero-ratings .mtv-rating-badge img {
+    width: 17px;
+    height: 17px;
   }
 }
 
@@ -3021,6 +3036,20 @@ html[data-loading-style='grid'] .mtv-err-box {
 
   .mtv-hero-ratings .is-narrow {
     display: none;
+  }
+
+  .mtv-hero-ratings .mtv-rating {
+    gap: 7px;
+    font-size: 15px;
+  }
+
+  .mtv-hero-ratings .mtv-rating-badge {
+    height: 20px;
+  }
+
+  .mtv-hero-ratings .mtv-rating-badge img {
+    width: 20px;
+    height: 20px;
   }
 }
 
@@ -3280,7 +3309,10 @@ html[data-loading-style='grid'] .mtv-err-box {
   /* 标题字放大并居中：它现在是画面的视觉中心，不再是一行说明文字。
      注意 logo 是 <img>（块级替换元素），text-align 管不到它，必须用自动外边距。 */
   .mtv-hero-logo {
-    max-height: clamp(2.75rem, 12vw, 4.5rem);
+    /* 手机端标题字是画面视觉中心，46px 左右读着太怯；提到 16vw（390px 下约 62px）。
+       宽扁的 logo 会被上面的 max-width: 100% 先截住，不会因为这里调大就溢出，
+       所以不需要额外判断宽高比。 */
+    max-height: clamp(3rem, 16vw, 5rem);
     margin-inline: auto;
   }
 

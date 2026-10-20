@@ -28,14 +28,18 @@ interface MobileHeaderProps {
 const MobileHeader = ({ showBackButton = false }: MobileHeaderProps) => {
   const { siteName } = useSite();
   const headerRef = useRef<HTMLElement | null>(null);
-  const { overHero } = useNavScrollState(headerRef);
+  const { overHero, onDarkCanvas } = useNavScrollState(headerRef);
 
   return (
     <header
       ref={headerRef}
-      className={
-        overHero ? 'mtv-mheader is-over-hero md:hidden' : 'mtv-mheader md:hidden'
-      }
+      className={[
+        'mtv-mheader md:hidden',
+        overHero ? 'is-over-hero' : '',
+        onDarkCanvas ? 'is-on-dark' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
       style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
       <div className='relative flex h-12 items-center justify-between px-4'>

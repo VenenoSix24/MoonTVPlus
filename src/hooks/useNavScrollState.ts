@@ -19,6 +19,8 @@ export const useNavScrollState = (
 ) => {
   const [overHero, setOverHero] = useState(false);
   const [scrollTop, setScrollTop] = useState(0);
+  // 播放页这类「固定深色画布、没有 Hero」的页面：顶栏要白字 + 模糊实底
+  const [onDarkCanvas, setOnDarkCanvas] = useState(false);
 
   useEffect(() => {
     let hero: HTMLElement | null = null;
@@ -42,9 +44,14 @@ export const useNavScrollState = (
       // 这种页面没有 .mtv-hero，光靠下面的矩形相交判定永远得不出"压在暗色上"，
       // 所以直接短路成白色那套。
       if (document.querySelector('.mtv-play-bg')) {
+        // 播放页 / 直播页：没有 Hero，但底是固定深色画布。
+        // 文字要白色，同时顶栏不能保持透明 —— 否则内容会从顶栏下面穿过去。
+        setOnDarkCanvas(true);
         setOverHero(true);
         return;
       }
+
+      setOnDarkCanvas(false);
 
       const headerRect = headerRef.current?.getBoundingClientRect();
       const heroRect = hero?.getBoundingClientRect();
@@ -74,5 +81,5 @@ export const useNavScrollState = (
     };
   }, [headerRef]);
 
-  return { overHero, scrollTop };
+  return { overHero, onDarkCanvas, scrollTop };
 };
