@@ -104,6 +104,7 @@ import {
   isRemoteRoomRateActive,
   usePlaySync,
 } from '@/hooks/usePlaySync';
+import { useImdbId, useOmdbRatings } from '@/hooks/useRatings';
 
 import AIChatPanel from '@/components/AIChatPanel';
 import AIComments from '@/components/AIComments';
@@ -125,6 +126,10 @@ import PageLayout from '@/components/PageLayout';
 import PansouSearch from '@/components/PansouSearch';
 import ProxyImage from '@/components/ProxyImage';
 import { useSite } from '@/components/SiteProvider';
+import RatingRow, {
+  type RatingSource,
+  formatScore,
+} from '@/components/RatingRow';
 import SmartRecommendations from '@/components/SmartRecommendations';
 import Toast, { ToastProps } from '@/components/Toast';
 import VideoCard from '@/components/VideoCard';
@@ -262,22 +267,6 @@ function resolveTmdbSeason(
     }
   }
   return null;
-}
-
-/**
- * 评分胶囊里跟在分数后面的来源标签。
- * 豆瓣有评分人数时带上人数；TMDB 兜底时如实写 TMDB —— 不要拿 TMDB 的分标「豆瓣」。
- */
-function formatRatingSource(rating: {
-  count: number;
-  source: 'douban' | 'tmdb';
-}): string {
-  if (rating.source !== 'douban') return 'TMDB';
-  if (rating.count <= 0) return '豆瓣';
-  if (rating.count >= 10000) {
-    return `豆瓣 ${(rating.count / 10000).toFixed(1)} 万人评`;
-  }
-  return `豆瓣 ${rating.count} 人评`;
 }
 
 interface CustomSubtitleState {
@@ -1090,6 +1079,38 @@ function PlayPageClient() {
     }
     return null;
   }, [doubanRatingData, tmdbRatingData]);
+
+  // 多源评分：先由 TMDB 的 external_ids 反查 imdb_id，再据此问 OMDb 要
+  // IMDb / 烂番茄 / Metacritic。两步各自带内存缓存，切换剧集不会重复打网络
+  const imdbId = useImdbId(resolvedTmdbRef?.mediaType, resolvedTmdbRef?.id);
+  const omdbRatings = useOmdbRatings(imdbId);
+
+  const ratingSources = useMemo<RatingSource[]>(() => {
+    const list: RatingSource[] = [];
+
+    const imdb = formatScore(omdbRatings.imdb);
+    if (imdb) list.push({ key: 'imdb', value: imdb });
+
+    const tmdb = formatScore(tmdbRatingData?.value);
+    if (tmdb) list.push({ key: 'tmdb', value: tmdb });
+
+    const douban = formatScore(doubanRatingData?.value);
+    if (douban) list.push({ key: 'douban', value: douban });
+
+    if (omdbRatings.rottenTomatoes) {
+      list.push({
+        key: 'rt',
+        value: String(omdbRatings.rottenTomatoes),
+        percent: true,
+      });
+    }
+
+    if (omdbRatings.metacritic) {
+      list.push({ key: 'metacritic', value: String(omdbRatings.metacritic) });
+    }
+
+    return list;
+  }, [omdbRatings, tmdbRatingData, doubanRatingData]);
   // 豆瓣额外信息
   const [doubanCardSubtitle, setDoubanCardSubtitle] = useState<string>('');
   const [doubanAka, setDoubanAka] = useState<string[]>([]);
@@ -12357,18 +12378,6 @@ function PlayPageClient() {
                               </div>
                             )}
                           </span>
-                          {/* 评分胶囊：贴在标题右侧。原来是一列裸文字（数字在上、
-                              来源在下），既不好看也不好读 */}
-                          {doubanRating && (
-                            <span
-                              className='mtv-play-score flex-shrink-0'
-                              title={`${formatRatingSource(doubanRating)}评分 ${doubanRating.value.toFixed(1)}`}
-                            >
-                              <Star className='mtv-play-score-star' aria-hidden='true' />
-                              <b>{doubanRating.value.toFixed(1)}</b>
-                              <i>{formatRatingSource(doubanRating)}</i>
-                            </span>
-                          )}
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -12411,8 +12420,16 @@ function PlayPageClient() {
                           )}
                         </h1>
 
-                        {/* 标题行徽章：完结状态 / 年份 / 类型标签。评分不在这里，
-                            跟在标题后面；画质角标也去掉了（换源列表里能看到） */}
+                        {/* 多源评分：独立成行，标题行只留标题和操作图标。
+                            哪个源没数据就不渲染哪个，冷门片只剩一两项是常态 */}
+                        {ratingSources.length > 0 && (
+                          <div className='mtv-play-ratings'>
+                            <RatingRow sources={ratingSources} />
+                          </div>
+                        )}
+
+                        {/* 标题行徽章：完结状态 / 年份 / 类型标签。
+                            评分已独立成行，画质角标也去掉了（换源列表里能看到） */}
                         <div className='mtv-play-badges'>
                           {detail?.vod_remarks && (
                             <span className='mtv-play-badge mtv-play-badge-done'>
