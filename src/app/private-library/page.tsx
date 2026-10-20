@@ -804,10 +804,10 @@ export default function PrivateLibraryPage() {
                       showSortDropdown
                         ? isDefaultSort()
                           ? 'text-gray-900 dark:text-gray-100 cursor-default'
-                          : 'text-green-600 dark:text-green-400 cursor-default'
+                          : 'text-ui-accent  cursor-default'
                         : isDefaultSort()
                           ? 'text-gray-700 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 cursor-pointer'
-                          : 'text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 cursor-pointer'
+                          : 'text-ui-accent hover:text-ui-accent   cursor-pointer'
                     }`}
                   >
                     <span>{getSortDisplayText()}</span>
@@ -831,7 +831,7 @@ export default function PrivateLibraryPage() {
                     className={`relative z-10 px-1.5 py-0.5 sm:px-2 sm:py-1 md:px-4 md:py-2 text-xs sm:text-sm font-medium rounded-full transition-all duration-200 whitespace-nowrap ${
                       isDefaultSort()
                         ? 'text-gray-700 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 cursor-pointer'
-                        : 'text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 cursor-pointer'
+                        : 'text-ui-accent hover:text-ui-accent   cursor-pointer'
                     }`}
                     aria-label={sortOrder === 'Ascending' ? '升序' : '降序'}
                   >
@@ -868,7 +868,7 @@ export default function PrivateLibraryPage() {
                     onClick={() => handleSortOptionSelect(option.value)}
                     className={`px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm rounded-lg transition-all duration-200 text-left ${
                       sortBy === option.value
-                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-700'
+                        ? 'bg-ui-accent-soft text-ui-accent   border border-ui-accent '
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100/80 dark:hover:bg-gray-700/80'
                     }`}
                   >
@@ -1010,7 +1010,7 @@ export default function PrivateLibraryPage() {
                         className='flex items-center gap-2 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-left'
                       >
                         {isVideoFile ? (
-                          <svg className='w-5 h-5 text-green-600 flex-shrink-0' fill='currentColor' viewBox='0 0 20 20'>
+                          <svg className='w-5 h-5 text-ui-accent flex-shrink-0' fill='currentColor' viewBox='0 0 20 20'>
                             <path d='M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z' />
                           </svg>
                         ) : (
@@ -1105,7 +1105,7 @@ export default function PrivateLibraryPage() {
                         }}
                         className='flex items-center gap-2 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-left'
                       >
-                        <svg className='w-5 h-5 text-green-600' fill='currentColor' viewBox='0 0 20 20'>
+                        <svg className='w-5 h-5 text-ui-accent' fill='currentColor' viewBox='0 0 20 20'>
                           <path d='M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z' />
                         </svg>
                         <span className='text-sm truncate'>{file.name}</span>

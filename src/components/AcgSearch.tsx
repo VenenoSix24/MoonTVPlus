@@ -522,7 +522,7 @@ export default function AcgSearch({
       return (
         <div className='flex items-center justify-center py-12'>
           <div className='text-center'>
-            <Loader2 className='mx-auto h-8 w-8 animate-spin text-green-600 dark:text-green-400' />
+            <Loader2 className='mx-auto h-8 w-8 animate-spin text-ui-accent ' />
             <p className='mt-4 text-sm text-gray-600 dark:text-gray-400'>
               正在搜索动漫资源...
             </p>
@@ -568,7 +568,7 @@ export default function AcgSearch({
             return (
             <div
               key={itemId}
-              className='p-4 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-green-400 dark:hover:border-green-600 transition-colors'
+              className='p-4 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-ui-accent dark:hover:border-ui-accent transition-colors'
             >
               {/* 标题 */}
               <div className='mb-2 font-medium text-gray-900 dark:text-gray-100'>
@@ -629,7 +629,7 @@ export default function AcgSearch({
                 <button
                   onClick={() => handleOpenDownloadDialog(item, index)}
                   disabled={downloadingId === itemId}
-                  className='flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-green-600 text-white text-sm hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
+                  className='flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-ui-accent text-white text-sm hover:bg-ui-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
                   title='存到私人影库'
                 >
                   {downloadingId === itemId ? (
@@ -698,7 +698,7 @@ export default function AcgSearch({
           hasMore && (
           <div ref={loadMoreRef} className='flex items-center justify-center py-8'>
             <div className='text-center'>
-              <Loader2 className='mx-auto h-6 w-6 animate-spin text-green-600 dark:text-green-400' />
+              <Loader2 className='mx-auto h-6 w-6 animate-spin text-ui-accent ' />
               <p className='mt-2 text-sm text-gray-600 dark:text-gray-400'>
                 加载更多...
               </p>
@@ -718,7 +718,7 @@ export default function AcgSearch({
                 value={customName}
                 onChange={(e) => setCustomName(e.target.value)}
                 placeholder='请输入资源名称'
-                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500'
+                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-ui-accent'
                 autoFocus
               />
               <label className='mt-4 block text-sm font-medium text-gray-700 dark:text-gray-300'>
@@ -727,7 +727,7 @@ export default function AcgSearch({
               <select
                 value={downloadTool}
                 onChange={(e) => setDownloadTool(e.target.value as DownloadTool)}
-                className='mt-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500'
+                className='mt-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-ui-accent'
               >
                 {downloadToolOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -750,7 +750,7 @@ export default function AcgSearch({
                 <button
                   onClick={handleConfirmDownload}
                   disabled={!customName.trim()}
-                  className='px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
+                  className='px-4 py-2 rounded-lg bg-ui-accent text-white hover:bg-ui-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
                 >
                   确定
                 </button>

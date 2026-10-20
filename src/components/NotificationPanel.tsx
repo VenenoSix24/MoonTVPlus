@@ -175,7 +175,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
               通知中心
             </h3>
             {notifications.length > 0 && (
-              <span className='px-2 py-0.5 text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 rounded-full'>
+              <span className='px-2 py-0.5 text-xs font-medium bg-ui-accent-soft text-ui-accent   rounded-full'>
                 {notifications.filter((n) => !n.read).length} 条未读
               </span>
             )}
@@ -221,7 +221,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
 
           {loading ? (
             <div className='flex items-center justify-center py-12'>
-              <div className='w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin'></div>
+              <div className='w-8 h-8 border-4 border-ui-accent border-t-transparent rounded-full animate-spin'></div>
             </div>
           ) : notifications.length === 0 ? (
             <div className='flex flex-1 flex-col items-center justify-center py-12 text-gray-500 dark:text-gray-400'>
@@ -236,13 +236,13 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
                   className={`group relative p-4 rounded-lg border transition-all cursor-pointer ${
                     notification.read
                       ? 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700'
-                      : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+                      : 'bg-ui-accent-soft  border-ui-accent '
                   } hover:shadow-md`}
                   onClick={() => handleNotificationClick(notification)}
                 >
                   {/* 未读标识 */}
                   {!notification.read && (
-                    <div className='absolute top-4 right-4 w-2 h-2 bg-green-500 rounded-full'></div>
+                    <div className='absolute top-4 right-4 w-2 h-2 bg-ui-accent rounded-full'></div>
                   )}
 
                   {/* 通知内容 */}
@@ -271,7 +271,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
                         className='p-1.5 rounded-full bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors'
                         title='标记为已读'
                       >
-                        <Check className='w-3.5 h-3.5 text-green-600 dark:text-green-400' />
+                        <Check className='w-3.5 h-3.5 text-ui-accent ' />
                       </button>
                     )}
                     <button

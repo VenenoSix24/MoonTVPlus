@@ -267,7 +267,7 @@ export function EmailSettingsPanel({
                   <div className='space-y-2 rounded-xl bg-white p-3 dark:bg-gray-900/70'>
                     <div className='flex items-center justify-between gap-3 text-sm'>
                       <span className='text-gray-600 dark:text-gray-400'>当前设备</span>
-                      <span className={`font-medium ${pushNotificationsSupported ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                      <span className={`font-medium ${pushNotificationsSupported ? 'text-ui-accent ' : 'text-amber-600 dark:text-amber-400'}`}>
                         {pushNotificationsSupported ? '可用' : '需支持或授权'}
                       </span>
                     </div>
@@ -304,7 +304,7 @@ export function EmailSettingsPanel({
                     <div className='space-y-3 rounded-xl bg-white p-3 dark:bg-gray-900/70'>
                       <div className='flex items-center justify-between gap-3 text-sm'>
                         <span className='text-gray-600 dark:text-gray-400'>绑定状态</span>
-                        <span className={`font-medium ${telegramBound ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                        <span className={`font-medium ${telegramBound ? 'text-ui-accent ' : 'text-amber-600 dark:text-amber-400'}`}>
                           {telegramBound ? `已绑定${telegramUsername ? ` @${telegramUsername}` : ''}` : '未绑定'}
                         </span>
                       </div>
@@ -377,7 +377,7 @@ export function EmailSettingsPanel({
                   role={statusType === 'error' ? 'alert' : 'status'}
                   className={`text-center text-xs ${
                     statusType === 'success'
-                      ? 'text-green-600 dark:text-green-400'
+                      ? 'text-ui-accent '
                       : 'text-red-600 dark:text-red-400'
                   }`}
                 >

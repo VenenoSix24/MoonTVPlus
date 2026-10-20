@@ -714,11 +714,11 @@ function WatchRoomPageContent() {
                 {currentRoom ? (
                   <div className="space-y-4">
                     {/* 房间信息卡片 */}
-                    <div className="bg-gradient-to-r from-green-500 to-teal-600 rounded-xl p-6 text-white">
+                    <div className="bg-gradient-to-r from-ui-accent to-teal-600 rounded-xl p-6 text-white">
                       <div className="flex items-start justify-between mb-4">
                         <div>
                           <h3 className="text-2xl font-bold mb-1">{currentRoom.name}</h3>
-                          <p className="text-green-100 text-sm">{currentRoom.description || '暂无描述'}</p>
+                          <p className="text-white text-sm">{currentRoom.description || '暂无描述'}</p>
                         </div>
                         {isOwner && (
                           <span className="bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-xs font-bold">
@@ -729,15 +729,15 @@ function WatchRoomPageContent() {
 
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
                         <div className="bg-white/10 backdrop-blur rounded-lg p-3">
-                          <p className="text-green-100 text-xs mb-1">房间号</p>
+                          <p className="text-white text-xs mb-1">房间号</p>
                           <p className="text-xl font-mono font-bold">{currentRoom.id}</p>
                         </div>
                         <div className="bg-white/10 backdrop-blur rounded-lg p-3">
-                          <p className="text-green-100 text-xs mb-1">成员数</p>
+                          <p className="text-white text-xs mb-1">成员数</p>
                           <p className="text-xl font-bold">{members.length} 人</p>
                         </div>
                         <div className="bg-white/10 backdrop-blur rounded-lg p-3">
-                          <p className="text-green-100 text-xs mb-1">房间类型</p>
+                          <p className="text-white text-xs mb-1">房间类型</p>
                           <p className="text-base font-bold">{currentRoom.roomType === 'screen' ? '屏幕共享' : '进度同步'}</p>
                         </div>
                       </div>
@@ -771,8 +771,8 @@ function WatchRoomPageContent() {
                     </div>
 
                     {/* 提示信息 */}
-                    <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
-                      <p className="text-sm text-green-800 dark:text-green-200">
+                    <div className="bg-ui-accent-soft  rounded-lg p-4 border border-ui-accent ">
+                      <p className="text-sm text-ui-accent ">
                         💡 {currentRoom.roomType === 'screen'
                           ? '这是屏幕共享房间，进入后即可观看房主共享画面'
                           : isOwner ? '前往播放页面或直播页面开始观影，房间成员将自动同步您的操作' : '等待房主开始播放，您的播放进度将自动跟随房主'}
@@ -782,8 +782,8 @@ function WatchRoomPageContent() {
                 ) : (
                   <form onSubmit={handleJoinRoom} className="space-y-4">
                   {/* 显示当前用户 */}
-                  <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 border border-green-200 dark:border-green-800">
-                    <p className="text-sm text-green-800 dark:text-green-200">
+                  <div className="bg-ui-accent-soft  rounded-lg p-3 border border-ui-accent ">
+                    <p className="text-sm text-ui-accent ">
                       <strong>当前用户：</strong>{currentUsername}
                     </p>
                   </div>
@@ -797,7 +797,7 @@ function WatchRoomPageContent() {
                       value={joinForm.roomId}
                       onChange={(e) => setJoinForm({ ...joinForm, roomId: e.target.value.toUpperCase() })}
                       placeholder="请输入6位房间号"
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono text-lg tracking-wider focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono text-lg tracking-wider focus:outline-none focus:ring-2 focus:ring-ui-accent"
                       maxLength={6}
                       required
                     />
@@ -812,7 +812,7 @@ function WatchRoomPageContent() {
                       value={joinForm.password}
                       onChange={(e) => setJoinForm({ ...joinForm, password: e.target.value })}
                       placeholder="如果房间有密码，请输入"
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-ui-accent"
                       maxLength={20}
                     />
                   </div>
@@ -820,7 +820,7 @@ function WatchRoomPageContent() {
                   <button
                     type="submit"
                     disabled={joinLoading || !joinForm.roomId.trim()}
-                    className="w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-400 text-white font-medium py-3 rounded-lg transition-colors"
+                    className="w-full bg-ui-accent hover:bg-ui-accent disabled:bg-gray-400 text-white font-medium py-3 rounded-lg transition-colors"
                   >
                     {joinLoading ? '加入中...' : '加入房间'}
                   </button>
@@ -830,8 +830,8 @@ function WatchRoomPageContent() {
 
               {/* 使用说明 - 仅在未在房间内时显示 */}
               {!currentRoom && (
-                <div className="mt-6 bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
-                  <p className="text-sm text-green-800 dark:text-green-200">
+                <div className="mt-6 bg-ui-accent-soft  rounded-lg p-4 border border-ui-accent ">
+                  <p className="text-sm text-ui-accent ">
                     <strong>提示：</strong>加入进度同步房后将跟随播放，加入屏幕共享房后会进入共享页面。
                   </p>
                 </div>

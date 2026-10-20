@@ -290,7 +290,7 @@ export default function MovieRequestPage() {
                       </p>
                       <div className={`text-xs px-2 py-1 rounded text-center ${
                         request.status === 'fulfilled'
-                          ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                          ? 'bg-ui-accent-soft  text-ui-accent '
                           : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
                       }`}>
                         {request.status === 'fulfilled' ? '已上架' : '待处理'}
@@ -353,7 +353,7 @@ export default function MovieRequestPage() {
           <div className='bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-sm w-full p-6'>
             <div className='flex justify-center mb-4'>
               {alertModal.type === 'success' ? (
-                <CheckCircle className='w-12 h-12 text-green-500' />
+                <CheckCircle className='w-12 h-12 text-ui-accent' />
               ) : (
                 <AlertCircle className='w-12 h-12 text-red-500' />
               )}

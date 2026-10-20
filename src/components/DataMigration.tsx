@@ -55,7 +55,7 @@ const AlertModal = ({
   const getIcon = () => {
     switch (type) {
       case 'success':
-        return <CheckCircle className="w-12 h-12 text-green-500" />;
+        return <CheckCircle className="w-12 h-12 text-ui-accent" />;
       case 'error':
         return <AlertCircle className="w-12 h-12 text-red-500" />;
       case 'warning':
@@ -68,7 +68,7 @@ const AlertModal = ({
   const getBgColor = () => {
     switch (type) {
       case 'success':
-        return 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800';
+        return 'bg-ui-accent-soft  border-ui-accent ';
       case 'error':
         return 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800';
       case 'warning':
@@ -522,7 +522,7 @@ const DataMigration = ({ onRefreshConfig }: DataMigrationProps) => {
                     <FileCheck className="w-4 h-4" />
                     备份文件
                     {selectedFile && (
-                      <span className="ml-auto text-xs text-green-600 dark:text-green-400 font-normal">
+                      <span className="ml-auto text-xs text-ui-accent  font-normal">
                         {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
                       </span>
                     )}

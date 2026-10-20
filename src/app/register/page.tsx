@@ -45,7 +45,7 @@ function VersionDisplay() {
           className={`flex items-center gap-1.5 ${updateStatus === UpdateStatus.HAS_UPDATE
             ? 'text-yellow-600 dark:text-yellow-400'
             : updateStatus === UpdateStatus.NO_UPDATE
-              ? 'text-green-600 dark:text-green-400'
+              ? 'text-ui-accent '
               : ''
             }`}
         >
@@ -271,7 +271,7 @@ function RegisterPageClient() {
         <ThemeToggle />
       </div>
       <div className='relative z-10 w-full max-w-md rounded-3xl bg-gradient-to-b from-white/90 via-white/70 to-white/40 dark:from-zinc-900/90 dark:via-zinc-900/70 dark:to-zinc-900/40 shadow-2xl p-10 dark:border dark:border-zinc-800'>
-        <h1 className='text-green-600 tracking-tight text-center text-3xl font-extrabold mb-2 bg-clip-text drop-shadow-sm'>
+        <h1 className='text-ui-accent tracking-tight text-center text-3xl font-extrabold mb-2 bg-clip-text drop-shadow-sm'>
           {siteName}
         </h1>
         <p className='text-center text-sm text-gray-600 dark:text-gray-400 mb-8'>
@@ -279,7 +279,7 @@ function RegisterPageClient() {
         </p>
         {registerSuccess ? (
           <div className='space-y-5'>
-            <div className='rounded-2xl border border-green-200 bg-green-50 p-4 text-green-800 dark:border-green-800 dark:bg-green-900/30 dark:text-green-200'>
+            <div className='rounded-2xl border border-ui-accent bg-ui-accent-soft p-4 text-ui-accent   '>
               <div className='mb-2 flex items-center gap-2 font-semibold'>
                 <CheckCircle className='h-5 w-5' />
                 注册成功
@@ -313,7 +313,7 @@ function RegisterPageClient() {
             <button
               type='button'
               onClick={() => router.replace(searchParams.get('redirect') || '/login')}
-              className='inline-flex w-full justify-center rounded-lg bg-green-600 py-3 text-base font-semibold text-white shadow-lg transition-all duration-200 hover:bg-green-700'
+              className='inline-flex w-full justify-center rounded-lg bg-ui-accent py-3 text-base font-semibold text-white shadow-lg transition-all duration-200 hover:bg-ui-accent'
             >
               前往登录
             </button>
@@ -332,7 +332,7 @@ function RegisterPageClient() {
                 id='username'
                 type='text'
                 autoComplete='username'
-                className='block w-full rounded-lg border-0 py-3 pl-10 pr-4 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-white/60 dark:ring-white/20 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-green-500 focus:outline-none sm:text-base bg-white/60 dark:bg-zinc-800/60'
+                className='block w-full rounded-lg border-0 py-3 pl-10 pr-4 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-white/60 dark:ring-white/20 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-ui-accent focus:outline-none sm:text-base bg-white/60 dark:bg-zinc-800/60'
                 placeholder='输入用户名'
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
@@ -352,7 +352,7 @@ function RegisterPageClient() {
                 id='password'
                 type={showPassword ? 'text' : 'password'}
                 autoComplete='new-password'
-                className='block w-full rounded-lg border-0 py-3 pl-10 pr-12 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-white/60 dark:ring-white/20 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-green-500 focus:outline-none sm:text-base bg-white/60 dark:bg-zinc-800/60'
+                className='block w-full rounded-lg border-0 py-3 pl-10 pr-12 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-white/60 dark:ring-white/20 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-ui-accent focus:outline-none sm:text-base bg-white/60 dark:bg-zinc-800/60'
                 placeholder='输入密码（至少6位）'
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -383,7 +383,7 @@ function RegisterPageClient() {
                 id='confirmPassword'
                 type={showConfirmPassword ? 'text' : 'password'}
                 autoComplete='new-password'
-                className='block w-full rounded-lg border-0 py-3 pl-10 pr-12 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-white/60 dark:ring-white/20 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-green-500 focus:outline-none sm:text-base bg-white/60 dark:bg-zinc-800/60'
+                className='block w-full rounded-lg border-0 py-3 pl-10 pr-12 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-white/60 dark:ring-white/20 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-ui-accent focus:outline-none sm:text-base bg-white/60 dark:bg-zinc-800/60'
                 placeholder='再次输入密码'
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -414,7 +414,7 @@ function RegisterPageClient() {
                 <input
                   id='inviteCode'
                   type='text'
-                  className='block w-full rounded-lg border-0 py-3 pl-10 pr-4 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-white/60 dark:ring-white/20 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-green-500 focus:outline-none sm:text-base bg-white/60 dark:bg-zinc-800/60'
+                  className='block w-full rounded-lg border-0 py-3 pl-10 pr-4 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-white/60 dark:ring-white/20 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-ui-accent focus:outline-none sm:text-base bg-white/60 dark:bg-zinc-800/60'
                   placeholder='输入邀请码'
                   value={inviteCode}
                   onChange={(e) => setInviteCode(e.target.value)}
@@ -440,7 +440,7 @@ function RegisterPageClient() {
               (siteConfig?.RequireRegistrationInviteCode && !inviteCode.trim()) ||
               (siteConfig?.RegistrationRequireTurnstile && !turnstileToken)
             }
-            className='inline-flex w-full justify-center rounded-lg bg-green-600 py-3 text-base font-semibold text-white shadow-lg transition-all duration-200 hover:from-green-600 hover:to-blue-600 disabled:cursor-not-allowed disabled:opacity-50'
+            className='inline-flex w-full justify-center rounded-lg bg-ui-accent py-3 text-base font-semibold text-white shadow-lg transition-all duration-200 hover:from-ui-accent hover:to-blue-600 disabled:cursor-not-allowed disabled:opacity-50'
           >
             {loading ? '注册中...' : '注册'}
           </button>
@@ -450,7 +450,7 @@ function RegisterPageClient() {
             <button
               type='button'
               onClick={() => router.push('/login')}
-              className='text-sm text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 transition-colors'
+              className='text-sm text-ui-accent  hover:text-ui-accent  transition-colors'
             >
               已有账号？返回登录
             </button>
