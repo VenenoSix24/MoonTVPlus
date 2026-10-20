@@ -49,7 +49,7 @@ const Switch = ({ checked, onChange, disabled }: { checked: boolean; onChange: (
     onClick={() => onChange(!checked)}
     className={`
       relative inline-flex h-6 w-11 items-center rounded-full transition-colors
-      ${checked ? 'bg-green-600' : 'bg-gray-200 dark:bg-gray-700'}
+      ${checked ? 'bg-ui-accent' : 'bg-gray-200 dark:bg-gray-700'}
       ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
     `}
   >
@@ -97,7 +97,7 @@ const AlertModal = ({
   if (!isOpen) return null;
 
   const icons = {
-    success: <AlertCircle className="w-12 h-12 text-green-500" />,
+    success: <AlertCircle className="w-12 h-12 text-ui-success" />,
     error: <AlertCircle className="w-12 h-12 text-red-500" />,
     warning: <AlertCircle className="w-12 h-12 text-yellow-500" />,
     info: <AlertCircle className="w-12 h-12 text-blue-500" />,
@@ -439,8 +439,8 @@ export default function AnimeSubscriptionComponent({
   const chipClass = (active: boolean) =>
     `px-2 py-0.5 text-xs rounded-full border transition-colors ${
       active
-        ? 'bg-green-600 text-white border-green-600'
-        : 'bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-600 hover:border-green-500 hover:text-green-700 dark:hover:text-green-300'
+        ? 'bg-ui-accent text-white border-ui-accent'
+        : 'bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-600 hover:border-ui-accent hover:text-ui-accent '
     }`;
 
   // 保存订阅
@@ -634,7 +634,7 @@ export default function AnimeSubscriptionComponent({
               value={downloadTool}
               onChange={(e) => handleDownloadToolChange(e.target.value as AnimeSubscriptionDownloadTool)}
               disabled={loading}
-              className='min-w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50'
+              className='min-w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-ui-accent disabled:opacity-50'
             >
               {downloadToolOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -647,7 +647,7 @@ export default function AnimeSubscriptionComponent({
         <button
           onClick={handleAdd}
           disabled={loading || showAddForm}
-          className='flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50'
+          className='flex items-center gap-2 px-4 py-2 bg-ui-accent hover:bg-ui-accent text-white rounded-lg transition-colors disabled:opacity-50'
         >
           <Plus size={16} />
           添加订阅
@@ -699,7 +699,7 @@ export default function AnimeSubscriptionComponent({
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 placeholder='葬送的芙莉莲'
-                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500'
+                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-ui-accent'
               />
               <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
                 用作 ACG 源搜索词
@@ -730,7 +730,7 @@ export default function AnimeSubscriptionComponent({
                 value={formData.filterText}
                 onChange={(e) => setFormData({ ...formData, filterText: e.target.value })}
                 placeholder='喵萌奶茶屋&(简日双语|简日内嵌)'
-                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500'
+                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-ui-accent'
               />
               <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
                 支持 &amp; | ()
@@ -819,7 +819,7 @@ export default function AnimeSubscriptionComponent({
                 value={formData.excludeText}
                 onChange={(e) => setFormData({ ...formData, excludeText: e.target.value })}
                 placeholder='先行|预告|PV'
-                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500'
+                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-ui-accent'
               />
               <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
                 可选；支持 &amp; | ()
@@ -863,7 +863,7 @@ export default function AnimeSubscriptionComponent({
                 value={formData.episodeRegex}
                 onChange={(e) => setFormData({ ...formData, episodeRegex: e.target.value })}
                 placeholder='第(\d{1,3})[话話集]'
-                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500'
+                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-ui-accent'
               />
               <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
                 可选；首个捕获组将作为集数（无捕获组时取整个匹配），留空使用内置规则
@@ -899,7 +899,7 @@ export default function AnimeSubscriptionComponent({
                               key={ep}
                               className={`px-2 py-0.5 text-xs rounded-full border ${
                                 isNew
-                                  ? 'bg-green-600 text-white border-green-600'
+                                  ? 'bg-ui-accent text-white border-ui-accent'
                                   : 'bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600'
                               }`}
                               title={isNew ? '新集数，会触发下载' : '不大于当前集数，不会下载'}
@@ -961,7 +961,7 @@ export default function AnimeSubscriptionComponent({
                 <select
                   value={formData.source}
                   onChange={(e) => setFormData({ ...formData, source: e.target.value as any })}
-                  className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500'
+                  className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-ui-accent'
                 >
                   <option value='mikan'>蜜柑 (Mikan)</option>
                   <option value='acgrip'>ACG.RIP</option>
@@ -978,7 +978,7 @@ export default function AnimeSubscriptionComponent({
                   min='0'
                   value={formData.lastEpisode}
                   onChange={(e) => setFormData({ ...formData, lastEpisode: parseInt(e.target.value) || 0 })}
-                  className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500'
+                  className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-ui-accent'
                 />
                 <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
                   已看到第几集
@@ -1030,7 +1030,7 @@ export default function AnimeSubscriptionComponent({
               <button
                 onClick={handleSave}
                 disabled={loading}
-                className='px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-2'
+                className='px-4 py-2 rounded-lg bg-ui-accent text-white hover:bg-ui-accent transition-colors disabled:opacity-50 flex items-center gap-2'
               >
                 {loading && <Loader2 size={16} className='animate-spin' />}
                 {editingSubscription ? '更新' : '添加'}
@@ -1102,7 +1102,7 @@ export default function AnimeSubscriptionComponent({
                   <button
                     onClick={() => handleEdit(sub)}
                     disabled={loading}
-                    className='p-2 text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20 rounded-lg transition-colors disabled:opacity-50'
+                    className='p-2 text-ui-accent hover:bg-ui-accent-soft   rounded-lg transition-colors disabled:opacity-50'
                     title='编辑'
                   >
                     <svg className='w-[18px] h-[18px]' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
@@ -1180,7 +1180,7 @@ export default function AnimeSubscriptionComponent({
                   <button
                     onClick={() => handleEdit(sub)}
                     disabled={loading}
-                    className='flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm text-green-600 bg-green-50 hover:bg-green-100 dark:text-green-400 dark:bg-green-900/20 dark:hover:bg-green-900/30 rounded-lg transition-colors disabled:opacity-50'
+                    className='flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm text-ui-accent bg-ui-accent-soft hover:bg-ui-accent-soft    rounded-lg transition-colors disabled:opacity-50'
                   >
                     <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                       <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z' />
