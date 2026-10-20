@@ -150,6 +150,8 @@ const config: Config = {
           accent: 'var(--ui-accent)',
           'accent-ink': 'var(--ui-accent-ink)',
           'accent-soft': 'var(--ui-accent-soft)',
+          success: 'var(--ui-success)',
+          'success-soft': 'var(--ui-success-soft)',
         },
       },
       borderRadius: {

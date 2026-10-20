@@ -633,7 +633,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
             if (messageEl) {
               messageEl.textContent = '订阅token已重置！';
               messageEl.className =
-                'text-xs text-center text-green-600 dark:text-green-400 mt-2';
+                'text-xs text-center text-ui-success mt-2';
               messageEl.classList.remove('hidden');
               setTimeout(() => {
                 messageEl.classList.add('hidden');
@@ -2996,7 +2996,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
       ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
       : currentRole === 'admin'
       ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
-      : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+      : 'bg-ui-success-soft text-ui-success';
 
   const handleOpenProfileCenter = () => {
     setIsOpen(false);
@@ -3184,7 +3184,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   updateStatus === UpdateStatus.HAS_UPDATE
                     ? 'bg-yellow-500'
                     : updateStatus === UpdateStatus.NO_UPDATE
-                    ? 'bg-green-400'
+                    ? 'bg-ui-success'
                     : ''
                 }`}
               />
@@ -3274,7 +3274,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                           handleRestoreFromCloud();
                         }}
                         disabled={syncBusy}
-                        className='w-full px-3 py-2 text-left text-sm text-green-500 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors'
+                        className='w-full px-3 py-2 text-left text-sm text-ui-accent hover:bg-ui-accent-soft transition-colors'
                       >
                         恢复云端备份
                       </button>
@@ -3331,7 +3331,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         onClick={() =>
                           setIsDoubanDropdownOpen(!isDoubanDropdownOpen)
                         }
-                        className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
+                        className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
                       >
                         {
                           doubanDataSourceOptions.find(
@@ -3362,13 +3362,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                               }}
                               className={`w-full px-3 py-2.5 text-left text-sm transition-colors duration-150 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 ${
                                 doubanDataSource === option.value
-                                  ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400'
+                                  ? 'bg-ui-accent-soft text-ui-accent'
                                   : 'text-gray-900 dark:text-gray-100'
                               }`}
                             >
                               <span className='truncate'>{option.label}</span>
                               {doubanDataSource === option.value && (
-                                <Check className='w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 ml-2' />
+                                <Check className='w-4 h-4 text-ui-accent flex-shrink-0 ml-2' />
                               )}
                             </button>
                           ))}
@@ -3411,7 +3411,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                       </div>
                       <input
                         type='text'
-                        className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
+                        className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
                         placeholder='例如: https://proxy.example.com/fetch?url='
                         value={doubanProxyUrl}
                         onChange={(e) =>
@@ -3446,7 +3446,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             !isDoubanBackupDropdownOpen
                           )
                         }
-                        className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
+                        className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
                       >
                         {
                           doubanDataSourceOptions.find(
@@ -3475,13 +3475,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                               }}
                               className={`w-full px-3 py-2.5 text-left text-sm transition-colors duration-150 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 ${
                                 doubanDataSourceBackup === option.value
-                                  ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400'
+                                  ? 'bg-ui-accent-soft text-ui-accent'
                                   : 'text-gray-900 dark:text-gray-100'
                               }`}
                             >
                               <span className='truncate'>{option.label}</span>
                               {doubanDataSourceBackup === option.value && (
-                                <Check className='w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 ml-2' />
+                                <Check className='w-4 h-4 text-ui-accent flex-shrink-0 ml-2' />
                               )}
                             </button>
                           ))}
@@ -3502,7 +3502,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                       </div>
                       <input
                         type='text'
-                        className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
+                        className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
                         placeholder='例如: https://proxy.example.com/fetch?url='
                         value={doubanProxyUrlBackup}
                         onChange={(e) =>
@@ -3545,7 +3545,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             !isDoubanImageProxyDropdownOpen
                           )
                         }
-                        className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
+                        className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
                       >
                         {
                           doubanImageProxyTypeOptions.find(
@@ -3576,13 +3576,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                               }}
                               className={`w-full px-3 py-2.5 text-left text-sm transition-colors duration-150 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 ${
                                 doubanImageProxyType === option.value
-                                  ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400'
+                                  ? 'bg-ui-accent-soft text-ui-accent'
                                   : 'text-gray-900 dark:text-gray-100'
                               }`}
                             >
                               <span className='truncate'>{option.label}</span>
                               {doubanImageProxyType === option.value && (
-                                <Check className='w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 ml-2' />
+                                <Check className='w-4 h-4 text-ui-accent flex-shrink-0 ml-2' />
                               )}
                             </button>
                           ))}
@@ -3625,7 +3625,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                       </div>
                       <input
                         type='text'
-                        className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
+                        className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
                         placeholder='例如: https://proxy.example.com/fetch?url='
                         value={doubanImageProxyUrl}
                         onChange={(e) =>
@@ -3660,7 +3660,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             !isDoubanImageProxyBackupDropdownOpen
                           )
                         }
-                        className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
+                        className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
                       >
                         {
                           doubanImageProxyTypeOptions.find(
@@ -3692,13 +3692,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                               }}
                               className={`w-full px-3 py-2.5 text-left text-sm transition-colors duration-150 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 ${
                                 doubanImageProxyTypeBackup === option.value
-                                  ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400'
+                                  ? 'bg-ui-accent-soft text-ui-accent'
                                   : 'text-gray-900 dark:text-gray-100'
                               }`}
                             >
                               <span className='truncate'>{option.label}</span>
                               {doubanImageProxyTypeBackup === option.value && (
-                                <Check className='w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 ml-2' />
+                                <Check className='w-4 h-4 text-ui-accent flex-shrink-0 ml-2' />
                               )}
                             </button>
                           ))}
@@ -3719,7 +3719,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                       </div>
                       <input
                         type='text'
-                        className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
+                        className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
                         placeholder='例如: https://proxy.example.com/fetch?url='
                         value={doubanImageProxyUrlBackup}
                         onChange={(e) =>
@@ -3749,7 +3749,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                     </div>
                     <input
                       type='text'
-                      className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
+                      className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
                       placeholder='例如: https://image.tmdb.org'
                       value={tmdbImageBaseUrl}
                       onChange={(e) =>
@@ -3787,7 +3787,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             onClick={() =>
                               setIsAnimeDropdownOpen(!isAnimeDropdownOpen)
                             }
-                            className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
+                            className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
                           >
                             {
                               animeDataSourceOptions.find(
@@ -3814,7 +3814,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                                   }}
                                   className={`w-full px-3 py-2.5 text-left text-sm transition-colors duration-150 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 ${
                                     animeDataSource === option.value
-                                      ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400'
+                                      ? 'bg-ui-accent-soft text-ui-accent'
                                       : 'text-gray-900 dark:text-gray-100'
                                   }`}
                                 >
@@ -3822,7 +3822,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                                     {option.label}
                                   </span>
                                   {animeDataSource === option.value && (
-                                    <Check className='w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 ml-2' />
+                                    <Check className='w-4 h-4 text-ui-accent flex-shrink-0 ml-2' />
                                   )}
                                 </button>
                               ))}
@@ -3846,7 +3846,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                                 !isAnimeBackupDropdownOpen
                               )
                             }
-                            className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
+                            className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
                           >
                             {
                               animeDataSourceOptions.find(
@@ -3876,7 +3876,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                                   }}
                                   className={`w-full px-3 py-2.5 text-left text-sm transition-colors duration-150 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 ${
                                     animeDataSourceBackup === option.value
-                                      ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400'
+                                      ? 'bg-ui-accent-soft text-ui-accent'
                                       : 'text-gray-900 dark:text-gray-100'
                                   }`}
                                 >
@@ -3884,7 +3884,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                                     {option.label}
                                   </span>
                                   {animeDataSourceBackup === option.value && (
-                                    <Check className='w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 ml-2' />
+                                    <Check className='w-4 h-4 text-ui-accent flex-shrink-0 ml-2' />
                                   )}
                                 </button>
                               ))}
@@ -3902,7 +3902,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         </label>
                         <input
                           type='text'
-                          className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
+                          className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
                           placeholder='例如: https://api.bgm.tv 或 https://bangumi-proxy.example.com'
                           value={animeCustomBaseUrl}
                           onChange={(e) =>
@@ -3923,7 +3923,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                       </label>
                       <input
                         type='text'
-                        className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
+                        className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
                         placeholder='例如: https://proxy.example.com'
                         value={animeImageBaseUrl}
                         onChange={(e) =>
@@ -3936,7 +3936,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                       </p>
                     </div>
 
-                    <details className='group rounded-lg border border-green-200 bg-green-50/60 p-3 dark:border-green-900/50 dark:bg-green-900/10'>
+                    <details className='group rounded-lg border border-ui-accent bg-ui-accent-soft p-3'>
                       <summary className='flex cursor-pointer list-none items-center justify-between gap-2'>
                         <div className='min-w-0'>
                           <label className='text-xs font-medium text-gray-700 dark:text-gray-300'>
@@ -3956,12 +3956,12 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                               handleCopyBangumiProxyScript();
                             }}
                             disabled={!bangumiProxyScript}
-                            className='inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50'
+                            className='inline-flex items-center gap-1.5 rounded-lg bg-ui-accent px-3 py-2 text-xs font-semibold text-white transition hover:bg-ui-accent disabled:cursor-not-allowed disabled:opacity-50'
                           >
                             <Copy className='h-3.5 w-3.5' />
                             {bangumiProxyScriptCopied ? '已复制' : '复制脚本'}
                           </button>
-                          <ChevronDown className='h-4 w-4 text-green-600 transition-transform group-open:rotate-180 dark:text-green-400' />
+                          <ChevronDown className='h-4 w-4 text-ui-accent transition-transform group-open:rotate-180' />
                         </div>
                       </summary>
                       <pre className='mt-3 max-h-40 overflow-auto rounded-lg border border-gray-200 bg-white p-3 text-xs text-gray-700 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-300'>
@@ -4014,7 +4014,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             handleAggregateToggle(e.target.checked)
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors dark:bg-gray-600'></div>
+                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
                         <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
@@ -4040,7 +4040,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             handleOptimizationToggle(e.target.checked)
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors dark:bg-gray-600'></div>
+                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
                         <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
@@ -4055,7 +4055,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             优选策略
                             <button
                               type='button'
-                              className='group relative inline-flex h-4 w-4 items-center justify-center rounded-full text-gray-400 transition-colors hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500/50 dark:text-gray-500 dark:hover:text-gray-300'
+                              className='group relative inline-flex h-4 w-4 items-center justify-center rounded-full text-gray-400 transition-colors hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-ui-accent dark:text-gray-500 dark:hover:text-gray-300'
                               aria-label='优选策略说明'
                             >
                               <CircleHelp className='h-3.5 w-3.5' />
@@ -4072,7 +4072,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                               onClick={() => handlePreferStrategyChange('fast')}
                               className={`rounded-md px-4 py-1.5 text-xs font-medium transition-all ${
                                 preferStrategy === 'fast'
-                                  ? 'bg-white text-green-600 shadow-sm dark:bg-gray-700 dark:text-green-400'
+                                  ? 'bg-white text-ui-accent shadow-sm dark:bg-gray-700'
                                   : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
                               }`}
                             >
@@ -4083,7 +4083,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                               onClick={() => handlePreferStrategyChange('full')}
                               className={`rounded-md px-4 py-1.5 text-xs font-medium transition-all ${
                                 preferStrategy === 'full'
-                                  ? 'bg-white text-green-600 shadow-sm dark:bg-gray-700 dark:text-green-400'
+                                  ? 'bg-white text-ui-accent shadow-sm dark:bg-gray-700'
                                   : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
                               }`}
                             >
@@ -4099,7 +4099,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             优选偏好
                             <button
                               type='button'
-                              className='group relative inline-flex h-4 w-4 items-center justify-center rounded-full text-gray-400 transition-colors hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500/50 dark:text-gray-500 dark:hover:text-gray-300'
+                              className='group relative inline-flex h-4 w-4 items-center justify-center rounded-full text-gray-400 transition-colors hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-ui-accent dark:text-gray-500 dark:hover:text-gray-300'
                               aria-label='优选偏好说明'
                             >
                               <CircleHelp className='h-3.5 w-3.5' />
@@ -4118,7 +4118,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                               onClick={() => handlePreferModeChange('balanced')}
                               className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-all sm:flex-none ${
                                 preferMode === 'balanced'
-                                  ? 'bg-white text-green-600 shadow-sm dark:bg-gray-700 dark:text-green-400'
+                                  ? 'bg-white text-ui-accent shadow-sm dark:bg-gray-700'
                                   : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
                               }`}
                             >
@@ -4131,7 +4131,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                               }
                               className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-all sm:flex-none ${
                                 preferMode === 'resolution'
-                                  ? 'bg-white text-green-600 shadow-sm dark:bg-gray-700 dark:text-green-400'
+                                  ? 'bg-white text-ui-accent shadow-sm dark:bg-gray-700'
                                   : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
                               }`}
                             >
@@ -4142,7 +4142,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                               onClick={() => handlePreferModeChange('speed')}
                               className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-all sm:flex-none ${
                                 preferMode === 'speed'
-                                  ? 'bg-white text-green-600 shadow-sm dark:bg-gray-700 dark:text-green-400'
+                                  ? 'bg-white text-ui-accent shadow-sm dark:bg-gray-700'
                                   : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
                               }`}
                             >
@@ -4185,7 +4185,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                           onClick={() => handleSpeedTestTimeoutChange(4000)}
                           className={`px-2 py-0.5 rounded ${
                             speedTestTimeout === 4000
-                              ? 'bg-green-500 text-white'
+                              ? 'bg-ui-accent text-white'
                               : 'hover:bg-gray-200 dark:hover:bg-gray-700'
                           }`}
                         >
@@ -4195,7 +4195,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                           onClick={() => handleSpeedTestTimeoutChange(10000)}
                           className={`px-2 py-0.5 rounded ${
                             speedTestTimeout === 10000
-                              ? 'bg-green-500 text-white'
+                              ? 'bg-ui-accent text-white'
                               : 'hover:bg-gray-200 dark:hover:bg-gray-700'
                           }`}
                         >
@@ -4205,7 +4205,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                           onClick={() => handleSpeedTestTimeoutChange(20000)}
                           className={`px-2 py-0.5 rounded ${
                             speedTestTimeout === 20000
-                              ? 'bg-green-500 text-white'
+                              ? 'bg-ui-accent text-white'
                               : 'hover:bg-gray-200 dark:hover:bg-gray-700'
                           }`}
                         >
@@ -4215,7 +4215,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                           onClick={() => handleSpeedTestTimeoutChange(30000)}
                           className={`px-2 py-0.5 rounded ${
                             speedTestTimeout === 30000
-                              ? 'bg-green-500 text-white'
+                              ? 'bg-ui-accent text-white'
                               : 'hover:bg-gray-200 dark:hover:bg-gray-700'
                           }`}
                         >
@@ -4248,7 +4248,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             handleFluidSearchToggle(e.target.checked)
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors dark:bg-gray-600'></div>
+                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
                         <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
@@ -4274,7 +4274,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             handleTmdbBackdropDisabledToggle(e.target.checked)
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors dark:bg-gray-600'></div>
+                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
                         <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
@@ -4300,7 +4300,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             handleEnableTrailersToggle(e.target.checked)
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors dark:bg-gray-600'></div>
+                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
                         <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
@@ -4328,7 +4328,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             )
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors dark:bg-gray-600'></div>
+                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
                         <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
@@ -4354,7 +4354,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             handleExactSearchToggle(e.target.checked)
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors dark:bg-gray-600'></div>
+                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
                         <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
@@ -4380,7 +4380,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             handleSaveLivePlayRecordsToggle(e.target.checked)
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors dark:bg-gray-600'></div>
+                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
                         <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
@@ -4455,7 +4455,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         onClick={() => handleMaxConcurrentDownloadsChange(1)}
                         className={`px-2 py-0.5 rounded ${
                           maxConcurrentDownloads === 1
-                            ? 'bg-green-500 text-white'
+                            ? 'bg-ui-accent text-white'
                             : 'hover:bg-gray-200 dark:hover:bg-gray-700'
                         }`}
                       >
@@ -4465,7 +4465,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         onClick={() => handleMaxConcurrentDownloadsChange(10)}
                         className={`px-2 py-0.5 rounded ${
                           maxConcurrentDownloads === 10
-                            ? 'bg-green-500 text-white'
+                            ? 'bg-ui-accent text-white'
                             : 'hover:bg-gray-200 dark:hover:bg-gray-700'
                         }`}
                       >
@@ -4519,7 +4519,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         onClick={() => handleDownloadThreadsPerTaskChange(1)}
                         className={`px-2 py-0.5 rounded ${
                           downloadThreadsPerTask === 1
-                            ? 'bg-green-500 text-white'
+                            ? 'bg-ui-accent text-white'
                             : 'hover:bg-gray-200 dark:hover:bg-gray-700'
                         }`}
                       >
@@ -4529,7 +4529,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         onClick={() => handleDownloadThreadsPerTaskChange(32)}
                         className={`px-2 py-0.5 rounded ${
                           downloadThreadsPerTask === 32
-                            ? 'bg-green-500 text-white'
+                            ? 'bg-ui-accent text-white'
                             : 'hover:bg-gray-200 dark:hover:bg-gray-700'
                         }`}
                       >
@@ -4583,7 +4583,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         onClick={() => handleDownloadSegmentTimeoutChange(30000)}
                         className={`px-2 py-0.5 rounded cursor-pointer ${
                           downloadSegmentTimeout === 30000
-                            ? 'bg-green-500 text-white'
+                            ? 'bg-ui-accent text-white'
                             : 'hover:bg-gray-200 dark:hover:bg-gray-700'
                         }`}
                       >
@@ -4593,7 +4593,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         onClick={() => handleDownloadSegmentTimeoutChange(120000)}
                         className={`px-2 py-0.5 rounded cursor-pointer ${
                           downloadSegmentTimeout === 120000
-                            ? 'bg-green-500 text-white'
+                            ? 'bg-ui-accent text-white'
                             : 'hover:bg-gray-200 dark:hover:bg-gray-700'
                         }`}
                       >
@@ -4603,7 +4603,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         onClick={() => handleDownloadSegmentTimeoutChange(300000)}
                         className={`px-2 py-0.5 rounded cursor-pointer ${
                           downloadSegmentTimeout === 300000
-                            ? 'bg-green-500 text-white'
+                            ? 'bg-ui-accent text-white'
                             : 'hover:bg-gray-200 dark:hover:bg-gray-700'
                         }`}
                       >
@@ -4627,7 +4627,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                           value='browser'
                           checked={downloadMode === 'browser'}
                           onChange={() => handleDownloadModeChange('browser')}
-                          className='w-4 h-4 text-green-500'
+                          className='w-4 h-4 text-ui-accent'
                         />
                         <span className='text-sm text-gray-700 dark:text-gray-300'>
                           浏览器下载（合并为单文件）
@@ -4642,7 +4642,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                           onChange={() =>
                             handleDownloadModeChange('filesystem')
                           }
-                          className='w-4 h-4 text-green-500'
+                          className='w-4 h-4 text-ui-accent'
                         />
                         <span className='text-sm text-gray-700 dark:text-gray-300'>
                           File System API（保存分片到本地目录）
@@ -4657,7 +4657,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                           onChange={() =>
                             handleDownloadModeChange('indexeddb')
                           }
-                          className='mt-0.5 w-4 h-4 text-green-500'
+                          className='mt-0.5 w-4 h-4 text-ui-accent'
                         />
                         <span className='text-sm text-gray-700 dark:text-gray-300'>
                           IndexedDB 缓存（应用内离线播放）
@@ -4681,7 +4681,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                           />
                           <button
                             onClick={handleSelectSavePath}
-                            className='px-4 py-2 text-sm bg-green-500 text-white rounded hover:bg-green-600 transition-colors'
+                            className='px-4 py-2 text-sm bg-ui-accent text-white rounded hover:bg-ui-accent transition-colors'
                           >
                             选择目录
                           </button>
@@ -4758,7 +4758,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             getBufferStrategyFromSlider(sliderValue);
                           handleBufferStrategyChange(strategy);
                         }}
-                        className='w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-green-500'
+                        className='w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-ui-accent'
                         style={{
                           background: `linear-gradient(to right, rgb(34 197 94) 0%, rgb(34 197 94) ${
                             (getSliderValueFromStrategy(bufferStrategy) / 3) *
@@ -4775,7 +4775,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         <span
                           className={
                             bufferStrategy === 'low'
-                              ? 'font-semibold text-green-600 dark:text-green-400'
+                              ? 'font-semibold text-ui-accent'
                               : ''
                           }
                         >
@@ -4784,7 +4784,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         <span
                           className={
                             bufferStrategy === 'medium'
-                              ? 'font-semibold text-green-600 dark:text-green-400'
+                              ? 'font-semibold text-ui-accent'
                               : ''
                           }
                         >
@@ -4793,7 +4793,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         <span
                           className={
                             bufferStrategy === 'high'
-                              ? 'font-semibold text-green-600 dark:text-green-400'
+                              ? 'font-semibold text-ui-accent'
                               : ''
                           }
                         >
@@ -4802,7 +4802,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         <span
                           className={
                             bufferStrategy === 'ultra'
-                              ? 'font-semibold text-green-600 dark:text-green-400'
+                              ? 'font-semibold text-ui-accent'
                               : ''
                           }
                         >
@@ -4841,7 +4841,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             handleNextEpisodePreCacheToggle(e.target.checked)
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors dark:bg-gray-600'></div>
+                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
                         <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
@@ -4869,7 +4869,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             )
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors dark:bg-gray-600'></div>
+                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
                         <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
@@ -4897,7 +4897,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             )
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors dark:bg-gray-600'></div>
+                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
                         <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
@@ -4946,7 +4946,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             handleDisableAutoLoadDanmakuToggle(e.target.checked)
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors dark:bg-gray-600'></div>
+                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
                         <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
@@ -4974,7 +4974,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             )
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors dark:bg-gray-600'></div>
+                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
                         <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
@@ -5000,7 +5000,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             handleDanmakuHeatmapDisabledToggle(e.target.checked)
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors dark:bg-gray-600'></div>
+                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
                         <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
@@ -5028,7 +5028,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             )
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors dark:bg-gray-600'></div>
+                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
                         <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
@@ -5074,7 +5074,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         onClick={() => handleDanmakuMaxCountChange(0)}
                         className={`absolute px-2 py-0.5 rounded ${
                           danmakuMaxCount === 0
-                            ? 'bg-green-500 text-white'
+                            ? 'bg-ui-accent text-white'
                             : 'hover:bg-gray-200 dark:hover:bg-gray-700'
                         }`}
                         style={{ left: '0%', transform: 'translateX(0%)' }}
@@ -5085,7 +5085,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         onClick={() => handleDanmakuMaxCountChange(3000)}
                         className={`absolute px-2 py-0.5 rounded ${
                           danmakuMaxCount === 3000
-                            ? 'bg-green-500 text-white'
+                            ? 'bg-ui-accent text-white'
                             : 'hover:bg-gray-200 dark:hover:bg-gray-700'
                         }`}
                         style={{ left: '30%', transform: 'translateX(-50%)' }}
@@ -5096,7 +5096,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         onClick={() => handleDanmakuMaxCountChange(5000)}
                         className={`absolute px-2 py-0.5 rounded ${
                           danmakuMaxCount === 5000
-                            ? 'bg-green-500 text-white'
+                            ? 'bg-ui-accent text-white'
                             : 'hover:bg-gray-200 dark:hover:bg-gray-700'
                         }`}
                         style={{ left: '50%', transform: 'translateX(-50%)' }}
@@ -5107,7 +5107,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         onClick={() => handleDanmakuMaxCountChange(10000)}
                         className={`absolute px-2 py-0.5 rounded ${
                           danmakuMaxCount === 10000
-                            ? 'bg-green-500 text-white'
+                            ? 'bg-ui-accent text-white'
                             : 'hover:bg-gray-200 dark:hover:bg-gray-700'
                         }`}
                         style={{ left: '100%', transform: 'translateX(-100%)' }}
@@ -5168,7 +5168,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                       <div
                         className={`text-sm p-3 rounded-lg border ${
                           clearCacheMessage.includes('成功')
-                            ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-300'
+                            ? 'bg-ui-accent-soft border-ui-accent text-ui-accent'
                             : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300'
                         }`}
                       >
@@ -5271,7 +5271,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         title={homeBannerEnabled ? '点击隐藏' : '点击显示'}
                       >
                         {homeBannerEnabled ? (
-                          <Eye className='w-5 h-5 text-green-600 dark:text-green-400' />
+                          <Eye className='w-5 h-5 text-ui-success' />
                         ) : (
                           <EyeOff className='w-5 h-5 text-gray-400 dark:text-gray-500' />
                         )}
@@ -5302,7 +5302,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         }
                       >
                         {homeContinueWatchingEnabled ? (
-                          <Eye className='w-5 h-5 text-green-600 dark:text-green-400' />
+                          <Eye className='w-5 h-5 text-ui-success' />
                         ) : (
                           <EyeOff className='w-5 h-5 text-gray-400 dark:text-gray-500' />
                         )}
@@ -5336,7 +5336,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             title={module.enabled ? '点击隐藏' : '点击显示'}
                           >
                             {module.enabled ? (
-                              <Eye className='w-5 h-5 text-green-600 dark:text-green-400' />
+                              <Eye className='w-5 h-5 text-ui-success' />
                             ) : (
                               <EyeOff className='w-5 h-5 text-gray-400 dark:text-gray-500' />
                             )}
@@ -5504,7 +5504,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
           {/* 标题栏 */}
           <div className='mb-6 flex items-start justify-between gap-4'>
             <div>
-              <div className='inline-flex items-center gap-2 rounded-full bg-green-500/10 px-3 py-1 text-xs font-bold text-green-600 dark:text-green-400'>
+              <div className='inline-flex items-center gap-2 rounded-full bg-ui-accent-soft px-3 py-1 text-xs font-bold text-ui-accent'>
                 <Monitor className='h-4 w-4' />
                 TV ACCESS
               </div>
@@ -5514,7 +5514,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
             </div>
             <button
               onClick={handleCloseSubscribe}
-              className='flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 dark:hover:bg-white/10 dark:hover:text-white'
+              className='flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-accent dark:hover:bg-white/10 dark:hover:text-white'
               aria-label='Close'
             >
               <X className='h-5 w-5' />
@@ -5537,7 +5537,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                     setTvAccessTab(item.key);
                     if (item.key !== 'web') closeTvQrScanner();
                   }}
-                  className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm font-black transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500/70 ${
+                  className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm font-black transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-accent ${
                     active
                       ? 'bg-white text-slate-950 shadow-sm dark:bg-slate-950 dark:text-white'
                       : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
@@ -5555,7 +5555,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
             <section className='rounded-2xl border border-slate-200 bg-slate-50 p-5 dark:border-white/10 dark:bg-white/[0.04]'>
               <div className='flex items-center justify-between gap-3'>
                 <div className='flex items-center gap-3'>
-                  <div className='flex h-11 w-11 items-center justify-center rounded-2xl bg-green-500 text-white shadow-lg shadow-green-500/25'>
+                  <div className='flex h-11 w-11 items-center justify-center rounded-2xl bg-ui-accent text-white shadow-lg shadow-ui-accent'>
                     <Rss className='h-5 w-5' />
                   </div>
                   <div>
@@ -5570,7 +5570,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                 <span
                   className={`rounded-full px-2.5 py-1 text-xs font-bold ${
                     subscribeEnabled
-                      ? 'bg-green-500/10 text-green-600 dark:text-green-400'
+                      ? 'bg-ui-accent-soft text-ui-accent'
                       : 'bg-slate-200 text-slate-500 dark:bg-white/10 dark:text-slate-400'
                   }`}
                 >
@@ -5594,13 +5594,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                     <button
                       type='button'
                       onClick={() => setSubscribeAdFilterEnabled((prev) => !prev)}
-                      className='flex w-full cursor-pointer items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-green-400 dark:border-white/10 dark:bg-slate-900/70'
+                      className='flex w-full cursor-pointer items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-ui-accent dark:border-white/10 dark:bg-slate-900/70'
                     >
                       <div>
                         <div className='text-sm font-bold text-slate-800 dark:text-slate-200'>去广告</div>
                         <div className='mt-1 text-xs text-slate-500 dark:text-slate-400'>开启后通过代理处理播放链接</div>
                       </div>
-                      <span className={`h-5 w-9 rounded-full p-0.5 transition ${subscribeAdFilterEnabled ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-700'}`}>
+                      <span className={`h-5 w-9 rounded-full p-0.5 transition ${subscribeAdFilterEnabled ? 'bg-ui-accent' : 'bg-slate-300 dark:bg-slate-700'}`}>
                         <span className={`block h-4 w-4 rounded-full bg-white transition ${subscribeAdFilterEnabled ? 'translate-x-4' : ''}`} />
                       </span>
                     </button>
@@ -5626,13 +5626,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                     <div className='flex gap-2'>
                       <input
                         type='text'
-                        className='min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-green-500 dark:border-white/10 dark:bg-slate-900 dark:text-slate-200'
+                        className='min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-ui-accent dark:border-white/10 dark:bg-slate-900 dark:text-slate-200'
                         value={subscribeUrl}
                         readOnly
                       />
                       <button
                         onClick={handleCopySubscribeUrl}
-                        className='inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-black text-white transition hover:bg-green-700'
+                        className='inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-ui-accent px-4 py-2.5 text-sm font-black text-white transition hover:bg-ui-accent'
                       >
                         <Copy className='h-4 w-4' />
                         {copySuccess ? '已复制' : '复制'}
@@ -5835,7 +5835,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
               </label>
               <input
                 type='password'
-                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400'
+                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-transparent transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400'
                 placeholder='请输入新密码'
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
@@ -5850,7 +5850,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
               </label>
               <input
                 type='password'
-                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400'
+                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-transparent transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400'
                 placeholder='请再次输入新密码'
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -5877,7 +5877,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
             </button>
             <button
               onClick={handleSubmitChangePassword}
-              className='flex-1 px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+              className='flex-1 px-4 py-2 text-sm font-medium text-white bg-ui-accent hover:bg-ui-accent rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
               disabled={passwordLoading || !newPassword || !confirmPassword}
             >
               {passwordLoading ? '修改中...' : '确认修改'}
@@ -6093,7 +6093,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         href='https://github.com/mtvpls/Selene-Build/releases'
                         target='_blank'
                         rel='noopener noreferrer'
-                        className='inline-flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition-colors'
+                        className='inline-flex items-center gap-2 px-4 py-2 bg-ui-accent hover:bg-ui-accent text-white text-sm font-medium rounded-lg transition-colors'
                       >
                         <Download className='w-4 h-4' />
                         下载
