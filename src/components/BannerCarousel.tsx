@@ -83,6 +83,7 @@ interface BannerItem extends TMDBItem {
   origin_source?: 'TMDB' | 'Douban' | 'TX'; // 混合数据源下来自哪个源
   tmdb_id?: number; // 豆瓣条目反查到的 TMDB id
   tmdb_vote?: number; // TMDB 评分（豆瓣条目反查命中后一并带回）
+  douban_vote?: number; // 豆瓣评分（混合模式下由服务端按 TMDB id 映射补上）
 }
 
 /* Hero 的多源评分。能拿到几个源就显示几个，不硬凑：
@@ -125,6 +126,13 @@ function HeroRatings({
   if (origin !== 'TMDB' && item.tmdb_vote) {
     const tmdbScore = formatScore(item.tmdb_vote);
     if (tmdbScore) sources.push({ key: 'tmdb', value: tmdbScore });
+  }
+
+  // TMDB 条目若在豆瓣列表里出现过，服务端会补一个 douban_vote。豆瓣没有公开的
+  // 搜索接口，所以这一项只在混合模式下、且两边都收录时才有。
+  if (origin !== 'Douban' && item.douban_vote) {
+    const doubanScore = formatScore(item.douban_vote);
+    if (doubanScore) sources.push({ key: 'douban', value: doubanScore });
   }
 
   if (trakt.rating) {
@@ -590,18 +598,42 @@ export default function BannerCarousel({
     if ((dataSource !== 'TMDB' && dataSource !== 'Mixed') || !items.length)
       return;
 
-    /** 预判标题字深浅。留到轮播切过去才做的话，会先黑一下再闪成白。 */
-    const warmTone = (key: string, src: string) => {
+    /**
+     * 预判标题字深浅，顺便让服务端挑一张更合适的。
+     *
+     * 留到轮播切过去才做的话，会先黑一下再闪成白。这里传 id 而不是图片地址：
+     * 同一部片在 TMDB 上常有好几个版本的 logo，深色的那个反相会把颜色一起翻掉
+     * （深红变浅青）。服务端会在候选里挑第一张「在暗底上读得出来」的原生版本，
+     * 全都挑不出来才退回反相。
+     *
+     * v=3 是响应格式的版本号。接口带 24h 强缓存，不换 URL 的话升级后的浏览器
+     * 会继续用旧响应，挑浅色版这一步会静默失效一整天。
+     */
+    const warmTone = (item: BannerItem, src: string) => {
+      const { key } = logoRequest(item);
       if (logoDarkCache.has(key)) return;
-      // v=2 是响应格式的版本号。这个接口带 24h 强缓存，老响应里没有 density，
-      // 不换 URL 的话升级后的浏览器会继续用旧数据，密度归一静默失效一整天。
-      fetch(`/api/tmdb/logo-tone?src=${encodeURIComponent(src)}&v=2`)
+
+      const kind = item.media_type === 'tv' ? 'tv' : 'movie';
+      const zh = /[\u3400-\u9fff\uf900-\ufaff]/.test(item.title) ? 1 : 0;
+
+      fetch(`/api/tmdb/logo-tone?id=${item.id}&type=${kind}&zh=${zh}&v=3`)
         .then((res) => res.json())
         .then((data) => {
           const dark = Boolean(data?.dark);
           const ratio = typeof data?.ratio === 'number' ? data.ratio : 0;
           const density =
             typeof data?.density === 'number' ? data.density : 0;
+
+          // 服务端挑了另一版（原生的浅色那张），把当前地址换掉
+          if (typeof data?.path === 'string' && data.path) {
+            const better = getTMDBImageUrl(data.path, 'w500');
+            if (better && better !== src) {
+              heroLogoCache.set(key, better);
+              setLogoMap((prev) => ({ ...prev, [key]: better }));
+              warmLogo(better);
+            }
+          }
+
           logoDarkCache.set(key, dark);
           setLogoMetaMap((prev) => ({
             ...prev,
@@ -621,7 +653,7 @@ export default function BannerCarousel({
       const cached = heroLogoCache.get(key);
       if (cached) {
         warmLogo(cached);
-        warmTone(key, cached);
+        warmTone(item, cached);
       }
     });
 
@@ -644,7 +676,7 @@ export default function BannerCarousel({
           setLogoMap((prev) => ({ ...prev, [key]: src }));
           if (src) {
             warmLogo(src);
-            warmTone(key, src);
+            warmTone(item, src);
           }
         })
         .catch(() => {

@@ -526,6 +526,21 @@ async function getMixedBannerContent(
 
   const list: any[] = [];
   const seen = new Set<string>();
+
+  // 豆瓣条目反查命中后带着 tmdb_id，用它建一张「TMDB id → 豆瓣分」的表。
+  // 豆瓣没有公开的搜索接口（subject_suggest 返回空、rexxar 综合搜索只回影评），
+  // 所以 TMDB 条目的豆瓣分只能从这份现成的映射里补 —— 覆盖的是两边都收录的片。
+  const doubanScores = new Map<number, number>();
+  for (const item of doubanList) {
+    if (
+      item.tmdb_id &&
+      typeof item.vote_average === 'number' &&
+      item.vote_average > 0
+    ) {
+      doubanScores.set(item.tmdb_id, item.vote_average);
+    }
+  }
+
   const tryPush = (item: any) => {
     // 去重键优先用 TMDB 的 id：豆瓣条目反查命中后也带着这个 id，于是《希望》这种
     // 两边都收录的片只会留一条，而且是信息更全的 TMDB 那条。没有 id 的（没反查
@@ -537,6 +552,12 @@ async function getMixedBannerContent(
       : `title:${normalizeTitle(item.title)}`;
     if (!key || seen.has(key)) return;
     seen.add(key);
+
+    // TMDB 条目补上豆瓣分（豆瓣条目自己就带着，不用补）
+    if (item.origin_source === 'TMDB' && tmdbId && doubanScores.has(tmdbId)) {
+      list.push({ ...item, douban_vote: doubanScores.get(tmdbId) });
+      return;
+    }
     list.push(item);
   };
 
