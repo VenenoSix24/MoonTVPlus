@@ -2856,7 +2856,7 @@ html[data-loading-style='grid'] .mtv-err-box {
      宽度仍留上限，防止极端比例的片名铺满整行。 */
   height: var(--logo-h, 64px);
   width: auto;
-  max-width: min(27.5rem, 82vw);
+  max-width: min(30rem, 82vw);
   object-fit: contain;
   /* 透明 PNG 用 drop-shadow 才贴着字形轮廓，box-shadow 会描出一个矩形 */
   filter: drop-shadow(0 2px 12px var(--hero-title-shadow));

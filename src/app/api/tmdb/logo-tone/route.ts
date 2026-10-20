@@ -20,9 +20,11 @@ const CACHE_MAX = 500;
 interface ToneResult {
   dark: boolean;
   ratio: number;
+  /** 墨迹密度：非透明像素占整图面积的比例，测不出来时为 0 */
+  density: number;
 }
 
-const EMPTY: ToneResult = { dark: false, ratio: 0 };
+const EMPTY: ToneResult = { dark: false, ratio: 0, density: 0 };
 
 const cache = new Map<string, { data: ToneResult; timestamp: number }>();
 
@@ -98,12 +100,30 @@ export async function GET(request: NextRequest) {
       count += 1;
     }
 
+    // 墨迹密度：片名 logo 是透明 PNG，真正占视觉的是笔画，不是外框。
+    // 不能沿用上面 32px 的采样——细笔画会被平均成半透明，卡在 alpha 阈值下漏掉，
+    // 于是密度被系统性低估。这里按 400px 再采一次。
+    // 分母用整图面积：渲染时透明留白同样占着盒子，算进去才和实际占地一致。
+    const inkStat = await sharp(buf)
+      .resize(400, 400, { fit: 'inside' })
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+
+    let ink = 0;
+    for (let i = 3; i < inkStat.data.length; i += inkStat.info.channels) {
+      if (inkStat.data[i] >= 40) ink += 1;
+    }
+    const inkTotal = inkStat.info.width * inkStat.info.height;
+    const density = inkTotal > 0 ? ink / inkTotal : 0;
+
     const result: ToneResult =
       count === 0
-        ? { dark: false, ratio }
+        ? { dark: false, ratio, density }
         : {
             dark: lumSum / count < 80 && satSum / count < 0.25,
             ratio,
+            density,
           };
 
     if (cache.size >= CACHE_MAX) {

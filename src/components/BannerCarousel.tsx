@@ -223,7 +223,7 @@ export default function BannerCarousel({
   // 判定在服务端做（TMDB 图床不返回 CORS 头，前端 canvas 采样会抛 SecurityError），
   // 结果按缓存键存在这里 —— 由下面的预取 effect 提前算好，切换时同步命中。
   const [logoMetaMap, setLogoMetaMap] = useState<
-    Record<string, { dark: boolean; ratio: number }>
+    Record<string, { dark: boolean; ratio: number; density: number }>
   >({});
   const [bannerHeightScale, setBannerHeightScale] =
     useState<HomeBannerHeightScale>('1'); // 轮播图高度倍率
@@ -574,13 +574,20 @@ export default function BannerCarousel({
     /** 预判标题字深浅。留到轮播切过去才做的话，会先黑一下再闪成白。 */
     const warmTone = (key: string, src: string) => {
       if (logoDarkCache.has(key)) return;
-      fetch(`/api/tmdb/logo-tone?src=${encodeURIComponent(src)}`)
+      // v=2 是响应格式的版本号。这个接口带 24h 强缓存，老响应里没有 density，
+      // 不换 URL 的话升级后的浏览器会继续用旧数据，密度归一静默失效一整天。
+      fetch(`/api/tmdb/logo-tone?src=${encodeURIComponent(src)}&v=2`)
         .then((res) => res.json())
         .then((data) => {
           const dark = Boolean(data?.dark);
           const ratio = typeof data?.ratio === 'number' ? data.ratio : 0;
+          const density =
+            typeof data?.density === 'number' ? data.density : 0;
           logoDarkCache.set(key, dark);
-          setLogoMetaMap((prev) => ({ ...prev, [key]: { dark, ratio } }));
+          setLogoMetaMap((prev) => ({
+            ...prev,
+            [key]: { dark, ratio, density },
+          }));
         })
         .catch(() => {
           // 测不出来按非深色处理
@@ -742,21 +749,27 @@ export default function BannerCarousel({
   const titleLogo: string | null =
     logoMap[logoKey] ?? heroLogoCache.get(logoKey) ?? null;
 
-  // 深色判定与宽高比都在预取阶段算好，这里同步读，不会出现「先黑一下再闪成白」
+  // 深色、宽高比、墨迹密度都在预取阶段算好，这里同步读，不会出现「先黑一下再闪成白」
   const logoMeta = logoMetaMap[logoKey];
   const logoDark = logoMeta?.dark === true;
   const ratio = logoMeta?.ratio ?? 0;
-  // 视觉重量用「面积」归一，而不是让高度一致。
+  const density = logoMeta?.density ?? 0;
+  // 视觉重量用「墨迹面积」归一，而不是让高度一致。
   // 高度一样时，近方形的 logo（泥面人 1.5:1）宽度太小、显得弱；
-  // 长条片名（登峰传奇 8.89:1）宽度又太大、横贯画面。按面积开方反推高度，
-  // 再夹住宽度上限与上下界，几档下来占地才真的接近。
-  const LOGO_AREA = 16000; // 目标视觉面积（px²）
-  const LOGO_MAX_W = 440; // 与 CSS 的 max-width 保持一致
+  // 长条片名（登峰传奇 8.89:1）宽度又太大、横贯画面。
+  // 但只按矩形面积开方还不够：透明 PNG 的墨迹密度实测在 18%–57% 之间，
+  // 同样的框里笔画密的显大、笔画疏的显空，所以按密度做相对修正。
+  // LOGO_AREA 的语义保持「矩形面积」不变 —— 乘 REF 密度是为了让密度刚好等于
+  // 参考值的片子退化回原来的尺寸，整体基准不因为加了这个维度而平移。
+  const LOGO_AREA = 24000; // 目标矩形面积（px²）
+  const LOGO_REF_DENSITY = 0.42; // 实测中位数，也是密度缺失时的兜底
+  const LOGO_MAX_W = 480; // 与 CSS 的 max-width 保持一致
   const logoHeight = (() => {
     const r = ratio || 3;
-    const ideal = Math.sqrt(LOGO_AREA / r);
+    const d = density > 0.05 ? density : LOGO_REF_DENSITY;
+    const ideal = Math.sqrt((LOGO_AREA * LOGO_REF_DENSITY) / (r * d));
     // 宽度顶到上限时的高度也要夹住，否则长条图会溢出
-    return Math.max(Math.min(ideal, LOGO_MAX_W / r, 104), 42);
+    return Math.max(Math.min(ideal, LOGO_MAX_W / r, 132), 42);
   })();
 
   // TMDB 源下标题字是异步取的。落地之前先把文字藏起来（占位仍在，不跳版），
