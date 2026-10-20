@@ -1452,15 +1452,30 @@ html[data-loading-style='grid'] .mtv-err-box {
   gap: 26px;
   height: 64px;
   padding: 0 var(--ui-gutter);
+  /* 导航配色走局部变量：压在 Hero 上时整条栏翻成白色，普通页面再跟主题走 */
+  --nav-ink: var(--ui-ink-2);
+  --nav-ink-hover: var(--ui-ink);
+  --nav-ink-active: var(--ui-ink);
+  --nav-hover-bg: color-mix(in srgb, var(--ui-ink) 8%, transparent);
   background-color: transparent;
   transition:
     background-color var(--ui-dur-2) var(--ui-ease),
     box-shadow var(--ui-dur-2) var(--ui-ease);
 }
 
-/* 刚进页面时整条栏是透明的、压在 Hero 上，只留一层从上往下的暗角，保证导航文字
-   在亮画面上也能读。用 --ui-bg 混透明而不是写死黑色：深色主题下就是
-   rgba(0,0,0,.72)，浅色主题下自动变成一层淡底，压着深色文字同样成立。
+/* 首页首屏：整条栏压在 Hero 上，文字翻白。
+   Hero 固定影院感（画面是深是浅不可控），导航跟主题走深灰字的话在浅色主题下就是
+   深灰压深画面，读不出来；跟着画面走白色才成立。 */
+.mtv-topnav.is-over-hero {
+  --nav-ink: rgba(255, 255, 255, 0.82);
+  --nav-ink-hover: #ffffff;
+  --nav-ink-active: #ffffff;
+  --nav-hover-bg: rgba(255, 255, 255, 0.12);
+}
+
+/* 顶部暗角：只在压着 Hero 时出现。
+   暗角必须是暗的 —— 之前写成「页面底色混透明」，深色下刚好等于 rgba(0,0,0,.72)
+   看不出问题，浅色下就变成在海报顶上糊了一条白带，和「顶栏透明」直接打架。
    z-index:-1 让它落在顶栏自身背景之上、内容之下，不会盖住导航文字。 */
 .mtv-topnav::before {
   content: '';
@@ -1468,16 +1483,17 @@ html[data-loading-style='grid'] .mtv-err-box {
   inset: 0 0 auto 0;
   height: 132px;
   z-index: -1;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--ui-bg) 72%, transparent),
-    transparent
-  );
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.72), transparent);
+  opacity: 0;
   pointer-events: none;
   transition: opacity var(--ui-dur-2) var(--ui-ease);
 }
 
-/* 滚过首屏：实底 + 模糊 + 一条发丝线，暗角退场 */
+.mtv-topnav.is-over-hero::before {
+  opacity: 1;
+}
+
+/* 滚过 Hero：实底 + 模糊 + 一条发丝线，暗角退场 */
 .mtv-topnav.is-scrolled {
   background-color: var(--ui-nav);
   backdrop-filter: blur(16px) saturate(150%);
@@ -1525,7 +1541,7 @@ html[data-loading-style='grid'] .mtv-err-box {
   font-size: 0.875rem;
   font-weight: 500;
   white-space: nowrap;
-  color: var(--ui-ink-2);
+  color: var(--nav-ink);
   transition: color var(--ui-dur-1) var(--ui-ease),
     background-color var(--ui-dur-1) var(--ui-ease);
 }
@@ -1537,13 +1553,13 @@ html[data-loading-style='grid'] .mtv-err-box {
 
 /* hover 只提亮文字，不加底色 —— 实心色块压在深色栏上很脏 */
 .mtv-topnav-link:hover {
-  color: var(--ui-ink);
+  color: var(--nav-ink-hover);
 }
 
 /* 选中态：纯白 + 700，不加底色。原来是强调色文字 + 强调色底片，一整块红太吵 */
 .mtv-topnav-link[aria-current='page'] {
   font-weight: 700;
-  color: var(--ui-ink);
+  color: var(--nav-ink-active);
 }
 
 .mtv-topnav-right {
@@ -1565,7 +1581,7 @@ html[data-loading-style='grid'] .mtv-err-box {
   width: 40px;
   height: 40px;
   border-radius: var(--ui-r-full);
-  color: var(--ui-ink-2);
+  color: var(--nav-ink);
   transition: color var(--ui-dur-1) var(--ui-ease),
     background-color var(--ui-dur-1) var(--ui-ease);
 }
@@ -1576,8 +1592,8 @@ html[data-loading-style='grid'] .mtv-err-box {
 }
 
 .mtv-topnav-icon:hover {
-  color: var(--ui-ink);
-  background-color: color-mix(in srgb, var(--ui-ink) 8%, transparent);
+  color: var(--nav-ink-hover);
+  background-color: var(--nav-hover-bg);
 }
 
 .mtv-topnav-icon:focus-visible {

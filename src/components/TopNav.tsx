@@ -61,7 +61,8 @@ const TopNav = () => {
     pathname.startsWith(`${SPECIAL_SOURCE_PATH}/`);
   const searchHref = isUnderPath ? SPECIAL_SOURCE_PATH : '/search';
 
-  // 压在 Hero 上时整条栏透明，滚过首屏才转实底
+  // 整条栏压在 Hero 上时走白色那套，滚过 Hero 才转实底
+  const [overHero, setOverHero] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   // 搜索：收起时是个圆形图标，点开在原位长成胶囊
   const [searchOpen, setSearchOpen] = useState(false);
@@ -78,10 +79,30 @@ const TopNav = () => {
         document.scrollingElement?.scrollTop ?? 0,
         document.body.scrollTop
       );
-    const handleScroll = () => setScrolled(readScroll() > 40);
-    handleScroll();
-    window.addEventListener('scroll', handleScroll, true);
-    return () => window.removeEventListener('scroll', handleScroll, true);
+
+    // Hero 是异步数据渲染出来的，挂载晚于首次执行，所以缓存为空时每次都重查一遍
+    let hero: HTMLElement | null = null;
+
+    const measure = () => {
+      if (!hero) hero = document.querySelector<HTMLElement>('.mtv-hero');
+      // 「压在 Hero 上」= 顶栏那条 64px 横带和 Hero 有交集，不是 Hero 存在就算
+      const rect = hero?.getBoundingClientRect();
+      const over = !!rect && rect.top < 64 && rect.bottom > 0;
+
+      setOverHero(over);
+      // 压在 Hero 上时保持透明；Hero 过去之后再按滚动距离转实底
+      setScrolled(!over && readScroll() > 40);
+    };
+
+    measure();
+    window.addEventListener('scroll', measure, true);
+    // Hero 挂载/换图都会改 body 高度，用 ResizeObserver 补一次首次判定
+    const observer = new ResizeObserver(measure);
+    observer.observe(document.body);
+    return () => {
+      window.removeEventListener('scroll', measure, true);
+      observer.disconnect();
+    };
   }, []);
 
   // 展开后直接把焦点交给输入框，不用再点一次
@@ -169,7 +190,15 @@ const TopNav = () => {
   };
 
   return (
-    <header className={scrolled ? 'mtv-topnav is-scrolled' : 'mtv-topnav'}>
+    <header
+      className={
+        overHero
+          ? 'mtv-topnav is-over-hero'
+          : scrolled
+          ? 'mtv-topnav is-scrolled'
+          : 'mtv-topnav'
+      }
+    >
       <Link href='/' className='mtv-topnav-brand' prefetch={false}>
         {siteName}
       </Link>
