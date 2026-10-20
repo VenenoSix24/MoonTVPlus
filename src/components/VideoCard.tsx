@@ -166,8 +166,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
       return auth?.role === 'admin' || auth?.role === 'owner';
     }, []);
     const resolvedIsAnime = useMemo(
-      () =>
-        Boolean(isBangumi || isAnime || isAnimeCategoryText(typeName)),
+      () => Boolean(isBangumi || isAnime || isAnimeCategoryText(typeName)),
       [isBangumi, isAnime, typeName]
     );
     const actualTitle = title;
@@ -737,7 +736,6 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
       return 'lo';
     }, [rate]);
 
-
     const openTrailerPicker = useCallback(async () => {
       if (!actualTitle) return;
       setShowMobileActions(false);
@@ -945,12 +943,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
       }
 
       // 添加追番订阅（仅管理员 + 判定为动漫）
-      if (
-        isAdminUser &&
-        resolvedIsAnime &&
-        origin !== 'live' &&
-        actualTitle
-      ) {
+      if (isAdminUser && resolvedIsAnime && origin !== 'live' && actualTitle) {
         actions.push({
           id: 'anime-subscribe',
           label: '添加追番订阅',
@@ -1445,7 +1438,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                   }}
                 >
                   <div
-                    className='text-[var(--ui-fs-nano)] text-yellow-400 line-clamp-2 break-all'
+                    className='text-[length:var(--ui-fs-nano)] text-yellow-400 line-clamp-2 break-all'
                     style={
                       {
                         WebkitUserSelect: 'none',
@@ -1483,7 +1476,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                 >
                   {/* 集数显示 */}
                   <div
-                    className='bg-black/60 text-white text-[var(--ui-fs-nano)] sm:text-xs font-medium px-2 sm:px-3 py-0.5 sm:py-1 rounded-full shadow-md transition-all duration-300 ease-out group-hover:scale-110 backdrop-blur-sm flex items-center justify-center'
+                    className='bg-black/60 text-white text-[length:var(--ui-fs-nano)] sm:text-xs font-medium px-2 sm:px-3 py-0.5 sm:py-1 rounded-full shadow-md transition-all duration-300 ease-out group-hover:scale-110 backdrop-blur-sm flex items-center justify-center'
                     style={
                       {
                         WebkitUserSelect: 'none',
@@ -1504,7 +1497,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                   {/* 年份显示 */}
                   {displayYear && (
                     <div
-                      className='bg-black/60 text-white text-[var(--ui-fs-nano)] sm:text-xs font-medium px-2 sm:px-3 py-0.5 sm:py-1 rounded-full shadow-md transition-all duration-300 ease-out group-hover:scale-110 backdrop-blur-sm flex items-center justify-center'
+                      className='bg-black/60 text-white text-[length:var(--ui-fs-nano)] sm:text-xs font-medium px-2 sm:px-3 py-0.5 sm:py-1 rounded-full shadow-md transition-all duration-300 ease-out group-hover:scale-110 backdrop-blur-sm flex items-center justify-center'
                       style={
                         {
                           WebkitUserSelect: 'none',
@@ -1543,7 +1536,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                   }}
                 >
                   <span
-                    className={`inline-block border rounded px-1 py-0.5 text-[var(--ui-fs-nano)] text-white/90 bg-black/60 ${
+                    className={`inline-block border rounded px-1 py-0.5 text-[length:var(--ui-fs-nano)] text-white/90 bg-black/60 ${
                       actualSource === 'xiaoya'
                         ? 'border-blue-500'
                         : isNetdiskSource(actualSource)
@@ -1779,7 +1772,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                                   >
                                     <div className='h-0.5 w-0.5 flex-shrink-0 rounded-full bg-blue-400 sm:h-1 sm:w-1'></div>
                                     <span
-                                      className='truncate text-[var(--ui-fs-nano)] leading-tight sm:text-xs'
+                                      className='truncate text-[length:var(--ui-fs-nano)] leading-tight sm:text-xs'
                                       title={sourceName}
                                     >
                                       {sourceName}
@@ -1792,7 +1785,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                               {hasMore && (
                                 <div className='mt-1 border-t border-gray-700/50 pt-1 sm:mt-2 sm:pt-1.5'>
                                   <div className='flex items-center justify-center text-gray-400'>
-                                    <span className='text-[var(--ui-fs-nano)] font-medium sm:text-xs'>
+                                    <span className='text-[length:var(--ui-fs-nano)] font-medium sm:text-xs'>
                                       +{remainingCount} 播放源
                                     </span>
                                   </div>
@@ -1881,7 +1874,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                   {/* 直链地址 */}
                   {isDirectPlaySource && directLinkUrl && (
                     <div
-                      className='text-[var(--ui-fs-nano)] text-white/75 truncate'
+                      className='text-[length:var(--ui-fs-nano)] text-white/75 truncate'
                       style={
                         {
                           WebkitUserSelect: 'none',
@@ -1935,7 +1928,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                             playTime !== undefined &&
                             totalTime !== undefined && (
                               <div
-                                className='text-[var(--ui-fs-nano)] text-white/80'
+                                className='text-[length:var(--ui-fs-nano)] text-white/80'
                                 style={
                                   {
                                     WebkitUserSelect: 'none',
@@ -1966,7 +1959,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                           {/* 来源 - 右侧 */}
                           {config.showSourceName && source_name && !cmsData && (
                             <span
-                              className={`inline-block border rounded px-1 py-0.5 text-[var(--ui-fs-nano)] text-white/90 bg-black/30 backdrop-blur-sm ${
+                              className={`inline-block border rounded px-1 py-0.5 text-[length:var(--ui-fs-nano)] text-white/90 bg-black/30 backdrop-blur-sm ${
                                 actualSource === 'xiaoya'
                                   ? 'border-blue-500'
                                   : isNetdiskSource(actualSource)
@@ -2033,7 +2026,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                     !cmsData && (
                       <div className='flex items-center justify-end'>
                         <span
-                          className={`inline-block border rounded px-1 py-0.5 text-[var(--ui-fs-nano)] text-white/90 bg-black/30 backdrop-blur-sm ${
+                          className={`inline-block border rounded px-1 py-0.5 text-[length:var(--ui-fs-nano)] text-white/90 bg-black/30 backdrop-blur-sm ${
                             origin === 'live'
                               ? 'border-red-500'
                               : actualSource === 'openlist' ||
@@ -2201,7 +2194,6 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
             setShowImageViewer(true);
           }}
         />
-
 
         <TrailerPickerDialog
           isOpen={showTrailerPicker}

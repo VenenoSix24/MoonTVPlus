@@ -31,16 +31,16 @@ interface PlayRecordsPanelProps {
  * 破坏性动作单独用红色标出来。
  */
 const ACTION_BTN =
-  'inline-flex items-center gap-1 h-[30px] px-2.5 rounded-lg text-xs font-semibold ' +
+  'inline-flex items-center gap-1 h-[30px] px-2 rounded-lg sm:px-2.5 text-xs font-semibold whitespace-nowrap ' +
   'text-ui-ink-2 transition-colors hover:text-ui-ink hover:bg-ui-surface-3 ' +
   'disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-ui-ink-2';
 
 const ACTION_BTN_ACCENT =
-  'inline-flex items-center gap-1 h-[30px] px-2.5 rounded-lg text-xs font-semibold ' +
+  'inline-flex items-center gap-1 h-[30px] px-2 rounded-lg sm:px-2.5 text-xs font-semibold whitespace-nowrap ' +
   'text-ui-accent transition-colors hover:bg-ui-surface-3';
 
 const ACTION_BTN_DANGER =
-  'inline-flex items-center gap-1 h-[30px] px-2.5 rounded-lg text-xs font-semibold ' +
+  'inline-flex items-center gap-1 h-[30px] px-2 rounded-lg sm:px-2.5 text-xs font-semibold whitespace-nowrap ' +
   'text-red-500 transition-colors hover:bg-red-500/10 ' +
   'disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent';
 
@@ -202,17 +202,19 @@ export default function PlayRecordsPanel({
       />
 
       <div className='fixed top-1/2 left-1/2 z-[1001] flex max-h-[85vh] w-[calc(100%-1.5rem)] max-w-4xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-ui-hair bg-ui-surface-2 text-ui-ink shadow-[0_32px_72px_-24px_rgba(0,0,0,0.7)]'>
-        <div className='flex items-center justify-between gap-4 border-b border-ui-hair px-5 py-3.5'>
+        <div className='flex flex-nowrap items-center justify-between gap-2 border-b border-ui-hair px-4 py-3 sm:gap-4 sm:px-5 sm:py-3.5'>
           <div className='flex min-w-0 items-center gap-2'>
-            <History className='h-5 w-5 flex-none text-ui-ink-3' />
-            <h3 className='text-[15px] font-bold text-ui-ink'>播放记录</h3>
+            <History className='hidden h-5 w-5 flex-none text-ui-ink-3 min-[360px]:block' />
+            <h3 className='truncate whitespace-nowrap text-[15px] font-bold text-ui-ink'>
+              播放记录
+            </h3>
             {playRecords.length > 0 && (
-              <span className='rounded-full bg-ui-surface-3 px-2 py-0.5 text-[11px] font-semibold text-ui-ink-3'>
+              <span className='hidden whitespace-nowrap rounded-full bg-ui-surface-3 px-2 py-0.5 text-[11px] font-semibold text-ui-ink-3 min-[420px]:inline-block'>
                 {playRecords.length} 项
               </span>
             )}
           </div>
-          <div className='flex flex-none items-center gap-3'>
+          <div className='flex flex-none items-center gap-1.5 min-[360px]:gap-2 sm:gap-3'>
             {playRecords.length > 0 &&
               (editMode ? (
                 <>
@@ -262,7 +264,7 @@ export default function PlayRecordsPanel({
               ))}
 
             <span
-              className='h-4 w-px flex-none bg-ui-hair-strong'
+              className='hidden h-4 w-px flex-none bg-ui-hair-strong min-[360px]:block'
               aria-hidden='true'
             />
 
