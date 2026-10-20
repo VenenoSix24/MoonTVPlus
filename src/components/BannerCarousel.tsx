@@ -12,6 +12,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
   type SyntheticEvent,
+  type CSSProperties,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -221,7 +222,9 @@ export default function BannerCarousel({
   // 标题字若是深色单色，压在暗海报上读不出来，需要反色。
   // 判定在服务端做（TMDB 图床不返回 CORS 头，前端 canvas 采样会抛 SecurityError），
   // 结果按缓存键存在这里 —— 由下面的预取 effect 提前算好，切换时同步命中。
-  const [logoDarkMap, setLogoDarkMap] = useState<Record<string, boolean>>({});
+  const [logoMetaMap, setLogoMetaMap] = useState<
+    Record<string, { dark: boolean; ratio: number }>
+  >({});
   const [bannerHeightScale, setBannerHeightScale] =
     useState<HomeBannerHeightScale>('1'); // 轮播图高度倍率
   const [isMobileView, setIsMobileView] = useState(false);
@@ -575,8 +578,9 @@ export default function BannerCarousel({
         .then((res) => res.json())
         .then((data) => {
           const dark = Boolean(data?.dark);
+          const ratio = typeof data?.ratio === 'number' ? data.ratio : 0;
           logoDarkCache.set(key, dark);
-          setLogoDarkMap((prev) => ({ ...prev, [key]: dark }));
+          setLogoMetaMap((prev) => ({ ...prev, [key]: { dark, ratio } }));
         })
         .catch(() => {
           // 测不出来按非深色处理
@@ -738,8 +742,14 @@ export default function BannerCarousel({
   const titleLogo: string | null =
     logoMap[logoKey] ?? heroLogoCache.get(logoKey) ?? null;
 
-  // 深色判定在预取阶段就算好了，这里同步读，不会出现「先黑一下再闪成白」
-  const logoDark = logoDarkMap[logoKey] === true;
+  // 深色判定与宽高比都在预取阶段算好，这里同步读，不会出现「先黑一下再闪成白」
+  const logoMeta = logoMetaMap[logoKey];
+  const logoDark = logoMeta?.dark === true;
+  const ratio = logoMeta?.ratio ?? 0;
+  // 按宽高比分档给高度，目标是让各片名的视觉重量接近，而不是让 height 一致。
+  // 8.89:1 的长条片名在同样的 height 下宽度是紧凑片名的 4~5 倍，会横贯整个画面；
+  // 所以超宽的收一档、紧凑的放一档，把宽度差从 5.8 倍压到 3.6 倍左右。
+  const logoRem = ratio >= 6 ? 3.7 : ratio >= 2.8 ? 4 : 4.4;
 
   // TMDB 源下标题字是异步取的。落地之前先把文字藏起来（占位仍在，不跳版），
   // 否则会「先显示文字、一秒后突然变成 logo」闪一下。
@@ -850,6 +860,7 @@ export default function BannerCarousel({
                 alt=''
                 aria-hidden='true'
                 className={`mtv-hero-logo${logoDark ? ' is-dark' : ''}`}
+                style={{ '--logo-h': logoRem } as CSSProperties}
                 loading='eager'
                 decoding='sync'
               />

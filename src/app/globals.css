@@ -2856,7 +2856,9 @@ html[data-loading-style='grid'] .mtv-err-box {
      「本来就大的更大、本来就小的还是小」。固定 height 让所有 logo 顶到
      同一高度，超宽的再被 max-width 截住（object-fit 保证不变形）——
      这正好就是「宽 logo 不用放大」想要的效果，且不必去判断宽高比。 */
-  height: clamp(2.75rem, 5vw, 4.5rem);
+  /* 高度由 --logo-h 决定（3.7 / 4 / 4.4 三档，按 logo 宽高比在组件里算）。
+     没拿到比例时用 4rem 兜底。 */
+  height: calc(var(--logo-h, 4) * 1rem);
   width: auto;
   /* 34rem 是按正文栏（576px）定的，超宽横排 logo 会被它压成一条细线
      （蜘蛛侠、街头霸王这种 10:1 的片名最明显）。改成按视口算，
@@ -3327,7 +3329,7 @@ html[data-loading-style='grid'] .mtv-err-box {
     /* 手机端标题字是画面视觉中心，46px 左右读着太怯；提到 16vw（390px 下约 62px）。
        宽扁的 logo 会被上面的 max-width: 100% 先截住，不会因为这里调大就溢出，
        所以不需要额外判断宽高比。 */
-    height: clamp(3.25rem, 18vw, 4.75rem);
+    height: calc(var(--logo-h, 4) * 1rem);
     margin-inline: auto;
   }
 
