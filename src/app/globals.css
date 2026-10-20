@@ -3353,7 +3353,8 @@ html[data-loading-style='grid'] .mtv-err-box {
   background: transparent;
   color: var(--ui-ink-2);
   white-space: nowrap;
-  transition: color var(--ui-dur-2) var(--ui-ease);
+  transition: color var(--ui-dur-2) var(--ui-ease),
+    background-color var(--ui-dur-2) var(--ui-ease);
 }
 
 .mtv-cap:hover {
@@ -3365,6 +3366,18 @@ html[data-loading-style='grid'] .mtv-err-box {
   font-weight: 650;
 }
 
+/* 没有独立指示块的选择器（如星期）直接用背景填充表达选中。
+   颜色与 .mtv-caps-ind 完全一致，两个地方看起来才是一件东西。 */
+.mtv-cap.is-on.is-fill {
+  background: var(--ui-surface);
+  box-shadow: var(--ui-elev-1);
+}
+
+.dark .mtv-cap.is-on.is-fill {
+  background: color-mix(in srgb, var(--ui-ink) 12%, transparent);
+  box-shadow: none;
+}
+
 /* 横滚条藏滚动条：筛选行在窄屏必溢出，露出滚动条很难看 */
 .mtv-caps-wrap {
   overflow-x: auto;
@@ -3373,6 +3386,37 @@ html[data-loading-style='grid'] .mtv-err-box {
 
 .mtv-caps-wrap::-webkit-scrollbar {
   display: none;
+}
+
+/* ==========================================================================
+   路由切换过渡
+   --------------------------------------------------------------------------
+   挂在 PageLayout 的 main 内容上，没有用 app/template.tsx：template 会把整
+   棵子树重挂，导航栏也在里面，动画期间底栏那个 fixed 胶囊会跟着抖一下。
+
+   只用 opacity。transform 和 filter 都会让子元素的 position: fixed 改以这
+   个容器为参照，播放页的全屏层会瞬间错位 —— 淡入是唯一不打破定位的写法。
+
+   同一路由内改 searchParams（切换筛选条件）不会重挂 PageLayout，所以这类
+   操作不会触发整页动画，只有真正换页才播一次。
+   ========================================================================== */
+.mtv-route-in {
+  animation: mtv-route-in var(--ui-dur-2) var(--ui-ease-out) both;
+}
+
+@keyframes mtv-route-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mtv-route-in {
+    animation: none;
+  }
 }
 
 /* ==========================================================================

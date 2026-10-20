@@ -41,9 +41,7 @@ const WeekdaySelector: React.FC<WeekdaySelectorProps> = ({
   }, []); // 只在组件挂载时执行一次
 
   return (
-    <div
-      className={`relative inline-flex rounded-full p-0.5 sm:p-1 ${className}`}
-    >
+    <div className={`mtv-caps ${className}`}>
       {weekdays.map((weekday) => {
         const isActive = selectedWeekday === weekday.value;
         return (
@@ -53,15 +51,11 @@ const WeekdaySelector: React.FC<WeekdaySelectorProps> = ({
               setSelectedWeekday(weekday.value);
               onWeekdayChange(weekday.value);
             }}
-            className={`
-              relative z-10 px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium rounded-full transition-all duration-200 whitespace-nowrap
-              ${
-                isActive
-                  ? 'text-ui-accent  font-semibold'
-                  : 'text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 cursor-pointer'
-              }
-            `}
+            className={`mtv-cap ${
+              isActive ? 'is-on is-fill cursor-default' : 'cursor-pointer'
+            }`}
             title={weekday.label}
+            aria-pressed={isActive}
           >
             {weekday.shortLabel}
           </button>

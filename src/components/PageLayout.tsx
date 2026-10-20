@@ -104,7 +104,7 @@ const PageLayout = ({
                     'calc(64px + 10px + 10px + env(safe-area-inset-bottom))',
                 }}
               >
-                {children}
+                <div className='mtv-route-in'>{children}</div>
               </main>
             </div>
           </div>
