@@ -3429,6 +3429,17 @@ html[data-loading-style='grid'] .mtv-err-box {
   font-weight: 650;
 }
 
+/* 设置面板里的 range 滑块。填充色渐变由内联样式给（要按当前值算百分比），
+   这里只管尺寸和轨道圆角 —— 原来这五个滑块各自抄了一遍同样的 Tailwind 类。 */
+.mtv-range {
+  flex: 1;
+  height: 8px;
+  border-radius: var(--ui-r-sm);
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
 /* ==========================================================================
    路由切换过渡
    --------------------------------------------------------------------------

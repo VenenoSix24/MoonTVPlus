@@ -4170,13 +4170,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                           onChange={(e) =>
                             handleSpeedTestTimeoutChange(Number(e.target.value))
                           }
-                          className='flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700'
+                          className='mtv-range'
                           style={{
-                            background: `linear-gradient(to right, #10b981 0%, #10b981 ${
+                            background: `linear-gradient(to right, var(--ui-accent) 0%, var(--ui-accent) ${
                               ((speedTestTimeout - 4000) / (30000 - 4000)) * 100
-                            }%, #e5e7eb ${
+                            }%, var(--ui-surface-3) ${
                               ((speedTestTimeout - 4000) / (30000 - 4000)) * 100
-                            }%, #e5e7eb 100%)`,
+                            }%, var(--ui-surface-3) 100%)`,
                           }}
                         />
                       </div>
@@ -4440,13 +4440,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             Number(e.target.value)
                           )
                         }
-                        className='flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700'
+                        className='mtv-range'
                         style={{
-                          background: `linear-gradient(to right, #10b981 0%, #10b981 ${
+                          background: `linear-gradient(to right, var(--ui-accent) 0%, var(--ui-accent) ${
                             ((maxConcurrentDownloads - 1) / (10 - 1)) * 100
-                          }%, #e5e7eb ${
+                          }%, var(--ui-surface-3) ${
                             ((maxConcurrentDownloads - 1) / (10 - 1)) * 100
-                          }%, #e5e7eb 100%)`,
+                          }%, var(--ui-surface-3) 100%)`,
                         }}
                       />
                     </div>
@@ -4504,13 +4504,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             Number(e.target.value)
                           )
                         }
-                        className='flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700'
+                        className='mtv-range'
                         style={{
-                          background: `linear-gradient(to right, #10b981 0%, #10b981 ${
+                          background: `linear-gradient(to right, var(--ui-accent) 0%, var(--ui-accent) ${
                             ((downloadThreadsPerTask - 1) / (32 - 1)) * 100
-                          }%, #e5e7eb ${
+                          }%, var(--ui-surface-3) ${
                             ((downloadThreadsPerTask - 1) / (32 - 1)) * 100
-                          }%, #e5e7eb 100%)`,
+                          }%, var(--ui-surface-3) 100%)`,
                         }}
                       />
                     </div>
@@ -4568,13 +4568,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             Number(e.target.value)
                           )
                         }
-                        className='flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700'
+                        className='mtv-range'
                         style={{
-                          background: `linear-gradient(to right, #10b981 0%, #10b981 ${
+                          background: `linear-gradient(to right, var(--ui-accent) 0%, var(--ui-accent) ${
                             ((downloadSegmentTimeout - 30000) / (300000 - 30000)) * 100
-                          }%, #e5e7eb ${
+                          }%, var(--ui-surface-3) ${
                             ((downloadSegmentTimeout - 30000) / (300000 - 30000)) * 100
-                          }%, #e5e7eb 100%)`,
+                          }%, var(--ui-surface-3) 100%)`,
                         }}
                       />
                     </div>
@@ -5056,13 +5056,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         onChange={(e) =>
                           handleDanmakuMaxCountChange(parseInt(e.target.value))
                         }
-                        className='flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700'
+                        className='mtv-range'
                         style={{
-                          background: `linear-gradient(to right, #10b981 0%, #10b981 ${
+                          background: `linear-gradient(to right, var(--ui-accent) 0%, var(--ui-accent) ${
                             (danmakuMaxCount / 10000) * 100
-                          }%, #e5e7eb ${
+                          }%, var(--ui-surface-3) ${
                             (danmakuMaxCount / 10000) * 100
-                          }%, #e5e7eb 100%)`,
+                          }%, var(--ui-surface-3) 100%)`,
                         }}
                       />
                     </div>
