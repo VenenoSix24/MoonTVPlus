@@ -796,33 +796,37 @@ export default function BannerCarousel({
 
       {/* 指示器：未到的是圆点，当前那张拉长成进度条并按自动播放时长填充 */}
       <div className='absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2'>
-        {items.map((_, index) => (
-          <button
-            key={index}
-            onClick={(e) => {
-              // 不拦的话手机上点圆点会直接跳走，而不是切到那一张。
-              e.stopPropagation();
-              goToSlide(index);
-            }}
-            className={`mtv-hero-dot ${
-              index === currentIndex ? 'mtv-hero-dot-active' : ''
-            }`}
-            aria-label={`跳转到第 ${index + 1} 张`}
-            aria-current={index === currentIndex}
-          >
-            <span
-              key={cycle}
-              className={`mtv-hero-dot-fill ${
-                index === currentIndex ? 'mtv-hero-dot-fill-active' : ''
-              }`}
-              style={
-                index === currentIndex
-                  ? { animationDuration: `${autoPlayInterval}ms` }
-                  : undefined
-              }
-            />
-          </button>
-        ))}
+        {items.map((_, index) => {
+          const distance = Math.abs(index - currentIndex);
+          const isActive = distance === 0;
+          return (
+            <button
+              key={index}
+              onClick={(e) => {
+                // 不拦的话手机上点圆点会直接跳走，而不是切到那一张。
+                e.stopPropagation();
+                goToSlide(index);
+              }}
+              className={`mtv-hero-dot${
+                distance === 1 ? ' mtv-hero-dot-near' : ''
+              }${isActive ? ' mtv-hero-dot-active' : ''}`}
+              aria-label={`跳转到第 ${index + 1} 张`}
+              aria-current={isActive}
+            >
+              <span
+                key={cycle}
+                className={`mtv-hero-dot-fill${
+                  isActive ? ' mtv-hero-dot-fill-active' : ''
+                }`}
+                style={
+                  isActive
+                    ? { animationDuration: `${autoPlayInterval}ms` }
+                    : undefined
+                }
+              />
+            </button>
+          );
+        })}
       </div>
     </div>
   );

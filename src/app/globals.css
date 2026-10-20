@@ -2950,8 +2950,9 @@ html[data-loading-style='grid'] .mtv-err-box {
   transition: background-color var(--ui-dur-1) var(--ui-ease);
 }
 
-/* 指示器走「···▬···」：未到的是圆点，正在播的那一条拉长成进度条，并按自动播放
-   时长实时填充。比一排等宽静态条更能说明「现在在第几张、还剩多久切下一张」。 */
+/* 指示器参考「· ● ▬ ● ·」：当前张是一条白色长条，紧挨着的两颗放大一档，
+   更远的回到小圆点。一排等大的点看不出「现在在哪」，靠大小差才有位置感。
+   当前这条同时兼作自动播放进度：白色底片上压强调色填充，填满就切下一张。 */
 .mtv-hero-dot {
   position: relative;
   flex: none;
@@ -2960,13 +2961,24 @@ html[data-loading-style='grid'] .mtv-err-box {
   overflow: hidden;
   border-radius: var(--ui-r-full);
   background-color: var(--hero-dot);
-  transition: width var(--ui-dur-2) var(--ui-ease),
-    height var(--ui-dur-2) var(--ui-ease);
+  transition:
+    width var(--ui-dur-2) var(--ui-ease),
+    height var(--ui-dur-2) var(--ui-ease),
+    background-color var(--ui-dur-2) var(--ui-ease);
+}
+
+/* 离当前张一格的那两颗。颜色跟 --hero-ink 走，横版剧照（白字）和竖版海报
+   （深字浅底）两套配色的 Hero 都能对上。 */
+.mtv-hero-dot-near {
+  width: 9px;
+  height: 9px;
+  background-color: color-mix(in srgb, var(--hero-ink) 55%, transparent);
 }
 
 .mtv-hero-dot-active {
-  width: 26px;
-  height: 3px;
+  width: 28px;
+  height: 9px;
+  background-color: var(--hero-ink);
 }
 
 .mtv-hero-dot-fill {
@@ -2994,10 +3006,16 @@ html[data-loading-style='grid'] .mtv-err-box {
 /* Hero 高度向 16:9 靠。TMDB 的 backdrop 是 16:9，容器越扁裁掉得越多，
    裁得越狠就越像"被放大铺满"。这里用 min-height 而不是 height，
    站长在后台选的更大档位仍然生效。上限压到 560px：再高就只剩一片空画面，
-   文字和海报被拉开，反而更空。 */
+   文字和海报被拉开，反而更空。
+
+   margin-top:-64px 是让画面钻到顶部导航下面：顶栏在桌面是 fixed 覆盖层，
+   而 main 有 md:pt-16 的 64px 内边距，Hero 头顶就空出一条页面底色的白矩形，
+   透明顶栏压上去看到的就是那块白。提上来之后那条带子由画面填满，
+   min-height 同时加 64，可见画面高度不变（只是顶部多露出 64px 的画面）。 */
 @media (min-width: 768px) {
   .mtv-hero {
-    min-height: max(480px, min(44vw, 680px));
+    margin-top: -64px;
+    min-height: calc(max(480px, min(44vw, 680px)) + 64px);
   }
 }
 

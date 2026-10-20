@@ -96,12 +96,18 @@ const TopNav = () => {
 
     measure();
     window.addEventListener('scroll', measure, true);
-    // Hero 挂载/换图都会改 body 高度，用 ResizeObserver 补一次首次判定
+    // Hero 挂载/换图都会改 body 高度，用 ResizeObserver 补首次判定
     const observer = new ResizeObserver(measure);
     observer.observe(document.body);
+    // ResizeObserver 的回调在后台标签页会被节流，Hero 又是异步渲染的，
+    // 光靠它首帧可能判不出来（顶栏会一直停在浅色那套）。这里补几次有界的重测。
+    const retries = [200, 800, 2000].map((delay) =>
+      window.setTimeout(measure, delay)
+    );
     return () => {
       window.removeEventListener('scroll', measure, true);
       observer.disconnect();
+      retries.forEach((id) => window.clearTimeout(id));
     };
   }, []);
 
