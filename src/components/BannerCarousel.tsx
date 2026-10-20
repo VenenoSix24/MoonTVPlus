@@ -1,9 +1,9 @@
 'use client';
 
 import {
-  ExternalLink,
   ChevronLeft,
   ChevronRight,
+  ExternalLink,
   Play,
   Volume2,
   VolumeX,
@@ -19,12 +19,13 @@ import {
   useState,
 } from 'react';
 
+import { getDoubanDetail } from '@/lib/douban.client';
 import {
   type TMDBItem,
   getGenreNames,
   getTMDBImageUrl,
 } from '@/lib/tmdb.client';
-import { getDoubanDetail } from '@/lib/douban.client';
+import { processImageUrl } from '@/lib/utils';
 
 import ProxyImage from '@/components/ProxyImage';
 
@@ -433,6 +434,14 @@ export default function BannerCarousel({
   useEffect(() => {
     if (dataSource !== 'TMDB' || !items.length) return;
 
+    // 服务端随列表下发的标题字已经把 URL 写进缓存了，但「有 URL」不等于「有图」：
+    // 图片本身是 <img> 挂上去那一刻才开始下的，也就是轮换到的瞬间。这里趁第一屏
+    // 还在展示，把其余各屏的标题字全部下完并解码好。
+    items.forEach((item) => {
+      const cached = heroLogoCache.get(logoRequest(item).key);
+      if (cached) warmLogo(cached);
+    });
+
     const pending = items.filter(
       (item) => !heroLogoCache.has(logoRequest(item).key)
     );
@@ -450,14 +459,7 @@ export default function BannerCarousel({
             : null;
           heroLogoCache.set(key, src);
           setLogoMap((prev) => ({ ...prev, [key]: src }));
-          if (src) {
-            // 上面只拿到了 URL，图片本身是渲染那一刻才下载的。这里预热进浏览器
-            // 缓存，切片瞬间标题字才不会白一下。
-            // 不能用 new Image()——本文件从 next/image 引入了同名的 Image 组件，
-            // 会把全局构造函数遮住。
-            const warm = document.createElement('img');
-            warm.src = src;
-          }
+          if (src) warmLogo(src);
         })
         .catch(() => {
           // 取不到就回落到文字标题，不打扰用户
@@ -686,6 +688,8 @@ export default function BannerCarousel({
                 alt=''
                 aria-hidden='true'
                 className='mtv-hero-logo'
+                loading='eager'
+                decoding='sync'
               />
             )}
           </h2>
@@ -826,6 +830,29 @@ export default function BannerCarousel({
 
 /** 宽高比达到这个值就按横版剧照处理，否则视为竖版海报。 */
 const WIDE_ART_MIN_RATIO = 1.4;
+
+/**
+ * 把标题字图片真正下载下来并解码。
+ *
+ * 光有 URL 没用：`<img>` 是渲染那一刻才发起请求的，而 Hero 每切一屏会把整块文字
+ * 重挂载一次，于是就成了「轮换 → 才开始下 → 白一下 → 才出来」。这里提前把字节和
+ * 解码都做掉，切屏时只是从内存里画一帧。
+ *
+ * 元素必须留着引用 —— 脱离文档的 <img> 一旦被 GC，已解码的那份数据也跟着没了。
+ */
+const warmedLogos = new Map<string, HTMLImageElement>();
+
+const warmLogo = (src: string) => {
+  const url = processImageUrl(src);
+  if (warmedLogos.has(url)) return;
+  const img = document.createElement('img');
+  img.decoding = 'sync';
+  img.src = url;
+  warmedLogos.set(url, img);
+  void img.decode?.().catch(() => {
+    // 解码失败就退回浏览器默认流程，不打扰用户
+  });
+};
 
 /** 标题字按「类型:id:语言」缓存。轮播每 5 秒切一次，来回切不该反复打接口。 */
 const heroLogoCache = new Map<string, string | null>();
