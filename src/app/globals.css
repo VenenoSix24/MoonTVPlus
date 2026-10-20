@@ -2851,13 +2851,19 @@ html[data-loading-style='grid'] .mtv-err-box {
    用发行方做的品牌资产，而不是拿 UI 字体去打片名。取不到时组件回落到文字标题。 */
 .mtv-hero-logo {
   display: block;
+  /* 固定高度，不用 max-height。
+     max-height 只是上限：原始尺寸小的 logo 永远不会被放大，于是出现
+     「本来就大的更大、本来就小的还是小」。固定 height 让所有 logo 顶到
+     同一高度，超宽的再被 max-width 截住（object-fit 保证不变形）——
+     这正好就是「宽 logo 不用放大」想要的效果，且不必去判断宽高比。 */
+  height: clamp(2.5rem, 4.5vw, 4rem);
   width: auto;
-  height: auto;
   max-width: min(100%, 34rem);
-  max-height: clamp(2.5rem, 5.5vw, 5.5rem);
   object-fit: contain;
-  /* 透明 PNG 用 drop-shadow 才贴着字形轮廓，box-shadow 会描出一个矩形 */
-  filter: drop-shadow(0 2px 12px var(--hero-title-shadow));
+  /* 透明 PNG 用 drop-shadow 才贴着字形轮廓，box-shadow 会描出一个矩形。
+     第二层白色极细外发光是给深色 logo 兜底：Hero 底多为暗画面。 */
+  filter: drop-shadow(0 2px 12px var(--hero-title-shadow))
+    drop-shadow(0 0 2px rgba(255, 255, 255, 0.85));
 }
 
 .mtv-hero-meta {
@@ -3039,17 +3045,17 @@ html[data-loading-style='grid'] .mtv-err-box {
   }
 
   .mtv-hero-ratings .mtv-rating {
-    gap: 7px;
-    font-size: 15px;
+    gap: 8px;
+    font-size: 17px;
   }
 
   .mtv-hero-ratings .mtv-rating-badge {
-    height: 20px;
+    height: 22px;
   }
 
   .mtv-hero-ratings .mtv-rating-badge img {
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
   }
 }
 
@@ -3312,7 +3318,7 @@ html[data-loading-style='grid'] .mtv-err-box {
     /* 手机端标题字是画面视觉中心，46px 左右读着太怯；提到 16vw（390px 下约 62px）。
        宽扁的 logo 会被上面的 max-width: 100% 先截住，不会因为这里调大就溢出，
        所以不需要额外判断宽高比。 */
-    max-height: clamp(3rem, 16vw, 5rem);
+    height: clamp(3rem, 16vw, 4rem);
     margin-inline: auto;
   }
 
