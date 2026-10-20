@@ -622,9 +622,18 @@ export default function BannerCarousel({
       const kind = item.media_type === 'tv' ? 'tv' : 'movie';
       const zh = /[\u3400-\u9fff\uf900-\ufaff]/.test(item.title) ? 1 : 0;
 
-      fetch(`/api/tmdb/logo-tone?id=${tmdbId}&type=${kind}&zh=${zh}&v=6`)
+      fetch(`/api/tmdb/logo-tone?id=${tmdbId}&type=${kind}&zh=${zh}&v=7`)
         .then((res) => res.json())
         .then((data) => {
+          // 没有中文、也没有原产国语言的标题字：回退文字标题。
+          // 中文站宁可显示中文文字，也不显示英文 logo。
+          if (data?.noLogo) {
+            heroLogoCache.set(key, null);
+            setLogoMap((prev) => ({ ...prev, [key]: null }));
+            logoDarkCache.set(key, false);
+            return;
+          }
+
           const dark = Boolean(data?.dark);
           const ratio = typeof data?.ratio === 'number' ? data.ratio : 0;
           const density =

@@ -27,6 +27,10 @@ interface ToneResult {
   ratio: number;
   /** 墨迹密度：非透明像素占整图面积的比例，测不出来时为 0 */
   density: number;
+  /** 没有合适语言的标题字，前端应回退成文字标题 */
+  noLogo?: boolean;
+  /** 服务端挑中的那张（仅 id 模式返回） */
+  path?: string;
 }
 
 interface ToneDetail extends ToneResult {
@@ -60,14 +64,14 @@ function writeCache(key: string, data: ToneResult) {
 }
 
 /**
- * 这张 logo 压在黑色遮罩上读得出来吗？
+ * 能不能在黑色遮罩上看清？
  *
- * 只看亮度。饱和度不算数 —— 深红（#8B0000）饱和度满格、亮度只有 40，压在黑色
- * 遮罩上照样看不见。之前把「饱和度 ≥ 0.35」也算作可读，于是亮度 55 的深彩色被
- * 当成「不用反色」，表现出来就是深色模式下还有黑 logo。
+ * 够亮（白/浅灰）或够彩（深红、深蓝仍能看出轮廓）都算看得清。只有「又暗又灰」
+ * 才需要换一张或反相 —— 彩色哪怕偏暗也保留原色，反相会把深蓝变浅黄，
+ * 比暗着更难看。
  */
 function isReadable(t: ToneDetail): boolean {
-  return t.lum >= 115;
+  return t.lum >= 80 || t.sat >= 0.35;
 }
 
 /** 下载一张图并把它量一遍 */
@@ -210,8 +214,8 @@ async function handleById(
 ) {
   const type = params.get('type') === 'tv' ? 'tv' : 'movie';
   const preferZh = params.get('zh') === '1';
-  // pick2：换了一套选择规则，旧缓存不能再用
-  const cacheKey = `pick2:${type}:${id}:${preferZh ? 1 : 0}`;
+  // pick3：换成「语言白名单 + 回退文字标题」，旧缓存不能再用
+  const cacheKey = `pick3:${type}:${id}:${preferZh ? 1 : 0}`;
 
   const cached = readCache(cacheKey);
   if (cached) {
@@ -239,23 +243,35 @@ async function handleById(
     const originalLang = res.originalLanguage || '';
 
     /**
-     * 语言优先级是硬约束，不能拿它不是来换颜色。
+     * 语言候选只有两个：中文（站点语言）和影片的原产国语言。
      *
-     * 中文站先要中文片名，没有中文才用原产国语言，再没有才轮到无标记 / 英文 /
-     * 其他。之前为了「找一张浅色的」跨语言挑，结果是中文站显示英文 or 日文片名 ——
-     * 片名语言错了比颜色不对严重得多。
+     * 这是白名单不是优先级 —— 两者都没有就不用 logo，回退成文字标题。
+     * 中文站显示英文片名是错的：《时光代理人》一张中文 logo 都没有，之前会
+     * 退而求其次拿英文的，页面上就成了英文片名。
      */
-    const langRank = (asset: TMDBImageAsset) => {
+    const langRank = (asset: TMDBImageAsset): number | null => {
       const lang = (asset.iso_639_1 || '').toLowerCase();
-      if (lang.startsWith('zh')) return preferZh ? 0 : 1;
-      if (originalLang && lang.startsWith(originalLang)) return 2;
-      if (!lang) return 3;
-      if (lang.startsWith('en')) return 4;
-      return 5;
+      if (preferZh && lang.startsWith('zh')) return 0;
+      if (originalLang && lang.startsWith(originalLang)) return 1;
+      return null;
     };
 
-    const ranked = [...logos].sort((a, b) => {
-      const rank = langRank(a) - langRank(b);
+    const eligible = logos.filter((asset) => langRank(asset) !== null);
+    if (!eligible.length) {
+      const none: ToneResult = {
+        noLogo: true,
+        dark: false,
+        ratio: 0,
+        density: 0,
+      };
+      writeCache(cacheKey, none);
+      return NextResponse.json(none, {
+        headers: { 'Cache-Control': 'public, max-age=86400' },
+      });
+    }
+
+    const ranked = [...eligible].sort((a, b) => {
+      const rank = (langRank(a) ?? 9) - (langRank(b) ?? 9);
       if (rank !== 0) return rank;
       const vote = (b.vote_average || 0) - (a.vote_average || 0);
       if (vote !== 0) return vote;
