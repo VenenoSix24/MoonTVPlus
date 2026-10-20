@@ -202,11 +202,12 @@ export default async function RootLayout({
     progressThumbType = config.ThemeConfig?.progressThumbType || 'default';
     progressThumbPresetId = config.ThemeConfig?.progressThumbPresetId || '';
     progressThumbCustomUrl = config.ThemeConfig?.progressThumbCustomUrl || '';
-    // 白名单兜底：值异常时回落到魔法阵（现行默认），避免三种款式都不显示
+    // 白名单兜底：值异常时回落到魔法阵（现行默认），避免四种款式都不显示
     loadingStyle =
       config.ThemeConfig?.loadingStyle === 'classic' ||
       config.ThemeConfig?.loadingStyle === 'grid' ||
-      config.ThemeConfig?.loadingStyle === 'talisman'
+      config.ThemeConfig?.loadingStyle === 'talisman' ||
+      config.ThemeConfig?.loadingStyle === 'silver-screen'
         ? config.ThemeConfig.loadingStyle
         : 'talisman';
     // 白名单兜底：值异常时回落到默认锦旗徽章

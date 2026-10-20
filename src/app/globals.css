@@ -5605,3 +5605,175 @@ html[data-loading-style='grid'] .mtv-err-box {
     animation: none;
   }
 }
+
+/* ============================================================
+   银幕点亮（第四种初始化加载样式）
+   起手是一条 1px 光带从中心向两侧展开，到位后淡成呼吸线，
+   文案跟着浮上来；之后循环只剩呼吸线的 opacity 和一条高光扫过。
+   全程只动 transform / opacity，都留在合成层。
+   ============================================================ */
+html[data-loading-style='silver-screen'] .mtv-load-silver {
+  /* 单独写显示规则而不是塞进上面那条共用规则：这里要 grid 居中，
+     共用规则给的是 display: block */
+  display: grid;
+  place-items: center;
+  min-height: 34vh;
+  padding: 0 var(--ui-gutter);
+}
+
+.mtv-load-silver {
+  --mtv-silver-ink: var(--ui-ink);
+  --mtv-silver-ink-2: var(--ui-ink-2);
+}
+
+/* 播放器蒙层是深色底，和另两款一样固定走暗色 */
+.mtv-load-silver.mtv-on-dark {
+  --mtv-silver-ink: #fff;
+  --mtv-silver-ink-2: rgba(255, 255, 255, 0.72);
+}
+
+.mtv-silver {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: min(340px, 78vw);
+  text-align: center;
+}
+
+.mtv-silver-rail {
+  position: relative;
+  width: 100%;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* 光带本体：scaleX 从中心展开，展开完接着呼吸，两个动画串起来 */
+.mtv-silver-line {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--mtv-silver-ink) 50%,
+    transparent 100%
+  );
+  transform: scaleX(0);
+  animation: mtv-silver-open 620ms cubic-bezier(0.22, 1, 0.36, 1) both,
+    mtv-silver-breath 2.6s ease-in-out 620ms infinite;
+}
+
+/* 高光在呼吸线上扫过。宽 42% 从左侧外扫到右侧外，rail 裁掉出界部分 */
+.mtv-silver-sheen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 42%;
+  height: 1px;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--mtv-silver-ink) 50%,
+    transparent 100%
+  );
+  opacity: 0;
+  animation: mtv-silver-sweep 3.2s ease-in-out 700ms infinite;
+}
+
+.mtv-silver-msg {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--mtv-silver-ink);
+  opacity: 0;
+  transform: translateY(6px);
+  animation: mtv-silver-in 420ms ease-out 380ms both;
+}
+
+.mtv-silver-step {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--mtv-silver-ink-2);
+  opacity: 0;
+  transform: translateY(6px);
+  animation: mtv-silver-in 420ms ease-out 560ms both;
+}
+
+@keyframes mtv-silver-open {
+  from {
+    transform: scaleX(0);
+    opacity: 0.4;
+  }
+
+  to {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
+@keyframes mtv-silver-breath {
+  0%,
+  100% {
+    opacity: 0.32;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes mtv-silver-sweep {
+  0% {
+    transform: translateX(-110%);
+    opacity: 0;
+  }
+
+  20% {
+    opacity: 0.85;
+  }
+
+  80% {
+    opacity: 0.85;
+  }
+
+  100% {
+    transform: translateX(260%);
+    opacity: 0;
+  }
+}
+
+@keyframes mtv-silver-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mtv-silver-line,
+  .mtv-silver-sheen,
+  .mtv-silver-msg,
+  .mtv-silver-step {
+    animation: none;
+  }
+
+  .mtv-silver-line {
+    transform: scaleX(1);
+  }
+
+  .mtv-silver-sheen {
+    display: none;
+  }
+
+  .mtv-silver-msg,
+  .mtv-silver-step {
+    opacity: 1;
+    transform: none;
+  }
+}

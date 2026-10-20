@@ -169,6 +169,20 @@ export default function LoadingStyle({
           </div>
         </div>
       </div>
+
+      {/* 银幕点亮：一条 1px 光带从中心展开，淡成呼吸线后文案浮上来 */}
+      <div className={`mtv-load mtv-load-silver${dark}`}>
+        <div className='mtv-silver'>
+          <div className='mtv-silver-rail' aria-hidden='true'>
+            <span className='mtv-silver-line' />
+            <span className='mtv-silver-sheen' />
+          </div>
+          <p className='mtv-silver-msg'>{message}</p>
+          {steps[idx]?.label && (
+            <p className='mtv-silver-step'>{steps[idx].label}</p>
+          )}
+        </div>
+      </div>
     </>
   );
 }

@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
       progressThumbType?: 'default' | 'preset' | 'custom';
       progressThumbPresetId?: string;
       progressThumbCustomUrl?: string;
-      loadingStyle?: 'classic' | 'grid' | 'talisman';
+      loadingStyle?: 'classic' | 'grid' | 'talisman' | 'silver-screen';
       rateBadgeStyle?: 'default' | 'flag' | 'medal';
       defaultTheme?: 'light' | 'dark' | 'system';
       homeModules?: { id: string; enabled: boolean; order: number }[];
@@ -159,7 +159,8 @@ export async function POST(request: NextRequest) {
       loadingStyle:
         loadingStyle === 'classic' ||
         loadingStyle === 'grid' ||
-        loadingStyle === 'talisman'
+        loadingStyle === 'talisman' ||
+        loadingStyle === 'silver-screen'
           ? loadingStyle
           : 'talisman',
       rateBadgeStyle:

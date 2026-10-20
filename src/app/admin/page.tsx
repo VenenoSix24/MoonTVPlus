@@ -10026,7 +10026,11 @@ const ThemeConfigComponent = ({
     progressThumbType: 'default' as 'default' | 'preset' | 'custom',
     progressThumbPresetId: '',
     progressThumbCustomUrl: '',
-    loadingStyle: 'talisman' as 'classic' | 'grid' | 'talisman',
+    loadingStyle: 'talisman' as
+      | 'classic'
+      | 'grid'
+      | 'talisman'
+      | 'silver-screen',
     rateBadgeStyle: 'flag' as 'default' | 'flag' | 'medal',
     defaultTheme: 'dark' as 'light' | 'dark' | 'system',
     homeModules: resolveSiteHomeModules(null).map((item, index) => ({
@@ -10998,6 +11002,12 @@ const ThemeConfigComponent = ({
                 name: '旧版',
                 desc: '',
                 preview: <span className='text-4xl leading-none'>📺</span>,
+              },
+              {
+                id: 'silver-screen',
+                name: '银幕点亮',
+                desc: '',
+                preview: <span className='text-4xl leading-none'>🎞️</span>,
               },
             ] as const
           ).map((opt) => (
