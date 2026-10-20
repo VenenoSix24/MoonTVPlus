@@ -2851,19 +2851,12 @@ html[data-loading-style='grid'] .mtv-err-box {
    用发行方做的品牌资产，而不是拿 UI 字体去打片名。取不到时组件回落到文字标题。 */
 .mtv-hero-logo {
   display: block;
-  /* 高度取「分档目标高度」与「宽度顶到上限时的高度」两者较小值。
-     只固定 height 不够：8.89:1 的长条片名按 3.7rem 算宽度有 524px，超过
-     max-width 后会被 object-fit 压成 384×43 塞进 384×59 的盒子里 ——
-     视觉上对了，盒子却还是那么高，看着依然「很大」。
-     用 max-w / ratio 直接把高度算准，盒子和内容一样大。
-     （早期用 max-height 更糟：小图永远不被放大，才会「大的更大、小的更小」） */
-  --logo-max-w: min(24rem, 82vw);
-  height: min(
-    calc(var(--logo-h, 4) * 1rem),
-    calc(var(--logo-max-w) / var(--logo-ratio, 3))
-  );
+  /* 高度由 JS 按「视觉面积」算好传进来（--logo-h 是 px 值）。
+     统一 height 会让近方形的 logo 显得弱、长条的横贯画面 —— 按面积归一才齐。
+     宽度仍留上限，防止极端比例的片名铺满整行。 */
+  height: var(--logo-h, 64px);
   width: auto;
-  max-width: var(--logo-max-w);
+  max-width: min(24rem, 82vw);
   object-fit: contain;
   /* 透明 PNG 用 drop-shadow 才贴着字形轮廓，box-shadow 会描出一个矩形 */
   filter: drop-shadow(0 2px 12px var(--hero-title-shadow));
@@ -3326,12 +3319,8 @@ html[data-loading-style='grid'] .mtv-err-box {
   /* 标题字放大并居中：它现在是画面的视觉中心，不再是一行说明文字。
      注意 logo 是 <img>（块级替换元素），text-align 管不到它，必须用自动外边距。 */
   .mtv-hero-logo {
-    /* 手机沿用同一套 min() 计算；--logo-max-w 在主规则里已经是 min(24rem, 82vw)，
-       390px 屏下约 320px，宽 logo 会压得更小，才和紧凑片名的视觉重量对得上。 */
-    height: min(
-      calc(var(--logo-h, 4) * 1rem),
-      calc(var(--logo-max-w) / var(--logo-ratio, 3))
-    );
+    /* 手机按同一比例缩放：--logo-h 是 JS 按视觉面积算出来的 px 值 */
+    height: calc(var(--logo-h, 64px) * 0.86);
     margin-inline: auto;
   }
 

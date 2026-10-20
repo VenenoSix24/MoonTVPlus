@@ -746,10 +746,18 @@ export default function BannerCarousel({
   const logoMeta = logoMetaMap[logoKey];
   const logoDark = logoMeta?.dark === true;
   const ratio = logoMeta?.ratio ?? 0;
-  // 按宽高比分档给高度，目标是让各片名的视觉重量接近，而不是让 height 一致。
-  // 8.89:1 的长条片名在同样的 height 下宽度是紧凑片名的 4~5 倍，会横贯整个画面；
-  // 所以超宽的收一档、紧凑的放一档，把宽度差从 5.8 倍压到 3.6 倍左右。
-  const logoRem = ratio >= 6 ? 3.7 : ratio >= 2.8 ? 4 : 4.4;
+  // 视觉重量用「面积」归一，而不是让高度一致。
+  // 高度一样时，近方形的 logo（泥面人 1.5:1）宽度太小、显得弱；
+  // 长条片名（登峰传奇 8.89:1）宽度又太大、横贯画面。按面积开方反推高度，
+  // 再夹住宽度上限与上下界，几档下来占地才真的接近。
+  const LOGO_AREA = 11000; // 目标视觉面积（px²）
+  const LOGO_MAX_W = 384; // 与 CSS 的 max-width 保持一致
+  const logoHeight = (() => {
+    const r = ratio || 3;
+    const ideal = Math.sqrt(LOGO_AREA / r);
+    // 宽度顶到上限时的高度也要夹住，否则长条图会溢出
+    return Math.max(Math.min(ideal, LOGO_MAX_W / r, 92), 36);
+  })();
 
   // TMDB 源下标题字是异步取的。落地之前先把文字藏起来（占位仍在，不跳版），
   // 否则会「先显示文字、一秒后突然变成 logo」闪一下。
@@ -862,8 +870,7 @@ export default function BannerCarousel({
                 className={`mtv-hero-logo${logoDark ? ' is-dark' : ''}`}
                 style={
                   {
-                    '--logo-h': logoRem,
-                    '--logo-ratio': ratio || 3,
+                    '--logo-h': `${logoHeight}px`,
                   } as CSSProperties
                 }
                 loading='eager'
