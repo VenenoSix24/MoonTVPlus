@@ -37,6 +37,15 @@ export const useNavScrollState = (
         )
       );
 
+      // 播放页 / 直播页是固定深色画布（.mtv-play-bg 是 fixed inset-0），顶栏永远
+      // 压在暗画面上，不该跟着页面主题走深灰字 —— 浅色主题下那样读不出来。
+      // 这种页面没有 .mtv-hero，光靠下面的矩形相交判定永远得不出"压在暗色上"，
+      // 所以直接短路成白色那套。
+      if (document.querySelector('.mtv-play-bg')) {
+        setOverHero(true);
+        return;
+      }
+
       const headerRect = headerRef.current?.getBoundingClientRect();
       const heroRect = hero?.getBoundingClientRect();
       setOverHero(

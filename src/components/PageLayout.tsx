@@ -3,7 +3,6 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-import { BackButton } from './BackButton';
 import MobileBottomNav from './MobileBottomNav';
 import MobileHeader from './MobileHeader';
 import { MoreMenuProvider } from './MoreMenu';
@@ -88,13 +87,6 @@ const PageLayout = ({
 
           <div className='relative z-10 w-full min-h-screen'>
             <div className='relative min-w-0'>
-              {/* 桌面端左上角返回按钮 */}
-              {!hideNavigation && ['/play', '/live'].includes(activePath) && (
-                <div className='absolute top-3 left-1 z-20 hidden md:flex'>
-                  <BackButton />
-                </div>
-              )}
-
               {/* 主内容 */}
               <main
                 className='mt-[calc(48px+env(safe-area-inset-top))] mb-14 md:mt-0 md:mb-0 md:pt-16'
