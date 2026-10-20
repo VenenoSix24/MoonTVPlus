@@ -763,13 +763,15 @@ export default function BannerCarousel({
   // 参考值的片子退化回原来的尺寸，整体基准不因为加了这个维度而平移。
   const LOGO_AREA = 24000; // 目标矩形面积（px²）
   const LOGO_REF_DENSITY = 0.42; // 实测中位数，也是密度缺失时的兜底
-  const LOGO_MAX_W = 480; // 与 CSS 的 max-width 保持一致
+  const LOGO_MAX_W = 480; // 与 CSS 的宽度上限（30rem）保持一致
+  const logoRatio = ratio || 3; // 同时传给 CSS：宽度驱动时靠它换算高度
   const logoHeight = (() => {
-    const r = ratio || 3;
     const d = density > 0.05 ? density : LOGO_REF_DENSITY;
-    const ideal = Math.sqrt((LOGO_AREA * LOGO_REF_DENSITY) / (r * d));
+    const ideal = Math.sqrt(
+      (LOGO_AREA * LOGO_REF_DENSITY) / (logoRatio * d)
+    );
     // 宽度顶到上限时的高度也要夹住，否则长条图会溢出
-    return Math.max(Math.min(ideal, LOGO_MAX_W / r, 132), 42);
+    return Math.max(Math.min(ideal, LOGO_MAX_W / logoRatio, 132), 42);
   })();
 
   // TMDB 源下标题字是异步取的。落地之前先把文字藏起来（占位仍在，不跳版），
@@ -884,6 +886,7 @@ export default function BannerCarousel({
                 style={
                   {
                     '--logo-h': `${logoHeight}px`,
+                    '--logo-r': logoRatio,
                   } as CSSProperties
                 }
                 loading='eager'

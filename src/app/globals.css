@@ -2851,12 +2851,13 @@ html[data-loading-style='grid'] .mtv-err-box {
    用发行方做的品牌资产，而不是拿 UI 字体去打片名。取不到时组件回落到文字标题。 */
 .mtv-hero-logo {
   display: block;
-  /* 高度由 JS 按「视觉面积」算好传进来（--logo-h 是 px 值）。
-     统一 height 会让近方形的 logo 显得弱、长条的横贯画面 —— 按面积归一才齐。
-     宽度仍留上限，防止极端比例的片名铺满整行。 */
-  height: var(--logo-h, 64px);
-  width: auto;
-  max-width: min(30rem, 82vw);
+  /* 宽度驱动：宽度由 JS 按「视觉面积」算好的高度乘宽高比得到（--logo-h 是 px），
+     高度交给 aspect-ratio。以前是固定 height + max-width，窄屏上 max-width
+     夹住宽度时高度不变，盒子会虚高一截。aspect-ratio 同时充当图片解码前的
+     占位，避免 logo 撑开时才跳版。 */
+  width: min(calc(var(--logo-h, 64px) * var(--logo-r, 3)), 30rem, 82vw);
+  aspect-ratio: var(--logo-r, 3);
+  height: auto;
   object-fit: contain;
   /* 透明 PNG 用 drop-shadow 才贴着字形轮廓，box-shadow 会描出一个矩形 */
   filter: drop-shadow(0 2px 12px var(--hero-title-shadow));
@@ -2864,9 +2865,11 @@ html[data-loading-style='grid'] .mtv-err-box {
 }
 
 /* 深色单色标题字（由 /api/tmdb/logo-tone 判定）压在暗海报上读不出来，
-   整体反相成浅色。彩色 logo 饱和度高，不会被判定成 dark，不受影响。 */
+   整体反相成浅色。彩色 logo 饱和度高，不会被判定成 dark，不受影响。
+   brightness 略低于 1：反相把纯黑顶成纯白，白笔画在黑色遮罩上会光渗，
+   同一尺寸下看着比彩色 logo 粗一圈，压掉一点亮度把这份错觉抵回来。 */
 .mtv-hero-logo.is-dark {
-  filter: invert(1) brightness(1.05)
+  filter: invert(1) brightness(0.94)
     drop-shadow(0 2px 12px var(--hero-title-shadow));
 }
 
@@ -3319,8 +3322,13 @@ html[data-loading-style='grid'] .mtv-err-box {
   /* 标题字放大并居中：它现在是画面的视觉中心，不再是一行说明文字。
      注意 logo 是 <img>（块级替换元素），text-align 管不到它，必须用自动外边距。 */
   .mtv-hero-logo {
-    /* 手机按同一比例缩放：--logo-h 是 JS 按视觉面积算出来的 px 值 */
-    height: calc(var(--logo-h, 64px) * 0.86);
+    /* 手机按同一比例缩放：--logo-h 是 JS 按视觉面积算出来的 px 值。
+       这里跟着改成宽度驱动，与基础规则保持同一套算法。 */
+    width: min(
+      calc(var(--logo-h, 64px) * 0.86 * var(--logo-r, 3)),
+      30rem,
+      82vw
+    );
     margin-inline: auto;
   }
 
