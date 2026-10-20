@@ -62,11 +62,12 @@ function writeCache(key: string, data: ToneResult) {
 /**
  * 这张 logo 压在黑色遮罩上读得出来吗？
  *
- * 两条任一满足即可：本身够亮（白/浅灰），或者颜色够饱和（深红、深蓝在暗底上
- * 仍然看得见轮廓）。都不满足的才是真的「深色单色」，只能反相。
+ * 只看亮度。饱和度不算数 —— 深红（#8B0000）饱和度满格、亮度只有 40，压在黑色
+ * 遮罩上照样看不见。之前把「饱和度 ≥ 0.35」也算作可读，于是亮度 55 的深彩色被
+ * 当成「不用反色」，表现出来就是深色模式下还有黑 logo。
  */
 function isReadable(t: ToneDetail): boolean {
-  return t.lum >= 110 || t.sat >= 0.35;
+  return t.lum >= 115;
 }
 
 /** 下载一张图并把它量一遍 */
@@ -209,7 +210,8 @@ async function handleById(
 ) {
   const type = params.get('type') === 'tv' ? 'tv' : 'movie';
   const preferZh = params.get('zh') === '1';
-  const cacheKey = `pick:${type}:${id}:${preferZh ? 1 : 0}`;
+  // pick2：换了一套选择规则，旧缓存不能再用
+  const cacheKey = `pick2:${type}:${id}:${preferZh ? 1 : 0}`;
 
   const cached = readCache(cacheKey);
   if (cached) {
@@ -234,29 +236,42 @@ async function handleById(
       res.code === 200 && res.images?.logos ? res.images.logos : [];
     if (!logos.length) return NextResponse.json(EMPTY);
 
-    // 排序：语言分组 → 同组内原标题语言优先 → 票数。
-    // 第三步是关键：《祈念守护人》的 logo 全是日/俄/韩、没有中文版，光按语言排
-    // 会先挑到日文深色那张，而它的白色版也在日文里（原标题语言就是 ja）。
     const originalLang = res.originalLanguage || '';
-    const isOriginal = (asset: TMDBImageAsset) =>
-      Boolean(originalLang) &&
-      (asset.iso_639_1 || '').toLowerCase().startsWith(originalLang);
 
-    const sorted = [...logos].sort((a, b) => {
-      const rank = logoRank(a, preferZh) - logoRank(b, preferZh);
+    /**
+     * 语言优先级是硬约束，不能拿它不是来换颜色。
+     *
+     * 中文站先要中文片名，没有中文才用原产国语言，再没有才轮到无标记 / 英文 /
+     * 其他。之前为了「找一张浅色的」跨语言挑，结果是中文站显示英文 or 日文片名 ——
+     * 片名语言错了比颜色不对严重得多。
+     */
+    const langRank = (asset: TMDBImageAsset) => {
+      const lang = (asset.iso_639_1 || '').toLowerCase();
+      if (lang.startsWith('zh')) return preferZh ? 0 : 1;
+      if (originalLang && lang.startsWith(originalLang)) return 2;
+      if (!lang) return 3;
+      if (lang.startsWith('en')) return 4;
+      return 5;
+    };
+
+    const ranked = [...logos].sort((a, b) => {
+      const rank = langRank(a) - langRank(b);
       if (rank !== 0) return rank;
-      const orig = Number(isOriginal(b)) - Number(isOriginal(a));
-      if (orig !== 0) return orig;
       const vote = (b.vote_average || 0) - (a.vote_average || 0);
       if (vote !== 0) return vote;
       return (b.vote_count || 0) - (a.vote_count || 0);
     });
 
-    // 并发把候选全量一遍。之前是串行只试前三张，碰上「可读的那张排第四」
-    // 就整片误判（祈念守护人正是这种情况）。并发后耗时等于最慢的一张。
-    const candidates = sorted.slice(0, 6);
+    // 只取优先级最高的那一组，一个都不跨组挑
+    const topRank = langRank(ranked[0]);
+    const group = ranked
+      .filter((asset) => langRank(asset) === topRank)
+      .slice(0, 4);
+
+    // 组内并发量一遍，找第一张「在暗底上读得出来」的：
+    // 中文有浅色版就用浅色版，没有就反相中文那张 —— 但始终是中文。
     const analyzed = await Promise.all(
-      candidates.map(async (asset) => {
+      group.map(async (asset) => {
         try {
           const tone = await analyzeImage(
             sharp,
@@ -269,39 +284,22 @@ async function handleById(
       })
     );
 
-    // 第一张「在暗底上读得出来」的：原生浅色版优先于反相出来的
     const readable = analyzed.find((hit) => hit.tone && isReadable(hit.tone));
-    if (readable && readable.tone) {
-      const result: ToneResult = {
-        dark: false,
-        ratio: readable.tone.ratio,
-        density: readable.tone.density,
-      };
-      writeCache(cacheKey, result);
-      return NextResponse.json(
-        { ...result, path: readable.asset.file_path },
-        { headers: { 'Cache-Control': 'public, max-age=86400' } }
-      );
-    }
+    const chosen = readable || analyzed.find((hit) => hit.tone);
+    if (!chosen || !chosen.tone) return NextResponse.json(EMPTY);
 
-    // 一张都读不出来才反相。这里直接给 true —— 能走到这行就说明没有可读的，
-    // 旧代码用原始 dark 判定，会把「亮度 47、饱和度 0.28」的深彩色漏判成
-    // 不需要反色，结果黑字压在黑底上。
-    const fallback = analyzed.find((hit) => hit.tone);
-    if (fallback && fallback.tone) {
-      const result: ToneResult = {
-        dark: true,
-        ratio: fallback.tone.ratio,
-        density: fallback.tone.density,
-      };
-      writeCache(cacheKey, result);
-      return NextResponse.json(
-        { ...result, path: fallback.asset.file_path, forcedDark: true },
-        { headers: { 'Cache-Control': 'public, max-age=86400' } }
-      );
-    }
+    const result: ToneResult = {
+      // 组内没有可读的才反相。能走到这里说明这一组全是深色。
+      dark: !readable,
+      ratio: chosen.tone.ratio,
+      density: chosen.tone.density,
+    };
+    writeCache(cacheKey, result);
 
-    return NextResponse.json(EMPTY);
+    return NextResponse.json(
+      { ...result, path: chosen.asset.file_path },
+      { headers: { 'Cache-Control': 'public, max-age=86400' } }
+    );
   } catch (error) {
     console.error('挑选标题字失败:', error);
     return NextResponse.json(EMPTY);
