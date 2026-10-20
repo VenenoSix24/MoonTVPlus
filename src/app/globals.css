@@ -3366,14 +3366,17 @@ html[data-loading-style='grid'] .mtv-err-box {
   font-weight: 650;
 }
 
-/* 没有独立指示块的选择器（如星期）直接用背景填充表达选中。
-   颜色与 .mtv-caps-ind 完全一致，两个地方看起来才是一件东西。 */
-.mtv-cap.is-on.is-fill {
+/* 背景填充式选中。两个用处：
+     · 没有独立指示块的选择器（如星期）
+     · 下拉式筛选被展开的那个分类按钮（不管它当前是不是默认值）
+   颜色与 .mtv-caps-ind 一致，几处看起来才是一件东西。 */
+.mtv-cap.is-fill {
   background: var(--ui-surface);
   box-shadow: var(--ui-elev-1);
+  color: var(--ui-ink);
 }
 
-.dark .mtv-cap.is-on.is-fill {
+.dark .mtv-cap.is-fill {
   background: color-mix(in srgb, var(--ui-ink) 12%, transparent);
   box-shadow: none;
 }
@@ -3386,6 +3389,44 @@ html[data-loading-style='grid'] .mtv-err-box {
 
 .mtv-caps-wrap::-webkit-scrollbar {
   display: none;
+}
+
+/* --------------------------------------------------------------------------
+   下拉式多级筛选的弹层（MultiLevelSelector）
+   --------------------------------------------------------------------------
+   原来是 bg-white/95 + backdrop-blur 的毛玻璃卡，跟「不要液态玻璃」的结论
+   冲突。换实底 + 发丝线 + elev-3：它浮在整页之上，投影比模糊更能表达层级。
+   -------------------------------------------------------------------------- */
+.mtv-filter-pop {
+  background: var(--ui-surface-2);
+  border: 1px solid var(--ui-hair);
+  border-radius: var(--ui-r-lg);
+  box-shadow: var(--ui-elev-3);
+}
+
+.mtv-filter-opt {
+  padding: 6px 10px;
+  border: 0;
+  border-radius: var(--ui-r-sm);
+  background: transparent;
+  font-size: 13px;
+  line-height: 1.35;
+  text-align: left;
+  color: var(--ui-ink-2);
+  cursor: pointer;
+  transition: background-color var(--ui-dur-2) var(--ui-ease),
+    color var(--ui-dur-2) var(--ui-ease);
+}
+
+.mtv-filter-opt:hover {
+  background: color-mix(in srgb, var(--ui-ink) 8%, transparent);
+  color: var(--ui-ink);
+}
+
+.mtv-filter-opt.is-on {
+  background: color-mix(in srgb, var(--ui-ink) 12%, transparent);
+  color: var(--ui-ink);
+  font-weight: 650;
 }
 
 /* ==========================================================================
