@@ -453,24 +453,28 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
   onShowToast,
 }) => {
   const router = useRouter();
+  // 文字色一律走 ui-* 令牌。播放页恒为深色，而 .mtv-play-root 已经把 ui-* 钉成
+  // 深色值；写成 gray-x + dark:gray-y 的话，浅色主题下会拿到浅色变体，
+  // 结果就是深灰字压在深色面板上。下载状态那几个紫/黄/橙/红/蓝是语义色，
+  // 不跟主题走，保持原样。
   const mutedTextClass = useLightTextOnBackdrop
     ? 'text-white/80'
-    : 'text-gray-600 dark:text-gray-300';
+    : 'text-ui-ink-2';
   const faintTextClass = useLightTextOnBackdrop
     ? 'text-white/65'
-    : 'text-gray-500 dark:text-gray-400';
+    : 'text-ui-ink-3';
   const inactiveTabClass = useLightTextOnBackdrop
     ? 'text-white/85 hover:text-white bg-white/10 dark:bg-white/5 hover:bg-white/15 dark:hover:bg-white/10'
-    : 'text-gray-700 hover:text-ui-accent bg-black/5 dark:bg-white/5 dark:text-gray-300 dark:hover:text-ui-accent hover:bg-black/3 dark:hover:bg-white/3';
+    : 'text-ui-ink-2 hover:text-ui-accent bg-ui-hair hover:bg-ui-hair-strong';
   const sourceTitleClass = useLightTextOnBackdrop
     ? 'text-white'
-    : 'text-gray-900 dark:text-gray-100';
+    : 'text-ui-ink';
   const sourcePillTextClass = useLightTextOnBackdrop
     ? 'text-white/85'
-    : 'text-gray-700 dark:text-gray-300';
+    : 'text-ui-ink-2';
   const disabledTextClass = useLightTextOnBackdrop
     ? 'text-white/45 cursor-not-allowed'
-    : 'text-gray-400 dark:text-gray-500 cursor-not-allowed';
+    : 'text-ui-ink-3 cursor-not-allowed';
 
   const parseSxxExxTitle = useCallback((title?: string) => {
     const match = title?.match(/[Ss](\d+)[Ee](\d{1,4}(?:\.\d+)?)/);
@@ -1825,7 +1829,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                           }`.trim()}
                       >
                         {/* 封面 */}
-                        <div className='flex-shrink-0 w-12 h-20 bg-gray-300 dark:bg-gray-600 rounded overflow-hidden flex items-center justify-center'>
+                        <div className='flex-shrink-0 w-12 h-20 bg-ui-surface-3 rounded overflow-hidden flex items-center justify-center'>
                           {source.source === 'directplay' ? (
                             <LinkIcon className='w-6 h-6 text-blue-500' />
                           ) : source.poster ? (
@@ -2013,7 +2017,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                     </span>
                   </div>
                 )}
-                <div className='flex-shrink-0 mt-auto pt-2 border-t border-gray-400 dark:border-gray-700'>
+                <div className='flex-shrink-0 mt-auto pt-2 border-t border-ui-hair'>
                   <button
                     onClick={() => {
                       if (videoTitle) {
@@ -2022,7 +2026,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                         );
                       }
                     }}
-                    className={`w-full text-center text-xs ${faintTextClass} hover:text-ui-accent dark:hover:text-ui-accent transition-colors py-2`}
+                    className={`w-full text-center text-xs ${faintTextClass} hover:text-ui-accent transition-colors py-2`}
                   >
                     影片匹配有误？点击去搜索
                   </button>
