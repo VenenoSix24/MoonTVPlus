@@ -37,7 +37,7 @@ function VersionDisplay() {
       onClick={() =>
         window.open('https://github.com/mtvpls/MoonTVPlus', '_blank')
       }
-      className='absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 transition-colors cursor-pointer'
+      className='absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-2 text-xs text-ui-ink-3  transition-colors cursor-pointer'
     >
       <span className='font-mono'>v{CURRENT_VERSION}</span>
       {!isChecking && updateStatus !== UpdateStatus.FETCH_FAILED && (
@@ -252,7 +252,7 @@ function RegisterPageClient() {
   if (!siteConfig) {
     return (
       <div className='relative min-h-screen flex items-center justify-center px-4'>
-        <div className='text-gray-500 dark:text-gray-400'>加载中...</div>
+        <div className='text-ui-ink-3 '>加载中...</div>
       </div>
     );
   }
@@ -270,11 +270,11 @@ function RegisterPageClient() {
       <div className='absolute top-4 right-4'>
         <ThemeToggle />
       </div>
-      <div className='relative z-10 w-full max-w-md rounded-3xl bg-gradient-to-b from-white/90 via-white/70 to-white/40 dark:from-zinc-900/90 dark:via-zinc-900/70 dark:to-zinc-900/40 shadow-2xl p-10 dark:border dark:border-zinc-800'>
-        <h1 className='text-ui-accent tracking-tight text-center text-3xl font-extrabold mb-2 bg-clip-text drop-shadow-sm'>
+      <div className='relative z-10 w-full max-w-md rounded-ui-lg bg-ui-surface border border-ui-hair    shadow-ui-3 p-10 '>
+        <h1 className='text-ui-accent tracking-tight text-center text-3xl font-extrabold mb-2 bg-clip-text drop-shadow-ui-1'>
           {siteName}
         </h1>
-        <p className='text-center text-sm text-gray-600 dark:text-gray-400 mb-8'>
+        <p className='text-center text-sm text-ui-ink-2  mb-8'>
           创建新账号
         </p>
         {registerSuccess ? (
@@ -294,14 +294,14 @@ function RegisterPageClient() {
                   Telegram 绑定
                 </div>
                 <p className='text-sm'>在 Bot 中发送：</p>
-                <div className='my-3 rounded-lg bg-white/80 px-3 py-2 font-mono text-lg font-bold tracking-widest dark:bg-zinc-900/70'>
+                <div className='my-3 rounded-ui-md bg-ui-surface/80 px-3 py-2 font-mono text-lg font-bold tracking-widest '>
                   /bind {telegramBind.code}
                 </div>
                 {telegramBind.deepLink && (
                   <button
                     type='button'
                     onClick={() => window.open(telegramBind.deepLink, '_blank', 'noopener,noreferrer')}
-                    className='mb-3 inline-flex w-full items-center justify-center rounded-lg bg-sky-600 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-sky-700'
+                    className='mb-3 inline-flex w-full items-center justify-center rounded-ui-md bg-sky-600 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-sky-700'
                   >
                     打开 Telegram
                   </button>
@@ -313,7 +313,7 @@ function RegisterPageClient() {
             <button
               type='button'
               onClick={() => router.replace(searchParams.get('redirect') || '/login')}
-              className='inline-flex w-full justify-center rounded-lg bg-ui-accent py-3 text-base font-semibold text-white shadow-lg transition-all duration-200 hover:bg-ui-accent'
+              className='inline-flex w-full justify-center rounded-ui-md bg-ui-accent py-3 text-base font-semibold text-white shadow-ui-2 transition-all duration-200 hover:bg-ui-accent'
             >
               前往登录
             </button>
@@ -326,13 +326,13 @@ function RegisterPageClient() {
             </label>
             <div className='relative'>
               <div className='absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none'>
-                <User className='h-5 w-5 text-gray-400 dark:text-gray-500' />
+                <User className='h-5 w-5 text-ui-ink-3 ' />
               </div>
               <input
                 id='username'
                 type='text'
                 autoComplete='username'
-                className='block w-full rounded-lg border-0 py-3 pl-10 pr-4 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-white/60 dark:ring-white/20 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-ui-accent focus:outline-none sm:text-base bg-white/60 dark:bg-zinc-800/60'
+                className='block w-full rounded-ui-md border-0 py-3 pl-10 pr-4 text-ui-ink  shadow-ui-1 ring-1 ring-ui-hair  placeholder:text-ui-ink-3  focus:ring-2 focus:ring-ui-accent focus:outline-none sm:text-base bg-ui-surface-2 '
                 placeholder='输入用户名'
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
@@ -346,20 +346,20 @@ function RegisterPageClient() {
             </label>
             <div className='relative'>
               <div className='absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none'>
-                <Lock className='h-5 w-5 text-gray-400 dark:text-gray-500' />
+                <Lock className='h-5 w-5 text-ui-ink-3 ' />
               </div>
               <input
                 id='password'
                 type={showPassword ? 'text' : 'password'}
                 autoComplete='new-password'
-                className='block w-full rounded-lg border-0 py-3 pl-10 pr-12 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-white/60 dark:ring-white/20 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-ui-accent focus:outline-none sm:text-base bg-white/60 dark:bg-zinc-800/60'
+                className='block w-full rounded-ui-md border-0 py-3 pl-10 pr-12 text-ui-ink  shadow-ui-1 ring-1 ring-ui-hair  placeholder:text-ui-ink-3  focus:ring-2 focus:ring-ui-accent focus:outline-none sm:text-base bg-ui-surface-2 '
                 placeholder='输入密码（至少6位）'
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
               <button
                 type='button'
-                className='absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                className='absolute inset-y-0 right-0 flex items-center pr-3 text-ui-ink-3 hover:text-ui-ink-2  '
                 onClick={() => setShowPassword(!showPassword)}
               >
                 {showPassword ? (
@@ -377,20 +377,20 @@ function RegisterPageClient() {
             </label>
             <div className='relative'>
               <div className='absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none'>
-                <Lock className='h-5 w-5 text-gray-400 dark:text-gray-500' />
+                <Lock className='h-5 w-5 text-ui-ink-3 ' />
               </div>
               <input
                 id='confirmPassword'
                 type={showConfirmPassword ? 'text' : 'password'}
                 autoComplete='new-password'
-                className='block w-full rounded-lg border-0 py-3 pl-10 pr-12 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-white/60 dark:ring-white/20 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-ui-accent focus:outline-none sm:text-base bg-white/60 dark:bg-zinc-800/60'
+                className='block w-full rounded-ui-md border-0 py-3 pl-10 pr-12 text-ui-ink  shadow-ui-1 ring-1 ring-ui-hair  placeholder:text-ui-ink-3  focus:ring-2 focus:ring-ui-accent focus:outline-none sm:text-base bg-ui-surface-2 '
                 placeholder='再次输入密码'
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
               />
               <button
                 type='button'
-                className='absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                className='absolute inset-y-0 right-0 flex items-center pr-3 text-ui-ink-3 hover:text-ui-ink-2  '
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               >
                 {showConfirmPassword ? (
@@ -409,12 +409,12 @@ function RegisterPageClient() {
               </label>
               <div className='relative'>
                 <div className='absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none'>
-                  <User className='h-5 w-5 text-gray-400 dark:text-gray-500' />
+                  <User className='h-5 w-5 text-ui-ink-3 ' />
                 </div>
                 <input
                   id='inviteCode'
                   type='text'
-                  className='block w-full rounded-lg border-0 py-3 pl-10 pr-4 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-white/60 dark:ring-white/20 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-ui-accent focus:outline-none sm:text-base bg-white/60 dark:bg-zinc-800/60'
+                  className='block w-full rounded-ui-md border-0 py-3 pl-10 pr-4 text-ui-ink  shadow-ui-1 ring-1 ring-ui-hair  placeholder:text-ui-ink-3  focus:ring-2 focus:ring-ui-accent focus:outline-none sm:text-base bg-ui-surface-2 '
                   placeholder='输入邀请码'
                   value={inviteCode}
                   onChange={(e) => setInviteCode(e.target.value)}
@@ -440,7 +440,7 @@ function RegisterPageClient() {
               (siteConfig?.RequireRegistrationInviteCode && !inviteCode.trim()) ||
               (siteConfig?.RegistrationRequireTurnstile && !turnstileToken)
             }
-            className='inline-flex w-full justify-center rounded-lg bg-ui-accent py-3 text-base font-semibold text-white shadow-lg transition-all duration-200 hover:from-ui-accent hover:to-blue-600 disabled:cursor-not-allowed disabled:opacity-50'
+            className='inline-flex w-full justify-center rounded-ui-md bg-ui-accent py-3 text-base font-semibold text-white shadow-ui-2 transition-all duration-200 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50'
           >
             {loading ? '注册中...' : '注册'}
           </button>

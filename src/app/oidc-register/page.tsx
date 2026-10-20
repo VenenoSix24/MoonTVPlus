@@ -72,7 +72,7 @@ function OIDCRegisterPageClient() {
   if (!oidcInfo) {
     return (
       <div className='relative min-h-screen flex items-center justify-center px-4'>
-        <div className='text-gray-500 dark:text-gray-400'>加载中...</div>
+        <div className='text-ui-ink-3 '>加载中...</div>
       </div>
     );
   }
@@ -82,18 +82,18 @@ function OIDCRegisterPageClient() {
       <div className='absolute top-4 right-4'>
         <ThemeToggle />
       </div>
-      <div className='relative z-10 w-full max-w-md rounded-3xl bg-gradient-to-b from-white/90 via-white/70 to-white/40 dark:from-zinc-900/90 dark:via-zinc-900/70 dark:to-zinc-900/40 backdrop-blur-xl shadow-2xl p-10 dark:border dark:border-zinc-800'>
-        <h1 className='text-ui-accent tracking-tight text-center text-3xl font-extrabold mb-2 bg-clip-text drop-shadow-sm'>
+      <div className='relative z-10 w-full max-w-md rounded-ui-lg bg-ui-surface border border-ui-hair    backdrop-blur-xl shadow-ui-3 p-10 '>
+        <h1 className='text-ui-accent tracking-tight text-center text-3xl font-extrabold mb-2 bg-clip-text drop-shadow-ui-1'>
           {siteName}
         </h1>
-        <p className='text-center text-sm text-gray-600 dark:text-gray-400 mb-8'>
+        <p className='text-center text-sm text-ui-ink-2  mb-8'>
           完成OIDC注册
         </p>
 
         {/* OIDC信息显示 */}
         {oidcInfo && (
-          <div className='mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg'>
-            <p className='text-sm text-blue-700 dark:text-blue-400'>
+          <div className='mb-6 p-4 bg-ui-accent-soft  border border-ui-hair  rounded-ui-md'>
+            <p className='text-sm text-ui-accent '>
               {oidcInfo.email && (
                 <>
                   邮箱: <strong>{oidcInfo.email}</strong>
@@ -117,19 +117,19 @@ function OIDCRegisterPageClient() {
 
         <form onSubmit={handleSubmit} className='space-y-6'>
           <div>
-            <label htmlFor='username' className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2'>
+            <label htmlFor='username' className='block text-sm font-medium text-ui-ink  mb-2'>
               选择用户名
             </label>
             <input
               id='username'
               type='text'
               autoComplete='username'
-              className='block w-full rounded-lg border-0 py-3 px-4 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-white/60 dark:ring-white/20 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-ui-accent focus:outline-none sm:text-base bg-white/60 dark:bg-zinc-800/60 backdrop-blur'
+              className='block w-full rounded-ui-md border-0 py-3 px-4 text-ui-ink  shadow-ui-1 ring-1 ring-ui-hair  placeholder:text-ui-ink-3  focus:ring-2 focus:ring-ui-accent focus:outline-none sm:text-base bg-ui-surface-2  backdrop-blur'
               placeholder='输入用户名（3-20位字母、数字、下划线）'
               value={username}
               onChange={(e) => setUsername(e.target.value)}
             />
-            <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
+            <p className='mt-1 text-xs text-ui-ink-3 '>
               用户名只能包含字母、数字、下划线，长度3-20位
             </p>
           </div>
@@ -141,7 +141,7 @@ function OIDCRegisterPageClient() {
           <button
             type='submit'
             disabled={!username || loading}
-            className='inline-flex w-full justify-center rounded-lg bg-ui-accent py-3 text-base font-semibold text-white shadow-lg transition-all duration-200 hover:from-ui-accent hover:to-blue-600 disabled:cursor-not-allowed disabled:opacity-50'
+            className='inline-flex w-full justify-center rounded-ui-md bg-ui-accent py-3 text-base font-semibold text-white shadow-ui-2 transition-all duration-200 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50'
           >
             {loading ? '注册中...' : '完成注册'}
           </button>
@@ -160,7 +160,7 @@ function OIDCRegisterPageClient() {
       </div>
 
       {/* 版本信息 */}
-      <div className='absolute bottom-4 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 dark:text-gray-400'>
+      <div className='absolute bottom-4 left-1/2 transform -translate-x-1/2 text-xs text-ui-ink-3 '>
         <span className='font-mono'>v{CURRENT_VERSION}</span>
       </div>
     </div>
