@@ -65,13 +65,15 @@ const MobileBottomNav = ({ activePath }: MobileBottomNavProps) => {
           />
         )}
 
+        {/* 底栏这五格始终可见，开着 prefetch：点击时目标路由的骨架边界已经在本地，
+            切换立刻出骨架、内容再流进来。桌面导航和页面内其它链接仍保持
+            prefetch={false} —— 那些链接数量多，全开会把没被点的路由也预取一遍。 */}
         {NAV_ITEMS.map((item) => {
           const active = isActive(item.href);
           return (
             <Link
               key={item.href}
               href={item.href}
-              prefetch={false}
               className={active ? 'mtv-bnav-item is-active' : 'mtv-bnav-item'}
               aria-current={active ? 'page' : undefined}
             >
