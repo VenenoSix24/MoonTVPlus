@@ -714,7 +714,7 @@ function WatchRoomPageContent() {
                 {currentRoom ? (
                   <div className="space-y-4">
                     {/* 房间信息卡片 */}
-                    <div className="bg-gradient-to-r from-ui-accent to-teal-600 rounded-xl p-6 text-white">
+                    <div className="bg-ui-accent rounded-xl p-6 text-white">
                       <div className="flex items-start justify-between mb-4">
                         <div>
                           <h3 className="text-2xl font-bold mb-1">{currentRoom.name}</h3>

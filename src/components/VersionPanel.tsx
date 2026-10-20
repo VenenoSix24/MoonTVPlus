@@ -472,7 +472,7 @@ export const VersionPanel: React.FC<VersionPanelProps> = ({
 
             {/* 当前为最新版本信息 */}
             {!hasUpdate && (
-              <div className='bg-gradient-to-r from-ui-accent-soft to-emerald-50  dark:to-emerald-900/20 border border-ui-accent  rounded-lg p-3 sm:p-4'>
+              <div className='bg-ui-accent-soft border border-ui-accent rounded-lg p-3 sm:p-4'>
                 <div className='flex flex-col gap-3'>
                   <div className='flex items-center gap-2 sm:gap-3'>
                     <div className='w-8 h-8 sm:w-10 sm:h-10 bg-ui-accent-soft  rounded-full flex items-center justify-center flex-shrink-0'>
