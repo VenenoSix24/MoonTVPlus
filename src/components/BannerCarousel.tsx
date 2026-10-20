@@ -711,6 +711,27 @@ export default function BannerCarousel({
   const titleLogo: string | null =
     logoMap[logoKey] ?? heroLogoCache.get(logoKey) ?? null;
 
+  // 标题字若是深色单色，压在暗海报上读不出来，需要反色。
+  // 判断放在服务端做：TMDB 图床不返回 CORS 头，前端 canvas 采样会抛 SecurityError。
+  const [logoDark, setLogoDark] = useState(false);
+  useEffect(() => {
+    if (!titleLogo) {
+      setLogoDark(false);
+      return;
+    }
+    let alive = true;
+    fetch(`/api/tmdb/logo-tone?src=${encodeURIComponent(titleLogo)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (alive) setLogoDark(Boolean(data?.dark));
+      })
+      .catch(() => {
+        // 测不出来就保持原样，不做反色
+      });
+    return () => {
+      alive = false;
+    };
+  }, [titleLogo]);
   // TMDB 源下标题字是异步取的。落地之前先把文字藏起来（占位仍在，不跳版），
   // 否则会「先显示文字、一秒后突然变成 logo」闪一下。
   const logoPending =
@@ -819,7 +840,7 @@ export default function BannerCarousel({
                 originalSrc={titleLogo}
                 alt=''
                 aria-hidden='true'
-                className='mtv-hero-logo'
+                className={`mtv-hero-logo${logoDark ? ' is-dark' : ''}`}
                 loading='eager'
                 decoding='sync'
               />
