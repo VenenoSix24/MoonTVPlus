@@ -40,10 +40,13 @@ const ICON_SVG: Partial<Record<RatingKey, string>> = {
 };
 
 /** 转成 data URI，避免每次渲染重新 encode，也不额外发请求 */
+/* 用 base64 而不是 encodeURIComponent：后者会把 url(#gradient) 里的 # 编成 %23，
+   而 data URI 内部的 fragment 引用在部分浏览器里解析不一致，渐变会失效成黑块。
+   SVG 全是 ASCII，btoa 够用（Node 与浏览器都提供）。 */
 const ICON_SRC: Partial<Record<RatingKey, string>> = Object.fromEntries(
   Object.entries(ICON_SVG).map(([key, svg]) => [
     key,
-    `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg as string)}`,
+    `data:image/svg+xml;base64,${btoa(svg as string)}`,
   ])
 );
 
