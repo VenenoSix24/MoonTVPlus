@@ -536,18 +536,19 @@ export default function BannerCarousel({
   };
 
   if (isLoading || !shouldLoad) {
+    // 容器挂 mtv-hero 是为了直接继承它的上提与最小高度规则：骨架和真 Hero
+    // 同高同位，数据到达时不会有一下跳版。以前这里是一块 gray-* 灰渐变加
+    // 半透明 logo，首屏看着像上一版的页面。
     return (
       <div
-        className={`relative w-full ${bannerHeightClassMap[bannerHeightScale]} bg-gradient-to-b from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 overflow-hidden flex items-center justify-center`}
+        className={`mtv-hero mtv-hero-skel relative w-full ${
+          bannerHeightClassMap[bannerHeightScale]
+        } overflow-hidden`}
       >
-        <Image
-          src='/logo.png'
-          alt='MoonTVPlus'
-          width={120}
-          height={120}
-          className='opacity-50'
-          priority
-        />
+        <div className='mtv-hero-skel-body'>
+          <div className='mtv-hero-skel-title' />
+          <div className='mtv-hero-skel-meta' />
+        </div>
       </div>
     );
   }

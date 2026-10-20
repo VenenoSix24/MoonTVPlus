@@ -5214,11 +5214,92 @@ html[data-loading-style='grid'] .mtv-err-box {
   border-radius: var(--ui-r-md);
 }
 
+/* ==========================================================================
+   首页首屏占位
+   --------------------------------------------------------------------------
+   首页是 client component，服务端只能把 loading=true 那一版渲进 HTML。以前
+   这些占位是各模块各写一遍的 gray-* 灰块（8px 圆角、也没有 Hero），首屏于是
+   看起来像上一版的列表页。
+
+   Hero 容器直接复用 .mtv-hero 的上提与最小高度规则，这里只换底色和内容形状，
+   所以骨架的高度、位置和真 Hero 完全一致，数据落地时不跳版。
+   ========================================================================== */
+.mtv-skel-poster {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  border-radius: var(--ui-r-md);
+}
+
+/* 继续观看那一行是 3:2 的横版卡 */
+.mtv-skel-poster.is-wide {
+  aspect-ratio: 3 / 2;
+}
+
+.mtv-skel-line {
+  width: 72%;
+  height: 14px;
+  margin-top: var(--ui-sp-2);
+  border-radius: var(--ui-r-xs);
+}
+
+.mtv-hero-skel {
+  background: color-mix(in srgb, var(--ui-ink) 6%, transparent);
+}
+
+.mtv-hero-skel-body {
+  position: absolute;
+  left: var(--ui-gutter);
+  right: var(--ui-gutter);
+  bottom: clamp(28px, 5vw, 64px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-sp-3);
+}
+
+.mtv-hero-skel-title {
+  width: min(44%, 320px);
+  height: clamp(26px, 3.2vw, 42px);
+  border-radius: var(--ui-r-sm);
+}
+
+.mtv-hero-skel-meta {
+  width: min(26%, 180px);
+  height: 12px;
+  border-radius: var(--ui-r-xs);
+}
+
+@media (max-width: 767px) {
+  /* 手机端真 Hero 的内容是居中的，骨架跟着居中 */
+  .mtv-hero-skel-body {
+    align-items: center;
+    bottom: 44px;
+  }
+
+  .mtv-hero-skel-title {
+    width: 62%;
+    height: 32px;
+  }
+
+  .mtv-hero-skel-meta {
+    width: 40%;
+  }
+}
+
 .mtv-skel-hero,
 .mtv-skel-title,
-.mtv-skel-card {
+.mtv-skel-card,
+.mtv-skel-poster,
+.mtv-skel-line,
+.mtv-hero-skel-title,
+.mtv-hero-skel-meta {
   background-color: color-mix(in srgb, var(--ui-ink) 7%, transparent);
   animation: mtv-skel-pulse 1.4s var(--ui-ease) infinite;
+}
+
+/* Hero 里的两块压在暗画面上，7% 太淡，抬到 12% */
+.mtv-hero-skel-title,
+.mtv-hero-skel-meta {
+  background-color: color-mix(in srgb, var(--ui-ink) 12%, transparent);
 }
 
 @keyframes mtv-skel-pulse {
@@ -5234,7 +5315,11 @@ html[data-loading-style='grid'] .mtv-err-box {
 @media (prefers-reduced-motion: reduce) {
   .mtv-skel-hero,
   .mtv-skel-title,
-  .mtv-skel-card {
+  .mtv-skel-card,
+  .mtv-skel-poster,
+  .mtv-skel-line,
+  .mtv-hero-skel-title,
+  .mtv-hero-skel-meta {
     animation: none;
   }
 }

@@ -339,8 +339,8 @@ function HomeClient() {
               {loading
                 ? Array.from({ length: 8 }).map((_, index) => (
                     <div key={index} className='mtv-card-md'>
-                      <div className='aspect-[2/3] bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse mb-2' />
-                      <div className='h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4' />
+                      <div className='mtv-skel-poster' />
+                      <div className='mtv-skel-line' />
                     </div>
                   ))
                 : hotMovies.map((movie) => (
@@ -377,8 +377,8 @@ function HomeClient() {
               {loading
                 ? Array.from({ length: 8 }).map((_, index) => (
                     <div key={index} className='mtv-card-md'>
-                      <div className='aspect-[2/3] bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse mb-2' />
-                      <div className='h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4' />
+                      <div className='mtv-skel-poster' />
+                      <div className='mtv-skel-line' />
                     </div>
                   ))
                 : hotDuanju.map((duanju) => (
@@ -435,10 +435,8 @@ function HomeClient() {
               {loading
                 ? Array.from({ length: 8 }).map((_, index) => (
                     <div key={index} className='mtv-card-md'>
-                      <div className='relative aspect-[2/3] w-full overflow-hidden rounded-lg bg-gray-200 animate-pulse dark:bg-gray-800'>
-                        <div className='absolute inset-0 bg-gray-300 dark:bg-gray-700'></div>
-                      </div>
-                      <div className='mt-2 h-4 bg-gray-200 rounded animate-pulse dark:bg-gray-800'></div>
+                      <div className='mtv-skel-poster' />
+                      <div className='mtv-skel-line' />
                     </div>
                   ))
                 : todayAnimes.map((anime, index) => (
@@ -482,8 +480,8 @@ function HomeClient() {
               {loading
                 ? Array.from({ length: 8 }).map((_, index) => (
                     <div key={index} className='mtv-card-md'>
-                      <div className='aspect-[2/3] bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse mb-2' />
-                      <div className='h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4' />
+                      <div className='mtv-skel-poster' />
+                      <div className='mtv-skel-line' />
                     </div>
                   ))
                 : hotTvShows.map((tvShow) => (
@@ -520,8 +518,8 @@ function HomeClient() {
               {loading
                 ? Array.from({ length: 8 }).map((_, index) => (
                     <div key={index} className='mtv-card-md'>
-                      <div className='aspect-[2/3] bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse mb-2' />
-                      <div className='h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4' />
+                      <div className='mtv-skel-poster' />
+                      <div className='mtv-skel-line' />
                     </div>
                   ))
                 : hotVarietyShows.map((varietyShow) => (

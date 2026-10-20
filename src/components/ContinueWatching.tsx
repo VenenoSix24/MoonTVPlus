@@ -139,11 +139,8 @@ export default function ContinueWatching({ className }: ContinueWatchingProps) {
                 key={index}
                 className='mtv-card-wide'
               >
-                <div className='relative aspect-[3/2] w-full overflow-hidden rounded-lg bg-gray-200 animate-pulse dark:bg-gray-800'>
-                  <div className='absolute inset-0 bg-gray-300 dark:bg-gray-700' />
-                </div>
-                <div className='mt-1 h-1 rounded bg-gray-200 animate-pulse dark:bg-gray-800' />
-                <div className='mt-2 h-4 w-3/4 rounded bg-gray-200 animate-pulse dark:bg-gray-800' />
+                <div className='mtv-skel-poster is-wide' />
+                <div className='mtv-skel-line' />
               </div>
             ))}
           </div>
