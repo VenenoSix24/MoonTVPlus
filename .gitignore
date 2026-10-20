@@ -75,3 +75,6 @@ scripts/test
 
 .agents/
 skills-lock.json
+
+# 本地设计预览（demo / 定稿 HTML），不进版本库
+design-preview/
