@@ -289,8 +289,9 @@ async function handleById(
     if (!chosen || !chosen.tone) return NextResponse.json(EMPTY);
 
     const result: ToneResult = {
-      // 组内没有可读的才反相。能走到这里说明这一组全是深色。
-      dark: !readable,
+      // 只在「暗且发灰」时反相。彩色哪怕暗也不翻 —— 反相会把深蓝变浅黄、
+      // 深红变浅青，比暗着更难看。那种情况保持原色，靠遮罩和投影去衬。
+      dark: !readable && chosen.tone.sat < 0.35,
       ratio: chosen.tone.ratio,
       density: chosen.tone.density,
     };

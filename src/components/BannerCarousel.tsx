@@ -606,17 +606,23 @@ export default function BannerCarousel({
      * （深红变浅青）。服务端会在候选里挑第一张「在暗底上读得出来」的原生版本，
      * 全都挑不出来才退回反相。
      *
-     * v=5 是响应格式的版本号。接口带 24h 强缓存，不换 URL 的话升级后的浏览器
+     * v=6 是响应格式的版本号。接口带 24h 强缓存，不换 URL 的话升级后的浏览器
      * 会继续用旧响应，挑浅色版这一步会静默失效一整天。
      */
     const warmTone = (item: BannerItem, src: string) => {
       const { key } = logoRequest(item);
       if (logoDarkCache.has(key)) return;
 
+      // 豆瓣条目反查过 TMDB 的，必须用真实的 TMDB id —— item.id 是豆瓣的数字串，
+      // 拿去查 TMDB 只会返回空，整条 logo 的深浅判定和换图就都不会发生。
+      const tmdbId =
+        item.tmdb_id ?? (item.origin_source === 'Douban' ? null : item.id);
+      if (!tmdbId) return;
+
       const kind = item.media_type === 'tv' ? 'tv' : 'movie';
       const zh = /[\u3400-\u9fff\uf900-\ufaff]/.test(item.title) ? 1 : 0;
 
-      fetch(`/api/tmdb/logo-tone?id=${item.id}&type=${kind}&zh=${zh}&v=5`)
+      fetch(`/api/tmdb/logo-tone?id=${tmdbId}&type=${kind}&zh=${zh}&v=6`)
         .then((res) => res.json())
         .then((data) => {
           const dark = Boolean(data?.dark);
