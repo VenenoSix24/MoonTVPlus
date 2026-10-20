@@ -3341,6 +3341,13 @@ html[data-loading-style='grid'] .mtv-err-box {
   box-shadow: none;
 }
 
+/* CapsuleSwitch 的指示块挂在它自己的滚动容器里，那一层没有 padding，
+   所以不缩边，直接撑满轨道内高。 */
+.mtv-caps-ind.is-flush {
+  top: 0;
+  bottom: 0;
+}
+
 .mtv-cap {
   position: relative;
   z-index: 1;
