@@ -4956,6 +4956,15 @@ html[data-loading-style='grid'] .mtv-err-box {
   filter: brightness(1);
 }
 
+/* 剧照还在路上：铺一块占满 16:9 的呼吸占位，数据回来换成真图，
+   请求失败才退回大号集数 */
+.mtv-play-epcard-skel {
+  position: absolute;
+  inset: 0;
+  background-color: color-mix(in srgb, var(--ui-ink) 7%, transparent);
+  animation: mtv-skel-pulse 1.4s var(--ui-ease) infinite;
+}
+
 /* 没有 TMDB 剧照时的回落：大号集数，不留一块空画面 */
 .mtv-play-epcard-num {
   position: absolute;
@@ -5591,7 +5600,8 @@ html[data-loading-style='grid'] .mtv-err-box {
   .mtv-skel-poster,
   .mtv-skel-line,
   .mtv-hero-skel-title,
-  .mtv-hero-skel-meta {
+  .mtv-hero-skel-meta,
+  .mtv-play-epcard-skel {
     animation: none;
   }
 }

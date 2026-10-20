@@ -289,6 +289,8 @@ interface EpisodeCardProps {
   isActive: boolean;
   isWatched: boolean;
   data?: EpisodeCardData;
+  /** 剧照还在加载：用骨架占位，而不是先显示集号 */
+  loading?: boolean;
   /** TMDB 没有数据时的分集名回落（弹幕分集名） */
   fallbackName?: string;
   onSelect: (zeroBasedIndex: number) => void;
@@ -301,6 +303,7 @@ const EpisodeCard: React.FC<EpisodeCardProps> = ({
   isActive,
   isWatched,
   data,
+  loading = false,
   fallbackName,
   onSelect,
 }) => {
@@ -329,6 +332,8 @@ const EpisodeCard: React.FC<EpisodeCardProps> = ({
             alt={title}
             className='mtv-play-epcard-img'
           />
+        ) : loading ? (
+          <span className='mtv-play-epcard-skel' aria-hidden='true' />
         ) : (
           <span className='mtv-play-epcard-num'>
             {String(episodeNumber).padStart(2, '0')}
@@ -376,6 +381,8 @@ interface EpisodeSelectorProps {
   richEpisodeNames?: (string | undefined)[];
   /** 分集卡片的数据（剧照 / 简介 / 时长 / 播出日期），按 episodeNumber-1 索引 */
   episodeCards?: (EpisodeCardData | undefined)[] | null;
+  /** 剧照 / 简介还在路上：卡片先显示骨架，不要先闪一下集号再换成剧照 */
+  episodeCardsLoading?: boolean;
   /** 播出日历汇总；为 null 表示已完结或没有播出日期，不显示这一行 */
   airCalendar?: AirCalendar | null;
   /**
@@ -427,6 +434,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
   episodes_titles,
   richEpisodeNames,
   episodeCards,
+  episodeCardsLoading = false,
   airCalendar,
   onVisibleEpisodesChange,
   episodesPerPage = 50,
@@ -1673,6 +1681,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                         isWatched={watchedEpisodes.has(episodeNumber)}
                         data={episodeCards?.[episodeNumber - 1]}
                         fallbackName={richEpisodeNames?.[episodeNumber - 1]}
+                        loading={episodeCardsLoading}
                         onSelect={handleEpisodeClick}
                       />
                     </span>

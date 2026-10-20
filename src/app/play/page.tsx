@@ -478,6 +478,9 @@ function PlayPageClient() {
   const [tmdbEpisodeMeta, setTmdbEpisodeMeta] = useState<
     (TmdbEpisodeMeta | undefined)[]
   >([]);
+  // 分集剧照 / 简介还在路上：卡片先铺骨架，不要先闪一下集号再换成剧照
+  const [tmdbEpisodeMetaLoading, setTmdbEpisodeMetaLoading] =
+    useState(false);
   // TMDB 季度区间表：把 CMS 的扁平集号映射到「第几季第几集」。
   // 由 /api/tmdb-details 顺带返回，不额外打请求。
   const [tmdbSeasonRanges, setTmdbSeasonRanges] = useState<TmdbSeasonRange[]>(
@@ -2222,6 +2225,7 @@ function PlayPageClient() {
       const fingerprint = `${id}#s${seasonNumber}`;
       if (tmdbSeasonLoadedRef.current.has(fingerprint)) return;
       tmdbSeasonLoadedRef.current.add(fingerprint);
+      setTmdbEpisodeMetaLoading(true);
 
       try {
         const resp = await fetch(
@@ -2296,6 +2300,8 @@ function PlayPageClient() {
       } catch (err) {
         tmdbSeasonLoadedRef.current.delete(fingerprint);
         console.error('获取TMDB分集元数据失败:', err);
+      } finally {
+        setTmdbEpisodeMetaLoading(false);
       }
     },
     []
@@ -12314,6 +12320,7 @@ function PlayPageClient() {
                 episodes_titles={detail?.episodes_titles || []}
                 richEpisodeNames={richEpisodeNames}
                 episodeCards={episodeCards}
+                episodeCardsLoading={tmdbEpisodeMetaLoading}
                 airCalendar={airCalendar}
                 onVisibleEpisodesChange={handleVisibleEpisodesChange}
                 value={currentEpisodeIndex + 1}
