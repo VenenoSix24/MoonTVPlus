@@ -22,6 +22,7 @@ import { useEffect, useState } from 'react';
 
 import { SPECIAL_SOURCE_PATH } from '@/lib/special-source.client';
 
+import MoreMenuTrigger from './MoreMenu';
 import { useSite } from './SiteProvider';
 import { ThemeToggle } from './ThemeToggle';
 import { UpdateNotification } from './UpdateNotification';
@@ -169,6 +170,7 @@ const TopNav = () => {
         >
           <Search />
         </Link>
+        <MoreMenuTrigger variant='desktop' />
         <ThemeToggle className='mtv-topnav-icon' />
         <UpdateNotification />
         <UserMenu className='mtv-topnav-icon' />

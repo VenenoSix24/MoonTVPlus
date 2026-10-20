@@ -3,6 +3,7 @@
 import Link from 'next/link';
 
 import { BackButton } from './BackButton';
+import MoreMenuTrigger from './MoreMenu';
 import { useSite } from './SiteProvider';
 import { ThemeToggle } from './ThemeToggle';
 import { UpdateNotification } from './UpdateNotification';
@@ -41,6 +42,7 @@ const MobileHeader = ({ showBackButton = false }: MobileHeaderProps) => {
               />
             </svg>
           </Link>
+          <MoreMenuTrigger variant='mobile' />
           {showBackButton && <BackButton />}
         </div>
 

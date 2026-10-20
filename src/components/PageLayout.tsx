@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { BackButton } from './BackButton';
 import MobileBottomNav from './MobileBottomNav';
 import MobileHeader from './MobileHeader';
+import { MoreMenuProvider } from './MoreMenu';
 import TopNav from './TopNav';
 import { VersionCheckProvider } from './VersionCheckProvider';
 
@@ -64,53 +65,55 @@ const PageLayout = ({
   return (
     <VersionCheckProvider>
       <div className='relative w-full min-h-screen overflow-hidden'>
-        {shouldShowSharedBackground && backgroundImage && (
-          <>
-            <div
-              className='absolute inset-0 pointer-events-none bg-cover bg-center bg-no-repeat opacity-45'
-              style={{ backgroundImage: `url(${backgroundImage})` }}
+        <MoreMenuProvider>
+          {shouldShowSharedBackground && backgroundImage && (
+            <>
+              <div
+                className='absolute inset-0 pointer-events-none bg-cover bg-center bg-no-repeat opacity-45'
+                style={{ backgroundImage: `url(${backgroundImage})` }}
+              />
+              <div className='absolute inset-0 pointer-events-none bg-white/50 dark:bg-gray-950/50' />
+            </>
+          )}
+
+          {/* 移动端头部 */}
+          {!hideNavigation && (
+            <MobileHeader
+              showBackButton={['/play', '/live'].includes(activePath)}
             />
-            <div className='absolute inset-0 pointer-events-none bg-white/50 dark:bg-gray-950/50' />
-          </>
-        )}
+          )}
 
-        {/* 移动端头部 */}
-        {!hideNavigation && (
-          <MobileHeader
-            showBackButton={['/play', '/live'].includes(activePath)}
-          />
-        )}
+          {/* 桌面端顶部导航 */}
+          {!hideNavigation && <TopNav />}
 
-        {/* 桌面端顶部导航 */}
-        {!hideNavigation && <TopNav />}
+          <div className='relative z-10 w-full min-h-screen'>
+            <div className='relative min-w-0'>
+              {/* 桌面端左上角返回按钮 */}
+              {!hideNavigation && ['/play', '/live'].includes(activePath) && (
+                <div className='absolute top-3 left-1 z-20 hidden md:flex'>
+                  <BackButton />
+                </div>
+              )}
 
-        <div className='relative z-10 w-full min-h-screen'>
-          <div className='relative min-w-0'>
-            {/* 桌面端左上角返回按钮 */}
-            {!hideNavigation && ['/play', '/live'].includes(activePath) && (
-              <div className='absolute top-3 left-1 z-20 hidden md:flex'>
-                <BackButton />
-              </div>
-            )}
-
-            {/* 主内容 */}
-            <main
-              className='mt-[calc(3rem+env(safe-area-inset-top))] mb-14 md:mt-0 md:mb-0 md:pt-16'
-              style={{
-                paddingBottom: 'calc(3.5rem + env(safe-area-inset-bottom))',
-              }}
-            >
-              {children}
-            </main>
+              {/* 主内容 */}
+              <main
+                className='mt-[calc(3rem+env(safe-area-inset-top))] mb-14 md:mt-0 md:mb-0 md:pt-16'
+                style={{
+                  paddingBottom: 'calc(3.5rem + env(safe-area-inset-bottom))',
+                }}
+              >
+                {children}
+              </main>
+            </div>
           </div>
-        </div>
 
-        {/* 移动端底部导航 */}
-        {!hideNavigation && (
-          <div className='md:hidden'>
-            <MobileBottomNav activePath={activePath} />
-          </div>
-        )}
+          {/* 移动端底部导航 */}
+          {!hideNavigation && (
+            <div className='md:hidden'>
+              <MobileBottomNav activePath={activePath} />
+            </div>
+          )}
+        </MoreMenuProvider>
       </div>
     </VersionCheckProvider>
   );
