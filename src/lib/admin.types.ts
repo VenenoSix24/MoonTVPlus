@@ -27,6 +27,8 @@ export interface AdminConfig {
     TMDBApiKey?: string;
     TMDBProxy?: string;
     TMDBReverseProxy?: string;
+    // OMDb 评分接口 Key（可选）：配了才显示 IMDb / 烂番茄 / Metacritic 评分
+    OMDbApiKey?: string;
     // TMDB 图片默认地址：用户未在本地数据源设置中配置时，图片默认使用该地址
     TMDBImageBaseUrl?: string;
     // 动漫/Bangumi配置

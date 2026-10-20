@@ -385,6 +385,7 @@ interface SiteConfig {
   TMDBApiKey?: string;
   TMDBProxy?: string;
   TMDBReverseProxy?: string;
+  OMDbApiKey?: string;
   TMDBImageBaseUrl?: string;
   BangumiDataSource?:
     | 'direct'
@@ -11266,6 +11267,7 @@ const SiteConfigComponent = ({
     TMDBApiKey: '',
     TMDBProxy: '',
     TMDBReverseProxy: '',
+    OMDbApiKey: '',
     TMDBImageBaseUrl: 'https://image.tmdb.org',
     BangumiDataSource: 'direct',
     BangumiApiBaseUrl: 'https://api.bgm.tv',
@@ -11392,6 +11394,7 @@ const SiteConfigComponent = ({
         TMDBApiKey: config.SiteConfig.TMDBApiKey || '',
         TMDBProxy: config.SiteConfig.TMDBProxy || '',
         TMDBReverseProxy: config.SiteConfig.TMDBReverseProxy || '',
+        OMDbApiKey: config.SiteConfig.OMDbApiKey || '',
         TMDBImageBaseUrl:
           config.SiteConfig.TMDBImageBaseUrl || 'https://image.tmdb.org',
         BangumiDataSource: config.SiteConfig.BangumiDataSource || 'direct',
@@ -12274,6 +12277,37 @@ const SiteConfigComponent = ({
             <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
               用户未在本地数据源设置中配置 TMDB 图片地址时，图片默认使用该地址（默认
               https://image.tmdb.org）
+            </p>
+          </div>
+
+          {/* OMDb 评分接口 Key */}
+          <div>
+            <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2'>
+              OMDb API Key
+            </label>
+            <input
+              type='text'
+              placeholder='请输入 OMDb API Key'
+              value={siteSettings.OMDbApiKey}
+              onChange={(e) =>
+                setSiteSettings((prev) => ({
+                  ...prev,
+                  OMDbApiKey: e.target.value,
+                }))
+              }
+              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
+            />
+            <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
+              用于首页轮播与播放页的多源评分（IMDb / 烂番茄 /
+              Metacritic）。留空则只显示 TMDB 与豆瓣评分。获取 Key 请访问{' '}
+              <a
+                href='https://www.omdbapi.com/apikey.aspx'
+                target='_blank'
+                rel='noopener noreferrer'
+                className='text-ui-accent hover:underline'
+              >
+                omdbapi.com
+              </a>
             </p>
           </div>
         </div>

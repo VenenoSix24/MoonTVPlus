@@ -724,7 +724,7 @@ export async function getTMDBMovieDetails(
     }
 
     const baseUrl = reverseProxyBaseUrl || DEFAULT_TMDB_BASE_URL;
-    const url = `${baseUrl}/3/movie/${movieId}?api_key=${actualKey}&language=zh-CN`;
+    const url = `${baseUrl}/3/movie/${movieId}?api_key=${actualKey}&language=zh-CN&append_to_response=external_ids`;
 
     const response = await universalFetch(url, proxy);
 
@@ -766,7 +766,8 @@ export async function getTMDBTVDetails(
     }
 
     const baseUrl = reverseProxyBaseUrl || DEFAULT_TMDB_BASE_URL;
-    const url = `${baseUrl}/3/tv/${tvId}?api_key=${actualKey}&language=zh-CN`;
+    // external_ids 跟着详情一起取回，省掉一次单独请求；imdb_id 是 OMDb 评分的唯一入口
+    const url = `${baseUrl}/3/tv/${tvId}?api_key=${actualKey}&language=zh-CN&append_to_response=external_ids`;
 
     const response = await universalFetch(url, proxy);
 
@@ -784,6 +785,40 @@ export async function getTMDBTVDetails(
   } catch (error) {
     console.error('获取 TMDB 电视剧详情失败:', error);
     return { code: 500, details: null };
+  }
+}
+
+/**
+ * 获取 TMDB 条目的外部 ID（只取 imdb_id）。
+ * Hero 每切一张片都要查一次，所以走 /external_ids 这个轻量端点，
+ * 而不是把整个详情拉回来。
+ */
+export async function getTMDBExternalIds(
+  apiKey: string,
+  mediaType: 'movie' | 'tv',
+  id: number,
+  proxy?: string,
+  reverseProxyBaseUrl?: string
+): Promise<{ code: number; imdbId: string | null }> {
+  try {
+    const actualKey = getNextApiKey(apiKey);
+    if (!actualKey) {
+      return { code: 400, imdbId: null };
+    }
+
+    const baseUrl = reverseProxyBaseUrl || DEFAULT_TMDB_BASE_URL;
+    const url = `${baseUrl}/3/${mediaType}/${id}/external_ids?api_key=${actualKey}`;
+
+    const response = await universalFetch(url, proxy);
+    if (!response.ok) {
+      return { code: response.status, imdbId: null };
+    }
+
+    const data: any = await response.json();
+    return { code: 200, imdbId: data?.imdb_id || null };
+  } catch (error) {
+    console.error('获取 TMDB 外部 ID 失败:', error);
+    return { code: 500, imdbId: null };
   }
 }
 

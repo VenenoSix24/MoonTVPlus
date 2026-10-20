@@ -28,6 +28,11 @@ import {
 import { processImageUrl } from '@/lib/utils';
 
 import ProxyImage from '@/components/ProxyImage';
+import RatingRow, {
+  type RatingSource,
+  formatScore,
+} from '@/components/RatingRow';
+import { useImdbId, useOmdbRatings } from '@/hooks/useRatings';
 
 interface BannerCarouselProps {
   autoPlayInterval?: number; // 自动播放间隔（毫秒）
@@ -71,6 +76,64 @@ interface BannerItem extends TMDBItem {
   textless_poster_path?: string | null; // 无字海报
 }
 
+/* Hero 的多源评分。能拿到几个源就显示几个，不硬凑：
+   - TMDB 数据源：TMDB 分直接有，IMDb / 烂番茄 / Metacritic 要经
+     external_ids 反查 imdb_id 再问 OMDb；
+   - 豆瓣数据源：只有豆瓣分，没有可靠的 imdb 映射可走；
+   - TX 数据源：通常没有评分。 */
+function HeroRatings({
+  item,
+  dataSource,
+}: {
+  item: BannerItem;
+  dataSource: string;
+}) {
+  const isTmdb = dataSource === 'TMDB';
+  const imdbId = useImdbId(
+    isTmdb ? item.media_type : null,
+    isTmdb ? item.id : null
+  );
+  const omdb = useOmdbRatings(imdbId);
+
+  const sources: RatingSource[] = [];
+
+  if (omdb.imdb) {
+    sources.push({ key: 'imdb', value: omdb.imdb.toFixed(1) });
+  }
+
+  const own = formatScore(item.vote_average);
+  if (own) {
+    sources.push({
+      key: dataSource === 'Douban' ? 'douban' : 'tmdb',
+      value: own,
+    });
+  }
+
+  if (omdb.rottenTomatoes) {
+    sources.push({
+      key: 'rt',
+      value: String(omdb.rottenTomatoes),
+      percent: true,
+    });
+  }
+
+  if (omdb.metacritic) {
+    sources.push({ key: 'metacritic', value: String(omdb.metacritic) });
+  }
+
+  if (sources.length === 0) return null;
+
+  // 手机宽度只放得下三个源，按优先级截前三个
+  const compact = sources.slice(0, 3);
+
+  // 两个版本都渲染，显隐交给 CSS 媒体查询，避免首帧闪动
+  return (
+    <div className='mtv-hero-ratings'>
+      <RatingRow sources={sources} variant='logo' />
+      <RatingRow sources={compact} variant='text' />
+    </div>
+  );
+}
 export default function BannerCarousel({
   autoPlayInterval = 5000,
   delayLoad = false,
@@ -695,12 +758,9 @@ export default function BannerCarousel({
             )}
           </h2>
 
+          <HeroRatings item={currentItem} dataSource={dataSource} />
+
           <div className='mtv-hero-meta flex items-center gap-2 md:gap-3 text-sm md:text-base flex-wrap'>
-            {currentItem.vote_average > 0 && (
-              <span className='mtv-hero-score'>
-                {currentItem.vote_average.toFixed(1)}
-              </span>
-            )}
             {/* 显示标签：优先TX的tags，其次豆瓣的genres，最后TMDB的genre_ids */}
             {currentItem.tags && currentItem.tags.length > 0
               ? currentItem.tags.slice(0, 3).map((tag, index) => (
