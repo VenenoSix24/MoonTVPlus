@@ -3003,13 +3003,21 @@ html[data-loading-style='grid'] .mtv-err-box {
 /* 不跟主题走：Hero 底是剧照。浅色主题下 --hero-ink 是深色字，而「提亮画面」
    只在有标题 logo 时才生效（.mtv-hero:has(.mtv-hero-logo)），纯文字标题的片子
    不走那条分支，深色数字会直接糊进暗海报 —— 评分比标题小、又没有描边兜底，
-   最先看不见。这里固定亮色 + 一层暗投影，暗海报和亮海报两边都读得出来。 */
+   最先看不见。这里固定亮色 + 一层暗投影，暗海报和亮海报两边都读得出来。
+
+   必须直接写在子容器上：.mtv-rating-row / .mtv-rating-text 自己会把 --rating-ink
+   重置成 --ui-ink，只写在父级会被它们盖掉，继承不下来 —— 浅色主题下评分就跟着
+   变成深色，压在剧照上等于没有。 */
 .mtv-hero-ratings {
-  --rating-ink: #fff;
-  --rating-ink-2: rgba(255, 255, 255, 0.82);
   display: flex;
   justify-content: center;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+}
+
+.mtv-hero-ratings .mtv-rating-row,
+.mtv-hero-ratings .mtv-rating-text {
+  --rating-ink: #ffffff;
+  --rating-ink-2: rgba(255, 255, 255, 0.82);
 }
 
 .mtv-hero-ratings .mtv-rating-badge {
