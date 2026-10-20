@@ -2,7 +2,19 @@
 
 'use client';
 
-import { Blend, Cat, Clover, Container, Film, Globe, Home, Star, Tv, TvMinimalPlay, Users } from 'lucide-react';
+import {
+  Blend,
+  Cat,
+  Clover,
+  Container,
+  Film,
+  Globe,
+  Home,
+  Star,
+  Tv,
+  TvMinimalPlay,
+  Users,
+} from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -54,11 +66,11 @@ const MobileBottomNav = ({ activePath }: MobileBottomNavProps) => {
       label: '综艺',
       href: '/douban?type=show',
     },
-      {
-        icon: TvMinimalPlay,
-        label: '电视直播',
-        href: '/live',
-      },
+    {
+      icon: TvMinimalPlay,
+      label: '电视直播',
+      href: '/live',
+    },
   ]);
 
   useEffect(() => {
@@ -186,15 +198,16 @@ const MobileBottomNav = ({ activePath }: MobileBottomNavProps) => {
                 className='flex flex-col items-center justify-center w-full h-14 gap-1 text-xs'
               >
                 <item.icon
-                  className={`h-6 w-6 ${active
-                    ? 'text-green-600 dark:text-green-400'
-                    : 'text-gray-500 dark:text-gray-400'
-                    }`}
+                  className={`h-6 w-6 ${
+                    active
+                      ? 'text-ui-accent'
+                      : 'text-gray-500 dark:text-gray-400'
+                  }`}
                 />
                 <span
                   className={
                     active
-                      ? 'text-green-600 dark:text-green-400'
+                      ? 'text-ui-accent'
                       : 'text-gray-600 dark:text-gray-300'
                   }
                 >
