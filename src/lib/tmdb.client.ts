@@ -1081,3 +1081,45 @@ export async function searchTMDBByTitle(
     return null;
   }
 }
+
+/**
+ * 取图片列表，同时带上影片的原标题语言。
+ *
+ * 挑标题字时「同语言优先」不够用：《祈念守护人》的 logo 全是日/俄/韩，没有一个
+ * 中文版，按语言排序会先挑到日文深色那张，而真正的白色版是同一语言里的第三张。
+ * 原标题语言能告诉我们「这部片本来就是哪国的」，同语言内再按票数找，
+ * 就不会跨到韩文去。
+ */
+export async function getTMDBImagesWithLang(
+  apiKey: string,
+  mediaId: number,
+  mediaType: 'movie' | 'tv',
+  proxy?: string,
+  reverseProxyBaseUrl?: string
+): Promise<{ code: number; images: any; originalLanguage: string }> {
+  try {
+    const actualKey = getNextApiKey(apiKey);
+    if (!actualKey) {
+      return { code: 400, images: null, originalLanguage: '' };
+    }
+
+    const baseUrl = reverseProxyBaseUrl || DEFAULT_TMDB_BASE_URL;
+    const url = `${baseUrl}/3/${mediaType}/${mediaId}?append_to_response=images&api_key=${actualKey}`;
+
+    const response = await universalFetch(url, proxy);
+    if (!response.ok) {
+      return { code: response.status, images: null, originalLanguage: '' };
+    }
+
+    const data: any = await response.json();
+
+    return {
+      code: 200,
+      images: data.images ?? null,
+      originalLanguage: data.original_language || '',
+    };
+  } catch (error) {
+    console.error('获取 TMDB 图片与原语言失败:', error);
+    return { code: 500, images: null, originalLanguage: '' };
+  }
+}

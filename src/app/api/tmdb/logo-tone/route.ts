@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
-import { getTMDBImages, getTMDBImageUrl } from '@/lib/tmdb.client';
+import { getTMDBImagesWithLang, getTMDBImageUrl } from '@/lib/tmdb.client';
 import { logoRank, TMDBImageAsset } from '@/lib/tmdb.logo';
 
 /**
@@ -223,7 +223,7 @@ async function handleById(
     const apiKey = config.SiteConfig?.TMDBApiKey;
     if (!apiKey) return NextResponse.json(EMPTY);
 
-    const res = await getTMDBImages(
+    const res = await getTMDBImagesWithLang(
       apiKey,
       parseInt(id, 10),
       type,
@@ -234,51 +234,69 @@ async function handleById(
       res.code === 200 && res.images?.logos ? res.images.logos : [];
     if (!logos.length) return NextResponse.json(EMPTY);
 
-    // 和 pickLogo 同一套排序，保证「候选第一个」就是默认会选的那张
+    // 排序：语言分组 → 同组内原标题语言优先 → 票数。
+    // 第三步是关键：《祈念守护人》的 logo 全是日/俄/韩、没有中文版，光按语言排
+    // 会先挑到日文深色那张，而它的白色版也在日文里（原标题语言就是 ja）。
+    const originalLang = res.originalLanguage || '';
+    const isOriginal = (asset: TMDBImageAsset) =>
+      Boolean(originalLang) &&
+      (asset.iso_639_1 || '').toLowerCase().startsWith(originalLang);
+
     const sorted = [...logos].sort((a, b) => {
       const rank = logoRank(a, preferZh) - logoRank(b, preferZh);
       if (rank !== 0) return rank;
+      const orig = Number(isOriginal(b)) - Number(isOriginal(a));
+      if (orig !== 0) return orig;
       const vote = (b.vote_average || 0) - (a.vote_average || 0);
       if (vote !== 0) return vote;
       return (b.vote_count || 0) - (a.vote_count || 0);
     });
 
-    // 最多试三个：同片 logo 通常也就两三个版本，试太多会把首屏拖慢
-    const candidates = sorted.slice(0, 3);
-    let fallback: { path: string; tone: ToneDetail } | null = null;
+    // 并发把候选全量一遍。之前是串行只试前三张，碰上「可读的那张排第四」
+    // 就整片误判（祈念守护人正是这种情况）。并发后耗时等于最慢的一张。
+    const candidates = sorted.slice(0, 6);
+    const analyzed = await Promise.all(
+      candidates.map(async (asset) => {
+        try {
+          const tone = await analyzeImage(
+            sharp,
+            getTMDBImageUrl(asset.file_path, 'w500')
+          );
+          return { asset, tone };
+        } catch {
+          return { asset, tone: null as ToneDetail | null };
+        }
+      })
+    );
 
-    for (const asset of candidates) {
-      const tone = await analyzeImage(
-        sharp,
-        getTMDBImageUrl(asset.file_path, 'w500')
+    // 第一张「在暗底上读得出来」的：原生浅色版优先于反相出来的
+    const readable = analyzed.find((hit) => hit.tone && isReadable(hit.tone));
+    if (readable && readable.tone) {
+      const result: ToneResult = {
+        dark: false,
+        ratio: readable.tone.ratio,
+        density: readable.tone.density,
+      };
+      writeCache(cacheKey, result);
+      return NextResponse.json(
+        { ...result, path: readable.asset.file_path },
+        { headers: { 'Cache-Control': 'public, max-age=86400' } }
       );
-      if (!tone) continue;
-
-      if (!fallback) fallback = { path: asset.file_path, tone };
-      if (isReadable(tone)) {
-        const result: ToneResult = {
-          dark: false,
-          ratio: tone.ratio,
-          density: tone.density,
-        };
-        writeCache(cacheKey, result);
-        return NextResponse.json(
-          { ...result, path: asset.file_path },
-          { headers: { 'Cache-Control': 'public, max-age=86400' } }
-        );
-      }
     }
 
-    // 全都不行：用排第一的那张，交给前端反相
-    if (fallback) {
+    // 一张都读不出来才反相。这里直接给 true —— 能走到这行就说明没有可读的，
+    // 旧代码用原始 dark 判定，会把「亮度 47、饱和度 0.28」的深彩色漏判成
+    // 不需要反色，结果黑字压在黑底上。
+    const fallback = analyzed.find((hit) => hit.tone);
+    if (fallback && fallback.tone) {
       const result: ToneResult = {
-        dark: fallback.tone.dark,
+        dark: true,
         ratio: fallback.tone.ratio,
         density: fallback.tone.density,
       };
       writeCache(cacheKey, result);
       return NextResponse.json(
-        { ...result, path: fallback.path, forcedDark: true },
+        { ...result, path: fallback.asset.file_path, forcedDark: true },
         { headers: { 'Cache-Control': 'public, max-age=86400' } }
       );
     }

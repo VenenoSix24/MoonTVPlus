@@ -606,7 +606,7 @@ export default function BannerCarousel({
      * （深红变浅青）。服务端会在候选里挑第一张「在暗底上读得出来」的原生版本，
      * 全都挑不出来才退回反相。
      *
-     * v=3 是响应格式的版本号。接口带 24h 强缓存，不换 URL 的话升级后的浏览器
+     * v=4 是响应格式的版本号。接口带 24h 强缓存，不换 URL 的话升级后的浏览器
      * 会继续用旧响应，挑浅色版这一步会静默失效一整天。
      */
     const warmTone = (item: BannerItem, src: string) => {
@@ -616,7 +616,7 @@ export default function BannerCarousel({
       const kind = item.media_type === 'tv' ? 'tv' : 'movie';
       const zh = /[\u3400-\u9fff\uf900-\ufaff]/.test(item.title) ? 1 : 0;
 
-      fetch(`/api/tmdb/logo-tone?id=${item.id}&type=${kind}&zh=${zh}&v=3`)
+      fetch(`/api/tmdb/logo-tone?id=${item.id}&type=${kind}&zh=${zh}&v=4`)
         .then((res) => res.json())
         .then((data) => {
           const dark = Boolean(data?.dark);
