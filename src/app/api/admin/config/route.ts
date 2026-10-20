@@ -38,8 +38,16 @@ export async function GET(request: NextRequest) {
       const { db } = await import('@/lib/db');
       const userInfoV2 = await db.getUserInfoV2(username);
 
-      if (userInfoV2 && userInfoV2.role === 'admin' && !userInfoV2.banned) {
-        result.Role = 'admin';
+      // owner 是最高权限，必须和下面的 POST 分支保持一致。少认一个角色会把
+      // owner 账号锁在门外：配置能存进去，却读不出来，页面只剩「获取配置失败」。
+      if (
+        userInfoV2 &&
+        (userInfoV2.role === 'admin' || userInfoV2.role === 'owner') &&
+        !userInfoV2.banned
+      ) {
+        // 保留真实角色，别把 owner 降级成 admin —— 页面按 Role 决定哪些
+        // 操作可见，降级会让 owner 反而少看到一部分入口
+        result.Role = userInfoV2.role;
       } else {
         return NextResponse.json(
           { error: '你是管理员吗你就访问？' },

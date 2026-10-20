@@ -51,7 +51,11 @@ export async function POST(request: NextRequest) {
 
     if (!requireOwner(authInfo.username)) {
       const userInfo = await db.getUserInfoV2(authInfo.username);
-      if (!userInfo || userInfo.role !== 'admin' || userInfo.banned) {
+      if (
+        !userInfo ||
+        (userInfo.role !== 'admin' && userInfo.role !== 'owner') ||
+        userInfo.banned
+      ) {
         return NextResponse.json({ error: '权限不足' }, { status: 401 });
       }
     }

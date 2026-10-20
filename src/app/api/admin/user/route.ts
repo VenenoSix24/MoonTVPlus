@@ -104,19 +104,26 @@ export async function POST(request: NextRequest) {
       // 优先从新版本获取用户信息
       const operatorInfo = await db.getUserInfoV2(username);
       if (operatorInfo) {
-        if (operatorInfo.role !== 'admin' || operatorInfo.banned) {
+        if (
+          (operatorInfo.role !== 'admin' && operatorInfo.role !== 'owner') ||
+          operatorInfo.banned
+        ) {
           return NextResponse.json({ error: '权限不足' }, { status: 401 });
         }
-        operatorRole = 'admin';
+        operatorRole = operatorInfo.role === 'owner' ? 'owner' : 'admin';
       } else {
         // 回退到配置中查找
         const userEntry = adminConfig.UserConfig.Users.find(
           (u) => u.username === username
         );
-        if (!userEntry || userEntry.role !== 'admin' || userEntry.banned) {
+        if (
+          !userEntry ||
+          (userEntry.role !== 'admin' && userEntry.role !== 'owner') ||
+          userEntry.banned
+        ) {
           return NextResponse.json({ error: '权限不足' }, { status: 401 });
         }
-        operatorRole = 'admin';
+        operatorRole = userEntry.role === 'owner' ? 'owner' : 'admin';
       }
     }
 
