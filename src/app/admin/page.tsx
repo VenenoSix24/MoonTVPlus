@@ -94,7 +94,7 @@ const buttonStyles = {
     'px-3 py-1.5 text-sm font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg transition-colors',
   // 成功操作按钮（绿色）- 用于添加、启用、保存等
   success:
-    'px-3 py-1.5 text-sm font-medium bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 text-white rounded-lg transition-colors',
+    'px-3 py-1.5 text-sm font-medium bg-ui-accent hover:bg-ui-accent  dark:hover:bg-ui-accent text-white rounded-lg transition-colors',
   // 危险操作按钮（红色）- 用于删除、禁用、重置等
   danger:
     'px-3 py-1.5 text-sm font-medium bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 text-white rounded-lg transition-colors',
@@ -109,7 +109,7 @@ const buttonStyles = {
     'px-2 py-1 text-xs font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-md transition-colors',
   // 小尺寸成功按钮
   successSmall:
-    'px-2 py-1 text-xs font-medium bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 text-white rounded-md transition-colors',
+    'px-2 py-1 text-xs font-medium bg-ui-accent hover:bg-ui-accent  dark:hover:bg-ui-accent text-white rounded-md transition-colors',
   // 小尺寸危险按钮
   dangerSmall:
     'px-2 py-1 text-xs font-medium bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 text-white rounded-md transition-colors',
@@ -123,7 +123,7 @@ const buttonStyles = {
   roundedPrimary:
     'inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 dark:bg-blue-900/40 dark:hover:bg-blue-900/60 dark:text-blue-200 transition-colors',
   roundedSuccess:
-    'inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900/40 dark:hover:bg-green-900/60 dark:text-green-200 transition-colors',
+    'inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-ui-accent-soft text-ui-accent hover:bg-ui-accent-soft  dark:  transition-colors',
   roundedDanger:
     'inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-900/40 dark:hover:bg-red-900/60 dark:text-red-200 transition-colors',
   roundedSecondary:
@@ -138,7 +138,7 @@ const buttonStyles = {
   disabledSmall:
     'px-2 py-1 text-xs font-medium bg-gray-400 dark:bg-gray-600 cursor-not-allowed text-white rounded-md transition-colors',
   // 开关按钮样式
-  toggleOn: 'bg-green-600 dark:bg-green-600',
+  toggleOn: 'bg-ui-accent ',
   toggleOff: 'bg-gray-200 dark:bg-gray-700',
   toggleThumb: 'bg-white',
   toggleThumbOn: 'translate-x-6',
@@ -192,7 +192,7 @@ const AlertModal = ({
   const getIcon = () => {
     switch (type) {
       case 'success':
-        return <CheckCircle className='w-8 h-8 text-green-500' />;
+        return <CheckCircle className='w-8 h-8 text-ui-accent' />;
       case 'error':
         return <AlertCircle className='w-8 h-8 text-red-500' />;
       case 'warning':
@@ -205,7 +205,7 @@ const AlertModal = ({
   const getBgColor = () => {
     switch (type) {
       case 'success':
-        return 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800';
+        return 'bg-ui-accent-soft  border-ui-accent ';
       case 'error':
         return 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800';
       case 'warning':
@@ -1215,11 +1215,11 @@ const UserConfig = ({
         <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300 mb-3'>
           用户统计
         </h4>
-        <div className='p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800'>
-          <div className='text-2xl font-bold text-green-800 dark:text-green-300'>
+        <div className='p-4 bg-ui-accent-soft  rounded-lg border border-ui-accent '>
+          <div className='text-2xl font-bold text-ui-accent '>
             {!hasOldUserData && usersV2 ? userTotal : displayUsers.length}
           </div>
-          <div className='text-sm text-green-600 dark:text-green-400'>
+          <div className='text-sm text-ui-accent '>
             总用户数
           </div>
         </div>
@@ -1515,7 +1515,7 @@ const UserConfig = ({
                       username: e.target.value,
                     }))
                   }
-                  className='px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+                  className='px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
                 />
                 <input
                   type='password'
@@ -1527,7 +1527,7 @@ const UserConfig = ({
                       password: e.target.value,
                     }))
                   }
-                  className='px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+                  className='px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
                 />
               </div>
               <div>
@@ -1542,7 +1542,7 @@ const UserConfig = ({
                       userGroup: e.target.value,
                     }))
                   }
-                  className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+                  className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
                 >
                   <option value=''>无用户组（无限制）</option>
                   {userGroups.map((group) => (
@@ -1860,7 +1860,7 @@ const UserConfig = ({
                             <span
                               className={`px-2 py-1 text-xs rounded-full ${
                                 !user.banned
-                                  ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300'
+                                  ? 'bg-ui-accent-soft  text-ui-accent '
                                   : 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300'
                               }`}
                             >
@@ -2179,7 +2179,7 @@ const UserConfig = ({
                                     {device.deviceInfo || '未知设备'}
                                   </div>
                                   {device.isCurrent && (
-                                    <span className='px-2 py-0.5 text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 rounded-full whitespace-nowrap'>
+                                    <span className='px-2 py-0.5 text-xs font-medium bg-ui-accent-soft text-ui-accent   rounded-full whitespace-nowrap'>
                                       当前设备
                                     </span>
                                   )}
@@ -3181,10 +3181,10 @@ const UserConfig = ({
                       </p>
                     </div>
                   ) : (
-                    <div className='bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4'>
+                    <div className='bg-ui-accent-soft  border border-ui-accent  rounded-lg p-4'>
                       <div className='flex items-center space-x-2'>
                         <svg
-                          className='w-5 h-5 text-green-600 dark:text-green-400'
+                          className='w-5 h-5 text-ui-accent '
                           fill='none'
                           stroke='currentColor'
                           viewBox='0 0 24 24'
@@ -3196,7 +3196,7 @@ const UserConfig = ({
                             d='M5 13l4 4L19 7'
                           />
                         </svg>
-                        <span className='text-sm font-medium text-green-800 dark:text-green-300'>
+                        <span className='text-sm font-medium text-ui-accent '>
                           ✅ 当前没有用户使用此用户组
                         </span>
                       </div>
@@ -4595,7 +4595,7 @@ const OpenListConfigComponent = ({
                               匹配失败
                             </span>
                           ) : (
-                            <span className='inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200'>
+                            <span className='inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-ui-accent-soft text-ui-accent  '>
                               正常
                             </span>
                           )}
@@ -5482,7 +5482,7 @@ const NetDiskConfigComponent = ({
                 onChange={(e) => setUcEnabled(e.target.checked)}
                 className='sr-only peer'
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-ui-accent dark:peer-focus:ring-ui-accent rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-ui-accent"></div>
             </label>
           </div>
 
@@ -5496,7 +5496,7 @@ const NetDiskConfigComponent = ({
               disabled={!ucEnabled}
               rows={5}
               placeholder='粘贴 UC 网盘 Cookie'
-              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed'
+              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed'
             />
           </div>
 
@@ -5510,7 +5510,7 @@ const NetDiskConfigComponent = ({
               onChange={(e) => setUcToken(e.target.value)}
               disabled={!ucEnabled}
               placeholder='可选，填写后优先尝试原画地址'
-              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed'
+              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed'
             />
           </div>
 
@@ -5524,7 +5524,7 @@ const NetDiskConfigComponent = ({
               onChange={(e) => setUcSavePath(e.target.value)}
               disabled={!ucEnabled}
               placeholder='/影视/UC临时转存'
-              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed'
+              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed'
             />
           </div>
 
@@ -6196,7 +6196,7 @@ const EmbyConfigComponent = ({
                       <span
                         className={`px-2 py-0.5 text-xs font-medium rounded ${
                           source.enabled
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200'
+                            ? 'bg-ui-accent-soft text-ui-accent  '
                             : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
                         }`}
                       >
@@ -7329,7 +7329,7 @@ const VideoSourceConfig = ({
         return {
           text: '有效',
           className:
-            'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300',
+            'bg-ui-accent-soft  text-ui-accent ',
           icon: '✓',
           message: result.message,
         };
@@ -7450,7 +7450,7 @@ const VideoSourceConfig = ({
               className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
                 source.disabled
                   ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-                  : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                  : 'bg-ui-accent-soft text-ui-accent  '
               }`}
             >
               {source.disabled ? '已禁用' : '启用中'}
@@ -7503,7 +7503,7 @@ const VideoSourceConfig = ({
           <span
             className={`px-2 py-1 text-xs rounded-full ${
               !source.disabled
-                ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300'
+                ? 'bg-ui-accent-soft  text-ui-accent '
                 : 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300'
             }`}
           >
@@ -8822,7 +8822,7 @@ const CategoryConfig = ({
           <span
             className={`px-2 py-1 text-xs rounded-full ${
               !category.disabled
-                ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300'
+                ? 'bg-ui-accent-soft  text-ui-accent '
                 : 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300'
             }`}
           >
@@ -9434,7 +9434,7 @@ const VideoSourceScriptLab = () => {
                     <span
                       className={`px-2 py-1 text-xs rounded-full ${
                         script.enabled
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
+                          ? 'bg-ui-accent-soft text-ui-accent  '
                           : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
                       }`}
                     >
@@ -9831,7 +9831,7 @@ const ConfigFileComponent = ({
               onChange={(e) => setSubscriptionUrl(e.target.value)}
               placeholder='https://example.com/config.json'
               disabled={false}
-              className='w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
+              className='w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent transition-all duration-200 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
             />
             <p className='mt-2 text-xs text-gray-500 dark:text-gray-400'>
               输入配置文件的订阅地址，要求 JSON 格式，且使用 Base58 编码
@@ -9874,7 +9874,7 @@ const ConfigFileComponent = ({
               type='button'
               onClick={() => setAutoUpdate(!autoUpdate)}
               disabled={false}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ui-accent focus:ring-offset-2 ${
                 autoUpdate ? buttonStyles.toggleOn : buttonStyles.toggleOff
               }`}
             >
@@ -10955,7 +10955,7 @@ const ThemeConfigComponent = ({
                 preview: (
                   <svg
                     viewBox='0 0 100 100'
-                    className='w-12 h-12 text-green-500'
+                    className='w-12 h-12 text-ui-accent'
                     fill='none'
                     stroke='currentColor'
                   >
@@ -10984,7 +10984,7 @@ const ThemeConfigComponent = ({
                         key={i}
                         className={`rounded-sm ${
                           i < 2
-                            ? 'bg-green-500'
+                            ? 'bg-ui-accent'
                             : 'bg-gray-300 dark:bg-gray-600'
                         }`}
                       />
@@ -11190,7 +11190,7 @@ const ThemeConfigComponent = ({
               defaultTheme: e.target.value as 'light' | 'dark' | 'system',
             }))
           }
-          className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+          className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
         >
           <option value='dark'>深色</option>
           <option value='light'>浅色</option>
@@ -11556,7 +11556,7 @@ const SiteConfigComponent = ({
           onChange={(e) =>
             setSiteSettings((prev) => ({ ...prev, SiteName: e.target.value }))
           }
-          className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+          className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
         />
       </div>
 
@@ -11574,7 +11574,7 @@ const SiteConfigComponent = ({
             }))
           }
           rows={3}
-          className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+          className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
         />
       </div>
 
@@ -11596,7 +11596,7 @@ const SiteConfigComponent = ({
                   AnnouncementDisplayMode: 'once',
                 }))
               }
-              className='text-green-600 focus:ring-green-500'
+              className='text-ui-accent focus:ring-ui-accent'
             />
             <span className='text-sm text-gray-700 dark:text-gray-300'>
               单次显示
@@ -11614,7 +11614,7 @@ const SiteConfigComponent = ({
                   AnnouncementDisplayMode: 'every',
                 }))
               }
-              className='text-green-600 focus:ring-green-500'
+              className='text-ui-accent focus:ring-ui-accent'
             />
             <span className='text-sm text-gray-700 dark:text-gray-300'>
               每次显示
@@ -11634,7 +11634,7 @@ const SiteConfigComponent = ({
             <button
               type='button'
               onClick={() => setIsDoubanDropdownOpen(!isDoubanDropdownOpen)}
-              className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
+              className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
             >
               {
                 doubanDataSourceOptions.find(
@@ -11665,13 +11665,13 @@ const SiteConfigComponent = ({
                     }}
                     className={`w-full px-3 py-2.5 text-left text-sm transition-colors duration-150 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 ${
                       siteSettings.DoubanProxyType === option.value
-                        ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400'
+                        ? 'bg-ui-accent-soft  text-ui-accent '
                         : 'text-gray-900 dark:text-gray-100'
                     }`}
                   >
                     <span className='truncate'>{option.label}</span>
                     {siteSettings.DoubanProxyType === option.value && (
-                      <Check className='w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 ml-2' />
+                      <Check className='w-4 h-4 text-ui-accent  flex-shrink-0 ml-2' />
                     )}
                   </button>
                 ))}
@@ -11720,7 +11720,7 @@ const SiteConfigComponent = ({
                   DoubanProxy: e.target.value,
                 }))
               }
-              className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
+              className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
             />
             <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
               自定义代理服务器地址
@@ -11744,7 +11744,7 @@ const SiteConfigComponent = ({
                   !isDoubanImageProxyDropdownOpen
                 )
               }
-              className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
+              className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
             >
               {
                 doubanImageProxyTypeOptions.find(
@@ -11775,13 +11775,13 @@ const SiteConfigComponent = ({
                     }}
                     className={`w-full px-3 py-2.5 text-left text-sm transition-colors duration-150 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 ${
                       siteSettings.DoubanImageProxyType === option.value
-                        ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400'
+                        ? 'bg-ui-accent-soft  text-ui-accent '
                         : 'text-gray-900 dark:text-gray-100'
                     }`}
                   >
                     <span className='truncate'>{option.label}</span>
                     {siteSettings.DoubanImageProxyType === option.value && (
-                      <Check className='w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 ml-2' />
+                      <Check className='w-4 h-4 text-ui-accent  flex-shrink-0 ml-2' />
                     )}
                   </button>
                 ))}
@@ -11830,7 +11830,7 @@ const SiteConfigComponent = ({
                   DoubanImageProxy: e.target.value,
                 }))
               }
-              className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
+              className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
             />
             <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
               自定义图片代理服务器地址
@@ -11854,7 +11854,7 @@ const SiteConfigComponent = ({
               SearchDownstreamMaxPage: Number(e.target.value),
             }))
           }
-          className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+          className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
         />
       </div>
 
@@ -11873,7 +11873,7 @@ const SiteConfigComponent = ({
               SiteInterfaceCacheTime: Number(e.target.value),
             }))
           }
-          className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+          className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
         />
       </div>
 
@@ -11891,7 +11891,7 @@ const SiteConfigComponent = ({
                 DisableYellowFilter: !prev.DisableYellowFilter,
               }))
             }
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ui-accent focus:ring-offset-2 ${
               siteSettings.DisableYellowFilter
                 ? buttonStyles.toggleOn
                 : buttonStyles.toggleOff
@@ -11927,7 +11927,7 @@ const SiteConfigComponent = ({
                 FluidSearch: !prev.FluidSearch,
               }))
             }
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ui-accent focus:ring-offset-2 ${
               siteSettings.FluidSearch
                 ? buttonStyles.toggleOn
                 : buttonStyles.toggleOff
@@ -11965,7 +11965,7 @@ const SiteConfigComponent = ({
                 | 'auto',
             }))
           }
-          className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+          className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
         >
           <option value='off'>关闭</option>
           <option value='manual'>手动模式</option>
@@ -11998,7 +11998,7 @@ const SiteConfigComponent = ({
                   BannerDataSource: e.target.value,
                 }))
               }
-              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
             >
               <option value='Douban'>豆瓣</option>
               <option value='TMDB'>TMDB</option>
@@ -12022,7 +12022,7 @@ const SiteConfigComponent = ({
                   RecommendationDataSource: e.target.value,
                 }))
               }
-              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
             >
               <option value='Mixed'>混合</option>
               <option value='Douban'>豆瓣</option>
@@ -12052,7 +12052,7 @@ const SiteConfigComponent = ({
               }
               className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
                 siteSettings.DanmakuSourceType !== 'custom'
-                  ? 'bg-white text-green-600 shadow-sm dark:bg-gray-700 dark:text-green-400'
+                  ? 'bg-white text-ui-accent shadow-sm dark:bg-gray-700 '
                   : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white'
               }`}
             >
@@ -12068,7 +12068,7 @@ const SiteConfigComponent = ({
               }
               className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
                 siteSettings.DanmakuSourceType === 'custom'
-                  ? 'bg-white text-green-600 shadow-sm dark:bg-gray-700 dark:text-green-400'
+                  ? 'bg-white text-ui-accent shadow-sm dark:bg-gray-700 '
                   : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white'
               }`}
             >
@@ -12100,7 +12100,7 @@ const SiteConfigComponent = ({
                       DanmakuApiBase: e.target.value,
                     }))
                   }
-                  className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+                  className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
                 />
                 <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
                   自定义弹幕服务器的 API 地址。API部署参考
@@ -12130,7 +12130,7 @@ const SiteConfigComponent = ({
                       DanmakuApiToken: e.target.value,
                     }))
                   }
-                  className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+                  className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
                 />
                 <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
                   自定义弹幕服务器的访问令牌，默认为 87654321
@@ -12161,7 +12161,7 @@ const SiteConfigComponent = ({
                     }))
                   }
                 />
-                <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors dark:bg-gray-600'></div>
+                <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
                 <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
               </div>
             </label>
@@ -12193,7 +12193,7 @@ const SiteConfigComponent = ({
                   TMDBApiKey: e.target.value,
                 }))
               }
-              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
             />
             <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
               配置后首页将显示 TMDB 即将上映电影。支持配置多个 API
@@ -12225,7 +12225,7 @@ const SiteConfigComponent = ({
                   TMDBProxy: e.target.value,
                 }))
               }
-              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
             />
             <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
               配置代理服务器地址，用于访问 TMDB API（可选）
@@ -12247,7 +12247,7 @@ const SiteConfigComponent = ({
                   TMDBReverseProxy: e.target.value,
                 }))
               }
-              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
             />
             <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
               配置 TMDB 反向代理 Base URL（可选）
@@ -12269,7 +12269,7 @@ const SiteConfigComponent = ({
                   TMDBImageBaseUrl: e.target.value,
                 }))
               }
-              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
             />
             <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
               用户未在本地数据源设置中配置 TMDB 图片地址时，图片默认使用该地址（默认
@@ -12314,7 +12314,7 @@ const SiteConfigComponent = ({
                   className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
                     (siteSettings.BangumiDataSource || 'direct') ===
                     option.value
-                      ? 'bg-white text-green-600 shadow-sm dark:bg-gray-700 dark:text-green-400'
+                      ? 'bg-white text-ui-accent shadow-sm dark:bg-gray-700 '
                       : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white'
                   }`}
                 >
@@ -12341,7 +12341,7 @@ const SiteConfigComponent = ({
                   BangumiApiBaseUrl: e.target.value,
                 }))
               }
-              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
             />
             <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
               Bangumi 官方或自建反代地址，不要带末尾路径，例如
@@ -12363,7 +12363,7 @@ const SiteConfigComponent = ({
                   BangumiImageBaseUrl: e.target.value,
                 }))
               }
-              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
             />
             <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
               用于替换 Bangumi
@@ -12386,7 +12386,7 @@ const SiteConfigComponent = ({
                   BangumiProxy: e.target.value,
                 }))
               }
-              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
             />
             <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
               用于服务器代理访问 Bangumi API。Cloudflare
@@ -12408,14 +12408,14 @@ const SiteConfigComponent = ({
                   LiveChartProxy: e.target.value,
                 }))
               }
-              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
             />
             <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
               用于服务器代理访问 LiveChart 番剧时刻表。留空则直连。
             </p>
           </div>
 
-          <details className='group rounded-lg border border-green-200 bg-green-50/60 p-4 dark:border-green-900/50 dark:bg-green-900/10'>
+          <details className='group rounded-lg border border-ui-accent bg-ui-accent-soft p-4  '>
             <summary className='flex cursor-pointer list-none items-start justify-between gap-3'>
               <div className='min-w-0'>
                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300'>
@@ -12435,12 +12435,12 @@ const SiteConfigComponent = ({
                     handleCopyBangumiProxyScript();
                   }}
                   disabled={!bangumiProxyScript}
-                  className='inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50'
+                  className='inline-flex items-center gap-1.5 rounded-lg bg-ui-accent px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-ui-accent disabled:cursor-not-allowed disabled:opacity-50'
                 >
                   <Copy className='h-3.5 w-3.5' />
                   {bangumiProxyScriptCopied ? '已复制' : '复制脚本'}
                 </button>
-                <ChevronDown className='h-4 w-4 text-green-600 transition-transform group-open:rotate-180 dark:text-green-400' />
+                <ChevronDown className='h-4 w-4 text-ui-accent transition-transform group-open:rotate-180 ' />
               </div>
             </summary>
             <pre className='mt-3 max-h-48 overflow-auto rounded-lg border border-gray-200 bg-white p-3 text-xs text-gray-700 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-300'>
@@ -12475,7 +12475,7 @@ const SiteConfigComponent = ({
                   MagnetProxy: e.target.value,
                 }))
               }
-              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
             />
             <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
               用于访问磁链搜索站点的系统代理。Cloudflare
@@ -12497,7 +12497,7 @@ const SiteConfigComponent = ({
                   MagnetMikanReverseProxy: e.target.value,
                 }))
               }
-              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
             />
             <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
               配置后将使用该地址替代默认的 Mikan 域名进行请求。
@@ -12518,7 +12518,7 @@ const SiteConfigComponent = ({
                   MagnetDmhyReverseProxy: e.target.value,
                 }))
               }
-              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
             />
             <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
               配置后将使用该地址替代默认的动漫花园域名进行请求。
@@ -12539,7 +12539,7 @@ const SiteConfigComponent = ({
                   MagnetAcgripReverseProxy: e.target.value,
                 }))
               }
-              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
             />
             <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
               配置后将使用该地址替代默认的 ACG.RIP 域名进行请求。
@@ -12560,7 +12560,7 @@ const SiteConfigComponent = ({
                   MagnetNyaaReverseProxy: e.target.value,
                 }))
               }
-              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
             />
             <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
               配置后将使用该地址替代默认的 Nyaa 域名进行请求。
@@ -12590,7 +12590,7 @@ const SiteConfigComponent = ({
                   PansouApiUrl: e.target.value,
                 }))
               }
-              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
             />
             <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
               配置 Pansou 服务器地址，用于网盘资源搜索。项目地址：{' '}
@@ -12620,7 +12620,7 @@ const SiteConfigComponent = ({
                   PansouUsername: e.target.value,
                 }))
               }
-              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
             />
             <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
               如果 Pansou 服务启用了认证功能，需要提供账号密码
@@ -12642,7 +12642,7 @@ const SiteConfigComponent = ({
                   PansouPassword: e.target.value,
                 }))
               }
-              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
             />
             <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
               配置账号密码后，系统会自动登录并缓存 Token
@@ -12664,7 +12664,7 @@ const SiteConfigComponent = ({
                   PansouKeywordBlocklist: e.target.value,
                 }))
               }
-              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
             />
             <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
               设置后会过滤包含这些关键词的搜索结果
@@ -12690,7 +12690,7 @@ const SiteConfigComponent = ({
                 onClick={() =>
                   handleCommentsToggle(!siteSettings.EnableComments)
                 }
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ui-accent focus:ring-offset-2 ${
                   siteSettings.EnableComments
                     ? buttonStyles.toggleOn
                     : buttonStyles.toggleOff
@@ -12742,7 +12742,7 @@ const SiteConfigComponent = ({
                   AnalyticsEnabled: !prev.AnalyticsEnabled,
                 }))
               }
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ui-accent focus:ring-offset-2 ${
                 siteSettings.AnalyticsEnabled
                   ? buttonStyles.toggleOn
                   : buttonStyles.toggleOff
@@ -13183,7 +13183,7 @@ const RegistrationConfigComponent = ({
                       !registrationSettings.EnableRegistration
                     )
                   }
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ui-accent focus:ring-offset-2 ${
                     registrationSettings.EnableRegistration
                       ? buttonStyles.toggleOn
                       : buttonStyles.toggleOff
@@ -13223,7 +13223,7 @@ const RegistrationConfigComponent = ({
                     DefaultUserTags: value ? [value] : [],
                   }));
                 }}
-                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
               >
                 <option value=''>无用户组（无限制）</option>
                 {config?.UserConfig?.Tags &&
@@ -13262,7 +13262,7 @@ const RegistrationConfigComponent = ({
                         !prev.RequireRegistrationInviteCode,
                     }))
                   }
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ui-accent focus:ring-offset-2 ${
                     registrationSettings.RequireRegistrationInviteCode
                       ? buttonStyles.toggleOn
                       : buttonStyles.toggleOff
@@ -13298,7 +13298,7 @@ const RegistrationConfigComponent = ({
                     RegistrationInviteCode: e.target.value,
                   }))
                 }
-                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
               />
               <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
                 仅普通注册生效；开启邀请码注册时不能为空。
@@ -13323,7 +13323,7 @@ const RegistrationConfigComponent = ({
                         !prev.RegistrationRequireTurnstile,
                     }))
                   }
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ui-accent focus:ring-offset-2 ${
                     !registrationSettings.TurnstileSiteKey ||
                     !registrationSettings.TurnstileSecretKey
                       ? 'opacity-50 cursor-not-allowed bg-gray-300 dark:bg-gray-600'
@@ -13372,7 +13372,7 @@ const RegistrationConfigComponent = ({
                       LoginRequireTurnstile: !prev.LoginRequireTurnstile,
                     }))
                   }
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ui-accent focus:ring-offset-2 ${
                     !registrationSettings.TurnstileSiteKey ||
                     !registrationSettings.TurnstileSecretKey
                       ? 'opacity-50 cursor-not-allowed bg-gray-300 dark:bg-gray-600'
@@ -13418,7 +13418,7 @@ const RegistrationConfigComponent = ({
                     TurnstileSiteKey: e.target.value,
                   }))
                 }
-                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
               />
               <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
                 在Cloudflare Dashboard中获取的Site Key（公钥）
@@ -13439,7 +13439,7 @@ const RegistrationConfigComponent = ({
                     TurnstileSecretKey: e.target.value,
                   }))
                 }
-                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
               />
               <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
                 在Cloudflare Dashboard中获取的Secret Key（私钥），用于服务端验证
@@ -13469,7 +13469,7 @@ const RegistrationConfigComponent = ({
                     EnableOIDCLogin: !prev.EnableOIDCLogin,
                   }))
                 }
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ui-accent focus:ring-offset-2 ${
                   registrationSettings.EnableOIDCLogin
                     ? buttonStyles.toggleOn
                     : buttonStyles.toggleOff
@@ -13505,7 +13505,7 @@ const RegistrationConfigComponent = ({
                     EnableOIDCRegistration: !prev.EnableOIDCRegistration,
                   }))
                 }
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ui-accent focus:ring-offset-2 ${
                   registrationSettings.EnableOIDCRegistration
                     ? buttonStyles.toggleOn
                     : buttonStyles.toggleOff
@@ -13543,7 +13543,7 @@ const RegistrationConfigComponent = ({
                     OIDCIssuer: e.target.value,
                   }))
                 }
-                className='flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+                className='flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
               />
               <button
                 type='button'
@@ -13617,7 +13617,7 @@ const RegistrationConfigComponent = ({
                   OIDCAuthorizationEndpoint: e.target.value,
                 }))
               }
-              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
             />
             <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
               用户授权的端点URL
@@ -13639,7 +13639,7 @@ const RegistrationConfigComponent = ({
                   OIDCTokenEndpoint: e.target.value,
                 }))
               }
-              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
             />
             <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
               交换授权码获取token的端点URL
@@ -13661,7 +13661,7 @@ const RegistrationConfigComponent = ({
                   OIDCUserInfoEndpoint: e.target.value,
                 }))
               }
-              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
             />
             <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
               获取用户信息的端点URL
@@ -13683,7 +13683,7 @@ const RegistrationConfigComponent = ({
                   OIDCClientId: e.target.value,
                 }))
               }
-              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
             />
             <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
               在OIDC提供商处注册应用后获得的Client ID
@@ -13705,7 +13705,7 @@ const RegistrationConfigComponent = ({
                   OIDCClientSecret: e.target.value,
                 }))
               }
-              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
             />
             <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
               在OIDC提供商处注册应用后获得的Client Secret
@@ -13741,7 +13741,7 @@ const RegistrationConfigComponent = ({
                   navigator.clipboard.writeText(uri);
                   showSuccess('已复制到剪贴板', showAlert);
                 }}
-                className='absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors'
+                className='absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 text-xs bg-ui-accent text-white rounded hover:bg-ui-accent transition-colors'
               >
                 复制
               </button>
@@ -13766,7 +13766,7 @@ const RegistrationConfigComponent = ({
                   OIDCButtonText: e.target.value,
                 }))
               }
-              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
             />
             <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
               自定义OIDC登录按钮显示的文字,如"使用企业账号登录"、"使用SSO登录"等。留空则显示默认文字"使用OIDC登录"
@@ -13795,7 +13795,7 @@ const RegistrationConfigComponent = ({
                     e.target.value === '' ? 0 : parseInt(e.target.value),
                 }))
               }
-              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ui-accent focus:border-transparent'
             />
             <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
               仅LinuxDo网站有效。设置为0时不判断，1-4表示最低信任等级要求
@@ -15008,7 +15008,7 @@ const OPDSConfigComponent = ({
                       }
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                         sub.enabled !== false
-                          ? 'bg-green-600'
+                          ? 'bg-ui-accent'
                           : 'bg-gray-200 dark:bg-gray-700'
                       }`}
                     >
@@ -15094,7 +15094,7 @@ const OPDSConfigComponent = ({
                       }
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                         source.enabled !== false
-                          ? 'bg-green-600'
+                          ? 'bg-ui-accent'
                           : 'bg-gray-200 dark:bg-gray-700'
                       }`}
                     >
@@ -16680,7 +16680,7 @@ const AIConfigComponent = ({
             onChange={(e) => setEnabled(e.target.checked)}
             className='sr-only peer'
           />
-          <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
+          <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-ui-accent dark:peer-focus:ring-ui-accent rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-ui-accent"></div>
         </label>
       </div>
 
@@ -16696,7 +16696,7 @@ const AIConfigComponent = ({
             onClick={() => setEnableNewMode(false)}
             className={`p-4 rounded-lg border-2 text-left transition-colors ${
               !enableNewMode
-                ? 'border-green-500 bg-green-50/50 dark:bg-green-900/10'
+                ? 'border-ui-accent bg-ui-accent-soft '
                 : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
             }`}
           >
@@ -16704,7 +16704,7 @@ const AIConfigComponent = ({
               <span className='text-sm font-semibold text-gray-900 dark:text-gray-100'>
                 旧版
               </span>
-              {!enableNewMode && <Check className='w-5 h-5 text-green-600' />}
+              {!enableNewMode && <Check className='w-5 h-5 text-ui-accent' />}
             </div>
             <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
               预先分析意图并抓取 联网搜索/豆瓣/TMDB 数据后回答
@@ -16717,7 +16717,7 @@ const AIConfigComponent = ({
             onClick={() => setEnableNewMode(true)}
             className={`p-4 rounded-lg border-2 text-left transition-colors ${
               enableNewMode
-                ? 'border-green-500 bg-green-50/50 dark:bg-green-900/10'
+                ? 'border-ui-accent bg-ui-accent-soft '
                 : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
             }`}
           >
@@ -16725,7 +16725,7 @@ const AIConfigComponent = ({
               <span className='text-sm font-semibold text-gray-900 dark:text-gray-100'>
                 新版（工具式调用）
               </span>
-              {enableNewMode && <Check className='w-5 h-5 text-green-600' />}
+              {enableNewMode && <Check className='w-5 h-5 text-ui-accent' />}
             </div>
             <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
               由模型自主决定是否调用相关工具
@@ -17164,7 +17164,7 @@ const AIConfigComponent = ({
                 onChange={(e) => item.setState(e.target.checked)}
                 className='sr-only peer'
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-ui-accent dark:peer-focus:ring-ui-accent rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-ui-accent"></div>
             </label>
           </div>
         ))}
@@ -17468,7 +17468,7 @@ const MusicConfigComponent = ({
             }}
             className='sr-only peer'
           />
-          <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
+          <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-ui-accent dark:peer-focus:ring-ui-accent rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-ui-accent"></div>
         </label>
       </div>
 
@@ -17545,7 +17545,7 @@ const MusicConfigComponent = ({
               onChange={(e) => setProxyEnabled(e.target.checked)}
               className='sr-only peer'
             />
-            <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
+            <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-ui-accent dark:peer-focus:ring-ui-accent rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-ui-accent"></div>
           </label>
         </div>
 
@@ -17939,7 +17939,7 @@ const LiveSourceConfig = ({
           <span
             className={`px-2 py-1 text-xs rounded-full ${
               !liveSource.disabled
-                ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300'
+                ? 'bg-ui-accent-soft  text-ui-accent '
                 : 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300'
             }`}
           >
@@ -18517,7 +18517,7 @@ const WebLiveConfig = ({
           <button
             onClick={handleToggleWebLiveEnabled}
             disabled={isLoading('toggleWebLiveEnabled')}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 ${
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ui-accent ${
               config.WebLiveEnabled
                 ? buttonStyles.toggleOn
                 : buttonStyles.toggleOff
@@ -18813,7 +18813,7 @@ const WebLiveConfig = ({
                   <span
                     className={`px-2 py-1 text-xs rounded-full whitespace-nowrap ${
                       !source.disabled
-                        ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300'
+                        ? 'bg-ui-accent-soft  text-ui-accent '
                         : 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300'
                     }`}
                   >
@@ -19562,7 +19562,7 @@ function AdminPageClient() {
                               onClick={() => selectSection(child.key)}
                               className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
                                 activeKey === child.key
-                                  ? 'bg-green-500/10 text-green-600 dark:text-green-400 font-medium'
+                                  ? 'bg-ui-accent-soft text-ui-accent  font-medium'
                                   : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                               }`}
                             >
@@ -19579,7 +19579,7 @@ function AdminPageClient() {
                       onClick={() => selectSection(item.key)}
                       className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
                         activeKey === item.key
-                          ? 'bg-green-500/10 text-green-600 dark:text-green-400 font-medium'
+                          ? 'bg-ui-accent-soft text-ui-accent  font-medium'
                           : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
                       }`}
                     >
