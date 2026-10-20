@@ -2485,7 +2485,7 @@ export default function MusicClient({ children: _children }: { children?: React.
         <div className="fixed top-4 right-4 z-[80] pointer-events-none">
           <div className="relative w-16 h-16 md:w-20 md:h-20">
             <div className="absolute inset-0 rounded-full border-4 border-white/10" />
-            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-green-500 border-r-emerald-400 animate-spin shadow-[0_0_20px_rgba(34,197,94,0.35)]" />
+            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-ui-accent border-r-ui-accent animate-spin shadow-[0_0_20px_rgba(34,197,94,0.35)]" />
             <div className="absolute inset-1 rounded-full bg-zinc-950/90 backdrop-blur-md border border-white/10 flex flex-col items-center justify-center">
               <div className="text-[10px] md:text-xs text-zinc-400 leading-none mb-1">解析中</div>
               <div className="text-lg md:text-xl font-bold text-white leading-none">{resolvingCount}</div>
@@ -2503,14 +2503,14 @@ export default function MusicClient({ children: _children }: { children?: React.
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setShowSidebarDrawer(true)}
-                className="p-0 text-white transition-colors hover:text-green-400"
+                className="p-0 text-white transition-colors hover:text-ui-accent"
                 title="打开菜单"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               </button>
-              <div className="flex items-center justify-center text-green-500">
+              <div className="flex items-center justify-center text-ui-accent">
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z" />
                 </svg>
@@ -2541,7 +2541,7 @@ export default function MusicClient({ children: _children }: { children?: React.
             {/* Progress Bar */}
             <div className="absolute left-0 right-0 top-0 h-1 bg-white/10 rounded-t-xl overflow-hidden">
               <div
-                className="relative z-10 h-full bg-green-500 transition-all pointer-events-none"
+                className="relative z-10 h-full bg-ui-accent transition-all pointer-events-none"
                 style={{ width: `${progress}%` }}
               />
               {showStreamBuffering && (
@@ -2598,7 +2598,7 @@ export default function MusicClient({ children: _children }: { children?: React.
                 </button>
                 <button
                   onClick={togglePlay}
-                  className="w-10 h-10 rounded-full bg-green-500 text-white flex items-center justify-center hover:bg-green-600 transition-colors"
+                  className="w-10 h-10 rounded-full bg-ui-accent text-white flex items-center justify-center hover:bg-ui-accent transition-colors"
                 >
                   {isPlaying ? (
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -2822,7 +2822,7 @@ export default function MusicClient({ children: _children }: { children?: React.
                 </button>
                 <button
                   onClick={togglePlay}
-                  className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-green-500 text-white flex items-center justify-center hover:bg-green-600 transition-colors"
+                  className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-ui-accent text-white flex items-center justify-center hover:bg-ui-accent transition-colors"
                 >
                   {isPlaying ? (
                     <svg className="w-4 h-4 md:w-5 md:h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -2840,8 +2840,8 @@ export default function MusicClient({ children: _children }: { children?: React.
                   </svg>
                 </button>
                 {showStreamBuffering && (
-                  <span className="absolute left-[calc(50%+4rem)] top-1/2 inline-flex -translate-y-1/2 items-center gap-1 whitespace-nowrap rounded-full bg-green-500/15 px-2 py-0.5 text-[10px] font-medium text-green-300 md:left-[calc(50%+5rem)]">
-                    <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
+                  <span className="absolute left-[calc(50%+4rem)] top-1/2 inline-flex -translate-y-1/2 items-center gap-1 whitespace-nowrap rounded-full bg-ui-accent-soft px-2 py-0.5 text-[10px] font-medium text-ui-accent md:left-[calc(50%+5rem)]">
+                    <span className="h-2 w-2 rounded-full bg-ui-accent animate-pulse" />
                     缓冲中
                   </span>
                 )}
@@ -2858,7 +2858,7 @@ export default function MusicClient({ children: _children }: { children?: React.
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                   </svg>
                   {playlist.length > 0 && (
-                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full text-[8px] text-white flex items-center justify-center font-bold">
+                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-ui-accent rounded-full text-[8px] text-white flex items-center justify-center font-bold">
                       {playlist.length > 9 ? '9+' : playlist.length}
                     </span>
                   )}
@@ -2885,7 +2885,7 @@ export default function MusicClient({ children: _children }: { children?: React.
                     setShowSleepTimerMenu(true);
                   }}
                   className={`relative transition-colors ${
-                    sleepTimerEndAt ? 'text-green-500 hover:text-green-400' : 'text-zinc-500 hover:text-white'
+                    sleepTimerEndAt ? 'text-ui-accent hover:text-ui-accent' : 'text-zinc-500 hover:text-white'
                   }`}
                   title={sleepTimerEndAt ? `睡眠定时：${formatSleepTimer(sleepTimerRemaining)}` : '睡眠定时'}
                 >
@@ -2893,7 +2893,7 @@ export default function MusicClient({ children: _children }: { children?: React.
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z" />
                   </svg>
                   {sleepTimerEndAt && (
-                    <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-[8px] font-semibold leading-none text-green-400">
+                    <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-[8px] font-semibold leading-none text-ui-accent">
                       {Math.max(1, Math.ceil(sleepTimerRemaining / 60))}
                     </span>
                   )}
@@ -2954,7 +2954,7 @@ export default function MusicClient({ children: _children }: { children?: React.
                           onTouchStart={handleVolumeSliderInteraction}
                         >
                           <div
-                            className="absolute bottom-0 left-0 right-0 bg-green-500 rounded-full transition-all pointer-events-none"
+                            className="absolute bottom-0 left-0 right-0 bg-ui-accent rounded-full transition-all pointer-events-none"
                             style={{ height: `${volume}%` }}
                           />
                         </div>
@@ -2962,12 +2962,12 @@ export default function MusicClient({ children: _children }: { children?: React.
                     </div>
                   </div>
                 </div>
-                <button onClick={(e) => { e.stopPropagation(); setShowAudioEffectsMenu(true); }} className={`transition-colors ${equalizerEnabled || loudnessEnabled || reverbEnabled || pitchRate !== 1 || surroundEnabled ? 'text-green-400' : 'text-zinc-500 hover:text-white'}`} title="均衡器和音效" aria-label="均衡器和音效"><SlidersHorizontal className="h-4 w-4 md:h-5 md:w-5" /></button>
+                <button onClick={(e) => { e.stopPropagation(); setShowAudioEffectsMenu(true); }} className={`transition-colors ${equalizerEnabled || loudnessEnabled || reverbEnabled || pitchRate !== 1 || surroundEnabled ? 'text-ui-accent' : 'text-zinc-500 hover:text-white'}`} title="均衡器和音效" aria-label="均衡器和音效"><SlidersHorizontal className="h-4 w-4 md:h-5 md:w-5" /></button>
                 {/* PiP 歌词按钮 */}
                 <button
                   onClick={toggleSpectrum}
                   className={`transition-colors ${
-                    showSpectrum ? 'text-green-500 hover:text-green-400' : 'text-zinc-500 hover:text-white'
+                    showSpectrum ? 'text-ui-accent hover:text-ui-accent' : 'text-zinc-500 hover:text-white'
                   }`}
                   title={showSpectrum ? '隐藏音谱图' : '显示音谱图'}
                 >
@@ -2989,7 +2989,7 @@ export default function MusicClient({ children: _children }: { children?: React.
                   }}
                   className={`transition-colors ${
                     showPiPLyrics
-                      ? 'text-green-500 hover:text-green-400'
+                      ? 'text-ui-accent hover:text-ui-accent'
                       : 'text-zinc-500 hover:text-white'
                   }`}
                   title={showPiPLyrics ? '关闭画中画歌词' : '画中画歌词'}
@@ -3032,7 +3032,7 @@ export default function MusicClient({ children: _children }: { children?: React.
                   <span>{formatTime(currentTime)}</span>
                   <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden relative">
                     <div
-                      className="relative z-10 h-full bg-green-500 transition-all pointer-events-none"
+                      className="relative z-10 h-full bg-ui-accent transition-all pointer-events-none"
                       style={{ width: `${progress}%` }}
                     />
                     {showStreamBuffering && (
@@ -3164,7 +3164,7 @@ export default function MusicClient({ children: _children }: { children?: React.
                 <button
                   key={minutes}
                   onClick={() => setSleepTimer(minutes)}
-                  className="rounded-lg bg-white/5 p-4 text-center text-sm font-medium text-white transition-colors hover:bg-green-500/20 hover:text-green-300"
+                  className="rounded-lg bg-white/5 p-4 text-center text-sm font-medium text-white transition-colors hover:bg-ui-accent-soft hover:text-ui-accent"
                 >
                   {minutes} 分钟
                 </button>
@@ -3230,7 +3230,7 @@ export default function MusicClient({ children: _children }: { children?: React.
                                 }
                               }}
                               className={`flex w-full items-center justify-center text-sm transition-colors ${
-                                isActive ? 'text-green-400' : 'text-zinc-400'
+                                isActive ? 'text-ui-accent' : 'text-zinc-400'
                               }`}
                               style={{ height: `${sleepPickerItemHeight}px`, scrollSnapAlign: 'center' }}
                             >
@@ -3239,7 +3239,7 @@ export default function MusicClient({ children: _children }: { children?: React.
                           );
                         })}
                       </div>
-                      <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 border-y border-green-500/40 bg-green-500/10" style={{ height: `${sleepPickerItemHeight}px` }} />
+                      <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 border-y border-ui-accent bg-ui-accent-soft" style={{ height: `${sleepPickerItemHeight}px` }} />
                       <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-zinc-900/95 to-transparent" />
                       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-zinc-900/95 to-transparent" />
                     </div>
@@ -3248,7 +3248,7 @@ export default function MusicClient({ children: _children }: { children?: React.
               </div>
               <button
                 onClick={setCustomSleepTimer}
-                className="mt-4 w-full rounded-lg bg-green-500 p-3 text-sm font-medium text-white transition-colors hover:bg-green-600 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-white"
+                className="mt-4 w-full rounded-lg bg-ui-accent p-3 text-sm font-medium text-white transition-colors hover:bg-ui-accent disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-white"
                 disabled={customSleepHours === 0 && customSleepMinutes === 0}
               >
                 {customSleepHours === 0 && customSleepMinutes === 0
@@ -3283,15 +3283,15 @@ export default function MusicClient({ children: _children }: { children?: React.
           <div className="relative w-full max-w-5xl max-h-[90vh] bg-zinc-900 rounded-2xl border border-white/10 shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="p-5 border-b border-white/10 flex items-center justify-between"><div><h3 className="text-lg font-bold text-white">均衡器与音效调节</h3></div><button onClick={() => setShowAudioEffectsMenu(false)} className="w-8 h-8 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10">✕</button></div>
             <div className="p-5 overflow-y-auto max-h-[calc(90vh-80px)]"><div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-8">
-              <section><div className="flex items-center justify-between mb-4"><div><h4 className="text-sm font-bold text-white">10 段均衡器</h4></div><label className="flex items-center gap-2 text-xs text-zinc-300"><input type="checkbox" checked={equalizerEnabled} onChange={(e) => setEqualizerEnabled(e.target.checked)} className="h-4 w-4 accent-green-500" />启用 EQ</label></div>
-                <div className="rounded-xl border border-white/5 p-4 overflow-x-auto overscroll-x-contain"><div className="min-w-[760px] grid grid-cols-10 gap-3 items-end h-56 sm:h-64">{EQ_BANDS.map((band, index) => (<div key={band.frequency} className="h-full min-w-0 flex flex-col items-center gap-2"><span className="text-[10px] font-mono text-zinc-500">{(eqGains[index] || 0) > 0 ? '+' : ''}{(eqGains[index] || 0).toFixed(1)}</span><div className="flex-1 w-full min-h-0 flex items-center justify-center"><input type="range" min="-12" max="12" step="0.5" value={eqGains[index] || 0} onChange={(e) => { setEqPreset('自定义'); const value = Number(e.target.value); setEqGains(current => current.map((gain, i) => i === index ? value : gain)); }} disabled={!equalizerEnabled} className="w-40 sm:w-52 h-5 -rotate-90 accent-green-500 [direction:rtl] disabled:opacity-40" /></div><span className="text-[10px] font-mono text-zinc-400">{band.label}</span></div>))}</div></div>
-                <div className="mt-5"><div className="flex items-center justify-between mb-3"><h4 className="text-sm font-bold text-white">预设</h4><button onClick={() => applyEqPreset('Flat')} className="text-xs text-green-400 hover:text-green-300">Flat 重置</button></div><div className="flex flex-wrap gap-2">{Object.keys(EQ_PRESETS).map(name => (<button key={name} onClick={() => applyEqPreset(name)} className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${eqPreset === name ? 'bg-green-500/20 text-green-300 border border-green-500/50' : 'bg-white/5 text-zinc-300 border border-white/10 hover:bg-white/10'}`}>{name}</button>))}</div></div>
+              <section><div className="flex items-center justify-between mb-4"><div><h4 className="text-sm font-bold text-white">10 段均衡器</h4></div><label className="flex items-center gap-2 text-xs text-zinc-300"><input type="checkbox" checked={equalizerEnabled} onChange={(e) => setEqualizerEnabled(e.target.checked)} className="h-4 w-4 accent-ui-accent" />启用 EQ</label></div>
+                <div className="rounded-xl border border-white/5 p-4 overflow-x-auto overscroll-x-contain"><div className="min-w-[760px] grid grid-cols-10 gap-3 items-end h-56 sm:h-64">{EQ_BANDS.map((band, index) => (<div key={band.frequency} className="h-full min-w-0 flex flex-col items-center gap-2"><span className="text-[10px] font-mono text-zinc-500">{(eqGains[index] || 0) > 0 ? '+' : ''}{(eqGains[index] || 0).toFixed(1)}</span><div className="flex-1 w-full min-h-0 flex items-center justify-center"><input type="range" min="-12" max="12" step="0.5" value={eqGains[index] || 0} onChange={(e) => { setEqPreset('自定义'); const value = Number(e.target.value); setEqGains(current => current.map((gain, i) => i === index ? value : gain)); }} disabled={!equalizerEnabled} className="w-40 sm:w-52 h-5 -rotate-90 accent-ui-accent [direction:rtl] disabled:opacity-40" /></div><span className="text-[10px] font-mono text-zinc-400">{band.label}</span></div>))}</div></div>
+                <div className="mt-5"><div className="flex items-center justify-between mb-3"><h4 className="text-sm font-bold text-white">预设</h4><button onClick={() => applyEqPreset('Flat')} className="text-xs text-ui-accent hover:text-ui-accent">Flat 重置</button></div><div className="flex flex-wrap gap-2">{Object.keys(EQ_PRESETS).map(name => (<button key={name} onClick={() => applyEqPreset(name)} className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${eqPreset === name ? 'bg-ui-accent-soft text-ui-accent border border-ui-accent' : 'bg-white/5 text-zinc-300 border border-white/10 hover:bg-white/10'}`}>{name}</button>))}</div></div>
               </section>
-              <aside className="space-y-5"><section className="rounded-xl border border-white/10 bg-white/[0.03] p-4"><div className="flex items-center justify-between"><div><h4 className="text-sm font-bold text-white">响度增强</h4><p className="text-xs text-zinc-500 mt-1">轻微压缩，增强人声和细节</p></div><input type="checkbox" checked={loudnessEnabled} onChange={(e) => setLoudnessEnabled(e.target.checked)} className="h-4 w-4 accent-green-500" /></div></section>
-                <section className="rounded-xl border border-white/10 bg-white/[0.03] p-4"><div className="flex items-center justify-between mb-3"><div><h4 className="text-sm font-bold text-white">环境混响音效</h4><p className="text-xs text-zinc-500 mt-1">模拟不同空间的回声效果</p></div><input type="checkbox" checked={reverbEnabled} onChange={(e) => setReverbEnabled(e.target.checked)} className="h-4 w-4 accent-green-500" /></div><div className="flex flex-wrap gap-2">{Object.entries(REVERB_PRESETS).map(([id, preset]) => (<button key={id} onClick={() => { const selected = id as keyof typeof REVERB_PRESETS; const selectedPreset = REVERB_PRESETS[selected]; setReverbPreset(selected); setReverbEnabled(selected !== 'none'); setReverbMainGain(Math.round(selectedPreset.main * 100)); setReverbMix(Math.min(100, Math.round(selectedPreset.send * 30))); }} className={`rounded-lg border px-2.5 py-1 text-xs ${reverbPreset === id ? 'border-green-500/50 bg-green-500/20 text-green-300' : 'border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10'}`}>{preset.label}</button>))}</div><label className="mt-3 block text-xs text-zinc-400">原始音量 {reverbMainGain}%<input type="range" min="0" max="150" value={reverbMainGain} onChange={(e) => setReverbMainGain(Number(e.target.value))} disabled={!reverbEnabled} className="mt-2 w-full accent-green-500 disabled:opacity-40" /></label><label className="mt-3 block text-xs text-zinc-400">环境音效 {reverbMix}%<input type="range" min="0" max="100" value={reverbMix} onChange={(e) => setReverbMix(Number(e.target.value))} disabled={!reverbEnabled} className="mt-2 w-full accent-green-500 disabled:opacity-40" /></label></section>
-                <section className="rounded-xl border border-white/10 bg-white/[0.03] p-4"><div className="flex items-center justify-between mb-3"><div><h4 className="text-sm font-bold text-white">音调升降调节</h4><p className="text-xs text-zinc-500 mt-1">当前 {pitchRate.toFixed(2)}x</p></div><button onClick={() => setPitchRate(1)} className="text-xs text-green-400">重置</button></div><input type="range" min="0.5" max="1.5" step="0.01" value={pitchRate} onChange={(e) => setPitchRate(Number(e.target.value))} className="w-full accent-green-500" /><div className="mt-2 flex justify-between text-xs text-zinc-500"><span>低</span><span>原速</span><span>高</span></div></section>
-                <section className="rounded-xl border border-white/10 bg-white/[0.03] p-4"><div className="flex items-center justify-between mb-3"><div><h4 className="text-sm font-bold text-white">3D 立体环绕</h4><p className="text-xs text-zinc-500 mt-1">需使用耳机，模拟声源环绕移动</p></div><input type="checkbox" checked={surroundEnabled} onChange={(e) => setSurroundEnabled(e.target.checked)} className="h-4 w-4 accent-green-500" /></div><label className="block text-xs text-zinc-400">旋转速度 {surroundSpeed}<input type="range" min="5" max="60" value={surroundSpeed} onChange={(e) => setSurroundSpeed(Number(e.target.value))} disabled={!surroundEnabled} className="mt-2 w-full accent-green-500 disabled:opacity-40" /></label><label className="block mt-3 text-xs text-zinc-400">声场距离 {surroundDistance}<input type="range" min="1" max="10" value={surroundDistance} onChange={(e) => setSurroundDistance(Number(e.target.value))} disabled={!surroundEnabled} className="mt-2 w-full accent-green-500 disabled:opacity-40" /></label></section>
-                <button onClick={() => setShowAudioEffectsMenu(false)} className="w-full rounded-xl bg-green-500 p-3 text-sm font-medium text-black hover:bg-green-400">完成</button>
+              <aside className="space-y-5"><section className="rounded-xl border border-white/10 bg-white/[0.03] p-4"><div className="flex items-center justify-between"><div><h4 className="text-sm font-bold text-white">响度增强</h4><p className="text-xs text-zinc-500 mt-1">轻微压缩，增强人声和细节</p></div><input type="checkbox" checked={loudnessEnabled} onChange={(e) => setLoudnessEnabled(e.target.checked)} className="h-4 w-4 accent-ui-accent" /></div></section>
+                <section className="rounded-xl border border-white/10 bg-white/[0.03] p-4"><div className="flex items-center justify-between mb-3"><div><h4 className="text-sm font-bold text-white">环境混响音效</h4><p className="text-xs text-zinc-500 mt-1">模拟不同空间的回声效果</p></div><input type="checkbox" checked={reverbEnabled} onChange={(e) => setReverbEnabled(e.target.checked)} className="h-4 w-4 accent-ui-accent" /></div><div className="flex flex-wrap gap-2">{Object.entries(REVERB_PRESETS).map(([id, preset]) => (<button key={id} onClick={() => { const selected = id as keyof typeof REVERB_PRESETS; const selectedPreset = REVERB_PRESETS[selected]; setReverbPreset(selected); setReverbEnabled(selected !== 'none'); setReverbMainGain(Math.round(selectedPreset.main * 100)); setReverbMix(Math.min(100, Math.round(selectedPreset.send * 30))); }} className={`rounded-lg border px-2.5 py-1 text-xs ${reverbPreset === id ? 'border-ui-accent bg-ui-accent-soft text-ui-accent' : 'border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10'}`}>{preset.label}</button>))}</div><label className="mt-3 block text-xs text-zinc-400">原始音量 {reverbMainGain}%<input type="range" min="0" max="150" value={reverbMainGain} onChange={(e) => setReverbMainGain(Number(e.target.value))} disabled={!reverbEnabled} className="mt-2 w-full accent-ui-accent disabled:opacity-40" /></label><label className="mt-3 block text-xs text-zinc-400">环境音效 {reverbMix}%<input type="range" min="0" max="100" value={reverbMix} onChange={(e) => setReverbMix(Number(e.target.value))} disabled={!reverbEnabled} className="mt-2 w-full accent-ui-accent disabled:opacity-40" /></label></section>
+                <section className="rounded-xl border border-white/10 bg-white/[0.03] p-4"><div className="flex items-center justify-between mb-3"><div><h4 className="text-sm font-bold text-white">音调升降调节</h4><p className="text-xs text-zinc-500 mt-1">当前 {pitchRate.toFixed(2)}x</p></div><button onClick={() => setPitchRate(1)} className="text-xs text-ui-accent">重置</button></div><input type="range" min="0.5" max="1.5" step="0.01" value={pitchRate} onChange={(e) => setPitchRate(Number(e.target.value))} className="w-full accent-ui-accent" /><div className="mt-2 flex justify-between text-xs text-zinc-500"><span>低</span><span>原速</span><span>高</span></div></section>
+                <section className="rounded-xl border border-white/10 bg-white/[0.03] p-4"><div className="flex items-center justify-between mb-3"><div><h4 className="text-sm font-bold text-white">3D 立体环绕</h4><p className="text-xs text-zinc-500 mt-1">需使用耳机，模拟声源环绕移动</p></div><input type="checkbox" checked={surroundEnabled} onChange={(e) => setSurroundEnabled(e.target.checked)} className="h-4 w-4 accent-ui-accent" /></div><label className="block text-xs text-zinc-400">旋转速度 {surroundSpeed}<input type="range" min="5" max="60" value={surroundSpeed} onChange={(e) => setSurroundSpeed(Number(e.target.value))} disabled={!surroundEnabled} className="mt-2 w-full accent-ui-accent disabled:opacity-40" /></label><label className="block mt-3 text-xs text-zinc-400">声场距离 {surroundDistance}<input type="range" min="1" max="10" value={surroundDistance} onChange={(e) => setSurroundDistance(Number(e.target.value))} disabled={!surroundEnabled} className="mt-2 w-full accent-ui-accent disabled:opacity-40" /></label></section>
+                <button onClick={() => setShowAudioEffectsMenu(false)} className="w-full rounded-xl bg-ui-accent p-3 text-sm font-medium text-white hover:bg-ui-accent">完成</button>
               </aside></div></div>
           </div>
         </div>
