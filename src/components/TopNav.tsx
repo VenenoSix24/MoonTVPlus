@@ -21,6 +21,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 import { SPECIAL_SOURCE_PATH } from '@/lib/special-source.client';
+import { useNavScrollState } from '@/hooks/useNavScrollState';
 
 import MoreMenuTrigger from './MoreMenu';
 import { useSite } from './SiteProvider';
@@ -61,55 +62,16 @@ const TopNav = () => {
     pathname.startsWith(`${SPECIAL_SOURCE_PATH}/`);
   const searchHref = isUnderPath ? SPECIAL_SOURCE_PATH : '/search';
 
-  // 整条栏压在 Hero 上时走白色那套，滚过 Hero 才转实底
-  const [overHero, setOverHero] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  // 压在 Hero 上时整条栏走白色那套；Hero 过去之后再按滚动距离转实底。
+  // 判定逻辑在 hooks 里，手机顶栏共用同一份，两端的阈值不会漂。
+  const headerRef = useRef<HTMLElement | null>(null);
+  const { overHero, scrollTop } = useNavScrollState(headerRef);
+  const scrolled = !overHero && scrollTop > 40;
+
   // 搜索：收起时是个圆形图标，点开在原位长成胶囊
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const searchInputRef = useRef<HTMLInputElement | null>(null);
-
-  useEffect(() => {
-    // 页面实际滚动的是 body（globals 里 body 带 overflow-x:hidden，纵向滚动就落到
-    // body 上），window.scrollY 一直是 0；scroll 事件又不冒泡，所以用捕获阶段收，
-    // 取值把三个可能的滚动容器一起算上。
-    const readScroll = () =>
-      Math.max(
-        window.scrollY,
-        document.scrollingElement?.scrollTop ?? 0,
-        document.body.scrollTop
-      );
-
-    // Hero 是异步数据渲染出来的，挂载晚于首次执行，所以缓存为空时每次都重查一遍
-    let hero: HTMLElement | null = null;
-
-    const measure = () => {
-      if (!hero) hero = document.querySelector<HTMLElement>('.mtv-hero');
-      // 「压在 Hero 上」= 顶栏那条 64px 横带和 Hero 有交集，不是 Hero 存在就算
-      const rect = hero?.getBoundingClientRect();
-      const over = !!rect && rect.top < 64 && rect.bottom > 0;
-
-      setOverHero(over);
-      // 压在 Hero 上时保持透明；Hero 过去之后再按滚动距离转实底
-      setScrolled(!over && readScroll() > 40);
-    };
-
-    measure();
-    window.addEventListener('scroll', measure, true);
-    // Hero 挂载/换图都会改 body 高度，用 ResizeObserver 补首次判定
-    const observer = new ResizeObserver(measure);
-    observer.observe(document.body);
-    // ResizeObserver 的回调在后台标签页会被节流，Hero 又是异步渲染的，
-    // 光靠它首帧可能判不出来（顶栏会一直停在浅色那套）。这里补几次有界的重测。
-    const retries = [200, 800, 2000].map((delay) =>
-      window.setTimeout(measure, delay)
-    );
-    return () => {
-      window.removeEventListener('scroll', measure, true);
-      observer.disconnect();
-      retries.forEach((id) => window.clearTimeout(id));
-    };
-  }, []);
 
   // 展开后直接把焦点交给输入框，不用再点一次
   useEffect(() => {
@@ -197,6 +159,7 @@ const TopNav = () => {
 
   return (
     <header
+      ref={headerRef}
       className={
         overHero
           ? 'mtv-topnav is-over-hero'

@@ -1452,21 +1452,27 @@ html[data-loading-style='grid'] .mtv-err-box {
   gap: 26px;
   height: 64px;
   padding: 0 var(--ui-gutter);
-  /* 导航配色走局部变量：压在 Hero 上时整条栏翻成白色，普通页面再跟主题走 */
-  --nav-ink: var(--ui-ink-2);
-  --nav-ink-hover: var(--ui-ink);
-  --nav-ink-active: var(--ui-ink);
-  --nav-hover-bg: color-mix(in srgb, var(--ui-ink) 8%, transparent);
   background-color: transparent;
   transition:
     background-color var(--ui-dur-2) var(--ui-ease),
     box-shadow var(--ui-dur-2) var(--ui-ease);
 }
 
+/* 桌面顶栏和手机顶栏共用这一套前景色变量：压在 Hero 上时整套翻白，
+   回到普通页面再跟主题走。 */
+.mtv-topnav,
+.mtv-mheader {
+  --nav-ink: var(--ui-ink-2);
+  --nav-ink-hover: var(--ui-ink);
+  --nav-ink-active: var(--ui-ink);
+  --nav-hover-bg: color-mix(in srgb, var(--ui-ink) 8%, transparent);
+}
+
 /* 首页首屏：整条栏压在 Hero 上，文字翻白。
    Hero 固定影院感（画面是深是浅不可控），导航跟主题走深灰字的话在浅色主题下就是
    深灰压深画面，读不出来；跟着画面走白色才成立。 */
-.mtv-topnav.is-over-hero {
+.mtv-topnav.is-over-hero,
+.mtv-mheader.is-over-hero {
   --nav-ink: rgba(255, 255, 255, 0.82);
   --nav-ink-hover: #ffffff;
   --nav-ink-active: #ffffff;
@@ -2218,6 +2224,17 @@ html[data-loading-style='grid'] .mtv-err-box {
   background-color: color-mix(in srgb, var(--ui-surface) 80%, transparent);
   backdrop-filter: blur(20px) saturate(150%);
   box-shadow: inset 0 -1px 0 var(--ui-hair);
+  transition:
+    background-color var(--ui-dur-2) var(--ui-ease),
+    box-shadow var(--ui-dur-2) var(--ui-ease);
+}
+
+/* 压在 Hero 上时整条栏真透明：不留底色、不留模糊、不留发丝线，
+   前景换成白色（--nav-* 见顶栏那段）。 */
+.mtv-mheader.is-over-hero {
+  background-color: transparent;
+  backdrop-filter: none;
+  box-shadow: none;
 }
 
 .mtv-mp-row.is-static:hover {
@@ -2960,7 +2977,7 @@ html[data-loading-style='grid'] .mtv-err-box {
   height: 6px;
   overflow: hidden;
   border-radius: var(--ui-r-full);
-  background-color: var(--hero-dot);
+  background-color: color-mix(in srgb, var(--hero-ink) 30%, transparent);
   transition:
     width var(--ui-dur-2) var(--ui-ease),
     height var(--ui-dur-2) var(--ui-ease),
@@ -2972,13 +2989,13 @@ html[data-loading-style='grid'] .mtv-err-box {
 .mtv-hero-dot-near {
   width: 9px;
   height: 9px;
-  background-color: color-mix(in srgb, var(--hero-ink) 55%, transparent);
+  background-color: color-mix(in srgb, var(--hero-ink) 44%, transparent);
 }
 
 .mtv-hero-dot-active {
   width: 28px;
   height: 9px;
-  background-color: var(--hero-ink);
+  background-color: color-mix(in srgb, var(--hero-ink) 36%, transparent);
 }
 
 .mtv-hero-dot-fill {
@@ -3077,7 +3094,11 @@ html[data-loading-style='grid'] .mtv-err-box {
      390px 宽对应 585px 高，正好等于 150vw。再用 72vh 封顶，
      免得在矮屏手机上把内容全挤出屏幕。 */
   .mtv-hero {
-    min-height: min(150vw, 72vh);
+    /* 手机顶栏也是 fixed 覆盖层，main 的 mt 让 Hero 从顶栏下沿开始，头顶会留一条
+       页面底色；把 Hero 提上去让画面钻到顶栏下面，min-height 同步加回顶栏高度
+       （48 + 安全区），可见画面高度不变。 */
+    margin-top: calc(-48px - env(safe-area-inset-top));
+    min-height: calc(min(150vw, 72vh) + 48px + env(safe-area-inset-top));
   }
 
   /* 内容块居中压在画面上 */
