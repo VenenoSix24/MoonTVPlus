@@ -7,6 +7,7 @@ import {
   Info,
   Link,
   ListPlus,
+  Play,
   PlayCircleIcon,
   Radio,
   Sparkles,
@@ -988,7 +989,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
     return (
       <>
         <div
-          className={`group relative w-full rounded-lg bg-transparent transition-all duration-300 ease-in-out hover:scale-[1.05] hover:z-[var(--ui-z-panel)] ${
+          className={`group relative w-full rounded-ui-md bg-transparent transition-all duration-300 ease-in-out hover:scale-[1.05] hover:z-[var(--ui-z-panel)] ${
             isUpcoming ? 'cursor-default' : 'cursor-pointer'
           } ${showUpcomingInfo ? 'scale-[1.05] z-[var(--ui-z-panel)]' : ''}`}
           onClick={handleClick}
@@ -1034,7 +1035,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
         >
           {/* 海报容器：不在外层 overflow-hidden，避免裁切来源数量浮层 */}
           <div
-            className={`relative rounded-lg ${
+            className={`relative rounded-ui-md ${
               origin === 'live'
                 ? 'ring-1 ring-gray-300/80 dark:ring-gray-600/80'
                 : ''
@@ -1054,7 +1055,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
             }}
           >
             {/* 仅图片层做圆角裁剪 */}
-            <div className='absolute inset-0 overflow-hidden rounded-lg'>
+            <div className='absolute inset-0 overflow-hidden rounded-ui-md'>
               {/* 骨架屏 */}
               {!isLoading && !isDirectPlaySource && (
                 <ImagePlaceholder
@@ -1169,22 +1170,28 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
 
             {/* 悬浮信息面板（首页各行动用 · 方案 A：卡内展开）
                 绝对定位在卡片内部，滚动行的 overflow 裁不到它，行距也不用改。
-                只放元信息，不接操作——卡片已有的居中播放键保持不变，零风险。 */}
+                只放元信息，不接操作——卡片已有的居中播放键保持不变，零风险。
+
+                外面那层 clip 不是可选的：面板靠 translateY(10px) 起步，而它的
+                父级（图片裁剪层）在上一个 div 就闭合了，面板本身没被裁到。
+                不移进裁剪层，淡入淡出会从封面的下边缘漏到卡片外面去。 */}
             {hoverPanel && (
-              <div className='mtv-card-panel'>
-                <div className='mtv-card-panel-meta'>
-                  {rate && (
-                    <span className='mtv-card-panel-match'>{rate} 分</span>
-                  )}
-                  {year && <span>{year}</span>}
-                  {episodes ? (
-                    <span>{episodes} 集</span>
-                  ) : type ? (
-                    <span>{type === 'tv' ? '剧集' : '电影'}</span>
-                  ) : null}
-                  {source_names && source_names.length > 1 && (
-                    <span>{source_names.length} 个来源</span>
-                  )}
+              <div className='mtv-card-clip'>
+                <div className='mtv-card-panel'>
+                  <div className='mtv-card-panel-meta'>
+                    {rate && (
+                      <span className='mtv-card-panel-match'>{rate} 分</span>
+                    )}
+                    {year && <span>{year}</span>}
+                    {episodes ? (
+                      <span>{episodes} 集</span>
+                    ) : type ? (
+                      <span>{type === 'tv' ? '剧集' : '电影'}</span>
+                    ) : null}
+                    {source_names && source_names.length > 1 && (
+                      <span>{source_names.length} 个来源</span>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -1238,22 +1245,9 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                     return false;
                   }}
                 >
-                  <PlayCircleIcon
-                    size={50}
-                    strokeWidth={0.8}
-                    className='text-white fill-transparent transition-all duration-300 ease-out hover:fill-ui-accent hover:scale-[1.1]'
-                    style={
-                      {
-                        WebkitUserSelect: 'none',
-                        userSelect: 'none',
-                        WebkitTouchCallout: 'none',
-                      } as React.CSSProperties
-                    }
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      return false;
-                    }}
-                  />
+                  <span className='mtv-card-play'>
+                    <Play className='mtv-card-play-tri' strokeWidth={0} />
+                  </span>
                 </div>
               )
             )}

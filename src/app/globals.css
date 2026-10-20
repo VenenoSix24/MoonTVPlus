@@ -3178,6 +3178,55 @@ html[data-loading-style='grid'] .mtv-err-box {
    触屏没有 hover，这里直接用 @media (hover: hover) 兜住，不依赖 Tailwind 的
    future.hoverOnlyWhenSupported（实测那个只覆盖了一部分规则）。
    ========================================================================== */
+/* 面板的裁剪层。面板自己靠 translateY(10px) 起步，没有这层包裹时，
+   起步态和淡出尾巴都露在封面下方，看着像"从卡片外面浮进来"。 */
+.mtv-card-clip {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: var(--ui-r-md);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* 封面上的播放键。原来的 PlayCircleIcon 是 0.8 描边的空心圆+三角，缩到
+   50px 后线条细得几乎看不见，hover 填充品牌红又跟海报抢色。换成流媒体
+   站通行的做法：磨砂圆底 + 实心三角，hover 反白。 */
+.mtv-card-play {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: var(--ui-r-full);
+  background: rgba(0, 0, 0, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  transition: background-color var(--ui-dur-2) var(--ui-ease-out),
+    border-color var(--ui-dur-2) var(--ui-ease-out),
+    color var(--ui-dur-2) var(--ui-ease-out),
+    transform var(--ui-dur-2) var(--ui-ease-out);
+}
+
+/* 三角的几何重心偏左，右移 2px 才是视觉居中 */
+.mtv-card-play-tri {
+  width: 18px;
+  height: 18px;
+  margin-left: 2px;
+  fill: currentColor;
+  stroke: none;
+}
+
+@media (hover: hover) {
+  .group:hover .mtv-card-play {
+    background: #fff;
+    border-color: #fff;
+    color: #000;
+    transform: scale(1.06);
+  }
+}
+
 .mtv-card-panel {
   position: absolute;
   left: 0;
