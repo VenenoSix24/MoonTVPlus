@@ -16,6 +16,10 @@
 # production
 /build
 
+# Android TV 子项目的构建产物（上面的 /build 是根锚定，管不到子目录）
+apps/android-tv/build/
+apps/android-tv/.gradle/
+
 # misc
 .DS_Store
 *.pem
