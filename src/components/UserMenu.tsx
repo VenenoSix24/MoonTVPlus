@@ -42,9 +42,14 @@ import { getAuthInfoFromBrowserCookie } from '@/lib/auth';
 import { clearAllDanmakuCache, getDanmakuCacheStats } from '@/lib/danmaku/api';
 import { SAVE_LIVE_PLAY_RECORDS_KEY } from '@/lib/db.client';
 import {
+  type HomeModule,
+  mergeHomeModules,
+  resolveSiteHomeModules,
+} from '@/lib/home-modules';
+import {
+  type LocalSettingsPayload,
   LOCAL_SETTINGS_KEYS,
   LOCAL_SETTINGS_SYNC_LAST_PULL_KEY,
-  type LocalSettingsPayload,
 } from '@/lib/local-settings-sync';
 import { clearBangumiImageFallbackCache } from '@/lib/utils';
 import { CURRENT_VERSION } from '@/lib/version';
@@ -303,27 +308,20 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
   const [isCloudBackupDropdownOpen, setIsCloudBackupDropdownOpen] =
     useState(false);
 
-  // 首页模块配置
-  interface HomeModule {
-    id: string;
-    name: string;
-    enabled: boolean;
-    order: number;
-  }
-
   type HomeBannerHeightScale = '1' | '1.5' | '2';
 
-  const defaultHomeModules: HomeModule[] = [
-    { id: 'hotMovies', name: '热门电影', enabled: true, order: 0 },
-    { id: 'hotDuanju', name: '热播短剧', enabled: true, order: 1 },
-    { id: 'bangumiCalendar', name: '新番放送', enabled: true, order: 2 },
-    { id: 'hotTvShows', name: '热门剧集', enabled: true, order: 3 },
-    { id: 'hotVarietyShows', name: '热门综艺', enabled: true, order: 4 },
-    { id: 'upcomingContent', name: '即将上映', enabled: true, order: 5 },
-  ];
+  // 首页模块配置：站点默认来自管理端，本机改过的以本机为准
+  /** 站点默认的首页模块（管理端 ThemeConfig.homeModules），没配过就回落内置目录。 */
+  const siteDefaultModules = (): HomeModule[] =>
+    resolveSiteHomeModules(
+      typeof window === 'undefined'
+        ? null
+        : ((window as any).RUNTIME_CONFIG?.HOME_MODULES ?? null)
+    );
 
-  const [homeModules, setHomeModules] =
-    useState<HomeModule[]>(defaultHomeModules);
+  const [homeModules, setHomeModules] = useState<HomeModule[]>(
+    siteDefaultModules
+  );
   const [homeBannerEnabled, setHomeBannerEnabled] = useState(true);
   const [homeBannerHeightScale, setHomeBannerHeightScale] =
     useState<HomeBannerHeightScale>('1');
@@ -862,17 +860,24 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
         setHomeContinueWatchingEnabled(
           savedHomeContinueWatchingEnabled === 'true'
         );
+      } else {
+        // 没动过就用站点默认
+        setHomeContinueWatchingEnabled(
+          (window as any).RUNTIME_CONFIG?.HOME_CONTINUE_WATCHING !== false
+        );
       }
 
-      // 加载首页模块配置
+      // 加载首页模块配置：站点默认打底，本机改过的以本机为准
       const savedHomeModules = localStorage.getItem('homeModules');
+      let parsedHomeModules: unknown = null;
       if (savedHomeModules !== null) {
         try {
-          setHomeModules(JSON.parse(savedHomeModules));
+          parsedHomeModules = JSON.parse(savedHomeModules);
         } catch (error) {
           console.error('解析首页模块配置失败:', error);
         }
       }
+      setHomeModules(mergeHomeModules(siteDefaultModules(), parsedHomeModules));
 
       // 加载弹幕繁简转换设置
       const savedDanmakuTraditionalToSimplified = localStorage.getItem(
@@ -2241,8 +2246,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
     setDisableAutoLoadDanmaku(!defaultDanmakuAutoLoad);
     setHomeBannerEnabled(true);
     setHomeBannerHeightScale('1');
-    setHomeContinueWatchingEnabled(true);
-    setHomeModules(defaultHomeModules);
+    setHomeContinueWatchingEnabled(
+      (window as any).RUNTIME_CONFIG?.HOME_CONTINUE_WATCHING !== false
+    );
+    setHomeModules(siteDefaultModules());
     setDanmakuTraditionalToSimplified(false);
     setSearchTraditionalToSimplified(false);
 
@@ -2282,8 +2289,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
       localStorage.setItem('danmaku_heatmap_disabled', 'false');
       localStorage.setItem('homeBannerEnabled', 'true');
       localStorage.setItem('homeBannerHeightScale', '1');
-      localStorage.setItem('homeContinueWatchingEnabled', 'true');
-      localStorage.setItem('homeModules', JSON.stringify(defaultHomeModules));
+      localStorage.removeItem('homeContinueWatchingEnabled');
+      localStorage.removeItem('homeModules');
       localStorage.setItem('danmakuTraditionalToSimplified', 'false');
       localStorage.setItem('searchTraditionalToSimplified', 'false');
       window.dispatchEvent(new CustomEvent('homeModulesUpdated'));
@@ -2483,10 +2490,12 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
         setHomeBannerHeightScale('1');
         break;
       case 'homeContinueWatchingEnabled':
-        setHomeContinueWatchingEnabled(true);
+        setHomeContinueWatchingEnabled(
+          (window as any).RUNTIME_CONFIG?.HOME_CONTINUE_WATCHING !== false
+        );
         break;
       case 'homeModules':
-        setHomeModules(defaultHomeModules);
+        setHomeModules(siteDefaultModules());
         break;
       case 'danmakuTraditionalToSimplified':
         setDanmakuTraditionalToSimplified(false);
@@ -5286,24 +5295,21 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                     </div>
                   </div>
 
-                  {/* 恢复默认按钮 */}
+                  {/* 恢复默认按钮：回到站点默认，同时清掉本机覆盖 */}
                   <button
                     onClick={() => {
-                      setHomeModules(defaultHomeModules);
+                      setHomeModules(siteDefaultModules());
                       setHomeBannerEnabled(true);
                       setHomeBannerHeightScale('1');
-                      setHomeContinueWatchingEnabled(true);
+                      setHomeContinueWatchingEnabled(
+                        (window as any).RUNTIME_CONFIG
+                          ?.HOME_CONTINUE_WATCHING !== false
+                      );
                       if (typeof window !== 'undefined') {
-                        localStorage.setItem(
-                          'homeModules',
-                          JSON.stringify(defaultHomeModules)
-                        );
+                        localStorage.removeItem('homeModules');
+                        localStorage.removeItem('homeContinueWatchingEnabled');
                         localStorage.setItem('homeBannerEnabled', 'true');
                         localStorage.setItem('homeBannerHeightScale', '1');
-                        localStorage.setItem(
-                          'homeContinueWatchingEnabled',
-                          'true'
-                        );
                         window.dispatchEvent(
                           new CustomEvent('homeModulesUpdated')
                         );

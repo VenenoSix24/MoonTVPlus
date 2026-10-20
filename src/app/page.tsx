@@ -11,6 +11,12 @@ import {
   GetBangumiCalendarData,
 } from '@/lib/bangumi.client';
 import { getDoubanCategories } from '@/lib/douban.client';
+import {
+  type HomeModule,
+  defaultHomeModules,
+  mergeHomeModules,
+  resolveSiteHomeModules,
+} from '@/lib/home-modules';
 import { getTMDBImageUrl, TMDBItem } from '@/lib/tmdb.client';
 import { DoubanItem } from '@/lib/types';
 import { processImageUrl } from '@/lib/utils';
@@ -24,14 +30,6 @@ import ScrollableRow from '@/components/ScrollableRow';
 import { useSite } from '@/components/SiteProvider';
 import VideoCard from '@/components/VideoCard';
 
-// 首页模块配置接口
-interface HomeModule {
-  id: string;
-  name: string;
-  enabled: boolean;
-  order: number;
-}
-
 function HomeClient() {
   // 移除了 activeTab 状态，收藏夹功能已移到 UserMenu
   const [hotMovies, setHotMovies] = useState<DoubanItem[]>([]);
@@ -44,15 +42,9 @@ function HomeClient() {
   >([]);
   const [loading, setLoading] = useState(true);
   const { announcement, announcementDisplayMode } = useSite();
-  // 首页模块配置状态
-  const [homeModules, setHomeModules] = useState<HomeModule[]>([
-    { id: 'hotMovies', name: '热门电影', enabled: true, order: 0 },
-    { id: 'hotDuanju', name: '热播短剧', enabled: true, order: 1 },
-    { id: 'bangumiCalendar', name: '新番放送', enabled: true, order: 2 },
-    { id: 'hotTvShows', name: '热门剧集', enabled: true, order: 3 },
-    { id: 'hotVarietyShows', name: '热门综艺', enabled: true, order: 4 },
-    { id: 'upcomingContent', name: '即将上映', enabled: true, order: 5 },
-  ]);
+  // 首页模块配置状态：默认值来自站点配置，本机覆盖在 loadHomeLayoutSettings 里合并
+  const [homeModules, setHomeModules] =
+    useState<HomeModule[]>(defaultHomeModules);
   const [homeBannerEnabled, setHomeBannerEnabled] = useState(true);
   const [homeContinueWatchingEnabled, setHomeContinueWatchingEnabled] =
     useState(true);
@@ -60,17 +52,29 @@ function HomeClient() {
   const [showAnnouncement, setShowAnnouncement] = useState(false);
   const [showHttpWarning, setShowHttpWarning] = useState(true);
 
+  /** 站点默认来自管理端 ThemeConfig.homeModules；没配过就回落内置目录。 */
+  const siteDefaultModules = (): HomeModule[] =>
+    resolveSiteHomeModules(
+      typeof window === 'undefined'
+        ? null
+        : (window as any).RUNTIME_CONFIG?.HOME_MODULES ?? null
+    );
+
   const loadHomeLayoutSettings = () => {
     if (typeof window === 'undefined') return;
 
+    // 站点默认打底，本机改过的以本机为准；本机那份里没有的模块（代码后加的）
+    // 会按站点默认补进来，不然新模块永远只有没动过设置的人能看见。
     const savedHomeModules = localStorage.getItem('homeModules');
+    let parsedHomeModules: unknown = null;
     if (savedHomeModules) {
       try {
-        setHomeModules(JSON.parse(savedHomeModules));
+        parsedHomeModules = JSON.parse(savedHomeModules);
       } catch (error) {
         console.error('解析首页模块配置失败:', error);
       }
     }
+    setHomeModules(mergeHomeModules(siteDefaultModules(), parsedHomeModules));
 
     const savedHomeBannerEnabled = localStorage.getItem('homeBannerEnabled');
     if (savedHomeBannerEnabled !== null) {
@@ -83,6 +87,11 @@ function HomeClient() {
     if (savedHomeContinueWatchingEnabled !== null) {
       setHomeContinueWatchingEnabled(
         savedHomeContinueWatchingEnabled === 'true'
+      );
+    } else {
+      // 没动过就用站点默认；站点也没配就显示
+      setHomeContinueWatchingEnabled(
+        (window as any).RUNTIME_CONFIG?.HOME_CONTINUE_WATCHING !== false
       );
     }
   };

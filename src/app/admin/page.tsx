@@ -40,6 +40,7 @@ import {
   FileText,
   FolderOpen,
   Globe,
+  LayoutList,
   Mail,
   Monitor,
   Palette,
@@ -49,7 +50,6 @@ import {
   Settings,
   Smartphone,
   Tablet,
-  Trash2,
   Tv,
   UserPlus,
   Users,
@@ -76,6 +76,11 @@ import {
   ALL_FEATURE_PERMISSION_KEYS,
   FEATURE_PERMISSION_OPTIONS,
 } from '@/lib/feature-permissions';
+import {
+  type HomeModule,
+  defaultHomeModules,
+  resolveSiteHomeModules,
+} from '@/lib/home-modules';
 
 import AnimeSubscriptionComponent from '@/components/AnimeSubscriptionComponent';
 import CorrectDialog from '@/components/CorrectDialog';
@@ -10023,6 +10028,12 @@ const ThemeConfigComponent = ({
     loadingStyle: 'talisman' as 'classic' | 'grid' | 'talisman',
     rateBadgeStyle: 'flag' as 'default' | 'flag' | 'medal',
     defaultTheme: 'dark' as 'light' | 'dark' | 'system',
+    homeModules: resolveSiteHomeModules(null).map((item, index) => ({
+      id: item.id,
+      enabled: item.enabled,
+      order: index,
+    })),
+    homeContinueWatching: true,
   });
   const [loginBackgroundImages, setLoginBackgroundImages] = useState<string[]>([
     '',
@@ -10048,6 +10059,14 @@ const ThemeConfigComponent = ({
         loadingStyle: config.ThemeConfig.loadingStyle || 'talisman',
         rateBadgeStyle: config.ThemeConfig.rateBadgeStyle || 'flag',
         defaultTheme: config.ThemeConfig.defaultTheme || 'dark',
+        homeModules: resolveSiteHomeModules(
+          config.ThemeConfig.homeModules
+        ).map((item, index) => ({
+          id: item.id,
+          enabled: item.enabled,
+          order: index,
+        })),
+        homeContinueWatching: config.ThemeConfig.homeContinueWatching !== false,
       });
 
       // 解析背景图配置
@@ -10082,6 +10101,39 @@ const ThemeConfigComponent = ({
       }
     }
   }, [config]);
+  // ---------- 首页模块（站点默认）----------
+  const homeModuleList = resolveSiteHomeModules(themeSettings.homeModules);
+
+  const applyHomeModules = (list: HomeModule[]) => {
+    setThemeSettings((prev) => ({
+      ...prev,
+      homeModules: list.map((item, index) => ({
+        id: item.id,
+        enabled: item.enabled,
+        order: index,
+      })),
+    }));
+  };
+
+  const moveHomeModule = (index: number, delta: number) => {
+    const next = [...homeModuleList];
+    const target = index + delta;
+    if (target < 0 || target >= next.length) return;
+    const [moved] = next.splice(index, 1);
+    next.splice(target, 0, moved);
+    applyHomeModules(next);
+  };
+
+  const toggleHomeModule = (id: string, enabled: boolean) => {
+    applyHomeModules(
+      homeModuleList.map((item) =>
+        item.id === id ? { ...item, enabled } : item
+      )
+    );
+  };
+
+  const resetHomeModules = () => applyHomeModules(defaultHomeModules());
+
 
   const handleSave = async () => {
     await withLoading('saveThemeConfig', async () => {
@@ -10621,6 +10673,91 @@ const ThemeConfigComponent = ({
           配置登录、注册和首页的背景图链接，留空则使用默认样式。支持配置多张图片，将随机展示其中一张
         </p>
       </div>
+      {/* 首页模块（站点默认） */}
+      <div className='bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700'>
+        <h3 className='text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2 flex items-center gap-2'>
+          <LayoutList className='w-5 h-5' />
+          首页模块
+        </h3>
+        <p className='text-sm text-gray-600 dark:text-gray-400 mb-4'>
+          决定新访客第一次打开首页时看到的模块顺序与显隐。用户在「设置 → 首页布局」里
+          调过之后以他自己的为准，这里的改动不会再影响他。
+        </p>
+
+        <div className='space-y-2'>
+          {homeModuleList.map((module, index) => (
+            <div
+              key={module.id}
+              className='flex items-center gap-3 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40'
+            >
+              <span className='w-5 text-xs font-mono text-gray-500 dark:text-gray-400'>
+                {index + 1}
+              </span>
+              <span className='flex-1 text-sm text-gray-900 dark:text-gray-100'>
+                {module.name}
+              </span>
+              <button
+                type='button'
+                onClick={() => moveHomeModule(index, -1)}
+                disabled={index === 0}
+                title='上移'
+                className='p-1.5 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors'
+              >
+                <ChevronUp className='w-4 h-4' />
+              </button>
+              <button
+                type='button'
+                onClick={() => moveHomeModule(index, 1)}
+                disabled={index === homeModuleList.length - 1}
+                title='下移'
+                className='p-1.5 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors'
+              >
+                <ChevronDown className='w-4 h-4' />
+              </button>
+              <label className='flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer'>
+                <input
+                  type='checkbox'
+                  checked={module.enabled}
+                  onChange={(e) => toggleHomeModule(module.id, e.target.checked)}
+                  className='w-4 h-4 rounded text-blue-600'
+                />
+                显示
+              </label>
+            </div>
+          ))}
+        </div>
+
+        <button
+          type='button'
+          onClick={resetHomeModules}
+          className='mt-3 px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors'
+        >
+          恢复内置默认顺序
+        </button>
+
+        <div className='mt-6 pt-5 border-t border-gray-200 dark:border-gray-700'>
+          <label className='flex items-center space-x-3 cursor-pointer'>
+            <input
+              type='checkbox'
+              checked={themeSettings.homeContinueWatching}
+              onChange={(e) =>
+                setThemeSettings((prev) => ({
+                  ...prev,
+                  homeContinueWatching: e.target.checked,
+                }))
+              }
+              className='w-4 h-4 rounded text-blue-600'
+            />
+            <span className='text-sm text-gray-900 dark:text-gray-100'>
+              首页显示「继续观看」
+            </span>
+          </label>
+          <p className='mt-2 text-sm text-gray-600 dark:text-gray-400'>
+            同样只决定默认值：用户自己在设置里关掉之后，不会被这里重新打开。
+          </p>
+        </div>
+      </div>
+
 
       {/* 进度条图标配置 */}
       <div className='bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700'>

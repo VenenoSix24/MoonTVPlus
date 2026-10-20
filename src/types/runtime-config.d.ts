@@ -9,6 +9,8 @@ declare global {
     RUNTIME_CONFIG?: {
       EnableComments?: boolean;
       RecommendationDataSource?: string;
+      HOME_MODULES?: { id: string; enabled: boolean; order: number }[] | null;
+      HOME_CONTINUE_WATCHING?: boolean | null;
       [key: string]: any;
     };
   }

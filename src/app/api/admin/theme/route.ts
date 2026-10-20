@@ -42,6 +42,9 @@ export async function POST(request: NextRequest) {
       progressThumbCustomUrl,
       loadingStyle,
       rateBadgeStyle,
+      defaultTheme,
+      homeModules,
+      homeContinueWatching,
     } = body as {
       enableBuiltInTheme: boolean;
       builtInTheme: string;
@@ -56,6 +59,9 @@ export async function POST(request: NextRequest) {
       progressThumbCustomUrl?: string;
       loadingStyle?: 'classic' | 'grid' | 'talisman';
       rateBadgeStyle?: 'default' | 'flag' | 'medal';
+      defaultTheme?: 'light' | 'dark' | 'system';
+      homeModules?: { id: string; enabled: boolean; order: number }[];
+      homeContinueWatching?: boolean;
     };
 
     // 参数校验
@@ -162,10 +168,37 @@ export async function POST(request: NextRequest) {
         rateBadgeStyle === 'medal'
           ? rateBadgeStyle
           : 'flag',
+      defaultTheme:
+        defaultTheme === 'light' || defaultTheme === 'system'
+          ? defaultTheme
+          : 'dark',
+      homeModules: Array.isArray(homeModules)
+        ? homeModules
+            .filter(
+              (item) =>
+                item &&
+                typeof item.id === 'string' &&
+                typeof item.enabled === 'boolean'
+            )
+            .map((item, index) => ({
+              id: item.id,
+              enabled: item.enabled,
+              order: Number.isFinite(item.order) ? item.order : index,
+            }))
+        : undefined,
+      homeContinueWatching:
+        typeof homeContinueWatching === 'boolean'
+          ? homeContinueWatching
+          : undefined,
     };
 
     // 写入数据库
     await db.saveAdminConfig(adminConfig);
+
+    // 立刻刷新进程内缓存：getConfig() 有 30s 上限，不刷新的话管理端自己刷新页面
+    // 还会读到旧配置，看起来像「保存没生效」。
+    const { setCachedConfig } = await import('@/lib/config');
+    await setCachedConfig(adminConfig);
 
     return NextResponse.json(
       {

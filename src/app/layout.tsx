@@ -143,6 +143,11 @@ export default async function RootLayout({
   let localSettingsSyncMode: 'off' | 'manual' | 'auto' = 'off';
   // 站点默认配色。声明在 if 外面：localstorage 模式下不读 config，也要有默认值。
   let defaultTheme: 'light' | 'dark' | 'system' = 'dark';
+  // 站点默认首页模块排序/显隐与「继续观看」显隐。和 defaultTheme 一样声明在 if
+  // 外面：localstorage 模式下不读 config，也要有明确的值（null = 用内置默认）。
+  let homeModules: { id: string; enabled: boolean; order: number }[] | null =
+    null;
+  let homeContinueWatching: boolean | null = null;
   // 特殊源名单：供客户端按入口隔离收藏与播放记录。
   // 入口开关是本机 cookie，与存储模式无关，所以 localstorage 模式也要注入；
   // getConfig() 有模块级缓存，generateMetadata 里已经调过一次，这里不产生额外读取。
@@ -217,6 +222,11 @@ export default async function RootLayout({
       config.ThemeConfig?.defaultTheme === 'system'
         ? config.ThemeConfig?.defaultTheme
         : 'dark';
+    homeModules = config.ThemeConfig?.homeModules ?? null;
+    homeContinueWatching =
+      typeof config.ThemeConfig?.homeContinueWatching === 'boolean'
+        ? config.ThemeConfig.homeContinueWatching
+        : null;
     requireRegistrationInviteCode =
       config.SiteConfig.RequireRegistrationInviteCode || false;
     loginRequireTurnstile = config.SiteConfig.LoginRequireTurnstile || false;
@@ -337,6 +347,8 @@ export default async function RootLayout({
     LOGIN_BACKGROUND_IMAGE: loginBackgroundImage,
     REGISTER_BACKGROUND_IMAGE: registerBackgroundImage,
     HOME_BACKGROUND_IMAGE: homeBackgroundImage,
+    HOME_MODULES: homeModules,
+    HOME_CONTINUE_WATCHING: homeContinueWatching,
     PROGRESS_THUMB_TYPE: progressThumbType,
     PROGRESS_THUMB_PRESET_ID: progressThumbPresetId,
     PROGRESS_THUMB_CUSTOM_URL: progressThumbCustomUrl,

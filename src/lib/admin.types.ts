@@ -164,6 +164,11 @@ export interface AdminConfig {
     // 站点默认配色（新访客的首屏主题）。用户在本机右上角切过之后以本机为准，
     // 这里只决定「没选过的人第一次看到什么」。
     defaultTheme?: 'light' | 'dark' | 'system';
+    // 站点默认的首页模块顺序与显隐。用户在设置里改过之后以本机为准，这里只决定
+    // 「没改过的人第一次看到什么」；代码后加的新模块会自动补进老用户的那份。
+    homeModules?: { id: string; enabled: boolean; order: number }[];
+    // 首页「继续观看」区块的默认显隐，同样是用户改过就以用户为准
+    homeContinueWatching?: boolean;
   };
   OpenListConfig?: {
     Enabled: boolean; // 是否启用私人影库功能
