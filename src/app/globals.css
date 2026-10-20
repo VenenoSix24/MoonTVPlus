@@ -2132,7 +2132,7 @@ html[data-loading-style='grid'] .mtv-err-box {
   padding: 6px;
 }
 
-/* 选中底片：跟着当前格平移的一块强调色底片 */
+/* 选中底片：跟着当前格平移的一块中性底片；强调色只给图标和文字，不铺满整块 */
 .mtv-bnav-pill {
   position: absolute;
   top: 6px;
@@ -2140,7 +2140,7 @@ html[data-loading-style='grid'] .mtv-err-box {
   left: 6px;
   width: calc((100% - 12px) / 5);
   border-radius: var(--ui-r-full);
-  background-color: var(--ui-accent);
+  background-color: color-mix(in srgb, var(--ui-ink) 10%, transparent);
   transition: transform 220ms var(--ui-ease);
   pointer-events: none;
 }
@@ -2181,7 +2181,7 @@ html[data-loading-style='grid'] .mtv-err-box {
 }
 
 .mtv-bnav-item.is-active {
-  color: var(--ui-accent-ink);
+  color: var(--ui-accent);
 }
 
 .mtv-bnav-item.is-active span {
