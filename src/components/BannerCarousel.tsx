@@ -217,6 +217,37 @@ export default function BannerCarousel({
   const [trailersLoaded, setTrailersLoaded] = useState(false); // 预告片是否已加载
   const [isMuted, setIsMuted] = useState(true); // 视频是否静音（默认静音）
   const [logoMap, setLogoMap] = useState<Record<string, string | null>>({}); // 官方标题字：请求键 → URL
+
+  // 标题字若是深色单色，压在暗海报上读不出来，需要反色。
+  // 判定放在服务端：TMDB 图床不返回 CORS 头，前端 canvas 采样会抛 SecurityError。
+  // 这两个 hook 必须待在组件顶层 —— 下面有提前 return（加载态），
+  // 放到 return 之后就会触发 "Rendered more hooks than during the previous render"。
+  const [logoDark, setLogoDark] = useState(false);
+  useEffect(() => {
+    const item = items[currentIndex];
+    if (!item) {
+      setLogoDark(false);
+      return;
+    }
+    const toneKey = logoRequest(item).key;
+    const logo = logoMap[toneKey] ?? heroLogoCache.get(toneKey) ?? null;
+    if (!logo) {
+      setLogoDark(false);
+      return;
+    }
+    let alive = true;
+    fetch(`/api/tmdb/logo-tone?src=${encodeURIComponent(logo)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (alive) setLogoDark(Boolean(data?.dark));
+      })
+      .catch(() => {
+        // 测不出来就保持原样，不做反色
+      });
+    return () => {
+      alive = false;
+    };
+  }, [items, currentIndex, logoMap]);
   const [bannerHeightScale, setBannerHeightScale] =
     useState<HomeBannerHeightScale>('1'); // 轮播图高度倍率
   const [isMobileView, setIsMobileView] = useState(false);
@@ -711,27 +742,6 @@ export default function BannerCarousel({
   const titleLogo: string | null =
     logoMap[logoKey] ?? heroLogoCache.get(logoKey) ?? null;
 
-  // 标题字若是深色单色，压在暗海报上读不出来，需要反色。
-  // 判断放在服务端做：TMDB 图床不返回 CORS 头，前端 canvas 采样会抛 SecurityError。
-  const [logoDark, setLogoDark] = useState(false);
-  useEffect(() => {
-    if (!titleLogo) {
-      setLogoDark(false);
-      return;
-    }
-    let alive = true;
-    fetch(`/api/tmdb/logo-tone?src=${encodeURIComponent(titleLogo)}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (alive) setLogoDark(Boolean(data?.dark));
-      })
-      .catch(() => {
-        // 测不出来就保持原样，不做反色
-      });
-    return () => {
-      alive = false;
-    };
-  }, [titleLogo]);
   // TMDB 源下标题字是异步取的。落地之前先把文字藏起来（占位仍在，不跳版），
   // 否则会「先显示文字、一秒后突然变成 logo」闪一下。
   const logoPending =
