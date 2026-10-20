@@ -22,6 +22,7 @@ import {
   MoveDown,
   MoveUp,
   Package,
+  Palette,
   Puzzle,
   Router as RouterIcon,
   Rss,
@@ -35,6 +36,7 @@ import {
   X,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useTheme } from 'next-themes';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -103,6 +105,74 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
     useState<string>('localstorage');
   const [mounted, setMounted] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  // 外观主题：顶栏那个独立的主题按钮收进菜单后，主题状态由这里统一持有
+  const { theme, setTheme, resolvedTheme } = useTheme();
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(
+    null
+  );
+
+  // 面板由 Portal 渲染到 body、用 fixed 定位，所以位置只能按触发器实测坐标算：
+  // 桌面顶栏 64px、手机顶栏 48px（还要叠安全区），写死一个 top 必然压住导航栏。
+  // 图标按钮在 64px 顶栏里是垂直居中的（上下各 12px），只按按钮底边 +8 会算到 60，
+  // 比顶栏底边还高 4px，面板会压住导航栏；所以再以顶栏底边兜一次底。
+  const updateMenuPos = useCallback(() => {
+    const el = triggerRef.current;
+    if (!el || typeof window === 'undefined') return;
+    const rect = el.getBoundingClientRect();
+    const header = el.closest('header');
+    const headerBottom = header?.getBoundingClientRect().bottom ?? 0;
+    setMenuPos({
+      top: Math.max(rect.bottom + 8, headerBottom + 6),
+      right: Math.max(8, window.innerWidth - rect.right),
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    updateMenuPos();
+    window.addEventListener('resize', updateMenuPos);
+    window.addEventListener('scroll', updateMenuPos, true);
+    return () => {
+      window.removeEventListener('resize', updateMenuPos);
+      window.removeEventListener('scroll', updateMenuPos, true);
+    };
+  }, [isOpen, updateMenuPos]);
+
+  // 主题切换顺带同步浏览器地址栏配色（原来写死在 ThemeToggle 里）
+  useEffect(() => {
+    if (!mounted) return;
+    const color = resolvedTheme === 'dark' ? '#0c111c' : '#f9fbfe';
+    const existing = document.querySelector('meta[name="theme-color"]');
+    const meta =
+      existing ??
+      (() => {
+        const created = document.createElement('meta');
+        created.setAttribute('name', 'theme-color');
+        document.head.appendChild(created);
+        return created;
+      })();
+    meta.setAttribute('content', color);
+  }, [mounted, resolvedTheme]);
+
+  const themeOptions: { value: 'light' | 'dark' | 'system'; label: string }[] = [
+    { value: 'light', label: '浅色' },
+    { value: 'dark', label: '深色' },
+    { value: 'system', label: '跟随系统' },
+  ];
+  const themeLabel =
+    themeOptions.find((option) => option.value === theme)?.label ?? '跟随系统';
+
+  const applyTheme = (next: 'light' | 'dark' | 'system') => {
+    const doc = document as any;
+    // 「跟随系统」不放大范围转场：目标主题要先问了系统才知道，猜错会闪一下
+    if (next === 'system' || !doc.startViewTransition) {
+      setTheme(next);
+      return;
+    }
+    doc.startViewTransition(() => setTheme(next));
+  };
 
   // 订阅相关状态
   const [subscribeEnabled, setSubscribeEnabled] = useState(false);
@@ -1446,6 +1516,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
   }, [isCloudBackupDropdownOpen]);
 
   const handleMenuClick = () => {
+    // 打开前先量一次触发器：面板和它在同一次渲染里定位，不会先闪到左上角
+    if (!isOpen) updateMenuPos();
     setIsOpen(!isOpen);
   };
 
@@ -2941,171 +3013,183 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
       />
 
       {/* 菜单面板 */}
-      <div className='fixed top-14 right-4 w-56 bg-white dark:bg-gray-900 rounded-lg shadow-xl z-[1001] border border-gray-200/50 dark:border-gray-700/50 overflow-hidden select-none'>
+      <div
+        className='mtv-umenu select-none'
+        style={{
+          top: menuPos?.top ?? 64,
+          right: menuPos?.right ?? 16,
+          maxHeight: menuPos
+            ? `calc(100dvh - ${menuPos.top + 12}px)`
+            : undefined,
+        }}
+      >
         {/* 用户信息区域 */}
-        <div className='px-3 py-1 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-800 dark:to-gray-800/50'>
-          <div className='flex items-start justify-between gap-3'>
-            <button
-              onClick={handleOpenProfileCenter}
-              className='flex items-center gap-3 rounded-xl px-2 py-1 text-left hover:bg-white/70 dark:hover:bg-gray-700/40 transition-colors'
-            >
-              <div className='relative flex h-11 w-11 items-center justify-center rounded-full bg-blue-500 text-lg font-semibold text-white shadow-sm'>
-                <span>{avatarText}</span>
-                {shouldShowRoleBadge && (
-                  <span
-                    className={`absolute left-1/2 top-[calc(100%-6px)] z-10 -translate-x-1/2 inline-flex min-w-[26px] items-center justify-center whitespace-nowrap rounded-full px-1.5 py-[2px] text-[8px] leading-none font-medium shadow-sm ${roleBadgeClassName}`}
-                  >
-                    {currentRoleText}
-                  </span>
-                )}
-              </div>
-              <div className='min-w-0'>
-                <span className='block max-w-[84px] truncate text-sm font-semibold text-gray-900 dark:text-gray-100 leading-none'>
-                  {currentUsername}
-                </span>
-              </div>
-            </button>
+        <button
+          type='button'
+          onClick={handleOpenProfileCenter}
+          className='mtv-umenu-head'
+        >
+          <span className='mtv-umenu-avatar'>{avatarText}</span>
+          <span className='mtv-umenu-id'>
+            <span className='mtv-umenu-name'>{currentUsername}</span>
+            <span className='mtv-umenu-role'>
+              {currentRoleText}
+              {' · 存储 '}
+              {displayStorageType === 'localstorage'
+                ? '本地'
+                : displayStorageType}
+            </span>
+          </span>
+        </button>
 
-            <div className='pt-1 text-right'>
-              <div className='text-[10px] text-gray-400 dark:text-gray-500'>
-                <div>数据存储</div>
-                <div className='mt-0.5'>
-                  {displayStorageType === 'localstorage'
-                    ? '本地'
-                    : displayStorageType}
-                </div>
-              </div>
-            </div>
-          </div>
+        <div className='mtv-umenu-div' />
+
+        {/* 通知按钮 */}
+        <button
+          type='button'
+          onClick={() => {
+            setIsOpen(false);
+            setIsNotificationPanelOpen(true);
+          }}
+          className='mtv-umenu-item'
+        >
+          <Bell />
+          <span>通知中心</span>
+          {unreadCount > 0 && (
+            <span className='ml-auto inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[length:11px] font-semibold leading-none text-white'>
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
+        </button>
+
+        {/* 我的收藏按钮 */}
+        <button
+          type='button'
+          onClick={() => {
+            setIsOpen(false);
+            setIsFavoritesPanelOpen(true);
+          }}
+          className='mtv-umenu-item'
+        >
+          <Star />
+          <span>我的收藏</span>
+        </button>
+
+        {/* 设置按钮 */}
+        <button type='button' onClick={handleSettings} className='mtv-umenu-item'>
+          <Settings />
+          <span>设置</span>
+        </button>
+
+        {/* 外观主题：原来顶栏那个太阳/月亮按钮收进来，原地三段式切换 */}
+        <div className='mtv-umenu-item is-static'>
+          <Palette />
+          <span>外观主题</span>
+          <span className='mtv-umenu-tail'>{themeLabel}</span>
+        </div>
+        <div className='mtv-umenu-seg'>
+          {themeOptions.map((option) => (
+            <button
+              key={option.value}
+              type='button'
+              aria-pressed={theme === option.value}
+              onClick={() => applyTheme(option.value)}
+            >
+              {option.label}
+            </button>
+          ))}
         </div>
 
-        {/* 菜单项 */}
-        <div className='py-1'>
-          {/* 通知按钮 */}
+        <div className='mtv-umenu-div' />
+
+        {/* 管理面板按钮 */}
+        {showAdminPanel && (
           <button
-            onClick={() => {
-              setIsOpen(false);
-              setIsNotificationPanelOpen(true);
-            }}
-            className='w-full px-3 py-2 text-left flex items-center gap-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-sm relative'
+            type='button'
+            onClick={handleAdminPanel}
+            className='mtv-umenu-item'
           >
-            <Bell className='w-4 h-4 text-gray-500 dark:text-gray-400' />
-            <span className='font-medium'>通知中心</span>
-            {unreadCount > 0 && (
-              <span className='ml-auto px-2 py-0.5 text-xs font-medium bg-red-500 text-white rounded-full'>
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </span>
+            <Shield />
+            <span>管理面板</span>
+          </button>
+        )}
+
+        {/* 离线下载按钮 */}
+        {showOfflineDownload && (
+          <button
+            type='button'
+            onClick={() => {
+              setIsOfflineDownloadPanelOpen(true);
+              setIsOpen(false);
+            }}
+            className='mtv-umenu-item'
+          >
+            <Download />
+            <span>离线下载</span>
+          </button>
+        )}
+
+        {/* 电视访问按钮 */}
+        <button
+          type='button'
+          onClick={handleSubscribe}
+          className='mtv-umenu-item'
+        >
+          <Monitor />
+          <span>电视访问</span>
+        </button>
+
+        {/* 生态应用按钮 */}
+        <button
+          type='button'
+          onClick={() => {
+            setIsOpen(false);
+            setIsEcoAppsOpen(true);
+          }}
+          className='mtv-umenu-item'
+        >
+          <Package />
+          <span>生态应用</span>
+        </button>
+
+        <div className='mtv-umenu-div' />
+
+        {/* 登出按钮 */}
+        <button
+          type='button'
+          onClick={handleLogout}
+          className='mtv-umenu-item is-danger'
+        >
+          <LogOut />
+          <span>退出登录</span>
+        </button>
+
+        <div className='mtv-umenu-div' />
+
+        {/* 版本信息 */}
+        <button
+          type='button'
+          onClick={() => {
+            setIsVersionPanelOpen(true);
+            handleCloseMenu();
+          }}
+          className='mtv-umenu-ver'
+        >
+          <span className='font-mono'>v{CURRENT_VERSION}</span>
+          {!isChecking &&
+            updateStatus &&
+            updateStatus !== UpdateStatus.FETCH_FAILED && (
+              <span
+                className={`h-2 w-2 rounded-full ${
+                  updateStatus === UpdateStatus.HAS_UPDATE
+                    ? 'bg-yellow-500'
+                    : updateStatus === UpdateStatus.NO_UPDATE
+                    ? 'bg-green-400'
+                    : ''
+                }`}
+              />
             )}
-          </button>
-
-          {/* 我的收藏按钮 */}
-          <button
-            onClick={() => {
-              setIsOpen(false);
-              setIsFavoritesPanelOpen(true);
-            }}
-            className='w-full px-3 py-2 text-left flex items-center gap-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-sm relative'
-          >
-            <Star className='w-4 h-4 text-gray-500 dark:text-gray-400' />
-            <span className='font-medium'>我的收藏</span>
-          </button>
-
-          {/* 设置按钮 */}
-          <button
-            onClick={handleSettings}
-            className='w-full px-3 py-2 text-left flex items-center gap-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-sm'
-          >
-            <Settings className='w-4 h-4 text-gray-500 dark:text-gray-400' />
-            <span className='font-medium'>设置</span>
-          </button>
-
-          {/* 管理面板按钮 */}
-          {showAdminPanel && (
-            <button
-              onClick={handleAdminPanel}
-              className='w-full px-3 py-2 text-left flex items-center gap-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-sm'
-            >
-              <Shield className='w-4 h-4 text-gray-500 dark:text-gray-400' />
-              <span className='font-medium'>管理面板</span>
-            </button>
-          )}
-
-          {/* 离线下载按钮 */}
-          {showOfflineDownload && (
-            <button
-              onClick={() => {
-                setIsOfflineDownloadPanelOpen(true);
-                setIsOpen(false);
-              }}
-              className='w-full px-3 py-2 text-left flex items-center gap-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-sm'
-            >
-              <Download className='w-4 h-4 text-gray-500 dark:text-gray-400' />
-              <span className='font-medium'>离线下载</span>
-            </button>
-          )}
-
-          {/* 电视访问按钮 */}
-          <button
-            onClick={handleSubscribe}
-            className='w-full px-3 py-2 text-left flex items-center gap-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-sm'
-          >
-            <Monitor className='w-4 h-4 text-gray-500 dark:text-gray-400' />
-            <span className='font-medium'>电视访问</span>
-          </button>
-
-          {/* 生态应用按钮 */}
-          <button
-            onClick={() => {
-              setIsOpen(false);
-              setIsEcoAppsOpen(true);
-            }}
-            className='w-full px-3 py-2 text-left flex items-center gap-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-sm'
-          >
-            <Package className='w-4 h-4 text-gray-500 dark:text-gray-400' />
-            <span className='font-medium'>生态应用</span>
-          </button>
-
-          {/* 分割线 */}
-          <div className='my-1 border-t border-gray-200 dark:border-gray-700'></div>
-
-          {/* 登出按钮 */}
-          <button
-            onClick={handleLogout}
-            className='w-full px-3 py-2 text-left flex items-center gap-2.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-sm'
-          >
-            <LogOut className='w-4 h-4' />
-            <span className='font-medium'>登出</span>
-          </button>
-
-          {/* 分割线 */}
-          <div className='my-1 border-t border-gray-200 dark:border-gray-700'></div>
-
-          {/* 版本信息 */}
-          <button
-            onClick={() => {
-              setIsVersionPanelOpen(true);
-              handleCloseMenu();
-            }}
-            className='w-full px-3 py-2 text-center flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors text-xs'
-          >
-            <div className='flex items-center gap-1'>
-              <span className='font-mono'>v{CURRENT_VERSION}</span>
-              {!isChecking &&
-                updateStatus &&
-                updateStatus !== UpdateStatus.FETCH_FAILED && (
-                  <div
-                    className={`w-2 h-2 rounded-full -translate-y-2 ${
-                      updateStatus === UpdateStatus.HAS_UPDATE
-                        ? 'bg-yellow-500'
-                        : updateStatus === UpdateStatus.NO_UPDATE
-                        ? 'bg-green-400'
-                        : ''
-                    }`}
-                  ></div>
-                )}
-            </div>
-          </button>
-        </div>
+        </button>
       </div>
     </>
   );
@@ -6137,14 +6221,18 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
     <>
       <div className='relative'>
         <button
+          ref={triggerRef}
+          type='button'
           onClick={handleMenuClick}
           className={
             className ||
-            'w-10 h-10 p-2 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-200/50 dark:text-gray-300 dark:hover:bg-gray-700/50 transition-colors'
+            'flex h-10 w-10 items-center justify-center rounded-full text-ui-ink-2 transition-colors hover:bg-ui-surface-3 hover:text-ui-ink'
           }
-          aria-label='User Menu'
+          aria-label='用户菜单'
+          aria-haspopup='menu'
+          aria-expanded={isOpen}
         >
-          <User className='w-full h-full' />
+          <User className='h-full w-full' />
         </button>
         {/* 版本更新红点 */}
         {updateStatus === UpdateStatus.HAS_UPDATE && (

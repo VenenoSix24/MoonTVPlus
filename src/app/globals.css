@@ -1716,6 +1716,222 @@ html[data-loading-style='grid'] .mtv-err-box {
   background-color: var(--ui-surface-3);
 }
 
+/* ---------- 用户菜单（顶栏头像下拉） ---------- */
+/* 和「更多」面板同一套写法：几何写在这里，颜色只走 --ui-* 令牌，深浅色自动跟。
+   面板由 Portal 渲染到 body，位置由组件按触发器实测坐标下发，这里不写 top/right。
+   hover 用 color-mix(墨色 7%) 而不是 --ui-surface-3：那是一整块面板表面色，压在
+   深色栏上像贴补丁；半透明墨色在深色下等于 rgba(255,255,255,.07)，浅色下自动变成
+   一层极淡的灰，两边都不会出现"实心灰块"。 */
+
+.mtv-umenu {
+  position: fixed;
+  z-index: 1001;
+  width: 268px;
+  max-width: calc(100vw - 24px);
+  padding: 6px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: var(--ui-r-lg);
+  border: 1px solid var(--ui-hair);
+  background-color: var(--ui-surface-2);
+  box-shadow: var(--ui-elev-3);
+  animation: mtv-more-in var(--ui-dur-1) var(--ui-ease-out) both;
+}
+
+.mtv-umenu-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-umenu-head:hover {
+  background-color: color-mix(in srgb, var(--ui-ink) 6%, transparent);
+}
+
+.mtv-umenu-avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--ui-r-full);
+  background: linear-gradient(150deg, #6d5bd0, #2f6fd0);
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.mtv-umenu-id {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mtv-umenu-name {
+  overflow: hidden;
+  font-size: 13.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--ui-ink);
+}
+
+.mtv-umenu-role {
+  margin-top: 2px;
+  overflow: hidden;
+  font-size: 11.5px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--ui-ink-3);
+}
+
+.mtv-umenu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 40px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  color: var(--ui-ink-2);
+  cursor: pointer;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-umenu-item > svg {
+  flex: none;
+  width: 17px;
+  height: 17px;
+  color: var(--ui-ink-3);
+  transition: color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-umenu-item:hover {
+  color: var(--ui-ink);
+  background-color: color-mix(in srgb, var(--ui-ink) 7%, transparent);
+}
+
+.mtv-umenu-item:hover > svg {
+  color: var(--ui-ink);
+}
+
+/* 「外观主题」这一行只是显示当前值，点击由下面的三段式负责 */
+.mtv-umenu-item.is-static {
+  cursor: default;
+}
+
+.mtv-umenu-item.is-static:hover {
+  color: var(--ui-ink-2);
+  background: none;
+}
+
+.mtv-umenu-tail {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--ui-ink-3);
+}
+
+.mtv-umenu-tail > svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  color: var(--ui-ink-3);
+}
+
+.mtv-umenu-div {
+  height: 1px;
+  margin: 6px 10px;
+  background-color: var(--ui-hair);
+}
+
+.mtv-umenu-item.is-danger,
+.mtv-umenu-item.is-danger > svg {
+  color: #ef4444;
+}
+
+.mtv-umenu-item.is-danger:hover {
+  color: #ef4444;
+  background-color: color-mix(in srgb, #ef4444 12%, transparent);
+}
+
+.mtv-umenu-seg {
+  display: flex;
+  gap: 2px;
+  margin: 2px 6px 8px;
+  padding: 3px;
+  border-radius: 10px;
+  background-color: var(--ui-surface-3);
+}
+
+.mtv-umenu-seg button {
+  flex: 1;
+  height: 28px;
+  border: 0;
+  border-radius: var(--ui-r-sm);
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ui-ink-3);
+  cursor: pointer;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-umenu-seg button:hover {
+  color: var(--ui-ink);
+}
+
+.mtv-umenu-seg button[aria-pressed='true'] {
+  color: var(--ui-ink);
+  background-color: var(--ui-surface-2);
+  box-shadow: var(--ui-elev-1);
+}
+
+.mtv-umenu-ver {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 34px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  font-size: var(--ui-fs-micro);
+  color: var(--ui-ink-3);
+  cursor: pointer;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-umenu-ver:hover {
+  color: var(--ui-ink-2);
+  background-color: color-mix(in srgb, var(--ui-ink) 5%, transparent);
+}
+
 /* ---------- 通用弹窗外壳（跟随主题） ---------- */
 /* 播放页那套 .mtv-dialog 是写死深色的，只能给固定深色的播放页用；
    这里给全站通用弹窗用，颜色必须跟着 --ui-* 令牌走。 */
