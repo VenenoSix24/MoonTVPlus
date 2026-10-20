@@ -1487,16 +1487,6 @@ html[data-loading-style='grid'] .mtv-err-box {
   --nav-hover-bg: rgba(255, 255, 255, 0.12);
 }
 
-/* 播放页 / 直播页：没有 Hero 可以「透明压在上面」，底是固定的深色画布。
-   这里给一层深色磨砂实底 —— 内容滚过顶栏时不会直接穿过去，
-   同时保留一点透光，不至于变成一条生硬的黑条。 */
-.mtv-mheader.is-on-dark {
-  background-color: rgba(10, 10, 12, 0.62);
-  backdrop-filter: blur(18px) saturate(160%);
-  -webkit-backdrop-filter: blur(18px) saturate(160%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
 /* 顶部暗角：只在压着 Hero 时出现。
    暗角必须是暗的 —— 之前写成「页面底色混透明」，深色下刚好等于 rgba(0,0,0,.72)
    看不出问题，浅色下就变成在海报顶上糊了一条白带，和「顶栏透明」直接打架。
@@ -2255,6 +2245,16 @@ html[data-loading-style='grid'] .mtv-err-box {
   box-shadow: none;
 }
 
+/* 播放页 / 直播页：底是固定的深色画布，没有 Hero 可以「透明压在上面」，
+   所以要一层磨砂实底。这条必须排在 .is-over-hero 之后 —— 两个类会同时挂上，
+   同优先级下后定义的胜出，否则背景又被改回透明（之前就是这样没生效）。 */
+.mtv-mheader.is-over-hero.is-on-dark {
+  background-color: rgba(10, 10, 12, 0.72);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+}
+
 .mtv-mp-row.is-static:hover {
   background: none;
 }
@@ -2858,7 +2858,10 @@ html[data-loading-style='grid'] .mtv-err-box {
      这正好就是「宽 logo 不用放大」想要的效果，且不必去判断宽高比。 */
   height: clamp(2.75rem, 5vw, 4.5rem);
   width: auto;
-  max-width: min(100%, 34rem);
+  /* 34rem 是按正文栏（576px）定的，超宽横排 logo 会被它压成一条细线
+     （蜘蛛侠、街头霸王这种 10:1 的片名最明显）。改成按视口算，
+     让宽 logo 能吃到 672px，高度也就跟得上来；屏幕再窄时自然回落到内容栏宽度。 */
+  max-width: min(calc(100vw - 2 * var(--ui-gutter)), 42rem);
   object-fit: contain;
   /* 透明 PNG 用 drop-shadow 才贴着字形轮廓，box-shadow 会描出一个矩形 */
   filter: drop-shadow(0 2px 12px var(--hero-title-shadow));

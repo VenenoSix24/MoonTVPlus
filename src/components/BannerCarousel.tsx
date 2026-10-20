@@ -219,35 +219,9 @@ export default function BannerCarousel({
   const [logoMap, setLogoMap] = useState<Record<string, string | null>>({}); // 官方标题字：请求键 → URL
 
   // 标题字若是深色单色，压在暗海报上读不出来，需要反色。
-  // 判定放在服务端：TMDB 图床不返回 CORS 头，前端 canvas 采样会抛 SecurityError。
-  // 这两个 hook 必须待在组件顶层 —— 下面有提前 return（加载态），
-  // 放到 return 之后就会触发 "Rendered more hooks than during the previous render"。
-  const [logoDark, setLogoDark] = useState(false);
-  useEffect(() => {
-    const item = items[currentIndex];
-    if (!item) {
-      setLogoDark(false);
-      return;
-    }
-    const toneKey = logoRequest(item).key;
-    const logo = logoMap[toneKey] ?? heroLogoCache.get(toneKey) ?? null;
-    if (!logo) {
-      setLogoDark(false);
-      return;
-    }
-    let alive = true;
-    fetch(`/api/tmdb/logo-tone?src=${encodeURIComponent(logo)}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (alive) setLogoDark(Boolean(data?.dark));
-      })
-      .catch(() => {
-        // 测不出来就保持原样，不做反色
-      });
-    return () => {
-      alive = false;
-    };
-  }, [items, currentIndex, logoMap]);
+  // 判定在服务端做（TMDB 图床不返回 CORS 头，前端 canvas 采样会抛 SecurityError），
+  // 结果按缓存键存在这里 —— 由下面的预取 effect 提前算好，切换时同步命中。
+  const [logoDarkMap, setLogoDarkMap] = useState<Record<string, boolean>>({});
   const [bannerHeightScale, setBannerHeightScale] =
     useState<HomeBannerHeightScale>('1'); // 轮播图高度倍率
   const [isMobileView, setIsMobileView] = useState(false);
@@ -594,12 +568,31 @@ export default function BannerCarousel({
   useEffect(() => {
     if (dataSource !== 'TMDB' || !items.length) return;
 
+    /** 预判标题字深浅。留到轮播切过去才做的话，会先黑一下再闪成白。 */
+    const warmTone = (key: string, src: string) => {
+      if (logoDarkCache.has(key)) return;
+      fetch(`/api/tmdb/logo-tone?src=${encodeURIComponent(src)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          const dark = Boolean(data?.dark);
+          logoDarkCache.set(key, dark);
+          setLogoDarkMap((prev) => ({ ...prev, [key]: dark }));
+        })
+        .catch(() => {
+          // 测不出来按非深色处理
+        });
+    };
+
     // 服务端随列表下发的标题字已经把 URL 写进缓存了，但「有 URL」不等于「有图」：
     // 图片本身是 <img> 挂上去那一刻才开始下的，也就是轮换到的瞬间。这里趁第一屏
-    // 还在展示，把其余各屏的标题字全部下完并解码好。
+    // 还在展示，把其余各屏的标题字全部下完并解码好，顺便把深浅也判掉。
     items.forEach((item) => {
-      const cached = heroLogoCache.get(logoRequest(item).key);
-      if (cached) warmLogo(cached);
+      const { key } = logoRequest(item);
+      const cached = heroLogoCache.get(key);
+      if (cached) {
+        warmLogo(cached);
+        warmTone(key, cached);
+      }
     });
 
     const pending = items.filter(
@@ -619,7 +612,10 @@ export default function BannerCarousel({
             : null;
           heroLogoCache.set(key, src);
           setLogoMap((prev) => ({ ...prev, [key]: src }));
-          if (src) warmLogo(src);
+          if (src) {
+            warmLogo(src);
+            warmTone(key, src);
+          }
         })
         .catch(() => {
           // 取不到就回落到文字标题，不打扰用户
@@ -741,6 +737,9 @@ export default function BannerCarousel({
   const logoKey = logoRequest(currentItem).key;
   const titleLogo: string | null =
     logoMap[logoKey] ?? heroLogoCache.get(logoKey) ?? null;
+
+  // 深色判定在预取阶段就算好了，这里同步读，不会出现「先黑一下再闪成白」
+  const logoDark = logoDarkMap[logoKey] === true;
 
   // TMDB 源下标题字是异步取的。落地之前先把文字藏起来（占位仍在，不跳版），
   // 否则会「先显示文字、一秒后突然变成 logo」闪一下。
@@ -1020,6 +1019,8 @@ const warmLogo = (src: string) => {
 
 /** 标题字按「类型:id:语言」缓存。轮播每 5 秒切一次，来回切不该反复打接口。 */
 const heroLogoCache = new Map<string, string | null>();
+/* 标题字深浅的预判结果：键同 logoRequest，true 表示需要反色 */
+const logoDarkCache = new Map<string, boolean>();
 
 /** 官方标题字的请求参数。key 同时用作缓存键；语言按片名内容判定。 */
 const logoRequest = (item: BannerItem) => {
