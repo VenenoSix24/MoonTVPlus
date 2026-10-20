@@ -957,7 +957,7 @@ export function SearchPageClient({ searchBase = '/search' }: { searchBase?: stri
           savePartialCacheForPlayback();
           router.push(itemUrl);
         }}
-        className='group w-full rounded-2xl border border-gray-200/80 bg-white/90 p-3 text-left shadow-sm transition-all hover:border-green-300 hover:shadow-md dark:border-gray-700 dark:bg-gray-900/70 dark:hover:border-green-700'
+        className='group w-full rounded-2xl border border-gray-200/80 bg-white/90 p-3 text-left shadow-sm transition-all hover:border-ui-accent hover:shadow-md dark:border-gray-700 dark:bg-gray-900/70 dark:hover:border-ui-accent'
       >
         <div className='flex items-start gap-4'>
           <div className='relative h-32 w-24 shrink-0 overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-800'>
@@ -985,7 +985,7 @@ export function SearchPageClient({ searchBase = '/search' }: { searchBase?: stri
                 <div className='mt-2 flex flex-wrap gap-2'>
                   {renderTag(
                     item.type === 'movie' ? '电影' : '剧集',
-                    'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                    'bg-ui-accent-soft text-ui-accent  '
                   )}
                   {yearText &&
                     renderTag(
@@ -1046,7 +1046,7 @@ export function SearchPageClient({ searchBase = '/search' }: { searchBase?: stri
                     [item.key]: true,
                   }));
                 }}
-                className='inline-flex shrink-0 items-center rounded-full border border-green-200 bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700 transition-colors hover:bg-green-100 dark:border-green-800 dark:bg-green-900/30 dark:text-green-300 dark:hover:bg-green-900/50'
+                className='inline-flex shrink-0 items-center rounded-full border border-ui-accent bg-ui-accent-soft px-2.5 py-1 text-xs font-medium text-ui-accent transition-colors hover:bg-ui-accent-soft    dark:'
                 aria-label={`展开剩余${hiddenSourceCount}个来源`}
               >
                 +{hiddenSourceCount}
@@ -1717,9 +1717,9 @@ export function SearchPageClient({ searchBase = '/search' }: { searchBase?: stri
             }
             setPansouCloudFilterOpen((prev) => !prev);
           }}
-          className={`relative z-10 rounded-full px-3 py-1 text-xs font-medium transition-all duration-200 whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 ${
+          className={`relative z-10 rounded-full px-3 py-1 text-xs font-medium transition-all duration-200 whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-ui-accent focus:ring-offset-2 dark:focus:ring-offset-gray-900 ${
             hasFilter
-              ? 'cursor-pointer text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300'
+              ? 'cursor-pointer text-ui-accent hover:text-ui-accent  '
               : 'cursor-pointer text-gray-700 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100'
           }`}
           aria-expanded={pansouCloudFilterOpen}
@@ -1818,7 +1818,7 @@ export function SearchPageClient({ searchBase = '/search' }: { searchBase?: stri
                 onFocus={handleInputFocus}
                 placeholder='搜索电影、电视剧...'
                 autoComplete='off'
-                className='w-full h-12 rounded-lg bg-gray-50/80 py-3 pl-10 pr-12 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-400 focus:bg-white border border-gray-200/50 shadow-sm dark:bg-gray-800 dark:text-gray-300 dark:placeholder-gray-500 dark:focus:bg-gray-700 dark:border-gray-700'
+                className='w-full h-12 rounded-lg bg-gray-50/80 py-3 pl-10 pr-12 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-ui-accent focus:bg-white border border-gray-200/50 shadow-sm dark:bg-gray-800 dark:text-gray-300 dark:placeholder-gray-500 dark:focus:bg-gray-700 dark:border-gray-700'
               />
 
               {/* 清除按钮 */}
@@ -1940,8 +1940,8 @@ export function SearchPageClient({ searchBase = '/search' }: { searchBase?: stri
                   onClick={() => setAdvancedOpen((prev) => !prev)}
                   className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition-colors ${
                     advancedOpen
-                      ? 'bg-green-50 text-green-600 dark:bg-gray-700/70 dark:text-green-400'
-                      : 'text-gray-600 hover:bg-green-50 hover:text-green-600 dark:text-gray-400 dark:hover:bg-gray-700/50 dark:hover:text-green-400'
+                      ? 'bg-ui-accent-soft text-ui-accent dark:bg-gray-700/70 '
+                      : 'text-gray-600 hover:bg-ui-accent-soft hover:text-ui-accent dark:text-gray-400 dark:hover:bg-gray-700/50 '
                   }`}
                   aria-expanded={advancedOpen}
                 >
@@ -1972,7 +1972,7 @@ export function SearchPageClient({ searchBase = '/search' }: { searchBase?: stri
                             setViewMode(viewMode === 'agg' ? 'all' : 'agg')
                           }
                         />
-                        <div className='h-5 w-9 rounded-full bg-gray-300 transition-colors peer-checked:bg-green-500 dark:bg-gray-600'></div>
+                        <div className='h-5 w-9 rounded-full bg-gray-300 transition-colors peer-checked:bg-ui-accent dark:bg-gray-600'></div>
                         <div className='absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-4'></div>
                       </div>
                     </label>
@@ -1990,7 +1990,7 @@ export function SearchPageClient({ searchBase = '/search' }: { searchBase?: stri
                               setPrivateLibraryOnly(e.target.checked)
                             }
                           />
-                          <div className='h-5 w-9 rounded-full bg-gray-300 transition-colors peer-checked:bg-green-500 dark:bg-gray-600'></div>
+                          <div className='h-5 w-9 rounded-full bg-gray-300 transition-colors peer-checked:bg-ui-accent dark:bg-gray-600'></div>
                           <div className='absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-4'></div>
                         </div>
                       </label>
@@ -2005,7 +2005,7 @@ export function SearchPageClient({ searchBase = '/search' }: { searchBase?: stri
                           onClick={() => setResultDisplayMode('card')}
                           className={`inline-flex items-center justify-center gap-1 rounded-md px-2 py-1.5 text-sm transition-colors ${
                             resultDisplayMode === 'card'
-                              ? 'bg-green-500 text-white'
+                              ? 'bg-ui-accent-soft0 text-white'
                               : 'text-gray-600 hover:bg-white dark:text-gray-300 dark:hover:bg-gray-700'
                           }`}
                           aria-label='切换为卡片视图'
@@ -2018,7 +2018,7 @@ export function SearchPageClient({ searchBase = '/search' }: { searchBase?: stri
                           onClick={() => setResultDisplayMode('list')}
                           className={`inline-flex items-center justify-center gap-1 rounded-md px-2 py-1.5 text-sm transition-colors ${
                             resultDisplayMode === 'list'
-                              ? 'bg-green-500 text-white'
+                              ? 'bg-ui-accent-soft0 text-white'
                               : 'text-gray-600 hover:bg-white dark:text-gray-300 dark:hover:bg-gray-700'
                           }`}
                           aria-label='切换为列表视图'
@@ -2053,7 +2053,7 @@ export function SearchPageClient({ searchBase = '/search' }: { searchBase?: stri
                   onClick={() => setSelectedPansouCloudTypes([])}
                   className={`rounded-lg px-2 py-1.5 text-left text-xs transition-all duration-200 ${
                     selectedPansouCloudTypes.length === 0
-                      ? 'border border-green-200 bg-green-100 text-green-700 dark:border-green-700 dark:bg-green-900/30 dark:text-green-400'
+                      ? 'border border-ui-accent bg-ui-accent-soft text-ui-accent   '
                       : 'text-gray-700 hover:bg-gray-100/80 dark:text-gray-300 dark:hover:bg-gray-700/80'
                   }`}
                   aria-pressed={selectedPansouCloudTypes.length === 0}
@@ -2069,7 +2069,7 @@ export function SearchPageClient({ searchBase = '/search' }: { searchBase?: stri
                       onClick={() => togglePansouCloudType(value)}
                       className={`rounded-lg px-2 py-1.5 text-left text-xs transition-all duration-200 ${
                         selected
-                          ? 'border border-green-200 bg-green-100 text-green-700 dark:border-green-700 dark:bg-green-900/30 dark:text-green-400'
+                          ? 'border border-ui-accent bg-ui-accent-soft text-ui-accent   '
                           : 'text-gray-700 hover:bg-gray-100/80 dark:text-gray-300 dark:hover:bg-gray-700/80'
                       }`}
                       aria-pressed={selected}
@@ -2105,7 +2105,7 @@ export function SearchPageClient({ searchBase = '/search' }: { searchBase?: stri
                         <span className='inline-flex items-center gap-2'>
                           搜索结果
                           {isFromCache && (
-                            <span className='rounded-md bg-green-50 px-2 py-0.5 text-xs font-medium text-green-600 dark:bg-green-900/30 dark:text-green-400'>
+                            <span className='rounded-md bg-ui-accent-soft px-2 py-0.5 text-xs font-medium text-ui-accent  '>
                               缓存
                             </span>
                           )}
@@ -2127,7 +2127,7 @@ export function SearchPageClient({ searchBase = '/search' }: { searchBase?: stri
                             <span className='inline-flex items-center gap-1'>
                               源 {completedSources}/{totalSources}
                               {isLoading && (
-                                <span className='inline-block h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-green-500'></span>
+                                <span className='inline-block h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-ui-accent'></span>
                               )}
                             </span>
                           )}
@@ -2141,7 +2141,7 @@ export function SearchPageClient({ searchBase = '/search' }: { searchBase?: stri
                             setForceRefresh(true);
                           }}
                           disabled={isLoading}
-                          className='flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-600 transition-colors hover:bg-green-50 hover:text-green-600 disabled:cursor-not-allowed disabled:opacity-50 dark:text-gray-400 dark:hover:bg-gray-700/50 dark:hover:text-green-400'
+                          className='flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-600 transition-colors hover:bg-ui-accent-soft hover:text-ui-accent disabled:cursor-not-allowed disabled:opacity-50 dark:text-gray-400 dark:hover:bg-gray-700/50 '
                           aria-label='强制刷新搜索结果'
                         >
                           <RefreshCw
@@ -2179,8 +2179,8 @@ export function SearchPageClient({ searchBase = '/search' }: { searchBase?: stri
                         onClick={() => setAdvancedOpen((prev) => !prev)}
                         className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition-colors ${
                           advancedOpen
-                            ? 'bg-green-50 text-green-600 dark:bg-gray-700/70 dark:text-green-400'
-                            : 'text-gray-600 hover:bg-green-50 hover:text-green-600 dark:text-gray-400 dark:hover:bg-gray-700/50 dark:hover:text-green-400'
+                            ? 'bg-ui-accent-soft text-ui-accent dark:bg-gray-700/70 '
+                            : 'text-gray-600 hover:bg-ui-accent-soft hover:text-ui-accent dark:text-gray-400 dark:hover:bg-gray-700/50 '
                         }`}
                         aria-expanded={advancedOpen}
                       >
@@ -2211,7 +2211,7 @@ export function SearchPageClient({ searchBase = '/search' }: { searchBase?: stri
                                   setViewMode(viewMode === 'agg' ? 'all' : 'agg')
                                 }
                               />
-                              <div className='h-5 w-9 rounded-full bg-gray-300 transition-colors peer-checked:bg-green-500 dark:bg-gray-600'></div>
+                              <div className='h-5 w-9 rounded-full bg-gray-300 transition-colors peer-checked:bg-ui-accent dark:bg-gray-600'></div>
                               <div className='absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-4'></div>
                             </div>
                           </label>
@@ -2229,7 +2229,7 @@ export function SearchPageClient({ searchBase = '/search' }: { searchBase?: stri
                                     setPrivateLibraryOnly(e.target.checked)
                                   }
                                 />
-                                <div className='h-5 w-9 rounded-full bg-gray-300 transition-colors peer-checked:bg-green-500 dark:bg-gray-600'></div>
+                                <div className='h-5 w-9 rounded-full bg-gray-300 transition-colors peer-checked:bg-ui-accent dark:bg-gray-600'></div>
                                 <div className='absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-4'></div>
                               </div>
                             </label>
@@ -2244,7 +2244,7 @@ export function SearchPageClient({ searchBase = '/search' }: { searchBase?: stri
                                 onClick={() => setResultDisplayMode('card')}
                                 className={`inline-flex items-center justify-center gap-1 rounded-md px-2 py-1.5 text-sm transition-colors ${
                                   resultDisplayMode === 'card'
-                                    ? 'bg-green-500 text-white'
+                                    ? 'bg-ui-accent-soft0 text-white'
                                     : 'text-gray-600 hover:bg-white dark:text-gray-300 dark:hover:bg-gray-700'
                                 }`}
                                 aria-label='切换为卡片视图'
@@ -2257,7 +2257,7 @@ export function SearchPageClient({ searchBase = '/search' }: { searchBase?: stri
                                 onClick={() => setResultDisplayMode('list')}
                                 className={`inline-flex items-center justify-center gap-1 rounded-md px-2 py-1.5 text-sm transition-colors ${
                                   resultDisplayMode === 'list'
-                                    ? 'bg-green-500 text-white'
+                                    ? 'bg-ui-accent-soft0 text-white'
                                     : 'text-gray-600 hover:bg-white dark:text-gray-300 dark:hover:bg-gray-700'
                                 }`}
                                 aria-label='切换为列表视图'
@@ -2274,7 +2274,7 @@ export function SearchPageClient({ searchBase = '/search' }: { searchBase?: stri
                   {searchResults.length === 0 ? (
                     isLoading ? (
                       <div className='flex justify-center items-center h-40'>
-                        <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-green-500'></div>
+                        <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-ui-accent'></div>
                       </div>
                     ) : (
                       <div className='text-center text-gray-500 py-8 dark:text-gray-400'>
@@ -2591,7 +2591,7 @@ export function SearchPageClient({ searchBase = '/search' }: { searchBase?: stri
       {/* 返回顶部悬浮按钮 */}
       <button
         onClick={scrollToTop}
-        className={`fixed bottom-20 md:bottom-6 right-6 z-[500] w-12 h-12 bg-green-500/90 hover:bg-green-500 text-white rounded-full shadow-lg backdrop-blur-sm transition-all duration-300 ease-in-out flex items-center justify-center group ${
+        className={`fixed bottom-20 md:bottom-6 right-6 z-[500] w-12 h-12 bg-ui-accent hover:bg-ui-accent-soft0 text-white rounded-full shadow-lg backdrop-blur-sm transition-all duration-300 ease-in-out flex items-center justify-center group ${
           showBackToTop
             ? 'opacity-100 translate-y-0 pointer-events-auto'
             : 'opacity-0 translate-y-4 pointer-events-none'

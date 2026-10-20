@@ -1346,7 +1346,7 @@ function LivePageClient() {
   const testButtonClassName = (disabled: boolean) => (
     `text-xs px-2 py-1 rounded border flex-shrink-0 ${disabled
       ? 'border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-600 cursor-not-allowed opacity-60'
-      : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-green-500 hover:text-green-600 dark:hover:text-green-400'
+      : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-ui-accent hover:text-ui-accent '
     }`
   );
 
@@ -2259,15 +2259,15 @@ function LivePageClient() {
                 <>
                   {/* 动画直播图标 */}
                   <div className='relative mb-8'>
-                    <div className='relative mx-auto w-24 h-24 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl shadow-2xl flex items-center justify-center transform hover:scale-105 transition-transform duration-300'>
+                    <div className='relative mx-auto w-24 h-24 bg-gradient-to-r from-ui-accent to-ui-accent rounded-2xl shadow-2xl flex items-center justify-center transform hover:scale-105 transition-transform duration-300'>
                       <div className='text-white text-4xl'>📺</div>
                       {/* 旋转光环 */}
-                      <div className='absolute -inset-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl opacity-20 animate-spin'></div>
+                      <div className='absolute -inset-2 bg-gradient-to-r from-ui-accent to-ui-accent rounded-2xl opacity-20 animate-spin'></div>
                     </div>
 
                     {/* 浮动粒子效果 */}
                     <div className='absolute top-0 left-0 w-full h-full pointer-events-none'>
-                      <div className='absolute top-2 left-2 w-2 h-2 bg-green-400 rounded-full animate-bounce'></div>
+                      <div className='absolute top-2 left-2 w-2 h-2 bg-ui-accent rounded-full animate-bounce'></div>
                       <div
                         className='absolute top-4 right-4 w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce'
                         style={{ animationDelay: '0.5s' }}
@@ -2283,15 +2283,15 @@ function LivePageClient() {
                   <div className='mb-6 w-80 mx-auto'>
                     <div className='flex justify-center space-x-2 mb-4'>
                       <div
-                        className={`w-3 h-3 rounded-full transition-all duration-500 ${loadingStage === 'loading' ? 'bg-green-500 scale-125' : 'bg-green-500'
+                        className={`w-3 h-3 rounded-full transition-all duration-500 ${loadingStage === 'loading' ? 'bg-ui-accent scale-125' : 'bg-ui-accent'
                           }`}
                       ></div>
                       <div
-                        className={`w-3 h-3 rounded-full transition-all duration-500 ${loadingStage === 'fetching' ? 'bg-green-500 scale-125' : 'bg-green-500'
+                        className={`w-3 h-3 rounded-full transition-all duration-500 ${loadingStage === 'fetching' ? 'bg-ui-accent scale-125' : 'bg-ui-accent'
                           }`}
                       ></div>
                       <div
-                        className={`w-3 h-3 rounded-full transition-all duration-500 ${loadingStage === 'ready' ? 'bg-green-500 scale-125' : 'bg-gray-300'
+                        className={`w-3 h-3 rounded-full transition-all duration-500 ${loadingStage === 'ready' ? 'bg-ui-accent scale-125' : 'bg-gray-300'
                           }`}
                       ></div>
                     </div>
@@ -2299,7 +2299,7 @@ function LivePageClient() {
                     {/* 进度条 */}
                     <div className='w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden'>
                       <div
-                        className='h-full bg-gradient-to-r from-green-500 to-emerald-600 rounded-full transition-all duration-1000 ease-out'
+                        className='h-full bg-gradient-to-r from-ui-accent to-ui-accent rounded-full transition-all duration-1000 ease-out'
                         style={{
                           width:
                             loadingStage === 'loading' ? '33%' : loadingStage === 'fetching' ? '66%' : '100%',
@@ -2438,7 +2438,7 @@ function LivePageClient() {
               <div
                 className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full transition-all duration-200 ${isChannelListCollapsed
                   ? 'bg-orange-400 animate-pulse'
-                  : 'bg-green-400'
+                  : 'bg-ui-success'
                   }`}
               ></div>
             </button>
@@ -2499,9 +2499,9 @@ function LivePageClient() {
                         legacy={
                           <>
                             <div className='relative mb-8'>
-                              <div className='relative mx-auto w-24 h-24 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl shadow-2xl flex items-center justify-center transform hover:scale-105 transition-transform duration-300'>
+                              <div className='relative mx-auto w-24 h-24 bg-gradient-to-r from-ui-accent to-ui-accent rounded-2xl shadow-2xl flex items-center justify-center transform hover:scale-105 transition-transform duration-300'>
                                 <div className='text-white text-4xl'>📺</div>
-                                <div className='absolute -inset-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl opacity-20 animate-spin'></div>
+                                <div className='absolute -inset-2 bg-gradient-to-r from-ui-accent to-ui-accent rounded-2xl opacity-20 animate-spin'></div>
                               </div>
                             </div>
                             <div className='space-y-2'>
@@ -2702,8 +2702,8 @@ function LivePageClient() {
                     onClick={() => setActiveTab('channels')}
                     className={`flex-1 py-3 px-6 text-center cursor-pointer transition-all duration-200 font-medium
                       ${activeTab === 'channels'
-                        ? 'text-green-600 dark:text-green-400'
-                        : 'text-gray-700 hover:text-green-600 bg-black/5 dark:bg-white/5 dark:text-gray-300 dark:hover:text-green-400 hover:bg-black/3 dark:hover:bg-white/3'
+                        ? 'text-ui-accent '
+                        : 'text-gray-700 hover:text-ui-accent bg-black/5 dark:bg-white/5 dark:text-gray-300  hover:bg-black/3 dark:hover:bg-white/3'
                       }
                     `.trim()}
                   >
@@ -2713,8 +2713,8 @@ function LivePageClient() {
                     onClick={() => setActiveTab('sources')}
                     className={`flex-1 py-3 px-6 text-center cursor-pointer transition-all duration-200 font-medium
                       ${activeTab === 'sources'
-                        ? 'text-green-600 dark:text-green-400'
-                        : 'text-gray-700 hover:text-green-600 bg-black/5 dark:bg-white/5 dark:text-gray-300 dark:hover:text-green-400 hover:bg-black/3 dark:hover:bg-white/3'
+                        ? 'text-ui-accent '
+                        : 'text-gray-700 hover:text-ui-accent bg-black/5 dark:bg-white/5 dark:text-gray-300  hover:bg-black/3 dark:hover:bg-white/3'
                       }
                     `.trim()}
                   >
@@ -2734,7 +2734,7 @@ function LivePageClient() {
                           onChange={(e) => handleSearch(e.target.value)}
                           placeholder='搜索频道...'
                           disabled={isSwitchingSource}
-                          className={`w-full px-3 py-2 pl-9 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all ${
+                          className={`w-full px-3 py-2 pl-9 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-transparent transition-all ${
                             isSwitchingSource ? 'opacity-50 cursor-not-allowed' : ''
                           }`}
                         />
@@ -2825,8 +2825,8 @@ function LivePageClient() {
                                  ${isSwitchingSource
                                   ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed opacity-50'
                                   : selectedGroup === group
-                                    ? 'text-green-500 dark:text-green-400'
-                                    : 'text-gray-700 hover:text-green-600 dark:text-gray-300 dark:hover:text-green-400'
+                                    ? 'text-ui-accent '
+                                    : 'text-gray-700 hover:text-ui-accent dark:text-gray-300 '
                                 }
                                `.trim()}
                             >
@@ -2834,7 +2834,7 @@ function LivePageClient() {
                                 {group}
                               </div>
                               {selectedGroup === group && !isSwitchingSource && (
-                                <div className='absolute bottom-0 left-0 right-0 h-0.5 bg-green-500 dark:bg-green-400' />
+                                <div className='absolute bottom-0 left-0 right-0 h-0.5 bg-ui-accent' />
                               )}
                             </button>
                           ))}
@@ -2861,7 +2861,7 @@ function LivePageClient() {
                                 className={`w-full p-3 rounded-lg text-left transition-all duration-200 ${isSwitchingSource
                                   ? 'opacity-50 cursor-not-allowed'
                                   : isActive
-                                    ? 'bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700'
+                                    ? 'bg-ui-accent-soft border border-ui-accent'
                                     : 'hover:bg-gray-100 dark:hover:bg-gray-700'
                                   }`}
                               >
@@ -2889,7 +2889,7 @@ function LivePageClient() {
                                           <span>·</span>
                                           <span className={
                                             testResult?.status === 'ok'
-                                              ? 'text-green-600 dark:text-green-400'
+                                              ? 'text-ui-accent '
                                               : testResult?.status === 'fail'
                                                 ? 'text-red-500 dark:text-red-400'
                                                 : 'text-amber-600 dark:text-amber-400'
@@ -2935,7 +2935,7 @@ function LivePageClient() {
                                 className={`w-full p-3 rounded-lg text-left transition-all duration-200 ${isSwitchingSource
                                   ? 'opacity-50 cursor-not-allowed'
                                   : hasActiveChild
-                                    ? 'bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700'
+                                    ? 'bg-ui-accent-soft border border-ui-accent'
                                     : 'hover:bg-gray-100 dark:hover:bg-gray-700'
                                   }`}
                               >
@@ -2975,7 +2975,7 @@ function LivePageClient() {
                                       {!isTestingLines && bestLine && (
                                         <>
                                           <span>·</span>
-                                          <span className='text-green-600 dark:text-green-400'>{`推荐线路${bestLineIndex + 1}${bestLineLabel ? ` ${bestLineLabel}` : ''}`}</span>
+                                          <span className='text-ui-success'>{`推荐线路${bestLineIndex + 1}${bestLineLabel ? ` ${bestLineLabel}` : ''}`}</span>
                                         </>
                                       )}
                                     </div>
@@ -3020,7 +3020,7 @@ function LivePageClient() {
                                           isSwitchingSource
                                             ? 'opacity-50 cursor-not-allowed'
                                             : isActive
-                                              ? 'bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700'
+                                              ? 'bg-ui-accent-soft border border-ui-accent'
                                               : 'hover:bg-gray-100 dark:hover:bg-gray-700'
                                         }`}
                                       >
@@ -3033,7 +3033,7 @@ function LivePageClient() {
                                             {testLabel && (
                                               <span className={
                                                 testResult?.status === 'ok'
-                                                  ? 'text-green-600 dark:text-green-400'
+                                                  ? 'text-ui-accent '
                                                   : testResult?.status === 'fail'
                                                     ? 'text-red-500 dark:text-red-400'
                                                     : 'text-amber-600 dark:text-amber-400'
@@ -3042,12 +3042,12 @@ function LivePageClient() {
                                               </span>
                                             )}
                                             {isBestLine && (
-                                              <span className='rounded bg-green-100 px-2 py-0.5 text-green-700 dark:bg-green-900/40 dark:text-green-300'>
+                                              <span className='rounded bg-ui-success-soft px-2 py-0.5 text-ui-success'>
                                                 推荐
                                               </span>
                                             )}
                                             {isActive && (
-                                              <span className='text-green-600 dark:text-green-400'>
+                                              <span className='text-ui-accent '>
                                                 当前播放
                                               </span>
                                             )}
@@ -3107,7 +3107,7 @@ function LivePageClient() {
                               onClick={() => !isCurrentSource && handleSourceChange(source)}
                               className={`flex items-start gap-3 px-2 py-3 rounded-lg transition-all select-none duration-200 relative
                                 ${isCurrentSource
-                                  ? 'bg-green-500/10 dark:bg-green-500/20 border-green-500/30 border'
+                                  ? 'bg-ui-accent-soft border-ui-accent border'
                                   : 'hover:bg-gray-200/50 dark:hover:bg-white/10 hover:scale-[1.02] cursor-pointer'
                                 }`.trim()}
                             >
@@ -3128,7 +3128,7 @@ function LivePageClient() {
 
                               {/* 当前标识 */}
                               {isCurrentSource && (
-                                <div className='absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full'></div>
+                                <div className='absolute top-2 right-2 w-2 h-2 bg-ui-accent rounded-full'></div>
                               )}
                             </div>
                           );
