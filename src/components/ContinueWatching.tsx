@@ -1,15 +1,15 @@
 /* eslint-disable no-console */
 'use client';
 
-import { AlertTriangle, ChevronRight } from 'lucide-react';
+import { AlertTriangle, ChevronRight, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import type { PlayRecord } from '@/lib/db.client';
 import {
   clearAllPlayRecords,
-  getCachedPlayRecordsSnapshot,
   getAllPlayRecords,
+  getCachedPlayRecordsSnapshot,
   subscribeToDataUpdates,
 } from '@/lib/db.client';
 
@@ -109,19 +109,21 @@ export default function ContinueWatching({ className }: ContinueWatchingProps) {
     <>
       <section className={`mb-8 ${className || ''}`}>
         <div className='mb-4 flex items-center justify-between'>
-          <h2 className='text-xl font-bold text-gray-800 dark:text-gray-200'>
-            继续观看
-          </h2>
+          <h2 className='mtv-row-title'>继续观看</h2>
           {!loading && playRecords.length > 0 && (
-            <div className='flex items-center gap-1'>
+            <div className='mtv-cw-actions'>
               <button
-                className='text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                type='button'
+                className='mtv-cw-clear'
                 onClick={() => setShowConfirmDialog(true)}
               >
+                <Trash2 className='h-3.5 w-3.5' />
                 清空
               </button>
+              <span className='mtv-cw-divider' aria-hidden='true' />
               <button
-                className='inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200'
+                type='button'
+                className='mtv-cw-all'
                 onClick={() => setShowPlayRecordsPanel(true)}
                 aria-label='查看全部播放记录'
               >
