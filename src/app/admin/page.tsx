@@ -12019,6 +12019,7 @@ const SiteConfigComponent = ({
               <option value='Douban'>豆瓣</option>
               <option value='TMDB'>TMDB</option>
               <option value='TX'>TX</option>
+              <option value='Mixed'>混合（TMDB + 豆瓣）</option>
             </select>
             <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
               选择首页轮播图的数据来源

@@ -37,6 +37,7 @@ function withBudget<T>(promise: Promise<T>, ms: number): Promise<T | null> {
 let tmdbCache: { data: any; timestamp: number } | null = null;
 let txCache: { data: any; timestamp: number } | null = null;
 let doubanCache: { data: any; timestamp: number } | null = null;
+let mixedCache: { data: any; timestamp: number } | null = null;
 
 export const dynamic = 'force-dynamic';
 
@@ -47,7 +48,14 @@ export async function GET() {
     const bannerDataSource = config.SiteConfig?.BannerDataSource || 'Douban';
 
     // 根据数据源选择对应的缓存
-    const cache = bannerDataSource === 'TX' ? txCache : bannerDataSource === 'Douban' ? doubanCache : tmdbCache;
+    const cache =
+      bannerDataSource === 'TX'
+        ? txCache
+        : bannerDataSource === 'Douban'
+          ? doubanCache
+          : bannerDataSource === 'Mixed'
+            ? mixedCache
+            : tmdbCache;
 
     // 检查缓存
     if (cache && Date.now() - cache.timestamp < CACHE_DURATION) {
@@ -77,70 +85,24 @@ export async function GET() {
         data: result,
         timestamp: Date.now(),
       };
+    } else if (bannerDataSource === 'Mixed') {
+      // 单一数据源看久了就那么几部在转。混合模式让 TMDB 和豆瓣交替出场：
+      // TMDB 带官方标题字和预告片，豆瓣带它自己的热点，两边各补一半视角。
+      result = await getMixedBannerContent(config);
+      result.source = 'Mixed';
+      mixedCache = {
+        data: result,
+        timestamp: Date.now(),
+      };
     } else {
       // 使用TMDB数据源（默认）
-      const apiKey = config.SiteConfig?.TMDBApiKey;
-      const proxy = config.SiteConfig?.TMDBProxy;
-      const reverseProxy = config.SiteConfig?.TMDBReverseProxy;
-
-      if (!apiKey) {
+      result = await getTMDBBannerContent(config);
+      if (result.code !== 200) {
         return NextResponse.json(
-          { code: 400, message: 'TMDB API Key 未配置' },
-          { status: 400 }
+          { code: result.code, message: result.message },
+          { status: result.code }
         );
       }
-
-      // 获取热门内容
-      result = await getTMDBTrendingContent(apiKey, proxy, reverseProxy);
-
-      // 为每个项目获取视频数据
-      if (result.code === 200 && result.list) {
-        // 标题字 / 无字海报和预告片一起取。
-        //
-        // 标题字原本是前端挂载后才逐条去请求的，首屏渲染时手里还没有，只能先把
-        // 文字藏起来等它——表现出来就是标题区先空一块、几百毫秒后才补上。放到这里
-        // 随列表一起下发，首帧就是完整的；而且服务端结果有 3 小时缓存，前端那份
-        // prefetch 则是每次进首页都要重打一遍。
-        const itemsWithAssets = await Promise.all(
-          result.list.map(async (item: any) => {
-            const kind: 'movie' | 'tv' =
-              item.media_type === 'tv' ? 'tv' : 'movie';
-            const [videoKey, imagesRes] = await Promise.all([
-              getTMDBVideos(
-                apiKey,
-                item.media_type,
-                item.id,
-                proxy,
-                reverseProxy
-              ),
-              withBudget(
-                getTMDBImages(apiKey, item.id, kind, proxy, reverseProxy),
-                ASSET_BUDGET_MS
-              ),
-            ]);
-
-            const images =
-              imagesRes && imagesRes.code === 200 && imagesRes.images
-                ? imagesRes.images
-                : null;
-            const logo = images
-              ? pickLogo(images.logos || [], titlePrefersZh(item.title))
-              : null;
-            const textless = images
-              ? pickTextlessPoster(images.posters || [])
-              : null;
-
-            return {
-              ...item,
-              video_key: videoKey,
-              title_logo_path: logo ? logo.file_path : null,
-              textless_poster_path: textless ? textless.file_path : null,
-            };
-          })
-        );
-        result.list = itemsWithAssets;
-      }
-
       // 添加数据源标识
       result.source = 'TMDB';
       // 更新TMDB缓存
@@ -449,4 +411,126 @@ async function getDoubanBannerContent(): Promise<{ code: number; list: any[] }> 
     console.error('获取豆瓣轮播图数据失败:', error);
     return { code: 500, list: [] };
   }
+}
+
+/**
+ * TMDB 轮播内容。标题字 / 无字海报和预告片一起取。
+ *
+ * 标题字原本是前端挂载后才逐条去请求的，首屏渲染时手里还没有，只能先把
+ * 文字藏起来等它——表现出来就是标题区先空一块、几百毫秒后才补上。放到这里
+ * 随列表一起下发，首帧就是完整的；而且服务端结果有 3 小时缓存，前端那份
+ * prefetch 则是每次进首页都要重打一遍。
+ */
+async function getTMDBBannerContent(config: any): Promise<any> {
+  const apiKey = config.SiteConfig?.TMDBApiKey;
+  const proxy = config.SiteConfig?.TMDBProxy;
+  const reverseProxy = config.SiteConfig?.TMDBReverseProxy;
+
+  if (!apiKey) {
+    return { code: 400, message: 'TMDB API Key 未配置', list: [] };
+  }
+
+  const result = await getTMDBTrendingContent(apiKey, proxy, reverseProxy);
+
+  if (result.code === 200 && result.list) {
+    const itemsWithAssets = await Promise.all(
+      result.list.map(async (item: any) => {
+        const kind: 'movie' | 'tv' = item.media_type === 'tv' ? 'tv' : 'movie';
+        const [videoKey, imagesRes] = await Promise.all([
+          getTMDBVideos(apiKey, item.media_type, item.id, proxy, reverseProxy),
+          withBudget(
+            getTMDBImages(apiKey, item.id, kind, proxy, reverseProxy),
+            ASSET_BUDGET_MS
+          ),
+        ]);
+
+        const images =
+          imagesRes && imagesRes.code === 200 && imagesRes.images
+            ? imagesRes.images
+            : null;
+        const logo = images
+          ? pickLogo(images.logos || [], titlePrefersZh(item.title))
+          : null;
+        const textless = images
+          ? pickTextlessPoster(images.posters || [])
+          : null;
+
+        return {
+          ...item,
+          video_key: videoKey,
+          title_logo_path: logo ? logo.file_path : null,
+          textless_poster_path: textless ? textless.file_path : null,
+        };
+      })
+    );
+    result.list = itemsWithAssets;
+  }
+
+  return result;
+}
+
+/** 片名归一：混排去重要跨源比对，两个站的标题标点习惯不一样 */
+function normalizeTitle(title: string): string {
+  return (title || '')
+    .replace(/[\s·:：\-—!！?？,，.。「」《》'"]/g, '')
+    .toLowerCase();
+}
+
+/**
+ * 混合轮播：TMDB 与豆瓣按 3:1 交错。
+ *
+ * 纯拼接会让前二十屏全是 TMDB，豆瓣排在后面根本轮不到——轮播是按顺序放的，
+ * 所以必须打散。3:1 是因为 TMDB 一次给二十条、豆瓣只取五条，等比例交错的话
+ * 前几屏会一半是豆瓣，反过来盖住了 TMDB 的标题字优势。
+ *
+ * 同一个片两边都可能出现，按归一后的片名去重，先到先得（TMDB 在前，
+ * 它的资产更全）。
+ */
+async function getMixedBannerContent(config: any): Promise<any> {
+  const [tmdb, douban] = await Promise.all([
+    getTMDBBannerContent(config).catch(() => null),
+    getDoubanBannerContent().catch(() => null),
+  ]);
+
+  const tmdbList: any[] =
+    tmdb && tmdb.code === 200 && Array.isArray(tmdb.list)
+      ? tmdb.list.map((item: any) => ({ ...item, origin_source: 'TMDB' }))
+      : [];
+  const doubanList: any[] =
+    douban && douban.code === 200 && Array.isArray(douban.list)
+      ? douban.list.map((item: any) => ({ ...item, origin_source: 'Douban' }))
+      : [];
+
+  if (!tmdbList.length && !doubanList.length) {
+    return {
+      code: tmdb && tmdb.code !== 200 ? tmdb.code : 500,
+      message: '没有可用的轮播数据',
+      list: [],
+    };
+  }
+
+  const list: any[] = [];
+  const seen = new Set<string>();
+  const tryPush = (item: any) => {
+    const key = normalizeTitle(item.title);
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+    list.push(item);
+  };
+
+  let doubanIndex = 0;
+  for (let i = 0; i < tmdbList.length; i += 1) {
+    tryPush(tmdbList[i]);
+    if ((i + 1) % 3 === 0 && doubanIndex < doubanList.length) {
+      tryPush(doubanList[doubanIndex]);
+      doubanIndex += 1;
+    }
+  }
+  // TMDB 用完还没排上的豆瓣条目接在尾部，数据少了总比丢掉强
+  while (doubanIndex < doubanList.length) {
+    tryPush(doubanList[doubanIndex]);
+    doubanIndex += 1;
+  }
+
+  return { code: 200, list };
 }

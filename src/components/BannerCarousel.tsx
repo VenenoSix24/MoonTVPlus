@@ -80,6 +80,7 @@ interface BannerItem extends TMDBItem {
   // 以下两项由 /api/tmdb/trending 在服务端随列表一起下发，首帧即可用
   title_logo_path?: string | null; // 官方标题字（key art logo）
   textless_poster_path?: string | null; // 无字海报
+  origin_source?: 'TMDB' | 'Douban' | 'TX'; // 混合数据源下来自哪个源
 }
 
 /* Hero 的多源评分。能拿到几个源就显示几个，不硬凑：
@@ -94,7 +95,9 @@ function HeroRatings({
   item: BannerItem;
   dataSource: string;
 }) {
-  const isTmdb = dataSource === 'TMDB';
+  // 混合数据源下每一屏来源不同，按条目判断；没有标记时退回全局配置
+  const origin = item.origin_source || dataSource;
+  const isTmdb = origin === 'TMDB';
   const ratingRef = useRatingRef(
     isTmdb ? item.media_type : null,
     isTmdb ? item.id : null
@@ -114,7 +117,7 @@ function HeroRatings({
   const own = formatScore(item.vote_average);
   if (own) {
     sources.push({
-      key: dataSource === 'Douban' ? 'douban' : 'tmdb',
+      key: origin === 'Douban' ? 'douban' : 'tmdb',
       value: own,
     });
   }
@@ -163,7 +166,11 @@ function HeroRatingPrefetch({
   const doneRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    if (dataSource !== 'TMDB' || items.length === 0) return;
+    if (
+      (dataSource !== 'TMDB' && dataSource !== 'Mixed') ||
+      items.length === 0
+    )
+      return;
 
     let cancelled = false;
 
@@ -173,7 +180,8 @@ function HeroRatingPrefetch({
 
       for (const item of items) {
         if (cancelled) return;
-        if (!item?.id) continue;
+        // 豆瓣条目的 id 不是 TMDB id，拿去查会查到另一部片，宁可不显示
+        if (!item?.id || item.origin_source === 'Douban') continue;
 
         const mediaType: 'movie' | 'tv' =
           item.media_type === 'tv' ? 'tv' : 'movie';
@@ -728,12 +736,14 @@ export default function BannerCarousel({
 
   // 外部详情页：豆瓣条目跳豆瓣，TMDB 条目跳 TMDB。TX 数据源的 id 是本地序号，
   // 没有对应的公开页面，那种情况下不显示这个按钮。
+  // 混合数据源下每一屏来自哪里不一定，按条目标记判断，不看全局 dataSource。
+  const itemOrigin = currentItem?.origin_source || dataSource;
   const detailUrl = (() => {
     if (!currentItem) return null;
-    if (dataSource === 'Douban') {
+    if (itemOrigin === 'Douban') {
       return `https://movie.douban.com/subject/${currentItem.id}/`;
     }
-    if (dataSource === 'TMDB') {
+    if (itemOrigin === 'TMDB') {
       const kind = currentItem.media_type === 'tv' ? 'tv' : 'movie';
       return `https://www.themoviedb.org/${kind}/${currentItem.id}`;
     }
@@ -953,7 +963,7 @@ export default function BannerCarousel({
                 onClick={(e) => e.stopPropagation()}
                 className='mtv-hero-more hidden md:flex items-center'
               >
-                {dataSource === 'Douban' ? '豆瓣详情' : 'TMDB 详情'}
+                {itemOrigin === 'Douban' ? '豆瓣详情' : 'TMDB 详情'}
                 <ExternalLink className='h-4 w-4' />
               </a>
             )}
