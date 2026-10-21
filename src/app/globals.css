@@ -1620,34 +1620,27 @@ html[data-loading-style='grid'] .mtv-err-box {
   outline: 2px solid var(--ui-accent);
   outline-offset: 2px;
 }
-/* ---------- 顶栏搜索：常驻胶囊输入框 ---------- */
-/* 原来是 40px 的圆图标，点一下才在原位长成 270px 的胶囊。搜索是顶栏里最常用的
-   动作用不着藏在一次点击后面 —— 而且收起时它和旁边的纯图标按钮长得一模一样，
-   看不出「这里能输入」。改成常驻：一个带放大镜的浅底胶囊，输入即搜。
-   下面的 .is-open 现在只负责把「取消」露出来。 */
+/* ---------- 顶栏搜索：点开展成输入框 ---------- */
+/* 收起时就是一个圆形图标按钮（和右侧其它图标同尺寸），点开在原位长成 270px 的胶囊，
+   Esc 或清空后收起。提交仍跳 /search?q=，和原来那个链接的落点一致。 */
 
 .mtv-search {
   display: flex;
   flex: none;
   align-items: center;
-  gap: 2px;
-  width: 232px;
-  height: 38px;
-  padding: 0 4px 0 10px;
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
   border-radius: var(--ui-r-full);
-  background-color: var(--ui-surface-3);
   transition:
     width var(--ui-dur-2) var(--ui-ease),
     background-color var(--ui-dur-1) var(--ui-ease);
 }
 
 .mtv-search.is-open {
-  width: 264px;
-}
-
-.mtv-search .mtv-topnav-icon {
-  width: 26px;
-  height: 26px;
+  width: 270px;
+  padding-right: 4px;
+  background-color: var(--ui-surface-3);
 }
 
 .mtv-search-input {
@@ -1657,28 +1650,29 @@ html[data-loading-style='grid'] .mtv-err-box {
   border: 0;
   background: none;
   font: inherit;
-  font-size: 13px;
+  font-size: 13.5px;
   color: var(--ui-ink);
   outline: none;
+  opacity: 0;
+  transition: opacity var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-search.is-open .mtv-search-input {
+  padding-left: 2px;
+  opacity: 1;
 }
 
 .mtv-search-input::placeholder {
   color: var(--ui-ink-3);
 }
 
-.mtv-search-input::-webkit-search-cancel-button {
-  display: none;
-}
-
 .mtv-search-cancel {
   flex: none;
-  width: 0;
-  padding: 0;
+  padding: 0 8px;
   border: 0;
   background: none;
-  overflow: hidden;
   font: inherit;
-  font-size: 12px;
+  font-size: 12.5px;
   color: var(--ui-ink-3);
   cursor: pointer;
   opacity: 0;
@@ -1692,8 +1686,6 @@ html[data-loading-style='grid'] .mtv-err-box {
 }
 
 .mtv-search.is-open .mtv-search-cancel {
-  width: auto;
-  padding: 0 6px;
   opacity: 1;
 }
 
@@ -6056,44 +6048,70 @@ html[data-loading-style='silver-screen'] .mtv-load-silver {
   color: var(--ui-danger);
 }
 
+/* 源名行：只放源名和集数，不再和指标抢同一行的宽度 */
 .mtv-play-src-meta {
   display: flex;
   align-items: center;
   gap: 8px;
   min-width: 0;
-  overflow: hidden;
   font-size: 11.5px;
   color: var(--ui-ink-3);
   white-space: nowrap;
 }
 
 .mtv-play-src-name {
-  max-width: 9em;
+  min-width: 0;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* 用 · 分隔而不是给每一项单独上色：一行里的信息点已经够多 */
-.mtv-play-src-ep::before,
-.mtv-play-src-speed::before,
-.mtv-play-src-ping::before {
+.mtv-play-src-ep::before {
   content: '·';
   margin-right: 6px;
   opacity: 0.5;
 }
 
+/* 指标行：速度 / 延迟 / 码率三样各给一个语义色。
+   速度决定能不能顺畅看，用强调色；延迟高意味着拖动要等，用琥珀；码率决定画质，
+   用紫。三个色都压在中亮度附近，并排不打架，也不会盖过标题。 */
+/* 指标行：三列固定宽度，列内左对齐。
+   数字宽度天然不等（864.8 KB/s / 4.6 MB/s / 1.8 Mbps），用 · 串起来每行的起止
+   位置都不一样，扫下来眼睛得一直重新找对齐线。改成 grid 之后三项各自成列，
+   纵向对得齐。 */
+.mtv-play-src-metrics {
+  display: grid;
+  grid-template-columns: 74px 54px minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .mtv-play-src-speed {
   font-weight: 600;
-  font-variant-numeric: tabular-nums;
   color: var(--ui-accent);
 }
 
 .mtv-play-src-ping {
-  font-variant-numeric: tabular-nums;
+  color: var(--ui-metric-ping);
+}
+
+.mtv-play-src-bitrate {
+  color: var(--ui-metric-bitrate);
 }
 
 .mtv-play-src-fail {
+  grid-column: 1 / -1;
   color: var(--ui-danger);
+}
+
+/* 超时不等于「访问不了」—— 只是没在阈值内测出来，慢源往往照样能播。
+   用中性色，别和真正打不开的源染成一样红。 */
+.mtv-play-src-fail.is-timeout {
+  color: var(--ui-ink-3);
 }
 
 .mtv-play-src-now {
@@ -6152,6 +6170,12 @@ html[data-loading-style='silver-screen'] .mtv-load-silver {
     gap: 6px;
     font-size: 11px;
   }
+
+  .mtv-play-src-metrics {
+    grid-template-columns: 68px 50px minmax(0, 1fr);
+    gap: 6px;
+    font-size: 11px;
+  }
 }
 
 /* 桌面侧栏更宽，卡片跟着舒展 */
@@ -6173,16 +6197,21 @@ html[data-loading-style='silver-screen'] .mtv-load-silver {
   .mtv-play-src-meta {
     font-size: 12px;
   }
+
+  .mtv-play-src-metrics {
+    grid-template-columns: 82px 58px minmax(0, 1fr);
+    font-size: 12px;
+  }
 }
 
-/* 码率。和速度、延迟同排，用同一个 · 分隔符 —— 三项里只有速度是强调色，
-   其余保持弱化，一行看下来不会散。 */
-.mtv-play-src-bitrate {
-  font-variant-numeric: tabular-nums;
+/* 延迟 / 码率两个语义色。深浅色各一档 —— 浅色底上用深一点的琥珀和紫，
+   深色底上提亮，保证两种主题下都够读。掩色不在别处复用，所以就近定义。 */
+:root {
+  --ui-metric-ping: #b45309;
+  --ui-metric-bitrate: #7c3aed;
 }
 
-.mtv-play-src-bitrate::before {
-  content: '·';
-  margin-right: 6px;
-  opacity: 0.5;
+.dark {
+  --ui-metric-ping: #fbbf24;
+  --ui-metric-bitrate: #a78bfa;
 }

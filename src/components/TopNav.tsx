@@ -72,6 +72,9 @@ const TopNav = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const searchInputRef = useRef<HTMLInputElement | null>(null);
+  // 用来判断失焦后焦点是不是还在搜索框内部 —— 点到提交图标/取消按钮时
+  // 不能把框收起来，否则点图标的瞬间整个搜索就没了
+  const searchFormRef = useRef<HTMLFormElement | null>(null);
 
   // 展开后直接把焦点交给输入框，不用再点一次
   useEffect(() => {
@@ -85,9 +88,13 @@ const TopNav = () => {
 
   const submitSearch = () => {
     const keyword = searchValue.trim();
-    router.push(
-      keyword ? `${searchHref}?q=${encodeURIComponent(keyword)}` : searchHref
-    );
+    // 没输入内容时不做跳转：点图标只是「打开搜索」，跳到空的 /search 会让人
+    // 以为搜索框被点没了。
+    if (!keyword) {
+      searchInputRef.current?.focus();
+      return;
+    }
+    router.push(`${searchHref}?q=${encodeURIComponent(keyword)}`);
     closeSearch();
   };
 
@@ -202,9 +209,8 @@ const TopNav = () => {
 
       <div className='mtv-topnav-right'>
         <form
-          className={
-            searchOpen || searchValue ? 'mtv-search is-open' : 'mtv-search'
-          }
+          ref={searchFormRef}
+          className={searchOpen ? 'mtv-search is-open' : 'mtv-search'}
           onSubmit={(event) => {
             event.preventDefault();
             submitSearch();
@@ -214,9 +220,13 @@ const TopNav = () => {
           }}
         >
           <button
-            type='submit'
+            type={searchOpen ? 'submit' : 'button'}
             className='mtv-topnav-icon'
             aria-label='搜索'
+            aria-expanded={searchOpen}
+            onClick={() => {
+              if (!searchOpen) setSearchOpen(true);
+            }}
           >
             <Search />
           </button>
@@ -226,16 +236,25 @@ const TopNav = () => {
             className='mtv-search-input'
             value={searchValue}
             onChange={(event) => setSearchValue(event.target.value)}
-            onBlur={() => {
+            onBlur={(event) => {
+              // 焦点还在搜索框内部（点到提交图标或取消按钮）时不收起 ——
+              // 否则点图标的瞬间整个搜索框就没了
+              if (
+                searchFormRef.current?.contains(event.relatedTarget as Node)
+              ) {
+                return;
+              }
               if (!searchValue.trim()) setSearchOpen(false);
             }}
             placeholder='搜索影片、剧集'
             aria-label='搜索关键词'
+            tabIndex={searchOpen ? 0 : -1}
           />
           <button
             type='button'
             className='mtv-search-cancel'
             onClick={closeSearch}
+            tabIndex={searchOpen ? 0 : -1}
           >
             取消
           </button>

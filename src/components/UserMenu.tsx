@@ -254,7 +254,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
   const [preferMode, setPreferMode] = useState<
     'balanced' | 'resolution' | 'speed'
   >('balanced'); // 优选偏好：综合判定/分辨率优先/网速优先
-  const [speedTestTimeout, setSpeedTestTimeout] = useState(4000); // 测速超时时间（毫秒）
+  const [speedTestTimeout, setSpeedTestTimeout] = useState(8000); // 测速超时时间（毫秒）
   const [fluidSearch, setFluidSearch] = useState(true);
   const [tmdbBackdropDisabled, setTmdbBackdropDisabled] = useState(false);
   const [enableTrailers, setEnableTrailers] = useState(false);
@@ -2448,7 +2448,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
         setPreferMode('balanced');
         break;
       case 'speedTestTimeout':
-        setSpeedTestTimeout(4000);
+        setSpeedTestTimeout(8000);
         break;
       case 'maxConcurrentDownloads':
         setMaxConcurrentDownloads(6);

@@ -29,7 +29,6 @@ import { generateStorageKey, getCachedPlayRecordsSnapshot } from '@/lib/db.clien
 import { isEpisodeHiddenByFilter } from '@/lib/episode-filter';
 import { loadAllLocalEpisodeProgressRecords } from '@/lib/episode-progress';
 import { isNetdiskSource } from '@/lib/netdisk/source';
-import { getSpeedTestMediaUrl } from '@/lib/speed-test-source';
 import { EpisodeFilterConfig,SearchResult } from '@/lib/types';
 import type { SpeedTestErrorType } from '@/lib/utils';
 import { getVideoResolutionFromM3u8, SpeedTestError } from '@/lib/utils';
@@ -811,7 +810,8 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
     return true;
   });
 
-  // 读取测速超时设置，默认4秒
+  // 读取测速超时设置。默认 8 秒 —— 4 秒太紧：HLS 首次拉 manifest 加首片，
+  // 在跨境线路上经常超，于是被判「测速超时」，点进去其实照样能播。
   const [speedTestTimeout] = useState<number>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('speedTestTimeout');
@@ -819,7 +819,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
         return Number(saved);
       }
     }
-    return 4000;
+    return 8000;
   });
 
   // 集数过滤逻辑
@@ -865,36 +865,18 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
       return;
     }
 
-    // 脚本源等懒解析源的搜索结果里没有 episodes，需要先补全详情并换出真实媒体地址；
-    // 采集源的 episodes 本身就是 m3u8，会原样返回。
-    const isScriptSource = source.source?.startsWith('script:') ?? false;
-    // 解析脚本源要触发服务端选线探测，给比 hls 测速本身更长的预算
-    const mediaUrl = await getSpeedTestMediaUrl(
-      source,
-      Math.max(speedTestTimeout, 12000)
-    );
+    // 获取第一集的URL
+    if (!source.episodes || source.episodes.length === 0) {
+      return;
+    }
+    const episodeUrl =
+      source.episodes.length > 1 ? source.episodes[1] : source.episodes[0];
 
     // 标记为已尝试
     setAttemptedSources((prev) => new Set(prev).add(sourceKey));
 
-    if (!mediaUrl) {
-      // 非脚本源没有播放地址时保持原行为：不展示测速结果
-      if (!isScriptSource) return;
-      setVideoInfoMap((prev) =>
-        new Map(prev).set(sourceKey, {
-          quality: '错误',
-          loadSpeed: '未知',
-          pingTime: 0,
-          bitrate: '未知',
-          hasError: true,
-          errorType: 'unreachable' as SpeedTestErrorType,
-        })
-      );
-      return;
-    }
-
     try {
-      const info = await getVideoResolutionFromM3u8(mediaUrl, speedTestTimeout);
+      const info = await getVideoResolutionFromM3u8(episodeUrl, speedTestTimeout);
       setVideoInfoMap((prev) => new Map(prev).set(sourceKey, info));
     } catch (error) {
       // 失败时保存错误状态，并区分超时与无法访问
@@ -1919,10 +1901,9 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                             )}
                           </div>
 
-                          {/* 第二行：源名 · 速度 · 延迟 · 码率。
-                              码率要留着 —— 「画质优先」就是按它排的，不显示的话
-                              看不出排序依据；网速吃紧时它也是判断这条流能不能跑满
-                              的唯一线索。 */}
+                          {/* 第二行：源名 · 集数；第三行：速度 · 延迟 · 码率。
+                              原来五样东西挤一行，窄屏下源名被压成 0 宽、码率被截断
+                              成「1.4 MI」。拆两行之后每一项都有固定位置。 */}
                           <div className='mtv-play-src-meta'>
                             <span className='mtv-play-src-name'>
                               {source.source_name}
@@ -1932,9 +1913,17 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                                 {source.episodes.length} 集
                               </span>
                             )}
-                            {videoInfo &&
-                              (videoInfo.hasError ? (
-                                <span className='mtv-play-src-fail'>
+                          </div>
+                          {videoInfo && (
+                            <div className='mtv-play-src-metrics'>
+                              {videoInfo.hasError ? (
+                                <span
+                                  className={`mtv-play-src-fail ${
+                                    videoInfo.errorType === 'timeout'
+                                      ? 'is-timeout'
+                                      : ''
+                                  }`.trim()}
+                                >
                                   {videoInfo.errorType === 'timeout'
                                     ? '测速超时'
                                     : '源无法访问'}
@@ -1954,8 +1943,9 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                                       </span>
                                     )}
                                 </>
-                              ))}
-                          </div>
+                              )}
+                            </div>
+                          )}
                           </div>
                         {/* 失败源的重测。正常源不挂 —— 工具条上已经有「全部重测」，
                             每张卡片再重复一遍纯属噪音。 */}
