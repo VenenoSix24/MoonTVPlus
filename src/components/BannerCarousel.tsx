@@ -691,11 +691,9 @@ export default function BannerCarousel({
     );
     if (!pending.length) return;
 
-    const controller = new AbortController();
-
     pending.forEach((item) => {
       const { key, url } = logoRequest(item);
-      fetch(url, { signal: controller.signal })
+      fetch(url)
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
           const src = data?.logo_path
@@ -713,7 +711,12 @@ export default function BannerCarousel({
         });
     });
 
-    return () => controller.abort();
+    // 这里故意不 abort。缓存是模块级的，正是下次回到首页要用的东西 —— 从首页点进
+    // 播放页时组件卸载，请求半路被砍就等于什么都没缓存，回来只能从头再等一遍；
+    // 等待期间 --logo-r 是默认的 3，盒子比例和图形对不上，contain 留白被
+    // object-position: center left 推到右边，看着就是标题字偏左，深色的也不反白。
+    // 让它在后台跑完，代价只是用户真的离开时多下几张图。
+    return;
   }, [dataSource, items]);
   const goToPrevious = useCallback(() => {
     isManualChange.current = true;
