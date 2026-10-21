@@ -424,32 +424,40 @@ export default function BannerCarousel({
 
     const fetchTrending = async () => {
       try {
-        // 先尝试从所有可能的数据源缓存中读取，找到最新的缓存
-        const sources = ['TMDB', 'TX', 'Douban'];
         let cachedData = null;
         let validSource = null;
         let cacheExpired = false;
         let latestTimestamp = 0;
 
-        // 遍历所有数据源，找到最新的缓存
-        for (const source of sources) {
-          const cacheKey = getLocalStorageKey(source);
+        // 遍历本地所有 banner 缓存，取时间戳最新的那份。
+        // 这里不能写死 ['TMDB','TX','Douban']：多源混合时接口给的 source 是
+        // 'Mixed'，写回的是 banner_trending_cache_Mixed，固定白名单永远读不到，
+        // 每次进首页都当作无缓存重新请求（冷缓存要等两秒多才出画面）。
+        const CACHE_PREFIX = 'banner_trending_cache_';
+        const cacheKeys: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith(CACHE_PREFIX)) {
+            cacheKeys.push(key);
+          }
+        }
+
+        for (const cacheKey of cacheKeys) {
           const cached = localStorage.getItem(cacheKey);
+          if (!cached) continue;
 
-          if (cached) {
-            try {
-              const { data, timestamp } = JSON.parse(cached);
+          try {
+            const { data, timestamp } = JSON.parse(cached);
 
-              // 选择时间戳最新的缓存
-              if (timestamp > latestTimestamp) {
-                cachedData = data;
-                validSource = source;
-                latestTimestamp = timestamp;
-                cacheExpired = Date.now() - timestamp > LOCALSTORAGE_DURATION;
-              }
-            } catch (e) {
-              console.error('解析缓存数据失败:', e);
+            // 选择时间戳最新的缓存
+            if (timestamp > latestTimestamp) {
+              cachedData = data;
+              validSource = cacheKey.slice(CACHE_PREFIX.length);
+              latestTimestamp = timestamp;
+              cacheExpired = Date.now() - timestamp > LOCALSTORAGE_DURATION;
             }
+          } catch (e) {
+            console.error('解析缓存数据失败:', e);
           }
         }
 
