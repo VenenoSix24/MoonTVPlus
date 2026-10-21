@@ -57,6 +57,7 @@ import {
   X,
 } from 'lucide-react';
 import { GripVertical } from 'lucide-react';
+import { buildScriptSourceValue } from '@/lib/source-key';
 import {
   Fragment,
   memo,
@@ -6909,6 +6910,63 @@ const VideoSourceConfig = ({
     [showAlert]
   );
 
+  // ---- 脚本线路 ----
+  // 一个脚本可能吐多条线路（hls / raw / …），备注和置顶要能落到某一条上。
+  // 线路列表得问脚本本身，slim 列表里没有。
+  const [linesModal, setLinesModal] = useState<{
+    open: boolean;
+    scriptKey: string;
+    scriptName: string;
+    loading: boolean;
+    error: string;
+    items: Array<{ id: string; name: string }>;
+  }>({
+    open: false,
+    scriptKey: '',
+    scriptName: '',
+    loading: false,
+    error: '',
+    items: [],
+  });
+
+  const closeLinesModal = useCallback(() => {
+    setLinesModal((prev) => ({ ...prev, open: false }));
+  }, []);
+
+  const openLinesModal = useCallback(
+    async (scriptKey: string, scriptName: string) => {
+      setLinesModal({
+        open: true,
+        scriptKey,
+        scriptName,
+        loading: true,
+        error: '',
+        items: [],
+      });
+      try {
+        const resp = await fetch('/api/admin/source-script', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'list_sources', key: scriptKey }),
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok) throw new Error(data.error || '读取线路失败');
+        setLinesModal((prev) => ({
+          ...prev,
+          loading: false,
+          items: Array.isArray(data.sources) ? data.sources : [],
+        }));
+      } catch (err) {
+        setLinesModal((prev) => ({
+          ...prev,
+          loading: false,
+          error: err instanceof Error ? err.message : '读取线路失败',
+        }));
+      }
+    },
+    []
+  );
+
   // 通用 API 请求
   const callSourceApi = async (body: Record<string, any>) => {
     try {
@@ -7630,6 +7688,7 @@ const VideoSourceConfig = ({
       source,
       meta,
       onMetaChange,
+      onOpenLines,
     }: {
       source: DataSource;
       meta?: { remark?: string; pinned?: boolean };
@@ -7637,6 +7696,7 @@ const VideoSourceConfig = ({
         key: string,
         patch: { remark?: string; pinned?: boolean }
       ) => void;
+      onOpenLines: (key: string, name: string) => void;
     }) => {
     return (
       <tr className='hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors'>
@@ -7748,6 +7808,18 @@ const VideoSourceConfig = ({
         </td>
         <td className='px-6 py-4'>
           <div className='flex items-center gap-2'>
+            {/* 脚本源的备注分两级：这一格写的是整个脚本的，某条线路单独的
+                备注和置顶在「线路」里配 */}
+            {source.script && (
+              <button
+                type='button'
+                onClick={() => onOpenLines(source.key, source.name)}
+                title='给这个脚本下的某一条线路单独写备注 / 置顶'
+                className='shrink-0 rounded-full border border-gray-200 px-2 py-1 text-[11px] text-gray-500 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-900/40'
+              >
+                线路
+              </button>
+            )}
             <button
               type='button'
               onClick={() =>
@@ -8425,6 +8497,7 @@ const VideoSourceConfig = ({
                 source={source}
                 meta={sourceMeta[source.key]}
                 onMetaChange={handleUpdateSourceMeta}
+                onOpenLines={openLinesModal}
               />
             ))}
             {/* 源码脚本源：与 api 源同一张表展示，操作走 source-script 接口 */}
@@ -8434,12 +8507,137 @@ const VideoSourceConfig = ({
                 source={source}
                 meta={sourceMeta[source.key]}
                 onMetaChange={handleUpdateSourceMeta}
+                onOpenLines={openLinesModal}
               />
             ))}
           </tbody>
         </table>
       </div>
 
+
+      {/* 线路级备注 / 置顶 */}
+      {linesModal.open &&
+        createPortal(
+          <div
+            className='fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm'
+            onClick={closeLinesModal}
+          >
+            <div
+              className='flex max-h-[84vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-800'
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className='flex items-start justify-between gap-4 border-b border-gray-200 px-6 py-5 dark:border-gray-700'>
+                <div className='min-w-0'>
+                  <h3 className='text-xl font-semibold text-gray-900 dark:text-gray-100'>
+                    {linesModal.scriptName} · 线路
+                  </h3>
+                  <p className='mt-1 text-sm text-gray-600 dark:text-gray-400'>
+                    给某条线路单独写备注或置顶；没单独写的线路沿用脚本自己那一条。
+                  </p>
+                </div>
+                <button
+                  onClick={closeLinesModal}
+                  className='text-2xl leading-none text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-300'
+                  aria-label='关闭线路设置弹窗'
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className='min-h-0 flex-1 overflow-y-auto px-6 py-5'>
+                {linesModal.loading && (
+                  <div className='py-10 text-center text-sm text-gray-500 dark:text-gray-400'>
+                    正在读取线路…
+                  </div>
+                )}
+                {!linesModal.loading && linesModal.error && (
+                  <div className='rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 dark:border-rose-800 dark:bg-rose-900/20 dark:text-rose-300'>
+                    {linesModal.error}
+                  </div>
+                )}
+                {!linesModal.loading &&
+                  !linesModal.error &&
+                  linesModal.items.length === 0 && (
+                    <div className='py-10 text-center text-sm text-gray-500 dark:text-gray-400'>
+                      这个脚本没有返回线路列表
+                    </div>
+                  )}
+                {!linesModal.loading && linesModal.items.length > 0 && (
+                  <div className='space-y-3'>
+                    {linesModal.items.map((line) => {
+                      const lineKey = buildScriptSourceValue(
+                        linesModal.scriptKey,
+                        line.id
+                      );
+                      const lineMeta = sourceMeta[lineKey];
+                      return (
+                        <div
+                          key={line.id}
+                          className='flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 dark:border-gray-700'
+                        >
+                          <div className='min-w-0 flex-1'>
+                            <div className='truncate text-sm font-medium text-gray-900 dark:text-gray-100'>
+                              {line.name}
+                            </div>
+                            <div className='truncate text-xs text-gray-500 dark:text-gray-400'>
+                              {line.id}
+                            </div>
+                          </div>
+                          <button
+                            type='button'
+                            onClick={() =>
+                              handleUpdateSourceMeta(lineKey, {
+                                pinned: !lineMeta?.pinned,
+                              })
+                            }
+                            aria-pressed={!!lineMeta?.pinned}
+                            className={`shrink-0 rounded-full border px-2 py-1 text-[11px] transition-colors ${
+                              lineMeta?.pinned
+                                ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300'
+                                : 'border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-900/40'
+                            }`}
+                          >
+                            {lineMeta?.pinned ? '已置顶' : '置顶'}
+                          </button>
+                          <input
+                            type='text'
+                            key={`${lineKey}:${lineMeta?.remark || ''}`}
+                            defaultValue={lineMeta?.remark || ''}
+                            placeholder='这条线路的备注…'
+                            maxLength={120}
+                            onBlur={(e) => {
+                              const next = e.target.value.trim();
+                              if (next === (lineMeta?.remark || '')) return;
+                              handleUpdateSourceMeta(lineKey, {
+                                remark: next,
+                              });
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.currentTarget.blur();
+                              } else if (e.key === 'Escape') {
+                                e.currentTarget.value = lineMeta?.remark || '';
+                                e.currentTarget.blur();
+                              }
+                            }}
+                            className='w-56 rounded border border-transparent bg-transparent px-2 py-1 text-xs text-gray-900 outline-none transition-colors hover:border-gray-200 focus:border-gray-300 focus:bg-white dark:text-gray-100 dark:hover:border-gray-700 dark:focus:border-gray-600 dark:focus:bg-gray-900'
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className='flex items-center justify-end border-t border-gray-200 bg-gray-50 px-6 py-4 dark:border-gray-700 dark:bg-gray-900/30'>
+                <button onClick={closeLinesModal} className={buttonStyles.quickAction}>
+                  完成
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
 
       {showSpecialSourcesModal &&
         createPortal(

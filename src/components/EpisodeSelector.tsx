@@ -41,6 +41,34 @@ import EpisodeFilterSettings from '@/components/EpisodeFilterSettings';
 import EpisodeTitleCorrectDialog from '@/components/EpisodeTitleCorrectDialog';
 import ProxyImage from '@/components/ProxyImage';
 
+type SourceMetaShape = { remark?: string; pinned?: boolean };
+
+/**
+ * 取某个源的备注 / 置顶，两级回退：
+ *   1. 线路级 —— script:<脚本 key>:<线路 id>，给单独一条线路写的
+ *   2. 脚本级 —— <脚本 key>，该脚本下所有线路共用
+ *
+ * 两个字段分别回退，整体覆盖会出岔子：给某条线路单独写了备注，它就会连脚本级
+ * 的置顶一起丢掉，用户看到的是「只改了个备注，置顶没了」。
+ *
+ * 非脚本源两个 key 指向同一份数据，直接返回即可。
+ */
+function pickSourceMeta(
+  map: Record<string, SourceMetaShape>,
+  rawSource?: string
+): SourceMetaShape | undefined {
+  const value = String(rawSource || '');
+  const exact = map[value];
+  const inherited = map[resolveSourceKey(value)];
+  if (exact === inherited || !exact || !inherited) {
+    return exact || inherited;
+  }
+  return {
+    remark: exact.remark !== undefined ? exact.remark : inherited.remark,
+    pinned: exact.pinned !== undefined ? exact.pinned : inherited.pinned,
+  };
+}
+
 /** 选集按钮上显示的短标签（数字等）；全名仍保留在 originalTitle 供长按查看 */
 function getEpisodeDisplayLabel(
   title: string | undefined,
@@ -1384,8 +1412,8 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
     const keyOf = (source: SearchResult) => `${source.source}-${source.id}`;
     return [...availableSources].sort((a, b) => {
       const pinnedDiff =
-        (sourceMetaMap[resolveSourceKey(b.source)]?.pinned ? 1 : 0) -
-        (sourceMetaMap[resolveSourceKey(a.source)]?.pinned ? 1 : 0);
+        (pickSourceMeta(sourceMetaMap, b.source)?.pinned ? 1 : 0) -
+        (pickSourceMeta(sourceMetaMap, a.source)?.pinned ? 1 : 0);
       if (pinnedDiff !== 0) return pinnedDiff;
 
       // 不设「等全部测完再排」的闸门：那个标志位一旦没翻上来，排序就整段失效，
@@ -2032,7 +2060,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                     const sourceKey = `${source.source}-${source.id}`;
                     const videoInfo = videoInfoMap.get(sourceKey);
                     const sourceMeta =
-                      sourceMetaMap[resolveSourceKey(source.source)];
+                      pickSourceMeta(sourceMetaMap, source.source);
                     return (
                       <div
                         key={sourceKey}

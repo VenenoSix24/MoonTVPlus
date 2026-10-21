@@ -6,10 +6,12 @@ import { getAuthInfoFromCookie } from '@/lib/auth';
 import { db } from '@/lib/db';
 import {
   deleteSourceScript,
+  executeSavedSourceScript,
   getDefaultSourceScriptTemplate,
   importSourceScripts,
   listAllScriptSummaries,
   listSourceScripts,
+  normalizeScriptSources,
   saveSourceScript,
   testSourceScript,
   toggleSourceScriptEnabled,
@@ -102,6 +104,29 @@ export async function POST(request: NextRequest) {
               'Cache-Control': 'no-store',
             },
           }
+        );
+      }
+      // 列出某个脚本吐出来的线路：备注 / 置顶可以落到具体某条线路上，管理面板
+      // 得先知道有哪些线路可配
+      case 'list_sources': {
+        const key = String(body.key || '').trim();
+        if (!key) {
+          return NextResponse.json({ error: '缺少脚本 Key' }, { status: 400 });
+        }
+        const execution = await executeSavedSourceScript({
+          key,
+          hook: 'getSources',
+          payload: {},
+        });
+        if (!execution.ok) {
+          return NextResponse.json(
+            { error: execution.error || '脚本没有返回线路列表' },
+            { status: 400 }
+          );
+        }
+        return NextResponse.json(
+          { ok: true, sources: normalizeScriptSources(execution.result) },
+          { headers: { 'Cache-Control': 'no-store' } }
         );
       }
       case 'delete': {
