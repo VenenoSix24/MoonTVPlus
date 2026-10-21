@@ -202,7 +202,9 @@ const TopNav = () => {
 
       <div className='mtv-topnav-right'>
         <form
-          className={searchOpen ? 'mtv-search is-open' : 'mtv-search'}
+          className={
+            searchOpen || searchValue ? 'mtv-search is-open' : 'mtv-search'
+          }
           onSubmit={(event) => {
             event.preventDefault();
             submitSearch();
@@ -212,13 +214,9 @@ const TopNav = () => {
           }}
         >
           <button
-            type={searchOpen ? 'submit' : 'button'}
+            type='submit'
             className='mtv-topnav-icon'
             aria-label='搜索'
-            aria-expanded={searchOpen}
-            onClick={() => {
-              if (!searchOpen) setSearchOpen(true);
-            }}
           >
             <Search />
           </button>
@@ -233,13 +231,11 @@ const TopNav = () => {
             }}
             placeholder='搜索影片、剧集'
             aria-label='搜索关键词'
-            tabIndex={searchOpen ? 0 : -1}
           />
           <button
             type='button'
             className='mtv-search-cancel'
             onClick={closeSearch}
-            tabIndex={searchOpen ? 0 : -1}
           >
             取消
           </button>

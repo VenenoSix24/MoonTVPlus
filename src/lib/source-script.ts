@@ -72,6 +72,8 @@ export interface PublicSourceScriptSummary {
 export interface ScriptSourceDescriptor {
   id: string;
   name: string;
+  /** 脚本可选的权重（0-100），用于搜索结果排序与优选评分 */
+  weight?: number;
 }
 
 const SCRIPT_SOURCE_PREFIX = 'script:';
@@ -503,6 +505,27 @@ export async function listEnabledSourceScripts(): Promise<PublicSourceScriptSumm
     }));
 }
 
+/**
+ * 是否存在「实现了 recommend hook」的已启用脚本。
+ * 「高级推荐」入口依赖脚本的 recommend 能力，只有声明了该能力的脚本才应让入口出现，
+ * 否则仅导入一个普通播放源脚本也会凭空多出一个空页面入口。
+ */
+export async function hasRecommendCapableSourceScript(): Promise<boolean> {
+  const registry = await loadRegistry();
+  for (const item of registry.items) {
+    if (!item.enabled) continue;
+    try {
+      const compiled = getOrCompileScript(item);
+      if (typeof compiled?.recommend === 'function') {
+        return true;
+      }
+    } catch {
+      // 脚本编译失败不应影响导航渲染
+    }
+  }
+  return false;
+}
+
 export async function listSourceScripts() {
   const registry = await loadRegistry();
   return registry.items.sort((a, b) => b.updatedAt - a.updatedAt);
@@ -720,6 +743,7 @@ export function normalizeScriptSources(result: any): ScriptSourceDescriptor[] {
     .map((item) => ({
       id: String(item.id),
       name: String(item.name || item.id),
+      ...(typeof item.weight === 'number' ? { weight: item.weight } : {}),
     }));
 }
 
@@ -728,6 +752,8 @@ export function normalizeScriptSearchResults(input: {
   scriptName: string;
   sourceId: string;
   sourceName: string;
+  /** getSources 中声明的源权重（可选） */
+  weight?: number;
   result: any;
 }) {
   const list = Array.isArray(input.result?.list) ? input.result.list : [];
@@ -762,6 +788,12 @@ export function normalizeScriptSearchResults(input: {
       episodes,
       episodes_titles: titles,
       source: buildScriptSourceValue(input.scriptKey, input.sourceId),
+      // 权重优先级：脚本单条结果自带 > getSources 声明的源权重 > 搜索路由的兜底 0
+      ...(typeof item.weight === 'number'
+        ? { weight: item.weight }
+        : typeof input.weight === 'number'
+        ? { weight: input.weight }
+        : {}),
       source_name: `${input.scriptName} / ${input.sourceName}`,
       year: item.year || '',
       desc: item.desc || '',

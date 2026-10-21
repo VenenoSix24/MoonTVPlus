@@ -318,11 +318,9 @@ export default function DanmakuPanel({
             spellCheck='false'
             data-form-type='other'
             data-lpignore='true'
-            className='flex-1 min-w-[220px] rounded-lg border border-ui-hair-strong px-3 py-2 text-sm
-                     transition-colors focus:border-ui-accent focus:outline-none
-                     focus:ring-2 focus:ring-ui-accent
-                      bg-ui-surface-3 text-ui-ink
-                     sm:px-4'
+            // 与搜索页输入框同一套：只留一层描边。原来 border + focus:ring-2
+            // 叠加是两层，手机窄屏下按钮还会被 min-w-[220px] 挤到第二行。
+            className='mtv-search-field min-w-0 flex-1 rounded-lg bg-ui-surface-3 px-3 py-2 text-sm text-ui-ink sm:px-4'
             disabled={isSearching}
           />
           <button
@@ -418,7 +416,7 @@ export default function DanmakuPanel({
                 <div className='mb-4 border-b border-ui-hair-strong'>
                   <div
                     ref={episodeGroupContainerRef}
-                    className='flex items-center gap-4 overflow-x-auto pb-3'
+                    className='flex items-center gap-2 overflow-x-auto pb-3 sm:gap-4'
                     onMouseEnter={() => setIsEpisodeGroupHovered(true)}
                     onMouseLeave={() => setIsEpisodeGroupHovered(false)}
                   >
@@ -435,7 +433,7 @@ export default function DanmakuPanel({
                               episodeDescending ? episodeGroupCount - 1 - idx : idx
                             )
                           }
-                          className={`relative w-20 py-2 text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 text-center ${
+                          className={`relative w-16 py-2 text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 text-center sm:w-20 ${
                             isActive
                               ? 'text-ui-accent'
                               : 'text-ui-ink-2 hover:text-ui-accent dark:hover:text-ui-accent'

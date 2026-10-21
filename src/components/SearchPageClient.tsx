@@ -1818,7 +1818,7 @@ export function SearchPageClient({ searchBase = '/search' }: { searchBase?: stri
                 onFocus={handleInputFocus}
                 placeholder='搜索电影、电视剧...'
                 autoComplete='off'
-                className='w-full h-12 rounded-lg bg-ui-surface-3 py-3 pl-10 pr-12 text-sm text-ui-ink placeholder-ui-ink-3 focus:outline-none focus:ring-2 focus:ring-ui-accent focus:bg-ui-surface-3 border border-ui-hair shadow-ui-1    focus:bg-ui-surface-3 '
+                className='mtv-search-field w-full h-12 rounded-xl bg-ui-surface-3 py-3 pl-11 pr-12 text-sm text-ui-ink placeholder-ui-ink-3 shadow-ui-1'
               />
 
               {/* 清除按钮 */}

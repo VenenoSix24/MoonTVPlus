@@ -90,6 +90,7 @@ import {
   setRecommendationCache,
 } from '@/lib/recommendations/cache';
 import { appendSpecialSourceParam, isSpecialSourceContext } from '@/lib/special-source.client';
+import { getSpeedTestMediaUrl } from '@/lib/speed-test-source';
 import {
   convertSubtitleFileToVttObjectUrl,
   CUSTOM_SUBTITLE_ACCEPT,
@@ -3958,15 +3959,12 @@ function PlayPageClient() {
       source: SearchResult
     ): Promise<MaybeSourceTestResult> => {
       try {
-        if (!source.episodes || source.episodes.length === 0) {
+        // 脚本源等懒解析源要先补全详情并换出真实媒体地址，采集源原样返回
+        let episodeUrl = await getSpeedTestMediaUrl(source);
+        if (!episodeUrl) {
           console.warn(`播放源 ${source.source_name} 没有可用的播放地址`);
           return null;
         }
-
-        let episodeUrl =
-          source.episodes.length > 1
-            ? source.episodes[1]
-            : source.episodes[0];
 
         const isM3u8 = episodeUrl.toLowerCase().includes('.m3u') || !episodeUrl.toLowerCase().match(/\.(mp4|flv|webm|mkv|avi|mov)(\?.*)?$/);
         if (source.source === 'directplay' && isM3u8) {
@@ -6393,8 +6391,7 @@ function PlayPageClient() {
           // 检查是否为 xiaoya 源
           if (s.source === 'xiaoya') return false;
 
-          // 脚本源详情懒加载，不参与测速
-          if (s.source.startsWith('script:')) return false;
+          // 脚本源已支持测速：懒解析地址会先换出真实媒体地址再交给 hls.js，因此参与优选
 
           return true;
         });
@@ -6403,8 +6400,7 @@ function PlayPageClient() {
           s.source === 'openlist' ||
           s.source === 'emby' ||
           s.source.startsWith('emby_') ||
-          s.source === 'xiaoya' ||
-          s.source.startsWith('script:')
+          s.source === 'xiaoya'
         );
 
         if (sourcesToTest.length > 0) {

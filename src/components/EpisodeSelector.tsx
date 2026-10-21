@@ -29,6 +29,7 @@ import { generateStorageKey, getCachedPlayRecordsSnapshot } from '@/lib/db.clien
 import { isEpisodeHiddenByFilter } from '@/lib/episode-filter';
 import { loadAllLocalEpisodeProgressRecords } from '@/lib/episode-progress';
 import { isNetdiskSource } from '@/lib/netdisk/source';
+import { getSpeedTestMediaUrl } from '@/lib/speed-test-source';
 import { EpisodeFilterConfig,SearchResult } from '@/lib/types';
 import type { SpeedTestErrorType } from '@/lib/utils';
 import { getVideoResolutionFromM3u8, SpeedTestError } from '@/lib/utils';
@@ -864,18 +865,36 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
       return;
     }
 
-    // 获取第一集的URL
-    if (!source.episodes || source.episodes.length === 0) {
-      return;
-    }
-    const episodeUrl =
-      source.episodes.length > 1 ? source.episodes[1] : source.episodes[0];
+    // 脚本源等懒解析源的搜索结果里没有 episodes，需要先补全详情并换出真实媒体地址；
+    // 采集源的 episodes 本身就是 m3u8，会原样返回。
+    const isScriptSource = source.source?.startsWith('script:') ?? false;
+    // 解析脚本源要触发服务端选线探测，给比 hls 测速本身更长的预算
+    const mediaUrl = await getSpeedTestMediaUrl(
+      source,
+      Math.max(speedTestTimeout, 12000)
+    );
 
     // 标记为已尝试
     setAttemptedSources((prev) => new Set(prev).add(sourceKey));
 
+    if (!mediaUrl) {
+      // 非脚本源没有播放地址时保持原行为：不展示测速结果
+      if (!isScriptSource) return;
+      setVideoInfoMap((prev) =>
+        new Map(prev).set(sourceKey, {
+          quality: '错误',
+          loadSpeed: '未知',
+          pingTime: 0,
+          bitrate: '未知',
+          hasError: true,
+          errorType: 'unreachable' as SpeedTestErrorType,
+        })
+      );
+      return;
+    }
+
     try {
-      const info = await getVideoResolutionFromM3u8(episodeUrl, speedTestTimeout);
+      const info = await getVideoResolutionFromM3u8(mediaUrl, speedTestTimeout);
       setVideoInfoMap((prev) => new Map(prev).set(sourceKey, info));
     } catch (error) {
       // 失败时保存错误状态，并区分超时与无法访问
@@ -1833,26 +1852,26 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                   }`}
                 >
                 {sortedSources
-                  .map((source, index) => {
+                  .map((source) => {
                     const isCurrentSource =
                       source.source?.toString() === currentSource?.toString() &&
                       source.id?.toString() === currentId?.toString();
+                    const sourceKey = `${source.source}-${source.id}`;
+                    const videoInfo = videoInfoMap.get(sourceKey);
                     return (
                       <div
-                        key={`${source.source}-${source.id}`}
+                        key={sourceKey}
                         onClick={() =>
                           !isCurrentSource && handleSourceClick(source)
                         }
-                        className={`flex items-start gap-3 px-2 py-3 rounded-lg transition-all select-none duration-200 relative
-                      ${isCurrentSource
-                         ? 'bg-ui-accent-soft border-ui-accent-soft border'
-                          : 'hover:bg-white/10 hover:scale-[1.02] cursor-pointer'
-                          }`.trim()}
+                        className={`mtv-play-src ${
+                          isCurrentSource ? 'is-current' : 'cursor-pointer'
+                        }`.trim()}
                       >
                         {/* 封面 */}
-                        <div className='flex-shrink-0 w-12 h-20 bg-ui-surface-3 rounded overflow-hidden flex items-center justify-center'>
+                        <div className='mtv-play-src-poster'>
                           {source.source === 'directplay' ? (
-                            <LinkIcon className='w-6 h-6 text-blue-500' />
+                            <LinkIcon className='w-5 h-5 text-ui-accent' />
                           ) : source.poster ? (
                             <ProxyImage
                               originalSrc={source.poster}
@@ -1867,149 +1886,94 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                           ) : null}
                         </div>
 
-                        {/* 信息区域 */}
-                        <div className='flex-1 min-w-0 flex flex-col justify-between h-20'>
-                          {/* 标题和分辨率 - 顶部 */}
-                          <div className='flex items-start justify-between gap-3 h-6'>
-                            <div className='relative flex min-w-0 flex-1 items-center gap-1.5 group/title'>
-                              <h3 className={`font-medium text-base truncate ${sourceTitleClass} leading-none`}>
-                                {source.title}
-                              </h3>
-                              {isCurrentSource && (
-                                <span className='mtv-play-srcnow'>当前</span>
-                              )}
-                              {/* 标题级别的 tooltip - 第一个元素不显示 */}
-                              {index !== 0 && (
-                                <div className='absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-800 text-white text-xs rounded-md shadow-lg opacity-0 invisible group-hover/title:opacity-100 group-hover/title:visible transition-all duration-200 ease-out delay-100 whitespace-nowrap z-[500] pointer-events-none'>
-                                  {source.title}
-                                  <div className='absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800'></div>
-                                </div>
-                              )}
-                            </div>
-                            {(() => {
-                              const sourceKey = `${source.source}-${source.id}`;
-                              const videoInfo = videoInfoMap.get(sourceKey);
-
-                              if (videoInfo && videoInfo.quality !== '未知') {
-                                if (videoInfo.hasError) {
-                                  return (
-                                    <div className='bg-white/10 text-red-400 px-1.5 py-0 rounded text-xs flex-shrink-0 min-w-[50px] text-center'>
-                                      {videoInfo.errorType === 'timeout'
-                                        ? '超时'
-                                        : '无法访问'}
-                                    </div>
-                                  );
-                                } else {
-                                  // 根据分辨率设置不同颜色：2K、4K为紫色，1080p、720p为绿色，其他为黄色
-                                  const isUltraHigh = ['4K', '2K'].includes(
-                                    videoInfo.quality
-                                  );
-                                  const isHigh = ['1080p', '720p'].includes(
-                                    videoInfo.quality
-                                  );
-                                  const textColorClasses = isUltraHigh
-                                    ? 'text-purple-600 dark:text-purple-400'
-                                    : isHigh
-                                      ? 'text-ui-accent'
-                                      : 'text-yellow-600 dark:text-yellow-400';
-
-                                  return (
-                                    <div
-                                      className={`bg-white/10 ${textColorClasses} px-1.5 py-0 rounded text-xs flex-shrink-0 min-w-[50px] text-center`}
-                                    >
-                                      {videoInfo.quality}
-                                    </div>
-                                  );
-                                }
-                              }
-
-                              return null;
-                            })()}
-                          </div>
-
-                          {/* 源名称和集数信息 - 垂直居中 */}
-                          <div className='flex items-center justify-between'>
-                            <span className={`text-xs px-2 py-1 border rounded ${sourcePillTextClass} ${
-                              source.source === 'xiaoya' ? 'border-blue-500' : isNetdiskSource(source.source) ? 'border-purple-500' : source.source === 'openlist' || source.source === 'emby' || source.source?.startsWith('emby_')
-                           ? 'border-yellow-500'
-                                : 'border-gray-500/60'
-                      }`}>
-                              {source.source_name}
+                        <div className='mtv-play-src-body'>
+                          {/* 第一行：标题 + 画质/错误徽标 */}
+                          <div className='mtv-play-src-head'>
+                            <span
+                              className='mtv-play-src-title'
+                              title={source.title}
+                            >
+                              {source.title}
                             </span>
-                            {source.episodes.length > 1 && (
-                              <span className={`text-xs ${faintTextClass} font-medium`}>
-                                {source.episodes.length} 集
+                            {videoInfo && videoInfo.quality !== '未知' && (
+                              <span
+                                className={`mtv-play-src-badge ${
+                                  videoInfo.hasError
+                                    ? 'is-bad'
+                                    : ['4K', '2K'].includes(videoInfo.quality)
+                                      ? 'is-ultra'
+                                      : ''
+                                }`}
+                              >
+                                {videoInfo.hasError
+                                  ? videoInfo.errorType === 'timeout'
+                                    ? '超时'
+                                    : '无法访问'
+                                  : videoInfo.quality}
                               </span>
                             )}
                           </div>
 
-                          {/* 网络信息 - 底部 */}
-                          <div className='flex items-end justify-between h-6'>
-                            <div className='flex items-end gap-3'>
-                              {(() => {
-                                const sourceKey = `${source.source}-${source.id}`;
-                                const videoInfo = videoInfoMap.get(sourceKey);
-                                if (videoInfo) {
-                                  if (!videoInfo.hasError) {
-                                    return (
-                                      <div className='flex items-end gap-3 text-xs'>
-                                        <div className='text-ui-accent font-medium text-xs'>
-                                          {videoInfo.loadSpeed}
-                                        </div>
-                                        <div className='text-orange-600 dark:text-orange-400 font-medium text-xs'>
-                                          {videoInfo.pingTime}ms
-                                        </div>
-                                        {videoInfo.bitrate && videoInfo.bitrate !== '未知' && (
-                                          <div className='text-purple-600 dark:text-purple-400 font-medium text-xs'>
-                                            {videoInfo.bitrate}
-                                          </div>
-                                        )}
-                                      </div>
-                                    );
-                                  } else {
-                                    return (
-                                      <div className='text-red-500/90 dark:text-red-400 font-medium text-xs'>
-                                        {videoInfo.errorType === 'timeout'
-                                          ? '测速超时'
-                                          : '源无法访问'}
-                                      </div>
-                                    );
-                                  }
-                                }
-                                return null;
-                              })()}
-                            </div>
-                            {/* 重新测试按钮 */}
-                            {(() => {
-                              // 私人影库、Emby 和小雅不显示重新测试按钮
-                              if (source.source === 'openlist' || source.source === 'emby' || source.source.startsWith('emby_') || source.source === 'xiaoya') {
-                                return null;
-                              }
-
-                              const sourceKey = `${source.source}-${source.id}`;
-                              const isTesting = retestingSources.has(sourceKey);
-                              const videoInfo = videoInfoMap.get(sourceKey);
-
-                              // 只有第一次测试完成后（有测速数据）才显示重新测试按钮
-                              if (videoInfo) {
-                                return (
-                                  <button
-                                    onClick={(e) => handleRetestSource(source, e)}
-                                    disabled={isTesting}
-                                    className={`text-xs font-medium transition-colors ${
-                                      isTesting
-                                        ? disabledTextClass
-                                        : 'text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer'
-                                    }`}
-                                  >
-                                    {isTesting ? '测试中...' : '重新测试'}
-                                  </button>
-                                );
-                              }
-                              return null;
-                            })()}
+                          {/* 第二行：源名 · 速度 · 延迟。
+                              原来把码率也塞进这一行，三个指标还各配一种颜色，
+                              一行五个信息点，扫都扫不过来。码率只服务「画质优先」
+                              排序，画质徽标已经把结果说清楚了。 */}
+                          <div className='mtv-play-src-meta'>
+                            <span className='mtv-play-src-name'>
+                              {source.source_name}
+                            </span>
+                            {source.episodes.length > 1 && (
+                              <span className='mtv-play-src-ep'>
+                                {source.episodes.length} 集
+                              </span>
+                            )}
+                            {videoInfo &&
+                              (videoInfo.hasError ? (
+                                <span className='mtv-play-src-fail'>
+                                  {videoInfo.errorType === 'timeout'
+                                    ? '测速超时'
+                                    : '源无法访问'}
+                                </span>
+                              ) : (
+                                <>
+                                  <span className='mtv-play-src-speed'>
+                                    {videoInfo.loadSpeed}
+                                  </span>
+                                  <span className='mtv-play-src-ping'>
+                                    {videoInfo.pingTime}ms
+                                  </span>
+                                </>
+                              ))}
                           </div>
                         </div>
+
+                        {/* 右侧：当前标记，或者失败源的重测。
+                            正常源不再挂「重新测试」—— 工具条上已经有「全部重测」，
+                            每张卡片再重复一遍纯属噪音。 */}
+                        {isCurrentSource ? (
+                          <span className='mtv-play-src-now'>当前</span>
+                        ) : (
+                          (() => {
+                            const skipRetest =
+                              source.source === 'openlist' ||
+                              source.source === 'emby' ||
+                              source.source.startsWith('emby_') ||
+                              source.source === 'xiaoya';
+                            if (skipRetest) return null;
+                            if (!videoInfo || !videoInfo.hasError) return null;
+                            const testing = retestingSources.has(sourceKey);
+                            return (
+                              <button
+                                type='button'
+                                onClick={(e) => handleRetestSource(source, e)}
+                                disabled={testing}
+                                className='mtv-play-src-retry'
+                              >
+                                {testing ? '测试中' : '重测'}
+                              </button>
+                            );
+                          })()
+                        )}
                       </div>
                     );
                   })}
