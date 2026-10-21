@@ -6873,6 +6873,32 @@ html[data-loading-style='silver-screen'] .mtv-load-silver {
   color: var(--ui-accent-ink);
 }
 
+/* 置顶：管理员钉住的线路。用提醒色区分于「当前」的强调色 —— 一个是系统状态，
+   一个是人工标记，不该长成同一个样子。 */
+.mtv-play-src-pin {
+  flex: none;
+  padding: 1px 7px;
+  border-radius: 9999px;
+  background-color: var(--ui-warn-soft);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--ui-warn);
+}
+
+/* 备注：管理员写在视频源配置里的说明。压到源名下一行，最多两行，长了省
+   略 —— 换源卡片的高度承载不了整段文字。 */
+.mtv-play-src-remark {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--ui-ink-3);
+  word-break: break-word;
+}
+
 .mtv-play-src-retry {
   flex: none;
   padding: 2px 8px;

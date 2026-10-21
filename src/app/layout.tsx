@@ -9,7 +9,7 @@ import './globals.css';
 import { parseAuthInfo } from '@/lib/auth';
 import { getConfig } from '@/lib/config';
 import { getUserFeatureAccess } from '@/lib/permissions';
-import { listEnabledSourceScripts } from '@/lib/source-script';
+import { listRecommendableSourceScripts } from '@/lib/source-script';
 
 import { StartupCacheCleanup } from '../components/DanmakuCacheCleanup';
 import { DownloadBubble } from '../components/DownloadBubble';
@@ -277,9 +277,10 @@ export default async function RootLayout({
     // 电子书馆同时支持 OPDS 与 Legado。Legado 源通过订阅单独配置，
     // 不一定会出现在 OPDS Sources 中；入口应由“启用电子书馆”开关控制。
     booksEnabled = !!opdsConfig?.Enabled;
-    // 高级推荐功能配置：存在已启用视频源脚本时显示
+    // 高级推荐功能配置：只有存在「实现了 recommend hook」的脚本时才显示，
+    // 否则装任意视频源脚本都会让顶栏多出一个点了就报错的入口
     advancedRecommendationEnabled =
-      (await listEnabledSourceScripts()).length > 0;
+      (await listRecommendableSourceScripts()).length > 0;
     // 检查是否启用了 OpenList 功能
     openListEnabled = !!(
       config.OpenListConfig?.Enabled &&

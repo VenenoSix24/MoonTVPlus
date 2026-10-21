@@ -18,6 +18,7 @@ import { useRouter } from 'next/navigation';
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -1271,14 +1272,58 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
     return unit === 'MB/s' ? value * 1024 : value;
   }, []);
 
-  // 换源列表的排序结果。当前源始终置顶 —— 正在看哪个源需要一眼看到；其余
-  // 按所选规则：
-  //   速度优先 → 网速降序，网速相同再比画质
-  //   画质优先 → 画质降序，画质相同再比网速
+  // ---- 源备注 / 置顶 ----
+  // 管理员在视频源配置里写的备注，以及被置顶的源。置顶的源恒排最前 —— 测速
+  // 成功失败都不动位置，方便把主用线路钉死在第一位。
+  const [sourceMetaMap, setSourceMetaMap] = useState<
+    Record<string, { remark?: string; pinned?: boolean }>
+  >({});
+
+  useEffect(() => {
+    let alive = true;
+    fetch('/api/source-meta', { cache: 'no-store' })
+      .then((resp) => (resp.ok ? resp.json() : null))
+      .then(
+        (
+          data: {
+            items?: Record<string, { remark?: string; pinned?: boolean }>;
+          } | null
+        ) => {
+          if (!alive || !data?.items) return;
+          setSourceMetaMap(data.items);
+        }
+      )
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // ---- 测速重排不打断滑动 ----
+  // 测速是分批并发跑的，每回来一批 sortedSources 就重算一次，整个列表顺序跟着
+  // 换。用户正往下滑的时候手底下的卡片被抽走，滑到一半就断了。这里在滚动期间
+  // 锁住顺序（只有速度数字在变），停下 180ms 后再放行；放行时用 FLIP 让卡片
+  // 平移到新位置，而不是瞬间对调。
+  const sourcesListRef = useRef<HTMLDivElement | null>(null);
+  const scrollIdleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollBusyRef = useRef(false);
+  const frozenOrderRef = useRef<string[] | null>(null);
+  const lastOrderRef = useRef<string[]>([]);
+  const prevCardTopsRef = useRef<Map<string, number>>(new Map());
+  const [scrollBusy, setScrollBusy] = useState(false);
+
+  // 换源列表的排序结果：
+  //   1. 被置顶的源恒在最前，测速排名不参与，成功失败都不动位置
+  //   2. 其余按所选规则：速度优先 → 网速降序，相同再比画质；画质优先反过来
   // 测速未完成的源速度为 -1，自然落到最后。
-  const sortedSources = useMemo(() => {
+  const baseSortedSources = useMemo(() => {
     const keyOf = (source: SearchResult) => `${source.source}-${source.id}`;
     return [...availableSources].sort((a, b) => {
+      const pinnedDiff =
+        (sourceMetaMap[b.source]?.pinned ? 1 : 0) -
+        (sourceMetaMap[a.source]?.pinned ? 1 : 0);
+      if (pinnedDiff !== 0) return pinnedDiff;
+
       // 不设「等全部测完再排」的闸门：那个标志位一旦没翻上来，排序就整段失效，
       // 用户看到的是「测完速了顺序还是乱的」。没有数据的源速度为 -1，天然排在
       // 最后，边测边排也不会错乱。
@@ -1298,7 +1343,95 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
         ? bitrateDiff || speedDiff
         : speedDiff || bitrateDiff;
     });
-  }, [availableSources, videoInfoMap, parseSpeedToKBps, sourceSortMode]);
+  }, [
+    availableSources,
+    videoInfoMap,
+    parseSpeedToKBps,
+    sourceSortMode,
+    sourceMetaMap,
+  ]);
+
+  // 滚动中沿用进入滚动前的顺序，其余时候用最新排序
+  const sortedSources = useMemo(() => {
+    const frozen = frozenOrderRef.current;
+    if (!scrollBusy || !frozen) return baseSortedSources;
+    const rank = new Map(frozen.map((key, index) => [key, index]));
+    const keyOf = (source: SearchResult) => `${source.source}-${source.id}`;
+    return [...baseSortedSources].sort(
+      (a, b) =>
+        (rank.get(keyOf(a)) ?? Number.MAX_SAFE_INTEGER) -
+        (rank.get(keyOf(b)) ?? Number.MAX_SAFE_INTEGER)
+    );
+  }, [baseSortedSources, scrollBusy]);
+
+  useEffect(() => {
+    lastOrderRef.current = sortedSources.map(
+      (source) => `${source.source}-${source.id}`
+    );
+  }, [sortedSources]);
+
+  const handleSourcesScroll = useCallback(() => {
+    if (!scrollBusyRef.current) {
+      scrollBusyRef.current = true;
+      frozenOrderRef.current = lastOrderRef.current;
+      setScrollBusy(true);
+    }
+    if (scrollIdleTimerRef.current) clearTimeout(scrollIdleTimerRef.current);
+    scrollIdleTimerRef.current = setTimeout(() => {
+      scrollBusyRef.current = false;
+      frozenOrderRef.current = null;
+      setScrollBusy(false);
+    }, 180);
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (scrollIdleTimerRef.current) clearTimeout(scrollIdleTimerRef.current);
+    },
+    []
+  );
+
+  // FLIP：重排后先把卡片摆回原位，再过渡到新位置。用 offsetTop 而不是
+  // getBoundingClientRect —— 后者随滚动变化，比较出来的差值会掺进滚动量。
+  useLayoutEffect(() => {
+    const host = sourcesListRef.current;
+    if (!host) return;
+    const cards = Array.from(
+      host.querySelectorAll<HTMLElement>('[data-src-key]')
+    );
+    const nextTops = new Map<string, number>();
+    cards.forEach((card) => {
+      const key = card.dataset.srcKey;
+      if (key) nextTops.set(key, card.offsetTop);
+    });
+
+    const prevTops = prevCardTopsRef.current;
+    if (prevTops.size > 0) {
+      cards.forEach((card) => {
+        const key = card.dataset.srcKey;
+        if (!key) return;
+        const before = prevTops.get(key);
+        const after = nextTops.get(key);
+        if (before == null || after == null) return;
+        const delta = before - after;
+        if (Math.abs(delta) < 2) return;
+        card.style.transition = 'none';
+        card.style.transform = `translateY(${delta}px)`;
+        requestAnimationFrame(() => {
+          card.style.transition =
+            'transform 260ms cubic-bezier(0.22, 0.61, 0.36, 1)';
+          card.style.transform = '';
+          const settle = () => {
+            card.style.transition = '';
+            card.style.transform = '';
+            card.removeEventListener('transitionend', settle);
+          };
+          card.addEventListener('transitionend', settle);
+        });
+      });
+    }
+    prevCardTopsRef.current = nextTops;
+  }, [sortedSources]);
 
   // 重新测试单个源
   const handleRetestSource = useCallback(
@@ -1827,7 +1960,11 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
           {!sourceSearchLoading &&
             !sourceSearchError &&
             availableSources.length > 0 && (
-              <div className='flex-1 overflow-y-auto space-y-2 pb-2'>
+              <div
+                ref={sourcesListRef}
+                onScroll={handleSourcesScroll}
+                className='flex-1 overflow-y-auto space-y-2 pb-2'
+              >
                 <div
                   className={`mtv-play-sources ${
                     showAllSources ? '' : 'is-capped'
@@ -1843,6 +1980,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                     return (
                       <div
                         key={sourceKey}
+                        data-src-key={sourceKey}
                         onClick={() =>
                           !isCurrentSource && handleSourceClick(source)
                         }
@@ -1882,6 +2020,10 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                             {isCurrentSource && (
                               <span className='mtv-play-src-now'>当前</span>
                             )}
+                            {/* 置顶标记：管理员钉住的线路，永远排在列表最前 */}
+                            {sourceMetaMap[source.source]?.pinned && (
+                              <span className='mtv-play-src-pin'>置顶</span>
+                            )}
                             {videoInfo && videoInfo.quality !== '未知' && (
                               <span
                                 className={`mtv-play-src-badge ${
@@ -1914,6 +2056,14 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                               </span>
                             )}
                           </div>
+                          {sourceMetaMap[source.source]?.remark && (
+                            <div
+                              className='mtv-play-src-remark'
+                              title={sourceMetaMap[source.source]?.remark}
+                            >
+                              {sourceMetaMap[source.source]?.remark}
+                            </div>
+                          )}
                           {videoInfo && (
                             <div className='mtv-play-src-metrics'>
                               {videoInfo.hasError ? (

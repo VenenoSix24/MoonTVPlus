@@ -69,6 +69,17 @@ export interface PublicSourceScriptSummary {
   updatedAt: number;
 }
 
+/** 「视频源配置」等只做展示的场景用的轻量摘要：含启用状态，但不含脚本源码 */
+export interface SourceScriptSummary {
+  id: string;
+  key: string;
+  name: string;
+  description?: string;
+  enabled: boolean;
+  version: string;
+  updatedAt: number;
+}
+
 export interface ScriptSourceDescriptor {
   id: string;
   name: string;
@@ -506,6 +517,43 @@ export async function listEnabledSourceScripts(): Promise<PublicSourceScriptSumm
 export async function listSourceScripts() {
   const registry = await loadRegistry();
   return registry.items.sort((a, b) => b.updatedAt - a.updatedAt);
+}
+
+/** 全部脚本的轻量摘要（含已停用）：后台列表展示用，避免把整段源码传给前端 */
+export async function listAllScriptSummaries(): Promise<SourceScriptSummary[]> {
+  const registry = await loadRegistry();
+  return registry.items
+    .slice()
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+    .map((item) => ({
+      id: item.id,
+      key: item.key,
+      name: item.name,
+      description: item.description,
+      enabled: item.enabled,
+      version: item.version,
+      updatedAt: item.updatedAt,
+    }));
+}
+
+/** 只有真正实现了 recommend hook 的脚本才算「支持高级推荐」。
+ *  否则只要装了任意视频源脚本，顶栏就会冒出一个点了就报错的入口。 */
+export async function listRecommendableSourceScripts(): Promise<
+  PublicSourceScriptSummary[]
+> {
+  const enabled = await listEnabledSourceScripts();
+  const recommendable: PublicSourceScriptSummary[] = [];
+  for (const item of enabled) {
+    const record = await getSourceScript(item.id);
+    if (!record) continue;
+    try {
+      const compiled = getOrCompileScript(record);
+      if (typeof compiled?.recommend === 'function') recommendable.push(item);
+    } catch {
+      // 编译失败的脚本不算支持推荐
+    }
+  }
+  return recommendable;
 }
 
 export async function getSourceScript(id: string) {

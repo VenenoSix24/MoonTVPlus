@@ -445,6 +445,10 @@ interface DataSource {
   proxyMode?: boolean;
   weight?: number;
   special?: boolean;
+  /** 该条目来自「源码脚本」注册表，而不是 api_site 配置 */
+  script?: boolean;
+  /** 脚本记录 id：启用/停用/删除都要用它，不能用 key */
+  scriptId?: string;
 }
 
 // 直播源数据类型
@@ -6696,6 +6700,8 @@ const VideoSourceConfig = ({
   const { alertModal, showAlert, hideAlert } = useAlertModal();
   const { isLoading, withLoading } = useLoadingState();
   const [sources, setSources] = useState<DataSource[]>([]);
+  // 「源码脚本」源：与 api 源分开存储，仅在做展示时合并进同一张表
+  const [scriptSources, setScriptSources] = useState<DataSource[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [orderChanged, setOrderChanged] = useState(false);
   const [newSource, setNewSource] = useState<DataSource>({
@@ -6713,9 +6719,11 @@ const VideoSourceConfig = ({
   );
 
   // 使用 useMemo 计算全选状态，避免每次渲染都重新计算
+  // 使用 useMemo 计算全选状态，避免每次渲染都重新计算
   const selectAll = useMemo(() => {
-    return selectedSources.size === sources.length && selectedSources.size > 0;
-  }, [selectedSources.size, sources.length]);
+    const total = sources.length + scriptSources.length;
+    return selectedSources.size === total && total > 0;
+  }, [selectedSources.size, sources.length, scriptSources.length]);
 
   // 确认弹窗状态
   const [confirmModal, setConfirmModal] = useState<{
@@ -6798,6 +6806,109 @@ const VideoSourceConfig = ({
     }
   }, [config]);
 
+  // 拉取「源码脚本」列表（slim：不含脚本源码），与 api 源合并展示
+  const loadScriptSources = useCallback(async () => {
+    try {
+      const resp = await fetch('/api/admin/source-script?slim=1', {
+        cache: 'no-store',
+      });
+      if (!resp.ok) return;
+      const data = await resp.json().catch(() => ({}));
+      const items = Array.isArray(data.items) ? data.items : [];
+      setScriptSources(
+        items.map((item: any) => ({
+          name: String(item.name || item.key),
+          key: String(item.key),
+          api: `script://${item.key}`,
+          detail: '',
+          disabled: !item.enabled,
+          from: 'custom' as const,
+          script: true,
+          scriptId: String(item.id),
+        }))
+      );
+    } catch (err) {
+      console.error('加载源码脚本列表失败', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadScriptSources();
+  }, [loadScriptSources, config]);
+
+  // ---- 备注 / 置顶 ----
+  // 单独存一份 key → { remark, pinned }：脚本源不在 SourceConfig 里，两套源
+  // 共用同一个 key 空间，才不会出现「api 源能写备注、脚本源写不了」。
+  const [sourceMeta, setSourceMeta] = useState<
+    Record<string, { remark?: string; pinned?: boolean }>
+  >({});
+  const sourceMetaRef = useRef(sourceMeta);
+  useEffect(() => {
+    sourceMetaRef.current = sourceMeta;
+  }, [sourceMeta]);
+
+  const loadSourceMeta = useCallback(async () => {
+    try {
+      const resp = await fetch('/api/admin/source-meta', { cache: 'no-store' });
+      if (!resp.ok) return;
+      const data = await resp.json().catch(() => ({}));
+      setSourceMeta(
+        data.items && typeof data.items === 'object' ? data.items : {}
+      );
+    } catch (err) {
+      console.error('加载视频源备注失败', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadSourceMeta();
+  }, [loadSourceMeta, config]);
+
+  // 先本地生效再写库，失败回滚 —— 备注是边打字边存的，等一个请求再刷新光标
+  // 会跳。置顶同理，点一下就该立刻变。
+  const handleUpdateSourceMeta = useCallback(
+    async (key: string, patch: { remark?: string; pinned?: boolean }) => {
+      const previous = sourceMetaRef.current[key];
+      setSourceMeta((prev) => {
+        const next = { ...prev };
+        const merged = { ...(prev[key] || {}), ...patch };
+        if (!merged.remark && !merged.pinned) {
+          delete next[key];
+        } else {
+          next[key] = merged;
+        }
+        return next;
+      });
+
+      try {
+        const resp = await fetch('/api/admin/source-meta', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'set', keys: [key], ...patch }),
+        });
+        if (!resp.ok) throw new Error('保存失败');
+        const data = await resp.json().catch(() => ({}));
+        if (data.items) setSourceMeta(data.items);
+      } catch (err) {
+        setSourceMeta((prev) => {
+          const next = { ...prev };
+          if (previous) {
+            next[key] = previous;
+          } else {
+            delete next[key];
+          }
+          return next;
+        });
+        showAlert({
+          type: 'error',
+          title: '保存失败',
+          message: err instanceof Error ? err.message : '网络错误',
+        });
+      }
+    },
+    [showAlert]
+  );
+
   // 通用 API 请求
   const callSourceApi = async (body: Record<string, any>) => {
     try {
@@ -6842,6 +6953,48 @@ const VideoSourceConfig = ({
       callSourceApi({ action: 'delete', key })
     ).catch(() => {
       console.error('操作失败', 'delete', key);
+    });
+  };
+
+  // 脚本源的启用/停用：走 source-script 接口，按记录 id 操作
+  const handleToggleEnableScript = (key: string) => {
+    const target = scriptSources.find((s) => s.key === key);
+    if (!target?.scriptId) return;
+    withLoading(`toggleSource_script_${key}`, async () => {
+      const resp = await fetch('/api/admin/source-script', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'toggle_enabled', id: target.scriptId }),
+      });
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+        throw new Error(data.error || '更新脚本状态失败');
+      }
+      await loadScriptSources();
+    }).catch((err) => {
+      showError(
+        err instanceof Error ? err.message : '更新脚本状态失败',
+        showAlert
+      );
+    });
+  };
+
+  const handleDeleteScript = (key: string) => {
+    const target = scriptSources.find((s) => s.key === key);
+    if (!target?.scriptId) return;
+    withLoading(`deleteSource_script_${key}`, async () => {
+      const resp = await fetch('/api/admin/source-script', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', id: target.scriptId }),
+      });
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+        throw new Error(data.error || '删除脚本失败');
+      }
+      await loadScriptSources();
+    }).catch((err) => {
+      showError(err instanceof Error ? err.message : '删除脚本失败', showAlert);
     });
   };
 
@@ -7472,10 +7625,24 @@ const VideoSourceConfig = ({
     }
   );
 
-  const SourceRow = memo(({ source }: { source: DataSource }) => {
+  const SourceRow = memo(
+    ({
+      source,
+      meta,
+      onMetaChange,
+    }: {
+      source: DataSource;
+      meta?: { remark?: string; pinned?: boolean };
+      onMetaChange: (
+        key: string,
+        patch: { remark?: string; pinned?: boolean }
+      ) => void;
+    }) => {
     return (
       <tr className='hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors'>
         <td className='px-2 py-4 text-center'>
+          {/* 脚本源也走同一套勾选：批量启用 / 禁用 / 删除都在
+              handleBatchOperation 里按来源分流，不需要在这里拦 */}
           <input
             type='checkbox'
             checked={selectedSources.has(source.key)}
@@ -7491,9 +7658,18 @@ const VideoSourceConfig = ({
         </td>
         <td
           className='px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 max-w-[12rem] truncate'
-          title={source.api}
+          title={source.script ? `源码脚本 · ${source.key}` : source.api}
         >
-          {source.api}
+          {source.script ? (
+            <span className='inline-flex items-center gap-1.5'>
+              <span className='rounded bg-ui-accent-soft px-1.5 py-0.5 text-[11px] text-ui-accent'>
+                源码脚本
+              </span>
+              <span className='truncate'>script://{source.key}</span>
+            </span>
+          ) : (
+            source.api
+          )}
         </td>
         <td
           className='px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 max-w-[8rem] truncate'
@@ -7513,95 +7689,189 @@ const VideoSourceConfig = ({
           </span>
         </td>
         <td className='px-6 py-4 whitespace-nowrap text-center'>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleToggleProxyMode(source.key);
-            }}
-            disabled={isLoading(`toggleProxyMode_${source.key}`)}
-            className={`relative inline-flex items-center h-6 w-11 rounded-full transition-colors ${
-              source.proxyMode
-                ? 'bg-blue-600 dark:bg-blue-500'
-                : 'bg-gray-200 dark:bg-gray-700'
-            } ${
-              isLoading(`toggleProxyMode_${source.key}`)
-                ? 'opacity-50 cursor-not-allowed'
-                : 'cursor-pointer'
-            }`}
-            title={source.proxyMode ? '代理模式已启用' : '代理模式已禁用'}
-          >
+          {source.script ? (
             <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                source.proxyMode ? 'translate-x-6' : 'translate-x-1'
+              className='text-xs text-gray-400 dark:text-gray-500'
+              title='脚本源不支持代理模式'
+            >
+              -
+            </span>
+          ) : (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleToggleProxyMode(source.key);
+              }}
+              disabled={isLoading(`toggleProxyMode_${source.key}`)}
+              className={`relative inline-flex items-center h-6 w-11 rounded-full transition-colors ${
+                source.proxyMode
+                  ? 'bg-blue-600 dark:bg-blue-500'
+                  : 'bg-gray-200 dark:bg-gray-700'
+              } ${
+                isLoading(`toggleProxyMode_${source.key}`)
+                  ? 'opacity-50 cursor-not-allowed'
+                  : 'cursor-pointer'
               }`}
-            />
-          </button>
+              title={source.proxyMode ? '代理模式已启用' : '代理模式已禁用'}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  source.proxyMode ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          )}
         </td>
         <td className='px-6 py-4 whitespace-nowrap max-w-[1rem]'>
-          {(() => {
-            const status = getValidationStatus(source.key);
-            if (!status) {
+          {source.script ? (
+            <span className='text-xs text-gray-400 dark:text-gray-500'>-</span>
+          ) : (
+            (() => {
+              const status = getValidationStatus(source.key);
+              if (!status) {
+                return (
+                  <span className='px-2 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-900/20 text-gray-600 dark:text-gray-400'>
+                    未检测
+                  </span>
+                );
+              }
               return (
-                <span className='px-2 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-900/20 text-gray-600 dark:text-gray-400'>
-                  未检测
+                <span
+                  className={`px-2 py-1 text-xs rounded-full ${status.className}`}
+                  title={status.message}
+                >
+                  {status.icon} {status.text}
                 </span>
               );
-            }
-            return (
-              <span
-                className={`px-2 py-1 text-xs rounded-full ${status.className}`}
-                title={status.message}
-              >
-                {status.icon} {status.text}
-              </span>
-            );
-          })()}
+            })()
+          )}
         </td>
-        <td className='px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2'>
-          <button
-            onClick={() => handleToggleEnable(source.key)}
-            disabled={isLoading(`toggleSource_${source.key}`)}
-            className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium ${
-              !source.disabled
-                ? buttonStyles.roundedDanger
-                : buttonStyles.roundedSuccess
-            } transition-colors ${
-              isLoading(`toggleSource_${source.key}`)
-                ? 'opacity-50 cursor-not-allowed'
-                : ''
-            }`}
-          >
-            {!source.disabled ? '禁用' : '启用'}
-          </button>
-          {source.from !== 'config' && (
+        <td className='px-6 py-4'>
+          <div className='flex items-center gap-2'>
             <button
-              onClick={() => handleDelete(source.key)}
-              disabled={isLoading(`deleteSource_${source.key}`)}
-              className={`${buttonStyles.roundedSecondary} ${
-                isLoading(`deleteSource_${source.key}`)
-                  ? 'opacity-50 cursor-not-allowed'
-                  : ''
+              type='button'
+              onClick={() =>
+                onMetaChange(source.key, { pinned: !meta?.pinned })
+              }
+              aria-pressed={!!meta?.pinned}
+              title={
+                meta?.pinned
+                  ? '取消置顶（换源列表不再固定在最前）'
+                  : '置顶：换源列表里永远排最前，测速结果不影响位置'
+              }
+              className={`shrink-0 rounded-full border px-2 py-1 text-[11px] transition-colors ${
+                meta?.pinned
+                  ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300'
+                  : 'border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-900/40'
               }`}
             >
-              删除
+              {meta?.pinned ? '已置顶' : '置顶'}
             </button>
+            <input
+              type='text'
+              key={`${source.key}:${meta?.remark || ''}`}
+              defaultValue={meta?.remark || ''}
+              placeholder='加备注…'
+              maxLength={120}
+              title={meta?.remark ? `备注：${meta.remark}` : '备注只在换源卡片上显示'}
+              onBlur={(e) => {
+                const next = e.target.value.trim();
+                if (next === (meta?.remark || '')) return;
+                onMetaChange(source.key, { remark: next });
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.currentTarget.blur();
+                } else if (e.key === 'Escape') {
+                  e.currentTarget.value = meta?.remark || '';
+                  e.currentTarget.blur();
+                }
+              }}
+              className='w-40 rounded border border-transparent bg-transparent px-2 py-1 text-xs text-gray-900 outline-none transition-colors hover:border-gray-200 focus:border-gray-300 focus:bg-white dark:text-gray-100 dark:hover:border-gray-700 dark:focus:border-gray-600 dark:focus:bg-gray-900'
+            />
+          </div>
+        </td>
+        <td className='px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2'>
+          {source.script ? (
+            <>
+              <button
+                onClick={() => handleToggleEnableScript(source.key)}
+                disabled={isLoading(`toggleSource_script_${source.key}`)}
+                className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium ${
+                  !source.disabled
+                    ? buttonStyles.roundedDanger
+                    : buttonStyles.roundedSuccess
+                } transition-colors ${
+                  isLoading(`toggleSource_script_${source.key}`)
+                    ? 'opacity-50 cursor-not-allowed'
+                    : ''
+                }`}
+              >
+                {!source.disabled ? '禁用' : '启用'}
+              </button>
+              <button
+                onClick={() => handleDeleteScript(source.key)}
+                disabled={isLoading(`deleteSource_script_${source.key}`)}
+                className={`${buttonStyles.roundedSecondary} ${
+                  isLoading(`deleteSource_script_${source.key}`)
+                    ? 'opacity-50 cursor-not-allowed'
+                    : ''
+                }`}
+              >
+                删除
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => handleToggleEnable(source.key)}
+                disabled={isLoading(`toggleSource_${source.key}`)}
+                className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium ${
+                  !source.disabled
+                    ? buttonStyles.roundedDanger
+                    : buttonStyles.roundedSuccess
+                } transition-colors ${
+                  isLoading(`toggleSource_${source.key}`)
+                    ? 'opacity-50 cursor-not-allowed'
+                    : ''
+                }`}
+              >
+                {!source.disabled ? '禁用' : '启用'}
+              </button>
+              {source.from !== 'config' && (
+                <button
+                  onClick={() => handleDelete(source.key)}
+                  disabled={isLoading(`deleteSource_${source.key}`)}
+                  className={`${buttonStyles.roundedSecondary} ${
+                    isLoading(`deleteSource_${source.key}`)
+                      ? 'opacity-50 cursor-not-allowed'
+                      : ''
+                  }`}
+                >
+                  删除
+                </button>
+              )}
+            </>
           )}
         </td>
       </tr>
     );
   });
 
-  // 全选/取消全选
+  // 全选/取消全选（含脚本源）
   const handleSelectAll = useCallback(
     (checked: boolean) => {
       if (checked) {
-        const allKeys = sources.map((s) => s.key);
+        const allKeys = [
+          ...sources.map((s) => s.key),
+          ...scriptSources.map((s) => s.key),
+        ];
         setSelectedSources(new Set(allKeys));
       } else {
         setSelectedSources(new Set());
       }
     },
-    [sources]
+    [sources, scriptSources]
   );
 
   // 单个选择
@@ -7631,6 +7901,13 @@ const VideoSourceConfig = ({
     }
 
     const keys = Array.from(selectedSources);
+    // 脚本源不在 SourceConfig 里，批量操作得走注册表接口，先按来源拆开
+    const apiKeys = keys.filter((key) =>
+      sources.some((source) => source.key === key)
+    );
+    const scriptKeys = keys.filter((key) =>
+      scriptSources.some((source) => source.key === key)
+    );
     let confirmMessage = '';
     let actionName = '';
 
@@ -7656,9 +7933,38 @@ const VideoSourceConfig = ({
       message: confirmMessage,
       onConfirm: async () => {
         try {
-          const result = await withLoading(`batchSource_${action}`, () =>
-            callSourceApi({ action, keys })
-          );
+          let result: any = null;
+          if (apiKeys.length > 0) {
+            result = await withLoading(`batchSource_${action}`, () =>
+              callSourceApi({ action, keys: apiKeys })
+            );
+          }
+          // 脚本源走注册表接口，一次一条
+          if (scriptKeys.length > 0) {
+            await withLoading(`batchSourceScript_${action}`, async () => {
+              for (const key of scriptKeys) {
+                const target = scriptSources.find((item) => item.key === key);
+                if (!target?.scriptId) continue;
+                const payload =
+                  action === 'batch_delete'
+                    ? { action: 'delete', id: target.scriptId }
+                    : { action: 'toggle_enabled', id: target.scriptId };
+                // 启用/禁用已经是目标状态就别再翻一次
+                if (
+                  action !== 'batch_delete' &&
+                  (action === 'batch_enable') === !target.disabled
+                ) {
+                  continue;
+                }
+                await fetch('/api/admin/source-script', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(payload),
+                });
+              }
+            });
+            await loadScriptSources();
+          }
 
           // 根据操作类型和结果显示不同的消息
           if (
@@ -8104,6 +8410,9 @@ const VideoSourceConfig = ({
               <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
                 有效性
               </th>
+              <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
+                备注 / 置顶
+              </th>
               <th className='px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
                 操作
               </th>
@@ -8111,7 +8420,21 @@ const VideoSourceConfig = ({
           </thead>
           <tbody className='divide-y divide-gray-200 dark:divide-gray-700'>
             {sources.map((source) => (
-              <SourceRow key={source.key} source={source} />
+              <SourceRow
+                key={source.key}
+                source={source}
+                meta={sourceMeta[source.key]}
+                onMetaChange={handleUpdateSourceMeta}
+              />
+            ))}
+            {/* 源码脚本源：与 api 源同一张表展示，操作走 source-script 接口 */}
+            {scriptSources.map((source) => (
+              <SourceRow
+                key={`script:${source.key}`}
+                source={source}
+                meta={sourceMeta[source.key]}
+                onMetaChange={handleUpdateSourceMeta}
+              />
             ))}
           </tbody>
         </table>

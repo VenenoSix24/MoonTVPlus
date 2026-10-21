@@ -8,6 +8,7 @@ import {
   deleteSourceScript,
   getDefaultSourceScriptTemplate,
   importSourceScripts,
+  listAllScriptSummaries,
   listSourceScripts,
   saveSourceScript,
   testSourceScript,
@@ -44,6 +45,14 @@ export async function GET(request: NextRequest) {
     const username = await assertAdmin(request);
     if (!username) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // slim=1：只返回摘要（含启用状态，不含源码），供「视频源配置」列表使用
+    if (request.nextUrl.searchParams.get('slim') === '1') {
+      return NextResponse.json(
+        { items: await listAllScriptSummaries() },
+        { headers: { 'Cache-Control': 'no-store' } }
+      );
     }
 
     const items = await listSourceScripts();

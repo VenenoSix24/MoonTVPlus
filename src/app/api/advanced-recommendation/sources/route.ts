@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getAuthInfoFromCookie } from '@/lib/auth';
-import { listEnabledSourceScripts } from '@/lib/source-script';
+import { listRecommendableSourceScripts } from '@/lib/source-script';
 
 export const runtime = 'nodejs';
 
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const scripts = await listEnabledSourceScripts();
+    const scripts = await listRecommendableSourceScripts();
 
     return NextResponse.json({
       sources: scripts.map((item) => ({
