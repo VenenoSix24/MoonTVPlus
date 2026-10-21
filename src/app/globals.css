@@ -5085,18 +5085,23 @@ html[data-loading-style='grid'] .mtv-err-box {
   }
 
   .mtv-dl-ep .mtv-dialog-head {
-    flex-wrap: wrap;
+    align-items: center;
     gap: 8px;
     padding: 12px 14px;
   }
 
+  /* 标题块只占剩余宽度，不整行吃满 —— 吃满会把「全选 / 清空 / ×」挤到第二行
+     右对齐，左边就空出一大块，看着像根本没对齐。 */
   .mtv-dl-ep .mtv-dialog-head > div:first-child {
-    flex: 1 1 100%;
+    flex: 1;
     min-width: 0;
   }
 
-  .mtv-dl-ep-actions {
-    margin-left: auto;
+  .mtv-dl-ep .mtv-dialog-title,
+  .mtv-dl-ep .mtv-dl-ep-sub {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .mtv-dl-ep-offline {
