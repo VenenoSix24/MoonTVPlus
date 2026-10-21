@@ -11,6 +11,20 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "227.0.2",
+    date: "2026-10-21",
+    added: [
+      // 无新增内容
+    ],
+    changed: [
+    "有新集角标改用令牌配色，不再内联写死天蓝"
+    ],
+    fixed: [
+    "继续观看的横版卡四角被顶部、底部两条渐变遮罩盖成直角：遮罩落在「仅图片层裁剪」之外，全宽矩形没有圆角",
+    "有新集的角标被 hover 放大的封面盖住，圆角外侧的透明缺口还会漏出角标颜色"
+    ]
+  },
+  {
     version: "227.0.1",
     date: "2026-10-21",
     added: [
