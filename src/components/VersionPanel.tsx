@@ -161,7 +161,7 @@ export const VersionPanel: React.FC<VersionPanelProps> = ({
   const fetchRemoteChangelog = async () => {
     try {
       const response = await fetch(
-        'https://raw.githubusercontent.com/mtvpls/MoonTVPlus/main/CHANGELOG'
+        'https://raw.githubusercontent.com/VenenoSix24/MoonTVPlus/main/CHANGELOG'
       );
       if (response.ok) {
         const content = await response.text();
@@ -458,7 +458,7 @@ export const VersionPanel: React.FC<VersionPanelProps> = ({
                     </div>
                   </div>
                   <a
-                    href='https://github.com/mtvpls/MoonTVPlus.git'
+                    href='https://github.com/VenenoSix24/MoonTVPlus'
                     target='_blank'
                     rel='noopener noreferrer'
                     className='inline-flex items-center justify-center gap-2 px-3 py-2 bg-yellow-600 hover:bg-yellow-700 text-white text-xs sm:text-sm rounded-lg transition-colors shadow-sm w-full'
@@ -488,7 +488,7 @@ export const VersionPanel: React.FC<VersionPanelProps> = ({
                     </div>
                   </div>
                   <a
-                    href='https://github.com/mtvpls/MoonTVPlus.git'
+                    href='https://github.com/VenenoSix24/MoonTVPlus'
                     target='_blank'
                     rel='noopener noreferrer'
                     className='inline-flex items-center justify-center gap-2 px-3 py-2 bg-ui-accent hover:bg-ui-accent text-white text-xs sm:text-sm rounded-lg transition-colors shadow-sm w-full'
