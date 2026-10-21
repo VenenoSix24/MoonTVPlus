@@ -12,6 +12,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { createPortal } from 'react-dom';
 
 import { isAnimeCategoryText } from '@/lib/anime-keyword-expr';
 import { createAnime4KRenderer } from '@/lib/anime4k';
@@ -11390,7 +11391,10 @@ function PlayPageClient() {
       )}
       <div className='mtv-play-settle' aria-hidden='true' />
       {/* 弹幕源选择对话框 */}
-      {showDanmakuSourceSelector && danmakuMatches.length > 0 && (
+      {showDanmakuSourceSelector &&
+        danmakuMatches.length > 0 &&
+        typeof document !== 'undefined' &&
+        createPortal(
         <div
           className='mtv-dialog-scrim is-sheet'
           onClick={() => {
@@ -11495,7 +11499,8 @@ function PlayPageClient() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
               <div className='mtv-play-root relative z-10 flex flex-col gap-3 py-5 px-[var(--ui-gutter)]'>
