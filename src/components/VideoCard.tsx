@@ -1199,7 +1199,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
             {/* 播放按钮或上映倒计时 */}
             {isUpcoming && daysUntilRelease !== null ? (
               <div
-                className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ease-in-out ${
+                className={`absolute inset-0 rounded-ui-md flex items-center justify-center transition-all duration-300 ease-in-out ${
                   showUpcomingInfo
                     ? 'opacity-100 scale-100'
                     : 'opacity-0 scale-75'
@@ -1802,7 +1802,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
               <>
                 {/* 顶部渐变遮罩 - 用于标题背景 */}
                 <div
-                  className='absolute top-0 left-0 right-0 bg-gradient-to-b from-black/80 via-black/40 to-transparent pt-2 pb-8 px-2'
+                  className='absolute rounded-ui-md top-0 left-0 right-0 bg-gradient-to-b from-black/80 via-black/40 to-transparent pt-2 pb-8 px-2'
                   style={
                     {
                       WebkitUserSelect: 'none',
@@ -1889,7 +1889,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
 
                 {/* 底部渐变遮罩 - 用于进度条背景 */}
                 <div
-                  className='absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent pt-8 pb-2 px-2'
+                  className='absolute rounded-ui-md bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent pt-8 pb-2 px-2'
                   style={
                     {
                       WebkitUserSelect: 'none',

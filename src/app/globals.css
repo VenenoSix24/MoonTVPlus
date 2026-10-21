@@ -3285,6 +3285,59 @@ html[data-loading-style='grid'] .mtv-err-box {
   white-space: nowrap;
   pointer-events: none;
 }
+
+/* 继续观看：有新集时右上角的水波纹角标。
+   三层圆共用 globals.css 里的 ping-scale / pulse-scale / badge-scale，配色走强调色令牌，
+   不再写死天蓝。卡片 hover 会把 z-index 抬到 --ui-z-panel，这里必须比它高一层，否则
+   放大后的封面会盖过角标；而且卡片圆角外侧那点透明缺口会把角标颜色漏出来，看着像
+   右上角裂了个直角。 */
+.mtv-cw-new {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  z-index: calc(var(--ui-z-panel) + 1);
+  width: 28px;
+  height: 28px;
+  pointer-events: none;
+}
+
+.mtv-cw-new > span {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background-color: var(--ui-accent);
+}
+
+.mtv-cw-new > span:nth-child(1) {
+  animation: ping-scale 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.mtv-cw-new > span:nth-child(2) {
+  animation: pulse-scale 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.mtv-cw-new > span:nth-child(3) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-image: linear-gradient(
+    to bottom right,
+    var(--ui-accent),
+    color-mix(in srgb, var(--ui-accent) 74%, #000)
+  );
+  box-shadow: var(--ui-elev-1);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  animation: badge-scale 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mtv-cw-new > span {
+    animation: none;
+  }
+}
 /* ==========================================================================
    手机端 Hero
    --------------------------------------------------------------------------
