@@ -1895,6 +1895,11 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                             >
                               {source.title}
                             </span>
+                            {/* 「当前」贴着标题走，不推到卡片最右边 —— 靠右会把整行
+                                重心拽过去，窄屏下还会和右侧按钮挤在一起，看着像错位。 */}
+                            {isCurrentSource && (
+                              <span className='mtv-play-src-now'>当前</span>
+                            )}
                             {videoInfo && videoInfo.quality !== '未知' && (
                               <span
                                 className={`mtv-play-src-badge ${
@@ -1914,10 +1919,10 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                             )}
                           </div>
 
-                          {/* 第二行：源名 · 速度 · 延迟。
-                              原来把码率也塞进这一行，三个指标还各配一种颜色，
-                              一行五个信息点，扫都扫不过来。码率只服务「画质优先」
-                              排序，画质徽标已经把结果说清楚了。 */}
+                          {/* 第二行：源名 · 速度 · 延迟 · 码率。
+                              码率要留着 —— 「画质优先」就是按它排的，不显示的话
+                              看不出排序依据；网速吃紧时它也是判断这条流能不能跑满
+                              的唯一线索。 */}
                           <div className='mtv-play-src-meta'>
                             <span className='mtv-play-src-name'>
                               {source.source_name}
@@ -1942,17 +1947,19 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                                   <span className='mtv-play-src-ping'>
                                     {videoInfo.pingTime}ms
                                   </span>
+                                  {videoInfo.bitrate &&
+                                    videoInfo.bitrate !== '未知' && (
+                                      <span className='mtv-play-src-bitrate'>
+                                        {videoInfo.bitrate}
+                                      </span>
+                                    )}
                                 </>
                               ))}
                           </div>
-                        </div>
-
-                        {/* 右侧：当前标记，或者失败源的重测。
-                            正常源不再挂「重新测试」—— 工具条上已经有「全部重测」，
+                          </div>
+                        {/* 失败源的重测。正常源不挂 —— 工具条上已经有「全部重测」，
                             每张卡片再重复一遍纯属噪音。 */}
-                        {isCurrentSource ? (
-                          <span className='mtv-play-src-now'>当前</span>
-                        ) : (
+                        {!isCurrentSource &&
                           (() => {
                             const skipRetest =
                               source.source === 'openlist' ||
@@ -1972,8 +1979,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                                 {testing ? '测试中' : '重测'}
                               </button>
                             );
-                          })()
-                        )}
+                          })()}
                       </div>
                     );
                   })}

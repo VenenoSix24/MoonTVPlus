@@ -6174,3 +6174,15 @@ html[data-loading-style='silver-screen'] .mtv-load-silver {
     font-size: 12px;
   }
 }
+
+/* 码率。和速度、延迟同排，用同一个 · 分隔符 —— 三项里只有速度是强调色，
+   其余保持弱化，一行看下来不会散。 */
+.mtv-play-src-bitrate {
+  font-variant-numeric: tabular-nums;
+}
+
+.mtv-play-src-bitrate::before {
+  content: '·';
+  margin-right: 6px;
+  opacity: 0.5;
+}
