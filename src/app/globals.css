@@ -4739,6 +4739,407 @@ html[data-loading-style='grid'] .mtv-err-box {
     width: 100%;
   }
 }
+
+/* ---------- 选择要下载的集数 ---------- */
+/* 这个面板里塞了五截：头部（标题 + 全选/清空）、可选的离线开关、分页、集数网格、
+   底部汇总与按钮。原来整体是 w-[90vw] + px-6，五段横向内边距吃掉三成宽度，手机上
+   标题行、离线说明、底部栏全在换行。这里统一成播放页浮层：桌面居中定宽，手机贴底
+   整宽，内边距收到 14px，底部按钮并排各占一半。 */
+.mtv-dl-ep {
+  display: flex;
+  max-width: 880px;
+  max-height: 82vh;
+  margin: 0 20px;
+  flex-direction: column;
+}
+
+.mtv-dl-ep-sub {
+  margin-top: 4px;
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.mtv-dl-ep-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+}
+
+.mtv-dl-ep-act {
+  height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-dl-ep-act:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.mtv-dl-ep-offline {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.mtv-dl-ep-offline-icon {
+  display: flex;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.mtv-dl-ep-offline-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.mtv-dl-ep-offline-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.mtv-dl-ep-offline-desc {
+  margin-top: 2px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.mtv-dl-ep-badge {
+  padding: 1px 6px;
+  border-radius: 5px;
+  background-color: color-mix(in srgb, var(--ui-accent) 18%, transparent);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--ui-accent);
+}
+
+.mtv-dl-ep-switch {
+  position: relative;
+  flex: none;
+  width: 40px;
+  height: 23px;
+  border: 0;
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 0.16);
+  cursor: pointer;
+  transition: background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-dl-ep-switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 17px;
+  height: 17px;
+  border-radius: 9999px;
+  background-color: #fff;
+  transition: transform var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-dl-ep-switch.is-on {
+  background-color: var(--ui-accent);
+}
+
+.mtv-dl-ep-switch.is-on::after {
+  transform: translateX(17px);
+}
+
+.mtv-dl-ep-pages {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mtv-dl-ep-pagescroll {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.mtv-dl-ep-pagescroll::-webkit-scrollbar {
+  display: none;
+}
+
+.mtv-dl-ep-pagelist {
+  display: flex;
+  gap: 6px;
+  width: max-content;
+}
+
+.mtv-dl-ep-page {
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 7px;
+  background-color: transparent;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.62);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--ui-dur-1) var(--ui-ease),
+    border-color var(--ui-dur-1) var(--ui-ease),
+    color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-dl-ep-page:hover {
+  border-color: rgba(255, 255, 255, 0.24);
+  color: #fff;
+}
+
+.mtv-dl-ep-page.is-on {
+  border-color: transparent;
+  background-color: var(--ui-accent);
+  color: var(--ui-accent-ink);
+}
+
+.mtv-dl-ep-sort {
+  display: flex;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 7px;
+  background-color: transparent;
+  color: rgba(255, 255, 255, 0.62);
+  cursor: pointer;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    border-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-dl-ep-sort:hover {
+  border-color: rgba(255, 255, 255, 0.24);
+  color: #fff;
+}
+
+.mtv-dl-ep-grid {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 8px;
+  overflow-y: auto;
+  padding: 14px 16px;
+}
+
+.mtv-dl-ep-cell {
+  position: relative;
+  display: flex;
+  height: 38px;
+  min-width: 42px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background-color: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.78);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--ui-dur-1) var(--ui-ease),
+    border-color var(--ui-dur-1) var(--ui-ease),
+    color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-dl-ep-cell:hover {
+  border-color: rgba(255, 255, 255, 0.24);
+  background-color: rgba(255, 255, 255, 0.07);
+  color: #fff;
+}
+
+.mtv-dl-ep-cell.is-on {
+  border-color: transparent;
+  background-color: var(--ui-accent);
+  color: var(--ui-accent-ink);
+}
+
+.mtv-dl-ep-cell.is-current::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 5px;
+  height: 5px;
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 0.85);
+}
+
+.mtv-dl-ep-foot {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mtv-dl-ep-sum {
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.mtv-dl-ep-sum strong {
+  font-weight: 600;
+  color: var(--ui-accent);
+}
+
+.mtv-dl-ep-sum .is-warn {
+  color: var(--ui-danger);
+}
+
+.mtv-dl-ep-note {
+  margin-left: 6px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.mtv-dl-ep-btns {
+  display: flex;
+  flex: none;
+  gap: 8px;
+}
+
+.mtv-dl-ep-btn {
+  height: 38px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9px;
+  background-color: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.62);
+  cursor: pointer;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    border-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-dl-ep-btn:hover {
+  border-color: rgba(255, 255, 255, 0.24);
+  color: #fff;
+}
+
+.mtv-dl-ep-btn.is-primary {
+  border-color: transparent;
+  background-color: var(--ui-accent);
+  color: var(--ui-accent-ink);
+}
+
+.mtv-dl-ep-btn.is-primary:hover {
+  background-color: color-mix(in srgb, var(--ui-accent) 88%, #000);
+}
+
+.mtv-dl-ep-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* 手机：贴底整宽。头部让出两行（标题一行、全选清空一行），离线开关的说明文字
+   直接收掉，底部汇总和按钮上下排。 */
+@media (max-width: 767px) {
+  .mtv-dl-ep {
+    max-width: none;
+    max-height: 92vh;
+    margin: 0;
+    border-radius: 18px 18px 0 0;
+  }
+
+  .mtv-dl-ep .mtv-dialog-head {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 14px;
+  }
+
+  .mtv-dl-ep .mtv-dialog-head > div:first-child {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .mtv-dl-ep-actions {
+    margin-left: auto;
+  }
+
+  .mtv-dl-ep-offline {
+    padding: 8px 14px;
+  }
+
+  .mtv-dl-ep-offline-desc {
+    display: none;
+  }
+
+  .mtv-dl-ep-pages {
+    padding: 8px 14px;
+  }
+
+  .mtv-dl-ep-grid {
+    gap: 7px;
+    padding: 12px 14px;
+  }
+
+  .mtv-dl-ep-cell {
+    height: 36px;
+    min-width: 40px;
+    padding: 0 8px;
+    font-size: 12.5px;
+  }
+
+  .mtv-dl-ep-foot {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+  }
+
+  .mtv-dl-ep-btns {
+    width: 100%;
+  }
+
+  .mtv-dl-ep-btn {
+    flex: 1;
+  }
+}
 /* 快捷键分组与键帽 */
 .mtv-key-group {
   border-radius: 12px;
@@ -6434,25 +6835,19 @@ html[data-loading-style='silver-screen'] .mtv-load-silver {
   color: var(--ui-metric-bitrate);
 }
 
-/* 当前排序依据的那一列加一道下划线 —— 换源列表按什么排的，一眼能看出来。
-   用 ::after 而不是 border-bottom：指标行是三列 grid，加边框会把这行撑高，
-   和其他卡片对不齐。currentColor 让线自动跟着各列自己的语义色走。 */
+/* 当前排序依据的那一列套一层胶囊 —— 换源列表按什么排的，一眼能看出来。
+   不能用整列宽的下划线：这两个 span 是 grid item，宽度等于列宽，数字只占其中
+   一段，线会一路画到空白处。这里让元素收缩到内容宽再上底色，负 margin 把文字
+   拉回原来的左缘，列宽和纵向对齐都不受影响。currentColor 保证胶囊跟着各列自己
+   的语义色走（速度用强调色、码率用紫）。 */
 .mtv-play-src-speed.is-sort-key,
 .mtv-play-src-bitrate.is-sort-key {
-  position: relative;
-}
-
-.mtv-play-src-speed.is-sort-key::after,
-.mtv-play-src-bitrate.is-sort-key::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -2px;
-  height: 2px;
-  border-radius: 2px;
-  background-color: currentColor;
-  opacity: 0.5;
+  width: fit-content;
+  margin-left: -6px;
+  padding: 0 6px;
+  border-radius: 9999px;
+  background-color: color-mix(in srgb, currentColor 16%, transparent);
+  font-weight: 600;
 }
 .mtv-play-src-fail {
   grid-column: 1 / -1;
