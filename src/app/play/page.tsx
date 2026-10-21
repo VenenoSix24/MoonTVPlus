@@ -764,13 +764,15 @@ function PlayPageClient() {
     blockAdEnabledRef.current = blockAdEnabled;
   }, [blockAdEnabled]);
 
-  // 工具栏去广告开关：用于外部播放器及鸿蒙原生 HLS，默认 false
+  // 工具栏去广告开关：用于外部播放器及鸿蒙原生 HLS。默认打开 —— 大多数源的
+  // 切片里都插了广告，默认关着等于每次进页面都要手动开一遍。用户手动关过的
+  // 情况以 localStorage 里的值为准。
   const [externalPlayerAdBlock, setExternalPlayerAdBlock] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       const v = localStorage.getItem('external_player_adblock');
       if (v !== null) return v === 'true';
     }
-    return false;
+    return true;
   });
   useEffect(() => {
     if (typeof window !== 'undefined') {
