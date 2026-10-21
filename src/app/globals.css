@@ -4546,6 +4546,15 @@ html[data-loading-style='grid'] .mtv-err-box {
   position: relative;
   padding: 16px 20px;
 }
+
+/* 面板内可点区域的 hover：墨色 7%，深浅色都成立，不用实心灰 */
+.mtv-hover-ink {
+  transition: background-color 0.16s ease;
+}
+
+.mtv-hover-ink:hover {
+  background-color: color-mix(in srgb, var(--ui-ink) 7%, transparent);
+}
 /* ---------- 选择弹幕源 ---------- */
 /* 一个源一行：序号 / 封面 / 标题 + 标签 / 箭头。原来每行是一整块灰底卡片，
    带彩色 emoji 标签和 hover 才出现的提示文字，卡片套卡片，一屏只能放下两个。 */
