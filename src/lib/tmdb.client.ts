@@ -2,6 +2,7 @@
 
 import { safeFetch } from './safe-http';
 import { getTmdbImageBaseUrl } from './tmdb-image-base';
+import { translateGenreNames } from './tmdb.genres';
 
 // TMDB API 默认 Base URL（不包含 /3/，由程序拼接）
 const DEFAULT_TMDB_BASE_URL = 'https://api.themoviedb.org';
@@ -1194,7 +1195,9 @@ export async function getTMDBDetails(
       overview: data.overview || '',
       releaseDate: data.release_date || data.first_air_date || '',
       runtime: data.runtime || data.episode_run_time?.[0] || null,
-      genres: (data.genres || []).map((g: any) => g.name).filter(Boolean),
+      genres: translateGenreNames(
+        (data.genres || []).map((g: any) => g.name).filter(Boolean)
+      ),
       voteAverage: typeof data.vote_average === 'number' ? data.vote_average : 0,
       voteCount: typeof data.vote_count === 'number' ? data.vote_count : 0,
       originalLanguage: data.original_language || '',

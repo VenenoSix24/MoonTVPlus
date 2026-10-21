@@ -7,6 +7,7 @@ import {
   getTMDBTVDetails,
   searchTMDBMulti,
 } from '@/lib/tmdb.client';
+import { translateGenreName } from '@/lib/tmdb.genres';
 
 // 服务器端缓存（内存）
 const searchCache = new Map<
@@ -175,7 +176,11 @@ export async function GET(request: NextRequest) {
       // OMDb 只能按 imdb_id 查，这里把详情附带的 external_ids 一并透给前端，
       // 免掉前端再打一次 TMDB 请求
       imdbId: details.external_ids?.imdb_id || details.imdb_id || null,
-      genres: details.genres || [], // 添加类型标签
+      // 类型标签。TMDB 少数条目缺中文翻译（剧集的 Sci-Fi & Fantasy），补一下
+      genres: (details.genres || []).map((g: any) => ({
+        ...g,
+        name: translateGenreName(g.name),
+      })),
       // 季度索引（含每季集数）。带上它，播放页就能把 CMS 的扁平集号映射到
       // 「第几季第几集」，不必再单独打一次 /api/tmdb/seasons
       seasons:

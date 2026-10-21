@@ -417,6 +417,54 @@ async function getDoubanBannerContent(
 }
 
 /**
+ * 按片名 + 年份查一条豆瓣评分。
+ *
+ * `/rexxar/api/v2/search/movie` 一次请求就同时给 id、year 和 rating，比先
+ * subject_suggest 再拉一次详情省一半。年份必须完全对上 —— 豆瓣上同名不同年的
+ * 片子太多（《时光代理人》有 5 部），挂错一部比没有评分更糟。
+ *
+ * 走的是配置里的豆瓣 CDN 反代，不是直连源站。
+ */
+async function fetchDoubanVote(
+  title: string,
+  year: string,
+  config: any
+): Promise<number | null> {
+  if (!title || !year) return null;
+
+  const proxyType =
+    config?.SiteConfig?.DoubanProxyType || 'cmliussss-cdn-tencent';
+  const custom = String(config?.SiteConfig?.DoubanProxy || '')
+    .trim()
+    .replace(/\/+$/, '');
+  const base =
+    proxyType === 'cmliussss-cdn-ali'
+      ? 'https://m.douban.cmliussss.com'
+      : proxyType === 'cmliussss-cdn-tencent'
+        ? 'https://m.douban.cmliussss.net'
+        : proxyType === 'custom' && custom
+          ? custom
+          : 'https://m.douban.com';
+
+  try {
+    const data = await fetchDoubanData<any>(
+      `${base}/rexxar/api/v2/search/movie?q=${encodeURIComponent(title)}&start=0&count=10`
+    );
+    const items: any[] = Array.isArray(data?.items) ? data.items : [];
+    for (const item of items) {
+      const target = item?.target;
+      if (!target) continue;
+      if (String(target.year || '') !== String(year)) continue;
+      const value = target.rating?.value;
+      if (typeof value === 'number' && value > 0) return value;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * TMDB 轮播内容。标题字 / 无字海报和预告片一起取。
  *
  * 标题字原本是前端挂载后才逐条去请求的，首屏渲染时手里还没有，只能先把
@@ -542,9 +590,7 @@ async function getMixedBannerContent(
   const list: any[] = [];
   const seen = new Set<string>();
 
-  // 豆瓣条目反查命中后带着 tmdb_id，用它建一张「TMDB id → 豆瓣分」的表。
-  // 豆瓣没有公开的搜索接口（subject_suggest 返回空、rexxar 综合搜索只回影评），
-  // 所以 TMDB 条目的豆瓣分只能从这份现成的映射里补 —— 覆盖的是两边都收录的片。
+  // 豆瓣条目反查命中后带着 tmdb_id，先用它建一张「TMDB id → 豆瓣分」的表。
   const doubanScores = new Map<number, number>();
   for (const item of doubanList) {
     if (
@@ -555,6 +601,23 @@ async function getMixedBannerContent(
       doubanScores.set(item.tmdb_id, item.vote_average);
     }
   }
+
+  // 上面那张表只覆盖「两边都收录」的片，剩下的 TMDB 条目得自己查一次。
+  // `/rexxar/api/v2/search/movie` 一次请求就带 id、year 和 rating，走的是
+  // 配置里的豆瓣 CDN 反代。查不到就空着 —— 评分行少一格，不拖整屏。
+  await Promise.all(
+    tmdbList.map(async (item, index) => {
+      if (doubanScores.has(item.id)) return;
+      const year = String(item.release_date || '').match(/\d{4}/)?.[0] || '';
+      const vote = await withBudget(
+        fetchDoubanVote(item.title, year, config),
+        ASSET_BUDGET_MS
+      );
+      if (typeof vote === 'number' && vote > 0) {
+        tmdbList[index] = { ...item, douban_vote: vote };
+      }
+    })
+  );
 
   const tryPush = (item: any) => {
     // 去重键优先用 TMDB 的 id：豆瓣条目反查命中后也带着这个 id，于是《希望》这种
