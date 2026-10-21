@@ -507,7 +507,7 @@ const MultiLevelSelector: React.FC<MultiLevelSelectorProps> = ({
   return (
     <>
       {/* 胶囊样式筛选栏 */}
-      <div className='relative inline-flex rounded-full p-0.5 sm:p-1 bg-transparent gap-1 sm:gap-2'>
+      <div className='mtv-caps'>
         {categories.map((category) => (
           <div
             key={category.key}
@@ -518,14 +518,9 @@ const MultiLevelSelector: React.FC<MultiLevelSelectorProps> = ({
           >
             <button
               onClick={() => handleCategoryClick(category.key)}
-              className={`relative z-10 px-1.5 py-0.5 sm:px-2 sm:py-1 md:px-4 md:py-2 text-xs sm:text-sm font-medium rounded-full transition-all duration-200 whitespace-nowrap ${activeCategory === category.key
-                  ? isDefaultValue(category.key)
-                    ? 'text-gray-900 dark:text-gray-100 cursor-default'
-                    : 'text-green-600 dark:text-green-400 cursor-default'
-                  : isDefaultValue(category.key)
-                    ? 'text-gray-700 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 cursor-pointer'
-                    : 'text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 cursor-pointer'
-                }`}
+              className={`mtv-cap ${
+                isDefaultValue(category.key) ? '' : 'is-on'
+              } ${activeCategory === category.key ? 'is-fill' : ''} cursor-pointer`}
             >
               <span>{getDisplayText(category.key)}</span>
               <svg
@@ -552,7 +547,7 @@ const MultiLevelSelector: React.FC<MultiLevelSelectorProps> = ({
         createPortal(
           <div
             ref={dropdownRef}
-            className='fixed z-[9999] bg-white/95 dark:bg-gray-800/95 rounded-xl border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-sm'
+            className='mtv-filter-pop fixed z-[9999]'
             style={{
               left: `${dropdownPosition.x}px`,
               top: `${dropdownPosition.y}px`,
@@ -573,10 +568,7 @@ const MultiLevelSelector: React.FC<MultiLevelSelectorProps> = ({
                       onClick={() =>
                         handleOptionSelect(activeCategory, option.value)
                       }
-                      className={`px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm rounded-lg transition-all duration-200 text-left ${isOptionSelected(activeCategory, option.value)
-                          ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-700'
-                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100/80 dark:hover:bg-gray-700/80'
-                        }`}
+                      className={`mtv-filter-opt ${isOptionSelected(activeCategory, option.value) ? 'is-on' : ''}`}
                     >
                       {option.label}
                     </button>

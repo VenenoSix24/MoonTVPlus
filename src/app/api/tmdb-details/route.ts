@@ -7,6 +7,7 @@ import {
   getTMDBTVDetails,
   searchTMDBMulti,
 } from '@/lib/tmdb.client';
+import { translateGenreName } from '@/lib/tmdb.genres';
 
 // 服务器端缓存（内存）
 const searchCache = new Map<
@@ -50,6 +51,9 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const title = searchParams.get('title');
     const cachedId = searchParams.get('cachedId');
+    // 可选年份。中文别名在 TMDB 上经常对不上（CMS 的「海贼王」在 TMDB 叫「航海王」），
+    // 靠年份把搜索收窄才不会落到同名的另一部剧上
+    const year = searchParams.get('year');
 
     if (!title && !cachedId) {
       return NextResponse.json(
@@ -82,7 +86,8 @@ export async function GET(request: NextRequest) {
     } else {
       // 否则需要搜索获取ID
       const cleanedTitle = removeSeasonInfo(title!);
-      const cacheKey = `search_${cleanedTitle}`;
+      // 年份要进缓存键：同一部剧名配不同年份会命中完全不同的条目
+      const cacheKey = `search_${cleanedTitle}|y${year || ''}`;
 
       // 检查服务器缓存
       const cached = searchCache.get(cacheKey);
@@ -97,7 +102,8 @@ export async function GET(request: NextRequest) {
           tmdbApiKey,
           cleanedTitle,
           tmdbProxy,
-          tmdbReverseProxy
+          tmdbReverseProxy,
+          year
         );
 
         if (searchResult.code !== 200 || !searchResult.results.length) {
@@ -163,9 +169,30 @@ export async function GET(request: NextRequest) {
         ? getTMDBImageUrl(details.poster_path, 'w500')
         : null,
       overview: details.overview || '',
-      rating: details.vote_average ? details.vote_average.toFixed(1) : '',
+      // 上映日期。播放页拿它当年份兜底：入口没带 year 时用它过滤下载源，
+      // 否则同名不同年的片子会混进结果列表（《希望》2020 / 2026 就是这种情况）。
       releaseDate: details.release_date || details.first_air_date || '',
-      genres: details.genres || [], // 添加类型标签
+      rating: details.vote_average ? details.vote_average.toFixed(1) : '',
+      // OMDb 只能按 imdb_id 查，这里把详情附带的 external_ids 一并透给前端，
+      // 免掉前端再打一次 TMDB 请求
+      imdbId: details.external_ids?.imdb_id || details.imdb_id || null,
+      // 类型标签。TMDB 少数条目缺中文翻译（剧集的 Sci-Fi & Fantasy），补一下
+      genres: (details.genres || []).map((g: any) => ({
+        ...g,
+        name: translateGenreName(g.name),
+      })),
+      // 季度索引（含每季集数）。带上它，播放页就能把 CMS 的扁平集号映射到
+      // 「第几季第几集」，不必再单独打一次 /api/tmdb/seasons
+      seasons:
+        mediaType === 'tv'
+          ? ((details.seasons || []) as any[])
+              .filter((s) => s && s.season_number > 0)
+              .map((s) => ({
+                season_number: s.season_number,
+                episode_count: s.episode_count || 0,
+                name: s.name || '',
+              }))
+          : [],
     };
 
     return NextResponse.json(responseData, {

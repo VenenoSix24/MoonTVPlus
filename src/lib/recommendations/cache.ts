@@ -14,7 +14,9 @@ const RECOMMENDATION_CACHE_CONFIG = {
     ttlMs: DAY_IN_MS,
   },
   tmdbDetails: {
-    prefix: 'tmdb_details_',
+    // v2：响应体加了 seasons（季度索引）。老键里的对象没有这个字段，
+    // 复用会让「按季映射」整个失效，所以换前缀强制重新取一次
+    prefix: 'tmdb_details_v2_',
     ttlMs: DAY_IN_MS,
   },
 } as const;
@@ -31,8 +33,12 @@ let recommendationCacheCleanupInitialized = false;
 export const recommendationCacheKeys = {
   doubanRecommendations: (doubanId: string | number) =>
     `${RECOMMENDATION_CACHE_CONFIG.doubanRecommendations.prefix}${doubanId}`,
-  tmdbTitleMapping: (title: string) =>
-    `${RECOMMENDATION_CACHE_CONFIG.tmdbTitleMapping.prefix}${title}`,
+  // 年份进键：同一部剧名配不同年份会指向完全不同的 TMDB 条目。
+  // 老键（不带年份）自然失效，顺带把之前可能缓存错的映射清掉
+  tmdbTitleMapping: (title: string, year?: string | number | null) =>
+    `${RECOMMENDATION_CACHE_CONFIG.tmdbTitleMapping.prefix}${title}|y${
+      year || ''
+    }`,
   tmdbRecommendations: (tmdbId: string | number) =>
     `${RECOMMENDATION_CACHE_CONFIG.tmdbRecommendations.prefix}${tmdbId}`,
   tmdbDetails: (tmdbId: string | number) =>

@@ -595,7 +595,7 @@ export function DownloadManagementPanel({
                   onClick={handleExport}
                   aria-label={isExporting ? '导出中' : '导出选中'}
                   disabled={selectedIds.size === 0 || isExporting || isDeleting}
-                  className='flex h-10 w-10 items-center justify-center rounded bg-green-500 text-white transition-colors hover:bg-green-600 disabled:cursor-not-allowed disabled:opacity-50 sm:h-auto sm:w-auto sm:gap-2 sm:px-4 sm:py-2 sm:text-sm'
+                  className='flex h-10 w-10 items-center justify-center rounded bg-ui-accent text-white transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 sm:h-auto sm:w-auto sm:gap-2 sm:px-4 sm:py-2 sm:text-sm'
                 >
                   <Download className='h-4 w-4' />
                   <span className='hidden sm:inline'>
@@ -639,7 +639,7 @@ export function DownloadManagementPanel({
                         key={group.key}
                         className={`border rounded-lg overflow-hidden transition-colors ${
                           isGroupSelected || isGroupPartiallySelected
-                            ? 'border-green-500 bg-green-50/70 dark:bg-green-900/10'
+                            ? 'border-ui-accent bg-ui-accent-soft'
                             : 'border-gray-200 dark:border-gray-700'
                         }`}
                       >
@@ -655,9 +655,9 @@ export function DownloadManagementPanel({
                             }}
                             className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded border-2 transition-colors sm:mt-1 sm:h-5 sm:w-5 ${
                               isGroupSelected
-                                ? 'border-green-500 bg-green-500'
+                                ? 'border-ui-accent bg-ui-accent'
                                 : isGroupPartiallySelected
-                                ? 'border-green-500 bg-green-100 dark:bg-green-900/40'
+                                ? 'border-ui-accent bg-ui-accent-soft'
                                 : 'border-gray-300 dark:border-gray-600'
                             }`}
                             aria-label={`选择 ${group.title}`}
@@ -665,7 +665,7 @@ export function DownloadManagementPanel({
                             {isGroupSelected ? (
                               <Check className='h-4 w-4 text-white sm:h-3 sm:w-3' />
                             ) : isGroupPartiallySelected ? (
-                              <span className='h-0.5 w-3 rounded bg-green-500 sm:w-2.5' />
+                              <span className='h-0.5 w-3 rounded bg-ui-accent sm:w-2.5' />
                             ) : null}
                           </button>
 
@@ -697,7 +697,7 @@ export function DownloadManagementPanel({
                                     总大小：{formatFileSize(group.totalSize)}
                                   </div>
                                   {selectedCount > 0 && (
-                                    <div className='mt-1 text-xs text-green-600 dark:text-green-400'>
+                                    <div className='mt-1 text-xs text-ui-accent'>
                                       已选 {selectedCount} 集
                                     </div>
                                   )}
@@ -719,7 +719,7 @@ export function DownloadManagementPanel({
                                 key={task.id}
                                 className={`flex cursor-pointer items-start gap-2 px-3 py-3.5 transition-colors sm:gap-3 sm:px-4 sm:py-3 ${
                                   selectedIds.has(task.id)
-                                    ? 'bg-green-50 dark:bg-green-900/20'
+                                    ? 'bg-ui-accent-soft'
                                     : 'hover:bg-gray-50 dark:hover:bg-gray-800'
                                 }`}
                                 onClick={() => handleToggleSelect(task.id)}
@@ -728,7 +728,7 @@ export function DownloadManagementPanel({
                                   <div
                                     className={`flex h-8 w-8 items-center justify-center rounded border-2 sm:h-5 sm:w-5 ${
                                       selectedIds.has(task.id)
-                                        ? 'border-green-500 bg-green-500'
+                                        ? 'border-ui-accent bg-ui-accent'
                                         : 'border-gray-300 dark:border-gray-600'
                                     }`}
                                   >

@@ -419,15 +419,15 @@ export default function WebLivePage() {
                 <>
                   {/* 动画直播图标 */}
                   <div className='relative mb-8'>
-                    <div className='relative mx-auto w-24 h-24 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl shadow-2xl flex items-center justify-center transform hover:scale-105 transition-transform duration-300'>
+                    <div className='relative mx-auto w-24 h-24 bg-gradient-to-r from-ui-accent to-ui-accent rounded-2xl shadow-2xl flex items-center justify-center transform hover:scale-105 transition-transform duration-300'>
                       <div className='text-white text-4xl'>📺</div>
                       {/* 旋转光环 */}
-                      <div className='absolute -inset-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl opacity-20 animate-spin'></div>
+                      <div className='absolute -inset-2 bg-gradient-to-r from-ui-accent to-ui-accent rounded-2xl opacity-20 animate-spin'></div>
                     </div>
 
                     {/* 浮动粒子效果 */}
                     <div className='absolute top-0 left-0 w-full h-full pointer-events-none'>
-                      <div className='absolute top-2 left-2 w-2 h-2 bg-green-400 rounded-full animate-bounce'></div>
+                      <div className='absolute top-2 left-2 w-2 h-2 bg-ui-accent rounded-full animate-bounce'></div>
                       <div
                         className='absolute top-4 right-4 w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce'
                         style={{ animationDelay: '0.5s' }}
@@ -443,20 +443,20 @@ export default function WebLivePage() {
                   <div className='mb-6 w-80 mx-auto'>
                     <div className='flex justify-center space-x-2 mb-4'>
                       <div
-                        className={`w-3 h-3 rounded-full transition-all duration-500 ${loadingStage === 'loading' ? 'bg-green-500 scale-125' : 'bg-green-500'}`}
+                        className={`w-3 h-3 rounded-full transition-all duration-500 ${loadingStage === 'loading' ? 'bg-ui-accent scale-125' : 'bg-ui-accent'}`}
                       ></div>
                       <div
-                        className={`w-3 h-3 rounded-full transition-all duration-500 ${loadingStage === 'fetching' ? 'bg-green-500 scale-125' : 'bg-green-500'}`}
+                        className={`w-3 h-3 rounded-full transition-all duration-500 ${loadingStage === 'fetching' ? 'bg-ui-accent scale-125' : 'bg-ui-accent'}`}
                       ></div>
                       <div
-                        className={`w-3 h-3 rounded-full transition-all duration-500 ${loadingStage === 'ready' ? 'bg-green-500 scale-125' : 'bg-gray-300'}`}
+                        className={`w-3 h-3 rounded-full transition-all duration-500 ${loadingStage === 'ready' ? 'bg-ui-accent scale-125' : 'bg-gray-300'}`}
                       ></div>
                     </div>
 
                     {/* 进度条 */}
                     <div className='w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden'>
                       <div
-                        className='h-full bg-gradient-to-r from-green-500 to-emerald-600 rounded-full transition-all duration-1000 ease-out'
+                        className='h-full bg-gradient-to-r from-ui-accent to-ui-accent rounded-full transition-all duration-1000 ease-out'
                         style={{
                           width: loadingStage === 'loading' ? '33%' : loadingStage === 'fetching' ? '66%' : '100%',
                         }}
@@ -510,7 +510,7 @@ export default function WebLivePage() {
               <span className='text-xs font-medium text-gray-600 dark:text-gray-300'>
                 {isChannelListCollapsed ? '显示' : '隐藏'}
               </span>
-              <div className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full transition-all duration-200 ${isChannelListCollapsed ? 'bg-orange-400 animate-pulse' : 'bg-green-400'}`}></div>
+              <div className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full transition-all duration-200 ${isChannelListCollapsed ? 'bg-orange-400 animate-pulse' : 'bg-ui-success'}`}></div>
             </button>
           </div>
 
@@ -563,9 +563,9 @@ export default function WebLivePage() {
                         legacy={
                           <>
                             <div className='relative mb-8'>
-                              <div className='relative mx-auto w-24 h-24 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl shadow-2xl flex items-center justify-center transform hover:scale-105 transition-transform duration-300'>
+                              <div className='relative mx-auto w-24 h-24 bg-gradient-to-r from-ui-accent to-ui-accent rounded-2xl shadow-2xl flex items-center justify-center transform hover:scale-105 transition-transform duration-300'>
                                 <div className='text-white text-4xl'>📺</div>
-                                <div className='absolute -inset-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl opacity-20 animate-spin'></div>
+                                <div className='absolute -inset-2 bg-gradient-to-r from-ui-accent to-ui-accent rounded-2xl opacity-20 animate-spin'></div>
                               </div>
                             </div>
                             <div className='space-y-2'>
@@ -777,13 +777,13 @@ export default function WebLivePage() {
                 <div className='flex mb-1 -mx-6 flex-shrink-0'>
                   <div
                     onClick={() => setActiveTab('rooms')}
-                    className={`flex-1 py-3 px-6 text-center cursor-pointer transition-all duration-200 font-medium ${activeTab === 'rooms' ? 'text-green-600 dark:text-green-400' : 'text-gray-700 hover:text-green-600 bg-black/5 dark:bg-white/5 dark:text-gray-300 dark:hover:text-green-400 hover:bg-black/3 dark:hover:bg-white/3'}`}
+                    className={`flex-1 py-3 px-6 text-center cursor-pointer transition-all duration-200 font-medium ${activeTab === 'rooms' ? 'text-ui-accent ' : 'text-gray-700 hover:text-ui-accent bg-black/5 dark:bg-white/5 dark:text-gray-300  hover:bg-black/3 dark:hover:bg-white/3'}`}
                   >
                     房间
                   </div>
                   <div
                     onClick={() => setActiveTab('platforms')}
-                    className={`flex-1 py-3 px-6 text-center cursor-pointer transition-all duration-200 font-medium ${activeTab === 'platforms' ? 'text-green-600 dark:text-green-400' : 'text-gray-700 hover:text-green-600 bg-black/5 dark:bg-white/5 dark:text-gray-300 dark:hover:text-green-400 hover:bg-black/3 dark:hover:bg-white/3'}`}
+                    className={`flex-1 py-3 px-6 text-center cursor-pointer transition-all duration-200 font-medium ${activeTab === 'platforms' ? 'text-ui-accent ' : 'text-gray-700 hover:text-ui-accent bg-black/5 dark:bg-white/5 dark:text-gray-300  hover:bg-black/3 dark:hover:bg-white/3'}`}
                   >
                     平台
                   </div>
@@ -792,16 +792,16 @@ export default function WebLivePage() {
                 {activeTab === 'rooms' && (
                   <div className='flex-1 overflow-y-auto space-y-2 pb-4 mt-4'>
                     {selectedPlatform && (
-                      <div className='mb-3 flex items-center justify-between px-2 py-2 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800'>
+                      <div className='mb-3 flex items-center justify-between px-2 py-2 bg-ui-success-soft rounded-lg border border-ui-success'>
                         <div className='flex items-center gap-2'>
-                          <span className='text-xs text-green-700 dark:text-green-300'>筛选平台:</span>
-                          <span className='text-sm font-medium text-green-800 dark:text-green-200'>
+                          <span className='text-xs text-ui-success'>筛选平台:</span>
+                          <span className='text-sm font-medium text-ui-success'>
                             {selectedPlatform === 'huya' ? '虎牙' : selectedPlatform === 'bilibili' ? '哔哩哔哩' : selectedPlatform === 'douyin' ? '抖音' : selectedPlatform}
                           </span>
                         </div>
                         <button
                           onClick={clearPlatformFilter}
-                          className='text-xs text-green-700 dark:text-green-300 hover:text-green-900 dark:hover:text-green-100 underline'
+                          className='text-xs text-ui-success hover:text-ui-success underline'
                         >
                           清除筛选
                         </button>
@@ -815,7 +815,7 @@ export default function WebLivePage() {
                             key={source.key}
                             onClick={() => handleSourceClick(source)}
                             disabled={webLiveSync.shouldDisableControls}
-                            className={`w-full p-3 rounded-lg text-left transition-all duration-200 ${isActive ? 'bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700' : 'hover:bg-gray-100 dark:hover:bg-gray-700'} ${webLiveSync.shouldDisableControls ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`w-full p-3 rounded-lg text-left transition-all duration-200 ${isActive ? 'bg-ui-accent-soft border border-ui-accent' : 'hover:bg-gray-100 dark:hover:bg-gray-700'} ${webLiveSync.shouldDisableControls ? 'opacity-50 cursor-not-allowed' : ''}`}
                           >
                             <div className='flex items-center gap-3'>
                               <div className='w-10 h-10 bg-gray-300 dark:bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0'>

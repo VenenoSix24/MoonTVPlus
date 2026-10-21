@@ -35,9 +35,9 @@ function VersionDisplay() {
   return (
     <button
       onClick={() =>
-        window.open('https://github.com/mtvpls/MoonTVPlus', '_blank')
+        window.open('https://github.com/VenenoSix24/MoonTVPlus', '_blank')
       }
-      className='absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 transition-colors cursor-pointer'
+      className='absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-2 text-xs text-ui-ink-3  transition-colors cursor-pointer'
     >
       <span className='font-mono'>v{CURRENT_VERSION}</span>
       {!isChecking && updateStatus !== UpdateStatus.FETCH_FAILED && (
@@ -45,7 +45,7 @@ function VersionDisplay() {
           className={`flex items-center gap-1.5 ${updateStatus === UpdateStatus.HAS_UPDATE
             ? 'text-yellow-600 dark:text-yellow-400'
             : updateStatus === UpdateStatus.NO_UPDATE
-              ? 'text-green-600 dark:text-green-400'
+              ? 'text-ui-accent '
               : ''
             }`}
         >
@@ -349,8 +349,8 @@ function LoginPageClient() {
       <div className='absolute top-4 right-4'>
         <ThemeToggle />
       </div>
-      <div className='relative z-10 w-full max-w-md rounded-3xl bg-gradient-to-b from-white/90 via-white/70 to-white/40 dark:from-zinc-900/90 dark:via-zinc-900/70 dark:to-zinc-900/40 shadow-2xl p-10 dark:border dark:border-zinc-800'>
-        <h1 className='text-green-600 tracking-tight text-center text-3xl font-extrabold mb-8 bg-clip-text drop-shadow-sm'>
+      <div className='relative z-10 w-full max-w-md rounded-ui-lg bg-ui-surface border border-ui-hair    shadow-ui-3 p-10 '>
+        <h1 className='text-ui-accent tracking-tight text-center text-3xl font-extrabold mb-8 bg-clip-text drop-shadow-ui-1'>
           {siteName}
         </h1>
         <form onSubmit={handleSubmit} className='space-y-8'>
@@ -361,13 +361,13 @@ function LoginPageClient() {
               </label>
               <div className='relative'>
                 <div className='absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none'>
-                  <User className='h-5 w-5 text-gray-400 dark:text-gray-500' />
+                  <User className='h-5 w-5 text-ui-ink-3 ' />
                 </div>
                 <input
                   id='username'
                   type='text'
                   autoComplete='username'
-                  className='block w-full rounded-lg border-0 py-3 pl-10 pr-4 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-white/60 dark:ring-white/20 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-green-500 focus:outline-none sm:text-base bg-white/60 dark:bg-zinc-800/60'
+                  className='block w-full rounded-ui-md border-0 py-3 pl-10 pr-4 text-ui-ink  shadow-ui-1 ring-1 ring-ui-hair  placeholder:text-ui-ink-3  focus:ring-2 focus:ring-ui-accent focus:outline-none sm:text-base bg-ui-surface-2 '
                   placeholder='输入用户名'
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
@@ -382,20 +382,20 @@ function LoginPageClient() {
             </label>
             <div className='relative'>
               <div className='absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none'>
-                <Lock className='h-5 w-5 text-gray-400 dark:text-gray-500' />
+                <Lock className='h-5 w-5 text-ui-ink-3 ' />
               </div>
               <input
                 id='password'
                 type={showPassword ? 'text' : 'password'}
                 autoComplete='current-password'
-                className='block w-full rounded-lg border-0 py-3 pl-10 pr-12 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-white/60 dark:ring-white/20 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-green-500 focus:outline-none sm:text-base bg-white/60 dark:bg-zinc-800/60'
+                className='block w-full rounded-ui-md border-0 py-3 pl-10 pr-12 text-ui-ink  shadow-ui-1 ring-1 ring-ui-hair  placeholder:text-ui-ink-3  focus:ring-2 focus:ring-ui-accent focus:outline-none sm:text-base bg-ui-surface-2 '
                 placeholder='输入访问密码'
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
               <button
                 type='button'
-                className='absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                className='absolute inset-y-0 right-0 flex items-center pr-3 text-ui-ink-3 hover:text-ui-ink-2  '
                 onClick={() => setShowPassword(!showPassword)}
               >
                 {showPassword ? (
@@ -421,13 +421,13 @@ function LoginPageClient() {
             <input
               id='remember-password'
               type='checkbox'
-              className='h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-700'
+              className='h-4 w-4 rounded border-ui-hair text-ui-accent focus:ring-ui-accent  '
               checked={rememberPassword}
               onChange={(e) => setRememberPassword(e.target.checked)}
             />
             <label
               htmlFor='remember-password'
-              className='ml-2 block text-sm text-gray-700 dark:text-gray-300'
+              className='ml-2 block text-sm text-ui-ink '
             >
               记住密码
             </label>
@@ -440,7 +440,7 @@ function LoginPageClient() {
               !password || loading || (shouldAskUsername && !username) ||
               (siteConfig?.LoginRequireTurnstile && !turnstileToken)
             }
-            className='inline-flex w-full justify-center rounded-lg bg-green-600 py-3 text-base font-semibold text-white shadow-lg transition-all duration-200 hover:from-green-600 hover:to-blue-600 disabled:cursor-not-allowed disabled:opacity-50'
+            className='inline-flex w-full justify-center rounded-ui-md bg-ui-accent py-3 text-base font-semibold text-white shadow-ui-2 transition-all duration-200 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50'
           >
             {loading ? '登录中...' : '登录'}
           </button>
@@ -451,7 +451,7 @@ function LoginPageClient() {
               <button
                 type='button'
                 onClick={() => router.push('/register')}
-                className='text-sm text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 transition-colors'
+                className='text-sm text-ui-accent  hover:text-ui-accent  transition-colors'
               >
                 还没有账号？立即注册
               </button>
@@ -464,10 +464,10 @@ function LoginPageClient() {
           <div className='mt-6'>
             <div className='relative'>
               <div className='absolute inset-0 flex items-center'>
-                <div className='w-full border-t border-gray-300 dark:border-gray-600'></div>
+                <div className='w-full border-t border-ui-hair '></div>
               </div>
               <div className='relative flex justify-center text-sm'>
-                <span className='px-2 text-gray-500 dark:text-gray-400'>
+                <span className='px-2 text-ui-ink-3 '>
                   或
                 </span>
               </div>
@@ -479,14 +479,14 @@ function LoginPageClient() {
                   type='button'
                   disabled={telegramLoginLoading}
                   onClick={handleTelegramLogin}
-                  className='w-full inline-flex justify-center items-center rounded-lg border-2 border-sky-300 dark:border-sky-700 bg-white/60 dark:bg-zinc-800/60 py-3 text-base font-semibold text-sky-700 dark:text-sky-300 shadow-sm transition-all duration-200 hover:bg-sky-50 dark:hover:bg-sky-900/30 disabled:cursor-not-allowed disabled:opacity-60'
+                  className='w-full inline-flex justify-center items-center rounded-ui-md border-2 border-sky-300 dark:border-sky-700 bg-ui-surface-2  py-3 text-base font-semibold text-sky-700 dark:text-sky-300 shadow-ui-1 transition-all duration-200 hover:bg-sky-50 dark:hover:bg-sky-900/30 disabled:cursor-not-allowed disabled:opacity-60'
                 >
                   <Send className='w-5 h-5 mr-2' />
                   {telegramLoginLoading ? '等待 Telegram 确认...' : '使用 Telegram 登录'}
                 </button>
               )}
               {telegramLoginHint && (
-                <p className='text-center text-xs text-gray-500 dark:text-gray-400'>
+                <p className='text-center text-xs text-ui-ink-3 '>
                   {telegramLoginHint}
                 </p>
               )}
@@ -495,7 +495,7 @@ function LoginPageClient() {
                 <button
                   type='button'
                   onClick={() => window.location.href = '/api/auth/oidc/login'}
-                  className='w-full inline-flex justify-center items-center rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-white/60 dark:bg-zinc-800/60 py-3 text-base font-semibold text-gray-700 dark:text-gray-200 shadow-sm transition-all duration-200 hover:bg-gray-50 dark:hover:bg-zinc-700/60'
+                  className='w-full inline-flex justify-center items-center rounded-ui-md border-2 border-ui-hair  bg-ui-surface-2  py-3 text-base font-semibold text-ui-ink  shadow-ui-1 transition-all duration-200 hover:bg-[color-mix(in_srgb,var(--ui-ink)_7%,transparent)] '
                 >
                   {getOIDCProviderIcon(siteConfig?.OIDCButtonText || '')}
                   {siteConfig?.OIDCButtonText || '使用OIDC登录'}

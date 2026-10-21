@@ -634,7 +634,7 @@ export default function CorrectDialog({
                 <button
                   onClick={handleManualSubmit}
                   disabled={correcting}
-                  className='w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed'
+                  className='w-full px-4 py-2 bg-ui-accent hover:brightness-110 text-white rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed'
                 >
                   {correcting ? '提交中...' : '提交纠错'}
                 </button>
@@ -715,7 +715,7 @@ export default function CorrectDialog({
                         <button
                           onClick={() => handleSelectSeason(season)}
                           disabled={correcting}
-                          className='px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed'
+                          className='px-3 py-1.5 bg-ui-accent hover:brightness-110 text-white text-sm rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed'
                         >
                           {correcting ? '处理中...' : '选择'}
                         </button>
@@ -792,7 +792,7 @@ export default function CorrectDialog({
                       <button
                         onClick={() => handleSelectResult(result)}
                         disabled={correcting || loadingSeasons}
-                        className='px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed'
+                        className='px-3 py-1.5 bg-ui-accent hover:brightness-110 text-white text-sm rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed'
                       >
                         {correcting || loadingSeasons ? '处理中...' : '选择'}
                       </button>

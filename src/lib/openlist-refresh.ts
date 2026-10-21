@@ -180,16 +180,36 @@ async function listRootFolders(
   const folders: any[] = [];
   let currentPage = 1;
   const pageSize = 100;
+  // 有些 OpenList 账号没有「刷新」权限，带 refresh 会把整个请求拒掉
+  // （code 403 / Refresh without permission），而不是仅仅忽略刷新。所以先试
+  // refresh，被拒就退回不刷新 —— 不能让一个可选参数把整个扫描打死。
+  let refresh = true;
 
   while (true) {
-    const listResponse = await client.listDirectory(
+    let listResponse = await client.listDirectory(
       rootPath,
       currentPage,
       pageSize,
-      true
+      refresh
     );
+
+    if (refresh && listResponse.code !== 200) {
+      console.warn(
+        `[OpenList Refresh] 根目录 ${rootPath} 带 refresh 列举被拒（${listResponse.code} ${listResponse.message}），退回不刷新重试`
+      );
+      refresh = false;
+      listResponse = await client.listDirectory(
+        rootPath,
+        currentPage,
+        pageSize,
+        refresh
+      );
+    }
+
     if (listResponse.code !== 200) {
-      throw new Error(`OpenList 列表获取失败: ${rootPath}`);
+      throw new Error(
+        `OpenList 列表获取失败: ${rootPath}（${listResponse.code} ${listResponse.message}）`
+      );
     }
 
     const content = listResponse.data.content || [];

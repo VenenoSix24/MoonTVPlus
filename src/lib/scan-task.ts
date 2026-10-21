@@ -23,7 +23,24 @@ export interface ScanTask {
   endTime?: number;
 }
 
-const tasks = new Map<string, ScanTask>();
+/**
+ * 扫描任务表钉在 globalThis 上，而不是模块作用域。
+ *
+ * Next.js 按需编译路由会重建该路由依赖的模块实例（dev 下首次访问某条路由、
+ * 或任意一次重编译）。任务是在 /api/openlist/refresh 里创建的，而
+ * /api/openlist/scan-progress 第一次被轮询时才编译 —— 那一刻模块作用域的 Map
+ * 已经是新的，任务留在旧实例里，进度接口就一直 404。
+ * 表现：点「立即扫描」弹「获取进度失败」，但扫描其实在正常跑、也扫出了结果。
+ *
+ * 仓库里 qr-login/store.ts、login-fail2ban.ts 用的是同一套 globalThis 约定。
+ */
+type GlobalWithScanTasks = typeof globalThis & {
+  __moonTvScanTasks?: Map<string, ScanTask>;
+};
+
+const g = globalThis as GlobalWithScanTasks;
+const tasks = g.__moonTvScanTasks || new Map<string, ScanTask>();
+g.__moonTvScanTasks = tasks;
 
 export function createScanTask(): string {
   const id = `scan_${Date.now()}_${Math.random().toString(36).substring(7)}`;

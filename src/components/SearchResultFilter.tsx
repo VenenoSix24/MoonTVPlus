@@ -146,19 +146,14 @@ const SearchResultFilter: React.FC<SearchResultFilterProps> = ({ categories, val
 
   return (
     <>
-      <div className='relative inline-flex rounded-full p-0.5 sm:p-1 bg-transparent gap-1 sm:gap-2'>
+      <div className='mtv-caps'>
         {categories.map((category) => (
           <div key={category.key} ref={(el) => { categoryRefs.current[category.key] = el; }} className='relative'>
             <button
               onClick={() => handleCategoryClick(category.key)}
-              className={`relative z-10 px-1.5 py-0.5 sm:px-2 sm:py-1 md:px-4 md:py-2 text-xs sm:text-sm font-medium rounded-full transition-all duration-200 whitespace-nowrap ${activeCategory === category.key
-                ? isDefaultValue(category.key)
-                  ? 'text-gray-900 dark:text-gray-100 cursor-default'
-                  : 'text-green-600 dark:text-green-400 cursor-default'
-                : isDefaultValue(category.key)
-                  ? 'text-gray-700 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 cursor-pointer'
-                  : 'text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 cursor-pointer'
-                }`}
+              className={`mtv-cap ${
+                isDefaultValue(category.key) ? '' : 'is-on'
+              } ${activeCategory === category.key ? 'is-fill' : ''} cursor-pointer`}
             >
               <span>{getDisplayText(category.key)}</span>
               <svg className={`inline-block w-2.5 h-2.5 sm:w-3 sm:h-3 ml-0.5 sm:ml-1 transition-transform duration-200 ${activeCategory === category.key ? 'rotate-180' : ''}`} fill='none' stroke='currentColor' viewBox='0 0 24 24'>
@@ -187,10 +182,9 @@ const SearchResultFilter: React.FC<SearchResultFilterProps> = ({ categories, val
               }
               onChange({ ...mergedValues, yearOrder: next });
             }}
-            className={`relative z-10 px-1.5 py-0.5 sm:px-2 sm:py-1 md:px-4 md:py-2 text-xs sm:text-sm font-medium rounded-full transition-all duration-200 whitespace-nowrap ${mergedValues.yearOrder === 'none'
-              ? 'text-gray-700 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 cursor-pointer'
-              : 'text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 cursor-pointer'
-              }`}
+            className={`mtv-cap ${
+              mergedValues.yearOrder === 'none' ? '' : 'is-on'
+            } cursor-pointer`}
             aria-label={`按年份${mergedValues.yearOrder === 'none' ? '排序' : mergedValues.yearOrder === 'desc' ? '降序' : '升序'}排序`}
           >
             <span>年份</span>
@@ -208,7 +202,7 @@ const SearchResultFilter: React.FC<SearchResultFilterProps> = ({ categories, val
       {activeCategory && createPortal(
         <div
           ref={dropdownRef}
-          className='fixed z-[9999] bg-white/95 dark:bg-gray-800/95 rounded-xl border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-sm max-h-[50vh] flex flex-col'
+          className='mtv-filter-pop fixed z-[9999] max-h-[50vh] flex flex-col'
           style={{
             left: `${dropdownPosition.x}px`,
             top: `${dropdownPosition.y}px`,
@@ -223,10 +217,7 @@ const SearchResultFilter: React.FC<SearchResultFilterProps> = ({ categories, val
                 <button
                   key={option.value}
                   onClick={() => handleOptionSelect(activeCategory, option.value)}
-                  className={`px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm rounded-lg transition-all duration-200 text-left ${isOptionSelected(activeCategory, option.value)
-                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-700'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100/80 dark:hover:bg-gray-700/80'
-                    }`}
+                  className={`mtv-filter-opt ${isOptionSelected(activeCategory, option.value) ? 'is-on' : ''}`}
                 >
                   {option.label}
                 </button>

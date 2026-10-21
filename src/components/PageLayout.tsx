@@ -3,13 +3,10 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-import { BackButton } from './BackButton';
 import MobileBottomNav from './MobileBottomNav';
 import MobileHeader from './MobileHeader';
-import Sidebar from './Sidebar';
-import { ThemeToggle } from './ThemeToggle';
-import { UpdateNotification } from './UpdateNotification';
-import { UserMenu } from './UserMenu';
+import { MoreMenuProvider } from './MoreMenu';
+import TopNav from './TopNav';
 import { VersionCheckProvider } from './VersionCheckProvider';
 
 interface PageLayoutProps {
@@ -18,7 +15,11 @@ interface PageLayoutProps {
   hideNavigation?: boolean; // 控制是否隐藏顶部和底部导航栏
 }
 
-const PageLayout = ({ children, activePath = '/', hideNavigation = false }: PageLayoutProps) => {
+const PageLayout = ({
+  children,
+  activePath = '/',
+  hideNavigation = false,
+}: PageLayoutProps) => {
   const router = useRouter();
   const [backgroundImage, setBackgroundImage] = useState('');
   const shouldShowSharedBackground = !hideNavigation && activePath !== '/play';
@@ -63,66 +64,50 @@ const PageLayout = ({ children, activePath = '/', hideNavigation = false }: Page
   return (
     <VersionCheckProvider>
       <div className='relative w-full min-h-screen overflow-hidden'>
-        {shouldShowSharedBackground && backgroundImage && (
-          <>
-            <div
-              className='absolute inset-0 pointer-events-none bg-cover bg-center bg-no-repeat opacity-45'
-              style={{ backgroundImage: `url(${backgroundImage})` }}
-            />
-            <div className='absolute inset-0 pointer-events-none bg-white/50 dark:bg-gray-950/50' />
-          </>
-        )}
-
-        {/* 移动端头部 */}
-        {!hideNavigation && (
-          <MobileHeader showBackButton={['/play', '/live'].includes(activePath)} />
-        )}
-
-        {/* 主要布局容器 */}
-        <div className='relative z-10 flex md:grid md:grid-cols-[auto_1fr] w-full min-h-screen md:min-h-auto'>
-          {/* 侧边栏 - 桌面端显示，移动端隐藏 */}
-          {!hideNavigation && (
-            <div className='hidden md:block'>
-              <Sidebar activePath={activePath} />
-            </div>
+        <MoreMenuProvider>
+          {shouldShowSharedBackground && backgroundImage && (
+            <>
+              <div
+                className='absolute inset-0 pointer-events-none bg-cover bg-center bg-no-repeat opacity-45'
+                style={{ backgroundImage: `url(${backgroundImage})` }}
+              />
+              <div className='absolute inset-0 pointer-events-none bg-white/50 dark:bg-gray-950/50' />
+            </>
           )}
 
-          {/* 主内容区域 */}
-          <div className='relative min-w-0 flex-1 transition-all duration-300'>
-            {/* 桌面端左上角返回按钮 */}
-            {!hideNavigation && ['/play', '/live'].includes(activePath) && (
-              <div className='absolute top-3 left-1 z-20 hidden md:flex'>
-                <BackButton />
-              </div>
-            )}
+          {/* 移动端头部 */}
+          {!hideNavigation && (
+            <MobileHeader
+              showBackButton={['/play', '/live'].includes(activePath)}
+            />
+          )}
 
-            {/* 桌面端顶部按钮 */}
-            {!hideNavigation && (
-              <div className='absolute top-2 right-4 z-20 hidden md:flex items-center gap-2'>
-                <ThemeToggle />
-                <UserMenu />
-                <UpdateNotification />
-              </div>
-            )}
+          {/* 桌面端顶部导航 */}
+          {!hideNavigation && <TopNav />}
 
-            {/* 主内容 */}
-            <main
-              className='flex-1 md:min-h-0 mb-14 md:mb-0 md:mt-0 mt-[calc(3rem+env(safe-area-inset-top))]'
-              style={{
-                paddingBottom: 'calc(3.5rem + env(safe-area-inset-bottom))',
-              }}
-            >
-              {children}
-            </main>
+          <div className='relative z-10 w-full min-h-screen'>
+            <div className='relative min-w-0'>
+              {/* 主内容 */}
+              <main
+                className='mt-[calc(48px+env(safe-area-inset-top))] mb-14 md:mt-0 md:mb-0 md:pt-16'
+                style={{
+                  /* 底栏是 64px 的悬浮胶囊，离底 10px，再留 10px 呼吸 */
+                  paddingBottom:
+                    'calc(64px + 10px + 10px + env(safe-area-inset-bottom))',
+                }}
+              >
+                <div className='mtv-route-in'>{children}</div>
+              </main>
+            </div>
           </div>
-        </div>
 
-        {/* 移动端底部导航 */}
-        {!hideNavigation && (
-          <div className='md:hidden'>
-            <MobileBottomNav activePath={activePath} />
-          </div>
-        )}
+          {/* 移动端底部导航 */}
+          {!hideNavigation && (
+            <div className='md:hidden'>
+              <MobileBottomNav activePath={activePath} />
+            </div>
+          )}
+        </MoreMenuProvider>
       </div>
     </VersionCheckProvider>
   );

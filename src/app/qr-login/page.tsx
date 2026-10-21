@@ -44,11 +44,11 @@ function QrLoginClient() {
 
   return (
     <main className='min-h-screen bg-black px-5 py-10 text-white'>
-      <section className='mx-auto max-w-md rounded-[32px] border border-white/10 bg-slate-950 p-7 shadow-2xl shadow-black'>
+      <section className='mx-auto max-w-md rounded-[32px] border border-white/10 bg-slate-950 p-7 shadow-ui-3 shadow-black'>
         <h1 className='text-3xl font-black'>确认登录电视端</h1>
         <p className='mt-3 text-slate-300'>请确认电视屏幕上的二维码来自你正在使用的设备。</p>
         {!authed ? (
-          <div className='mt-8 rounded-3xl bg-white/5 p-5'>
+          <div className='mt-8 rounded-ui-lg bg-ui-surface/5 p-5'>
             <LogIn className='h-12 w-12 text-rose-400' />
             <p className='mt-4 text-lg font-bold'>当前手机未登录，请先登录后再确认电视登录。</p>
             <Link href={`/login?redirect=${encodeURIComponent(`/qr-login?token=${token}`)}`} className='mt-5 block rounded-2xl bg-rose-600 px-5 py-4 text-center text-lg font-black'>去登录</Link>
@@ -58,12 +58,12 @@ function QrLoginClient() {
             <button onClick={confirm} disabled={loading || !token} className='flex items-center justify-center gap-2 rounded-2xl bg-rose-600 px-5 py-4 text-lg font-black disabled:opacity-60'>
               {loading ? <Loader2 className='h-5 w-5 animate-spin' /> : <CheckCircle className='h-5 w-5' />} 确认登录
             </button>
-            <button onClick={cancel} className='flex items-center justify-center gap-2 rounded-2xl bg-white/10 px-5 py-4 text-lg font-bold'>
+            <button onClick={cancel} className='flex items-center justify-center gap-2 rounded-2xl bg-ui-surface/10 px-5 py-4 text-lg font-bold'>
               <XCircle className='h-5 w-5' /> 取消
             </button>
           </div>
         )}
-        {message && <p className='mt-5 rounded-2xl bg-white/10 p-4 text-center text-lg font-bold'>{message}</p>}
+        {message && <p className='mt-5 rounded-2xl bg-ui-surface/10 p-4 text-center text-lg font-bold'>{message}</p>}
       </section>
     </main>
   );

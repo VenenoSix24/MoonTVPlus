@@ -9,7 +9,7 @@ import './globals.css';
 import { parseAuthInfo } from '@/lib/auth';
 import { getConfig } from '@/lib/config';
 import { getUserFeatureAccess } from '@/lib/permissions';
-import { listEnabledSourceScripts } from '@/lib/source-script';
+import { listRecommendableSourceScripts } from '@/lib/source-script';
 
 import { StartupCacheCleanup } from '../components/DanmakuCacheCleanup';
 import { DownloadBubble } from '../components/DownloadBubble';
@@ -141,6 +141,13 @@ export default async function RootLayout({
   let musicProxyEnabled = true;
   let advancedRecommendationEnabled = false;
   let localSettingsSyncMode: 'off' | 'manual' | 'auto' = 'off';
+  // 站点默认配色。声明在 if 外面：localstorage 模式下不读 config，也要有默认值。
+  let defaultTheme: 'light' | 'dark' | 'system' = 'dark';
+  // 站点默认首页模块排序/显隐与「继续观看」显隐。和 defaultTheme 一样声明在 if
+  // 外面：localstorage 模式下不读 config，也要有明确的值（null = 用内置默认）。
+  let homeModules: { id: string; enabled: boolean; order: number }[] | null =
+    null;
+  let homeContinueWatching: boolean | null = null;
   // 特殊源名单：供客户端按入口隔离收藏与播放记录。
   // 入口开关是本机 cookie，与存储模式无关，所以 localstorage 模式也要注入；
   // getConfig() 有模块级缓存，generateMetadata 里已经调过一次，这里不产生额外读取。
@@ -195,11 +202,12 @@ export default async function RootLayout({
     progressThumbType = config.ThemeConfig?.progressThumbType || 'default';
     progressThumbPresetId = config.ThemeConfig?.progressThumbPresetId || '';
     progressThumbCustomUrl = config.ThemeConfig?.progressThumbCustomUrl || '';
-    // 白名单兜底：值异常时回落到魔法阵（现行默认），避免三种款式都不显示
+    // 白名单兜底：值异常时回落到魔法阵（现行默认），避免四种款式都不显示
     loadingStyle =
       config.ThemeConfig?.loadingStyle === 'classic' ||
       config.ThemeConfig?.loadingStyle === 'grid' ||
-      config.ThemeConfig?.loadingStyle === 'talisman'
+      config.ThemeConfig?.loadingStyle === 'talisman' ||
+      config.ThemeConfig?.loadingStyle === 'silver-screen'
         ? config.ThemeConfig.loadingStyle
         : 'talisman';
     // 白名单兜底：值异常时回落到默认锦旗徽章
@@ -210,6 +218,16 @@ export default async function RootLayout({
         ? config.ThemeConfig.rateBadgeStyle
         : 'flag';
     enableRegistration = config.SiteConfig.EnableRegistration || false;
+    defaultTheme =
+      config.ThemeConfig?.defaultTheme === 'light' ||
+      config.ThemeConfig?.defaultTheme === 'system'
+        ? config.ThemeConfig?.defaultTheme
+        : 'dark';
+    homeModules = config.ThemeConfig?.homeModules ?? null;
+    homeContinueWatching =
+      typeof config.ThemeConfig?.homeContinueWatching === 'boolean'
+        ? config.ThemeConfig.homeContinueWatching
+        : null;
     requireRegistrationInviteCode =
       config.SiteConfig.RequireRegistrationInviteCode || false;
     loginRequireTurnstile = config.SiteConfig.LoginRequireTurnstile || false;
@@ -259,9 +277,10 @@ export default async function RootLayout({
     // 电子书馆同时支持 OPDS 与 Legado。Legado 源通过订阅单独配置，
     // 不一定会出现在 OPDS Sources 中；入口应由“启用电子书馆”开关控制。
     booksEnabled = !!opdsConfig?.Enabled;
-    // 高级推荐功能配置：存在已启用视频源脚本时显示
+    // 高级推荐功能配置：只有存在「实现了 recommend hook」的脚本时才显示，
+    // 否则装任意视频源脚本都会让顶栏多出一个点了就报错的入口
     advancedRecommendationEnabled =
-      (await listEnabledSourceScripts()).length > 0;
+      (await listRecommendableSourceScripts()).length > 0;
     // 检查是否启用了 OpenList 功能
     openListEnabled = !!(
       config.OpenListConfig?.Enabled &&
@@ -330,6 +349,8 @@ export default async function RootLayout({
     LOGIN_BACKGROUND_IMAGE: loginBackgroundImage,
     REGISTER_BACKGROUND_IMAGE: registerBackgroundImage,
     HOME_BACKGROUND_IMAGE: homeBackgroundImage,
+    HOME_MODULES: homeModules,
+    HOME_CONTINUE_WATCHING: homeContinueWatching,
     PROGRESS_THUMB_TYPE: progressThumbType,
     PROGRESS_THUMB_PRESET_ID: progressThumbPresetId,
     PROGRESS_THUMB_CUSTOM_URL: progressThumbCustomUrl,
@@ -440,7 +461,7 @@ export default async function RootLayout({
       >
         <ThemeProvider
           attribute='class'
-          defaultTheme='system'
+          defaultTheme={defaultTheme}
           enableSystem
           disableTransitionOnChange
         >

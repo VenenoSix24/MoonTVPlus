@@ -4,6 +4,14 @@ import * as cheerio from 'cheerio/slim';
 import { nanoid } from 'nanoid';
 
 import { db } from '@/lib/db';
+import { buildScriptSourceValue } from '@/lib/source-key';
+
+// 源标识的编解码只有一处定义，这里原样转出去，老的引用不用改
+export {
+  buildScriptSourceValue,
+  parseScriptSourceValue,
+  resolveSourceKey,
+} from '@/lib/source-key';
 
 const SOURCE_SCRIPT_REGISTRY_KEY = 'source-script:registry';
 const DEFAULT_TIMEOUT_MS = 20000;
@@ -69,12 +77,21 @@ export interface PublicSourceScriptSummary {
   updatedAt: number;
 }
 
+/** 「视频源配置」等只做展示的场景用的轻量摘要：含启用状态，但不含脚本源码 */
+export interface SourceScriptSummary {
+  id: string;
+  key: string;
+  name: string;
+  description?: string;
+  enabled: boolean;
+  version: string;
+  updatedAt: number;
+}
+
 export interface ScriptSourceDescriptor {
   id: string;
   name: string;
 }
-
-const SCRIPT_SOURCE_PREFIX = 'script:';
 
 const DEFAULT_SCRIPT_TEMPLATE = `return {
   meta: {
@@ -508,6 +525,43 @@ export async function listSourceScripts() {
   return registry.items.sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
+/** 全部脚本的轻量摘要（含已停用）：后台列表展示用，避免把整段源码传给前端 */
+export async function listAllScriptSummaries(): Promise<SourceScriptSummary[]> {
+  const registry = await loadRegistry();
+  return registry.items
+    .slice()
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+    .map((item) => ({
+      id: item.id,
+      key: item.key,
+      name: item.name,
+      description: item.description,
+      enabled: item.enabled,
+      version: item.version,
+      updatedAt: item.updatedAt,
+    }));
+}
+
+/** 只有真正实现了 recommend hook 的脚本才算「支持高级推荐」。
+ *  否则只要装了任意视频源脚本，顶栏就会冒出一个点了就报错的入口。 */
+export async function listRecommendableSourceScripts(): Promise<
+  PublicSourceScriptSummary[]
+> {
+  const enabled = await listEnabledSourceScripts();
+  const recommendable: PublicSourceScriptSummary[] = [];
+  for (const item of enabled) {
+    const record = await getSourceScript(item.id);
+    if (!record) continue;
+    try {
+      const compiled = getOrCompileScript(record);
+      if (typeof compiled?.recommend === 'function') recommendable.push(item);
+    } catch {
+      // 编译失败的脚本不算支持推荐
+    }
+  }
+  return recommendable;
+}
+
 export async function getSourceScript(id: string) {
   const registry = await loadRegistry();
   return registry.items.find((item) => item.id === id) || null;
@@ -686,29 +740,6 @@ export function getDefaultSourceScriptTemplate() {
   return DEFAULT_SCRIPT_TEMPLATE;
 }
 
-export function buildScriptSourceValue(scriptKey: string, sourceId?: string) {
-  return `${SCRIPT_SOURCE_PREFIX}${scriptKey}:${sourceId || 'default'}`;
-}
-
-export function parseScriptSourceValue(source: string) {
-  if (!source.startsWith(SCRIPT_SOURCE_PREFIX)) {
-    return null;
-  }
-
-  const rest = source.slice(SCRIPT_SOURCE_PREFIX.length);
-  const separatorIndex = rest.indexOf(':');
-  if (separatorIndex === -1) {
-    return {
-      scriptKey: rest,
-      sourceId: 'default',
-    };
-  }
-
-  return {
-    scriptKey: rest.slice(0, separatorIndex),
-    sourceId: rest.slice(separatorIndex + 1) || 'default',
-  };
-}
 
 export function normalizeScriptSources(result: any): ScriptSourceDescriptor[] {
   if (!Array.isArray(result)) {

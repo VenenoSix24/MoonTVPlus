@@ -2,15 +2,7 @@
 
 'use client';
 
-import {
-  BookMarked,
-  BookOpen,
-  Bot,
-  ChevronRight,
-  Link as LinkIcon,
-  ListVideo,
-  Music,
-} from 'lucide-react';
+import { ChevronRight, Megaphone } from 'lucide-react';
 import Link from 'next/link';
 import { Suspense, useEffect, useState } from 'react';
 
@@ -19,11 +11,16 @@ import {
   GetBangumiCalendarData,
 } from '@/lib/bangumi.client';
 import { getDoubanCategories } from '@/lib/douban.client';
+import {
+  type HomeModule,
+  defaultHomeModules,
+  mergeHomeModules,
+  resolveSiteHomeModules,
+} from '@/lib/home-modules';
 import { getTMDBImageUrl, TMDBItem } from '@/lib/tmdb.client';
 import { DoubanItem } from '@/lib/types';
-import { base58Encode, processImageUrl } from '@/lib/utils';
+import { processImageUrl } from '@/lib/utils';
 
-import AIChatPanel from '@/components/AIChatPanel';
 import BannerCarousel from '@/components/BannerCarousel';
 import ContinueWatching from '@/components/ContinueWatching';
 import FireworksCanvas from '@/components/FireworksCanvas';
@@ -31,16 +28,7 @@ import HttpWarningDialog from '@/components/HttpWarningDialog';
 import PageLayout from '@/components/PageLayout';
 import ScrollableRow from '@/components/ScrollableRow';
 import { useSite } from '@/components/SiteProvider';
-import Toast, { ToastProps } from '@/components/Toast';
 import VideoCard from '@/components/VideoCard';
-
-// 首页模块配置接口
-interface HomeModule {
-  id: string;
-  name: string;
-  enabled: boolean;
-  order: number;
-}
 
 function HomeClient() {
   // 移除了 activeTab 状态，收藏夹功能已移到 UserMenu
@@ -54,216 +42,39 @@ function HomeClient() {
   >([]);
   const [loading, setLoading] = useState(true);
   const { announcement, announcementDisplayMode } = useSite();
-  // 首页模块配置状态
-  const [homeModules, setHomeModules] = useState<HomeModule[]>([
-    { id: 'hotMovies', name: '热门电影', enabled: true, order: 0 },
-    { id: 'hotDuanju', name: '热播短剧', enabled: true, order: 1 },
-    { id: 'bangumiCalendar', name: '新番放送', enabled: true, order: 2 },
-    { id: 'hotTvShows', name: '热门剧集', enabled: true, order: 3 },
-    { id: 'hotVarietyShows', name: '热门综艺', enabled: true, order: 4 },
-    { id: 'upcomingContent', name: '即将上映', enabled: true, order: 5 },
-  ]);
+  // 首页模块配置状态：默认值来自站点配置，本机覆盖在 loadHomeLayoutSettings 里合并
+  const [homeModules, setHomeModules] =
+    useState<HomeModule[]>(defaultHomeModules);
   const [homeBannerEnabled, setHomeBannerEnabled] = useState(true);
   const [homeContinueWatchingEnabled, setHomeContinueWatchingEnabled] =
     useState(true);
 
   const [showAnnouncement, setShowAnnouncement] = useState(false);
   const [showHttpWarning, setShowHttpWarning] = useState(true);
-  const [showAIChat, setShowAIChat] = useState(false);
-  const [aiEnabled, setAiEnabled] = useState(false);
-  const [aiDefaultMessageNoVideo, setAiDefaultMessageNoVideo] = useState(
-    '你好！我是MoonTVPlus的AI影视助手。想看什么电影或剧集？需要推荐吗？'
-  );
-  const [sourceSearchEnabled, setSourceSearchEnabled] = useState(true);
-  const [musicEnabled, setMusicEnabled] = useState(false);
-  const [mangaEnabled, setMangaEnabled] = useState(false);
-  const [booksEnabled, setBooksEnabled] = useState(false);
-  const [netdiskTempPlayEnabled, setNetdiskTempPlayEnabled] = useState(false);
-  const [showDirectPlayDialog, setShowDirectPlayDialog] = useState(false);
-  const [directPlayUrl, setDirectPlayUrl] = useState('');
-  const [directPlaySubmitting, setDirectPlaySubmitting] = useState(false);
-  const [toast, setToast] = useState<ToastProps | null>(null);
 
-  const detectNetdiskLink = (
-    url: string
-  ): {
-    provider: 'quark' | 'mobile' | 'baidu' | 'tianyi' | '123' | 'uc' | '115';
-    shareUrl: string;
-    passcode?: string;
-  } | null => {
-    const trimmed = url.trim();
-
-    const pickPasscode = (...values: Array<string | undefined>) =>
-      values.map((item) => item?.trim()).find(Boolean);
-
-    const inlinePasscode = (text: string) =>
-      pickPasscode(
-        text.match(
-          /(?:提取码|访问码|密码)\s*[:：=]?\s*([a-zA-Z0-9]{4,8})/i
-        )?.[1],
-        text.match(/[?&](?:pwd|passcode|accessCode)=([^&\s]+)/i)?.[1]
-      );
-
-    if (
-      /https:\/\/(?:www\.)?123(?:684|865|912|pan)\.(?:com|cn)\/s\//i.test(
-        trimmed
-      )
-    ) {
-      return {
-        provider: '123',
-        shareUrl: trimmed,
-        passcode: pickPasscode(
-          trimmed.match(/[?&]pwd=([^&]+)/i)?.[1],
-          inlinePasscode(trimmed)
-        ),
-      };
-    }
-
-    if (
-      /https:\/\/cloud\.189\.cn\/(web\/share\?code=|t\/)/i.test(trimmed) ||
-      /https:\/\/h5\.cloud\.189\.cn\/share\.html#\/t\//i.test(trimmed)
-    ) {
-      return {
-        provider: 'tianyi',
-        shareUrl: trimmed,
-        passcode: pickPasscode(
-          trimmed.match(/[?&]pwd=([^&]+)/i)?.[1],
-          inlinePasscode(trimmed)
-        ),
-      };
-    }
-
-    if (/pan\.baidu\.com\/(s\/|wap\/init\?surl=)/i.test(trimmed)) {
-      return {
-        provider: 'baidu',
-        shareUrl: trimmed,
-        passcode: pickPasscode(
-          trimmed.match(/[?&](?:pwd|accessCode)=([^&]+)/i)?.[1],
-          inlinePasscode(trimmed)
-        ),
-      };
-    }
-
-    if (/https:\/\/pan\.quark\.cn\/s\//i.test(trimmed)) {
-      return {
-        provider: 'quark',
-        shareUrl: trimmed,
-        passcode: pickPasscode(
-          trimmed.match(/[?&](?:pwd|passcode)=([^&]+)/i)?.[1],
-          inlinePasscode(trimmed)
-        ),
-      };
-    }
-
-    if (/https:\/\/drive\.uc\.cn\/s\//i.test(trimmed)) {
-      return {
-        provider: 'uc',
-        shareUrl: trimmed,
-        passcode: pickPasscode(
-          trimmed.match(/[?&](?:pwd|passcode)=([^&]+)/i)?.[1],
-          inlinePasscode(trimmed)
-        ),
-      };
-    }
-
-    if (/https:\/\/(?:yun|caiyun)\.139\.com\//i.test(trimmed)) {
-      return { provider: 'mobile', shareUrl: trimmed };
-    }
-
-    if (/https:\/\/(?:115|anxia|115cdn)\.com\/s\//i.test(trimmed)) {
-      return {
-        provider: '115',
-        shareUrl: trimmed,
-        passcode: pickPasscode(
-          trimmed.match(/[?&](?:password|pwd|passcode)=([^&]+)/i)?.[1],
-          inlinePasscode(trimmed)
-        ),
-      };
-    }
-
-    return null;
-  };
-
-  const handleDirectPlay = () => {
-    setDirectPlayUrl('');
-    setShowDirectPlayDialog(true);
-  };
-
-  const submitDirectPlay = async () => {
-    const trimmed = directPlayUrl.trim();
-    if (!trimmed) return;
-    setDirectPlaySubmitting(true);
-    try {
-      const netdisk = detectNetdiskLink(trimmed);
-      if (netdisk && !netdiskTempPlayEnabled) {
-        throw new Error('无权限使用临时播放');
-      }
-
-      if (netdisk) {
-        const source =
-          netdisk.provider === 'mobile'
-            ? 'netdisk-mobile'
-            : netdisk.provider === 'baidu'
-            ? 'netdisk-baidu'
-            : netdisk.provider === 'tianyi'
-            ? 'netdisk-tianyi'
-            : netdisk.provider === '115'
-            ? 'netdisk-115'
-            : netdisk.provider === 'uc'
-            ? 'netdisk-uc'
-            : netdisk.provider === '123'
-            ? 'netdisk-123'
-            : 'netdisk-quark';
-        const id = base58Encode(
-          JSON.stringify({
-            shareUrl: netdisk.shareUrl,
-            passcode: netdisk.passcode || '',
-          })
-        );
-        if (!id) {
-          throw new Error('网盘链接编码失败');
-        }
-        const targetUrl = `/play?source=${encodeURIComponent(
-          source
-        )}&id=${encodeURIComponent(id)}&title=${encodeURIComponent(
-          '网盘直链播放'
-        )}`;
-        setShowDirectPlayDialog(false);
-        setDirectPlayUrl('');
-        window.location.assign(targetUrl);
-        return;
-      }
-
-      const encoded = base58Encode(trimmed);
-      if (!encoded) return;
-      const targetUrl = `/play?source=directplay&id=${encodeURIComponent(
-        encoded
-      )}`;
-      setShowDirectPlayDialog(false);
-      setDirectPlayUrl('');
-      window.location.assign(targetUrl);
-    } catch (error) {
-      setToast({
-        message: error instanceof Error ? error.message : '播放失败',
-        type: 'error',
-        onClose: () => setToast(null),
-      });
-    } finally {
-      setDirectPlaySubmitting(false);
-    }
-  };
+  /** 站点默认来自管理端 ThemeConfig.homeModules；没配过就回落内置目录。 */
+  const siteDefaultModules = (): HomeModule[] =>
+    resolveSiteHomeModules(
+      typeof window === 'undefined'
+        ? null
+        : (window as any).RUNTIME_CONFIG?.HOME_MODULES ?? null
+    );
 
   const loadHomeLayoutSettings = () => {
     if (typeof window === 'undefined') return;
 
+    // 站点默认打底，本机改过的以本机为准；本机那份里没有的模块（代码后加的）
+    // 会按站点默认补进来，不然新模块永远只有没动过设置的人能看见。
     const savedHomeModules = localStorage.getItem('homeModules');
+    let parsedHomeModules: unknown = null;
     if (savedHomeModules) {
       try {
-        setHomeModules(JSON.parse(savedHomeModules));
+        parsedHomeModules = JSON.parse(savedHomeModules);
       } catch (error) {
         console.error('解析首页模块配置失败:', error);
       }
     }
+    setHomeModules(mergeHomeModules(siteDefaultModules(), parsedHomeModules));
 
     const savedHomeBannerEnabled = localStorage.getItem('homeBannerEnabled');
     if (savedHomeBannerEnabled !== null) {
@@ -276,6 +87,11 @@ function HomeClient() {
     if (savedHomeContinueWatchingEnabled !== null) {
       setHomeContinueWatchingEnabled(
         savedHomeContinueWatchingEnabled === 'true'
+      );
+    } else {
+      // 没动过就用站点默认；站点也没配就显示
+      setHomeContinueWatchingEnabled(
+        (window as any).RUNTIME_CONFIG?.HOME_CONTINUE_WATCHING !== false
       );
     }
   };
@@ -298,65 +114,6 @@ function HomeClient() {
         handleHomeModulesUpdated
       );
     };
-  }, []);
-
-  // 检查AI功能是否启用
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const enabled =
-        (window as any).RUNTIME_CONFIG?.AI_ENABLED &&
-        (window as any).RUNTIME_CONFIG?.AI_ENABLE_HOMEPAGE_ENTRY;
-      setAiEnabled(enabled);
-
-      // 加载AI默认消息配置
-      const defaultMsg = (window as any).RUNTIME_CONFIG
-        ?.AI_DEFAULT_MESSAGE_NO_VIDEO;
-      if (defaultMsg) {
-        setAiDefaultMessageNoVideo(defaultMsg);
-      }
-    }
-  }, []);
-
-  // 检查源站寻片功能是否启用
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const enabled =
-        (window as any).RUNTIME_CONFIG?.ENABLE_SOURCE_SEARCH !== false;
-      setSourceSearchEnabled(enabled);
-    }
-  }, []);
-
-  // 检查音乐功能是否启用
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const enabled = !!(window as any).RUNTIME_CONFIG?.MUSIC_ENABLED;
-      setMusicEnabled(enabled);
-    }
-  }, []);
-
-  // 检查漫画功能是否启用
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const enabled = !!(window as any).RUNTIME_CONFIG?.SUWAYOMI_ENABLED;
-      setMangaEnabled(enabled);
-    }
-  }, []);
-
-  // 检查电子书功能是否启用
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const enabled = !!(window as any).RUNTIME_CONFIG?.BOOKS_ENABLED;
-      setBooksEnabled(enabled);
-    }
-  }, []);
-
-  // 检查网盘临时播放权限，仅有权限时在直链播放弹窗展示网盘在线播放提示
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const enabled = !!(window as any).RUNTIME_CONFIG
-        ?.NETDISK_TEMP_PLAY_ENABLED;
-      setNetdiskTempPlayEnabled(enabled);
-    }
   }, []);
 
   // 检查公告弹窗状态
@@ -568,37 +325,28 @@ function HomeClient() {
   const renderModule = (moduleId: string) => {
     switch (moduleId) {
       case 'hotMovies':
+        if (!loading && hotMovies.length === 0) return null;
         return (
-          <section key='hotMovies' className='mb-8'>
+          <section key='hotMovies' className='mtv-row'>
             <div className='mb-4 flex items-center justify-between'>
-              <h2 className='text-xl font-bold text-gray-800 dark:text-gray-200'>
-                热门电影
-              </h2>
-              <Link
-                href='/douban?type=movie'
-                className='flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-              >
+              <h2 className='mtv-row-title'>热门电影</h2>
+              <Link href='/douban?type=movie' className='mtv-row-more'>
                 查看更多
                 <ChevronRight className='w-4 h-4 ml-1' />
               </Link>
             </div>
-            <ScrollableRow>
+            <ScrollableRow snap>
               {loading
                 ? Array.from({ length: 8 }).map((_, index) => (
-                    <div
-                      key={index}
-                      className='min-w-[96px] w-24 sm:min-w-[180px] sm:w-44'
-                    >
-                      <div className='aspect-[2/3] bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse mb-2' />
-                      <div className='h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4' />
+                    <div key={index} className='mtv-card-md'>
+                      <div className='mtv-skel-poster' />
+                      <div className='mtv-skel-line' />
                     </div>
                   ))
                 : hotMovies.map((movie) => (
-                    <div
-                      key={movie.id}
-                      className='min-w-[96px] w-24 sm:min-w-[180px] sm:w-44'
-                    >
+                    <div key={movie.id} className='mtv-card-md'>
                       <VideoCard
+                        hoverPanel
                         id={movie.id}
                         poster={movie.poster}
                         title={movie.title}
@@ -615,38 +363,31 @@ function HomeClient() {
         );
 
       case 'hotDuanju':
-        if (hotDuanju.length === 0) return null;
+        if (!loading && hotDuanju.length === 0) return null;
         return (
-          <section key='hotDuanju' className='mb-8'>
+          <section key='hotDuanju' className='mtv-row'>
             <div className='mb-4 flex items-center justify-between'>
-              <h2 className='text-xl font-bold text-gray-800 dark:text-gray-200'>
-                热播短剧
-              </h2>
-              <Link
-                href='/duanju'
-                className='flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-              >
+              <h2 className='mtv-row-title'>热播短剧</h2>
+              <Link href='/duanju' className='mtv-row-more'>
                 查看更多
                 <ChevronRight className='w-4 h-4 ml-1' />
               </Link>
             </div>
-            <ScrollableRow>
+            <ScrollableRow snap>
               {loading
                 ? Array.from({ length: 8 }).map((_, index) => (
-                    <div
-                      key={index}
-                      className='min-w-[96px] w-24 sm:min-w-[180px] sm:w-44'
-                    >
-                      <div className='aspect-[2/3] bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse mb-2' />
-                      <div className='h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4' />
+                    <div key={index} className='mtv-card-md'>
+                      <div className='mtv-skel-poster' />
+                      <div className='mtv-skel-line' />
                     </div>
                   ))
                 : hotDuanju.map((duanju) => (
                     <div
                       key={duanju.id + duanju.source}
-                      className='min-w-[96px] w-24 sm:min-w-[180px] sm:w-44'
+                      className='mtv-card-md'
                     >
                       <VideoCard
+                        hoverPanel
                         id={duanju.id}
                         source={duanju.source}
                         poster={duanju.poster}
@@ -669,111 +410,84 @@ function HomeClient() {
           </section>
         );
 
-      case 'bangumiCalendar':
+      case 'bangumiCalendar': {
+        const today = new Date();
+        const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const todayAnimes =
+          bangumiCalendarData
+            .find((item) => item.weekday.en === weekdays[today.getDay()])
+            ?.items.filter((anime) => anime.images) || [];
+
+        // 这一行只显示当天更新的番，「今天没有」是常态而不是异常。空态必须和别的行
+        // 一样收起来，否则会留下「标题 + 查看更多 + 空轨道」的空壳。
+        if (!loading && todayAnimes.length === 0) return null;
+
         return (
-          <section key='bangumiCalendar' className='mb-8'>
+          <section key='bangumiCalendar' className='mtv-row'>
             <div className='mb-4 flex items-center justify-between'>
-              <h2 className='text-xl font-bold text-gray-800 dark:text-gray-200'>
-                新番放送
-              </h2>
-              <Link
-                href='/douban?type=anime'
-                className='flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-              >
+              <h2 className='mtv-row-title'>新番放送</h2>
+              <Link href='/douban?type=anime' className='mtv-row-more'>
                 查看更多
                 <ChevronRight className='w-4 h-4 ml-1' />
               </Link>
             </div>
-            <ScrollableRow>
+            <ScrollableRow snap>
               {loading
                 ? Array.from({ length: 8 }).map((_, index) => (
-                    <div
-                      key={index}
-                      className='min-w-[96px] w-24 sm:min-w-[180px] sm:w-44'
-                    >
-                      <div className='relative aspect-[2/3] w-full overflow-hidden rounded-lg bg-gray-200 animate-pulse dark:bg-gray-800'>
-                        <div className='absolute inset-0 bg-gray-300 dark:bg-gray-700'></div>
-                      </div>
-                      <div className='mt-2 h-4 bg-gray-200 rounded animate-pulse dark:bg-gray-800'></div>
+                    <div key={index} className='mtv-card-md'>
+                      <div className='mtv-skel-poster' />
+                      <div className='mtv-skel-line' />
                     </div>
                   ))
-                : (() => {
-                    const today = new Date();
-                    const weekdays = [
-                      'Sun',
-                      'Mon',
-                      'Tue',
-                      'Wed',
-                      'Thu',
-                      'Fri',
-                      'Sat',
-                    ];
-                    const currentWeekday = weekdays[today.getDay()];
-                    const todayAnimes =
-                      bangumiCalendarData
-                        .find((item) => item.weekday.en === currentWeekday)
-                        ?.items.filter((anime) => anime.images) || [];
-
-                    return todayAnimes.map((anime, index) => (
-                      <div
-                        key={`${anime.id}-${index}`}
-                        className='min-w-[96px] w-24 sm:min-w-[180px] sm:w-44'
-                      >
-                        <VideoCard
-                          from='douban'
-                          title={anime.name_cn || anime.name}
-                          poster={
-                            anime.images?.large ||
-                            anime.images?.common ||
-                            anime.images?.medium ||
-                            anime.images?.small ||
-                            anime.images?.grid ||
-                            ''
-                          }
-                          douban_id={anime.id}
-                          rate={anime.rating?.score?.toFixed(1) || ''}
-                          year={anime.air_date?.split('-')?.[0] || ''}
-                          isBangumi={true}
-                        />
-                      </div>
-                    ));
-                  })()}
+                : todayAnimes.map((anime, index) => (
+                    <div key={`${anime.id}-${index}`} className='mtv-card-md'>
+                      <VideoCard
+                        hoverPanel
+                        from='douban'
+                        title={anime.name_cn || anime.name}
+                        poster={
+                          anime.images?.large ||
+                          anime.images?.common ||
+                          anime.images?.medium ||
+                          anime.images?.small ||
+                          anime.images?.grid ||
+                          ''
+                        }
+                        douban_id={anime.id}
+                        rate={anime.rating?.score?.toFixed(1) || ''}
+                        year={anime.air_date?.split('-')?.[0] || ''}
+                        isBangumi={true}
+                      />
+                    </div>
+                  ))}
             </ScrollableRow>
           </section>
         );
+      }
 
       case 'hotTvShows':
+        if (!loading && hotTvShows.length === 0) return null;
         return (
-          <section key='hotTvShows' className='mb-8'>
+          <section key='hotTvShows' className='mtv-row'>
             <div className='mb-4 flex items-center justify-between'>
-              <h2 className='text-xl font-bold text-gray-800 dark:text-gray-200'>
-                热门剧集
-              </h2>
-              <Link
-                href='/douban?type=tv'
-                className='flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-              >
+              <h2 className='mtv-row-title'>热门剧集</h2>
+              <Link href='/douban?type=tv' className='mtv-row-more'>
                 查看更多
                 <ChevronRight className='w-4 h-4 ml-1' />
               </Link>
             </div>
-            <ScrollableRow>
+            <ScrollableRow snap>
               {loading
                 ? Array.from({ length: 8 }).map((_, index) => (
-                    <div
-                      key={index}
-                      className='min-w-[96px] w-24 sm:min-w-[180px] sm:w-44'
-                    >
-                      <div className='aspect-[2/3] bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse mb-2' />
-                      <div className='h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4' />
+                    <div key={index} className='mtv-card-md'>
+                      <div className='mtv-skel-poster' />
+                      <div className='mtv-skel-line' />
                     </div>
                   ))
                 : hotTvShows.map((tvShow) => (
-                    <div
-                      key={tvShow.id}
-                      className='min-w-[96px] w-24 sm:min-w-[180px] sm:w-44'
-                    >
+                    <div key={tvShow.id} className='mtv-card-md'>
                       <VideoCard
+                        hoverPanel
                         id={tvShow.id}
                         poster={tvShow.poster}
                         title={tvShow.title}
@@ -790,37 +504,28 @@ function HomeClient() {
         );
 
       case 'hotVarietyShows':
+        if (!loading && hotVarietyShows.length === 0) return null;
         return (
-          <section key='hotVarietyShows' className='mb-8'>
+          <section key='hotVarietyShows' className='mtv-row'>
             <div className='mb-4 flex items-center justify-between'>
-              <h2 className='text-xl font-bold text-gray-800 dark:text-gray-200'>
-                热门综艺
-              </h2>
-              <Link
-                href='/douban?type=show'
-                className='flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-              >
+              <h2 className='mtv-row-title'>热门综艺</h2>
+              <Link href='/douban?type=show' className='mtv-row-more'>
                 查看更多
                 <ChevronRight className='w-4 h-4 ml-1' />
               </Link>
             </div>
-            <ScrollableRow>
+            <ScrollableRow snap>
               {loading
                 ? Array.from({ length: 8 }).map((_, index) => (
-                    <div
-                      key={index}
-                      className='min-w-[96px] w-24 sm:min-w-[180px] sm:w-44'
-                    >
-                      <div className='aspect-[2/3] bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse mb-2' />
-                      <div className='h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4' />
+                    <div key={index} className='mtv-card-md'>
+                      <div className='mtv-skel-poster' />
+                      <div className='mtv-skel-line' />
                     </div>
                   ))
                 : hotVarietyShows.map((varietyShow) => (
-                    <div
-                      key={varietyShow.id}
-                      className='min-w-[96px] w-24 sm:min-w-[180px] sm:w-44'
-                    >
+                    <div key={varietyShow.id} className='mtv-card-md'>
                       <VideoCard
+                        hoverPanel
                         id={varietyShow.id}
                         poster={varietyShow.poster}
                         title={varietyShow.title}
@@ -839,21 +544,20 @@ function HomeClient() {
         );
 
       case 'upcomingContent':
-        if (upcomingContent.length === 0) return null;
+        if (!loading && upcomingContent.length === 0) return null;
         return (
-          <section key='upcomingContent' className='mb-8'>
+          <section key='upcomingContent' className='mtv-row'>
             <div className='mb-4 flex items-center justify-between'>
-              <h2 className='text-xl font-bold text-gray-800 dark:text-gray-200'>
-                即将上映
-              </h2>
+              <h2 className='mtv-row-title'>即将上映</h2>
             </div>
-            <ScrollableRow>
+            <ScrollableRow snap>
               {upcomingContent.map((item) => (
                 <div
                   key={`${item.media_type}-${item.id}`}
-                  className='min-w-[96px] w-24 sm:min-w-[180px] sm:w-44'
+                  className='mtv-card-md'
                 >
                   <VideoCard
+                    hoverPanel
                     title={item.title}
                     poster={processImageUrl(getTMDBImageUrl(item.poster_path))}
                     year={item.release_date?.split('-')?.[0] || ''}
@@ -889,81 +593,10 @@ function HomeClient() {
         </div>
       )}
 
-      <div className='px-2 sm:px-10 pb-4 sm:pb-8 overflow-visible'>
-        <div className='max-w-[95%] mx-auto'>
+      <div className='mtv-page overflow-visible'>
+        <div>
           {/* 首页内容 */}
           <>
-            {/* 源站寻片和AI问片入口 */}
-            <div
-              className={`flex items-center justify-end gap-2 mb-4 ${
-                homeBannerEnabled ? '' : 'mt-[30px]'
-              }`}
-            >
-              <button
-                onClick={handleDirectPlay}
-                className='p-1.5 rounded-lg text-blue-500 hover:text-blue-600 transition-colors'
-                title='直链播放'
-              >
-                <LinkIcon size={18} />
-              </button>
-
-              {musicEnabled && (
-                <Link href='/music' prefetch={false}>
-                  <button
-                    className='p-1.5 rounded-lg text-green-500 hover:text-green-600 transition-colors'
-                    title='音乐视听'
-                  >
-                    <Music size={18} />
-                  </button>
-                </Link>
-              )}
-
-              {mangaEnabled && (
-                <Link href='/manga' prefetch={false}>
-                  <button
-                    className='p-1.5 rounded-lg text-emerald-500 hover:text-emerald-600 transition-colors'
-                    title='漫画展馆'
-                  >
-                    <BookOpen size={18} />
-                  </button>
-                </Link>
-              )}
-
-              {booksEnabled && (
-                <Link href='/books' prefetch={false}>
-                  <button
-                    className='p-1.5 rounded-lg text-amber-500 hover:text-amber-600 transition-colors'
-                    title='电子书馆'
-                  >
-                    <BookMarked size={18} />
-                  </button>
-                </Link>
-              )}
-
-              {/* 源站寻片入口 */}
-              {sourceSearchEnabled && (
-                <Link href='/source-search'>
-                  <button
-                    className='p-2 rounded-lg text-blue-500 hover:text-blue-600 transition-colors'
-                    title='源站寻片'
-                  >
-                    <ListVideo size={20} />
-                  </button>
-                </Link>
-              )}
-
-              {/* AI问片入口 */}
-              {aiEnabled && (
-                <button
-                  onClick={() => setShowAIChat(true)}
-                  className='p-2 rounded-lg text-purple-500 hover:text-purple-600 transition-colors'
-                  title='AI问片'
-                >
-                  <Bot size={20} />
-                </button>
-              )}
-            </div>
-
             {/* 继续观看 */}
             {homeContinueWatchingEnabled && <ContinueWatching />}
 
@@ -981,97 +614,53 @@ function HomeClient() {
         <HttpWarningDialog onClose={() => setShowHttpWarning(false)} />
       )}
 
-      {/* AI问片面板 */}
-      {aiEnabled && (
-        <AIChatPanel
-          isOpen={showAIChat}
-          onClose={() => setShowAIChat(false)}
-          welcomeMessage={aiDefaultMessageNoVideo}
-        />
-      )}
-
       {/* 公告弹窗 */}
       {showAnnouncement && (
-        <div className='fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4'>
-          <div className='bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6'>
-            <h3 className='text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3'>
-              公告
-            </h3>
-            <div className='text-gray-700 dark:text-gray-300 mb-4 whitespace-pre-wrap'>
-              {announcement}
-            </div>
-            <button
-              onClick={() => handleCloseAnnouncement(announcement || '')}
-              className='w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors'
-            >
-              知道了
-            </button>
-          </div>
-        </div>
-      )}
-
-      {showDirectPlayDialog && (
         <div
-          className='fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4'
-          onClick={() => setShowDirectPlayDialog(false)}
+          className='fixed inset-0 z-[var(--ui-z-modal)] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm'
+          onClick={() => handleCloseAnnouncement(announcement || '')}
         >
           <div
-            className='bg-white dark:bg-gray-900 rounded-lg shadow-xl w-full max-w-lg'
-            onClick={(event) => event.stopPropagation()}
+            role='dialog'
+            aria-modal='true'
+            aria-labelledby='announcement-title'
+            className='animate-slide-up w-full max-w-md overflow-hidden rounded-ui-lg border border-ui-hair bg-ui-surface shadow-ui-3'
+            onClick={(e) => e.stopPropagation()}
           >
-            <div className='flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700'>
-              <h3 className='text-lg font-semibold text-gray-900 dark:text-gray-100'>
-                直链播放
-              </h3>
-              <button
-                onClick={() => setShowDirectPlayDialog(false)}
-                className='p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors'
-                aria-label='关闭'
-              >
-                <span className='text-gray-600 dark:text-gray-400'>×</span>
-              </button>
-            </div>
-            <div className='p-4 space-y-4'>
-              <div className='text-sm text-gray-600 dark:text-gray-300'>
-                请输入可直接播放的视频链接。
-              </div>
-              {netdiskTempPlayEnabled && (
-                <div className='text-xs text-gray-500 dark:text-gray-400'>
-                  支持夸克、UC、百度、天翼、移动、123、115 网盘在线播放。
+            {/* 顶部强调线：一条就够，再多就成了装饰 */}
+            <div className='h-[3px] w-full bg-ui-accent' />
+
+            <div className='p-5 sm:p-6'>
+              <div className='mb-3 flex items-start gap-3'>
+                <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ui-accent-soft text-ui-accent'>
+                  <Megaphone className='h-4 w-4' />
                 </div>
-              )}
-              <input
-                value={directPlayUrl}
-                onChange={(event) => setDirectPlayUrl(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    submitDirectPlay();
-                  }
-                }}
-                placeholder='https://example.com/video.m3u8'
-                className='w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500'
-              />
-              <div className='flex justify-end gap-2'>
-                <button
-                  onClick={() => setShowDirectPlayDialog(false)}
-                  className='px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors'
-                >
-                  取消
-                </button>
-                <button
-                  onClick={submitDirectPlay}
-                  disabled={!directPlayUrl.trim() || directPlaySubmitting}
-                  className='px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
-                >
-                  {directPlaySubmitting ? '处理中...' : '开始播放'}
-                </button>
+                <div className='min-w-0 pt-0.5'>
+                  <h3
+                    id='announcement-title'
+                    className='text-base font-semibold text-ui-ink'
+                  >
+                    公告
+                  </h3>
+                  <p className='mt-0.5 text-xs text-ui-ink-3'>来自站点的通知</p>
+                </div>
               </div>
+
+              {/* 长公告在框内滚动，不把弹窗撑出屏幕 */}
+              <div className='max-h-[46vh] overflow-y-auto overscroll-contain whitespace-pre-wrap break-words pr-1 text-sm leading-relaxed text-ui-ink-2'>
+                {announcement}
+              </div>
+
+              <button
+                onClick={() => handleCloseAnnouncement(announcement || '')}
+                className='mt-5 w-full rounded-ui-md bg-ui-accent py-2.5 text-sm font-semibold text-ui-accent-ink transition-opacity hover:opacity-90 active:opacity-80'
+              >
+                知道了
+              </button>
             </div>
           </div>
         </div>
       )}
-
-      {toast && <Toast {...toast} />}
     </PageLayout>
   );
 }

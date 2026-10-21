@@ -204,7 +204,7 @@ function BangumiScheduleTimeline({
                     </div>
                     {/* 时间节点 */}
                     <div className='relative flex justify-center pt-1.5'>
-                      <span className='w-2.5 h-2.5 rounded-full bg-green-500 ring-4 ring-green-500/20' />
+                      <span className='w-2.5 h-2.5 rounded-full bg-ui-accent ring-4 ring-ui-accent' />
                     </div>
                     {/* 同一时间多部番横向排列 */}
                     <div className='flex gap-3 overflow-x-auto pb-1 -mr-2 pr-2'>

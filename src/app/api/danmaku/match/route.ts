@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`弹幕服务器返回 HTTP ${response.status}${response.status === 403 || response.status === 503 ? '（上游可能有 Cloudflare 挑战页，服务端请求会被拦）' : ''}`);
       }
 
       const data = await response.json();

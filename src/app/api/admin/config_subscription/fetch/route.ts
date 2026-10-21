@@ -14,11 +14,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // 只比 USERNAME 会把 owner 账号挡在门外：Windows 上 USERNAME 就是系统账户名，
+    // 站长用别的名字登录时永远对不上。补一条角色判定，和 /api/admin/config 一致。
     if (authInfo.username !== process.env.USERNAME) {
-      return NextResponse.json(
-        { error: '权限不足，只有站长可以拉取配置订阅' },
-        { status: 401 }
-      );
+      const { db } = await import('@/lib/db');
+      const userInfoV2 = await db.getUserInfoV2(authInfo.username);
+      if (
+        !userInfoV2 ||
+        (userInfoV2.role !== 'admin' && userInfoV2.role !== 'owner') ||
+        userInfoV2.banned
+      ) {
+        return NextResponse.json(
+          { error: '权限不足，只有站长可以拉取配置订阅' },
+          { status: 401 }
+        );
+      }
     }
 
     const { url } = await request.json();

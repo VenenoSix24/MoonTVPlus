@@ -422,19 +422,19 @@ function DuanjuPageClient() {
 
   return (
     <PageLayout activePath='/duanju'>
-      <div className='px-4 sm:px-10 py-4 sm:py-8 overflow-visible mb-10'>
+      <div className='px-[var(--ui-gutter)] py-6 overflow-visible mb-10'>
         <div className='mb-6 flex items-start justify-between gap-4'>
           <div>
-            <h1 className='text-2xl font-bold text-gray-800 dark:text-gray-200'>
+            <h1 className='text-2xl font-bold text-ui-ink'>
               短剧
             </h1>
-            <p className='text-sm text-gray-500 dark:text-gray-400 mt-1'>
+            <p className='text-sm text-ui-ink-2 mt-1'>
               浏览所有采集源中的短剧内容
             </p>
           </div>
           <Link
             href='/'
-            className='inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100'
+            className='inline-flex items-center gap-1 rounded-ui-sm px-3 py-2 text-sm text-ui-ink-2 hover:text-ui-ink'
           >
             <ArrowLeft className='h-4 w-4' />
             返回首页
@@ -443,19 +443,19 @@ function DuanjuPageClient() {
 
         <div className='max-w-4xl mx-auto mb-8'>
           <div className='relative'>
-            <div className='text-xs text-gray-500 dark:text-gray-400 mb-2 px-4'>
+            <div className='text-xs text-ui-ink-3 mb-2'>
               服务
             </div>
             {isLoadingSources ? (
-              <div className='flex items-center justify-center h-12 bg-gray-50/80 rounded-lg border border-gray-200/50 dark:bg-gray-800 dark:border-gray-700'>
-                <Loader2 className='h-5 w-5 animate-spin text-gray-400' />
-                <span className='ml-2 text-sm text-gray-500 dark:text-gray-400'>
+              <div className='flex items-center justify-center h-12 rounded-ui-md border border-ui-hair bg-ui-surface-2'>
+                <Loader2 className='h-5 w-5 animate-spin text-ui-ink-3' />
+                <span className='ml-2 text-sm text-ui-ink-2'>
                   加载采集源中...
                 </span>
               </div>
             ) : sources.length === 0 ? (
-              <div className='flex items-center justify-center h-12 bg-gray-50/80 rounded-lg border border-gray-200/50 dark:bg-gray-800 dark:border-gray-700'>
-                <span className='text-sm text-gray-500 dark:text-gray-400'>
+              <div className='flex items-center justify-center h-12 rounded-ui-md border border-ui-hair bg-ui-surface-2'>
+                <span className='text-sm text-ui-ink-3'>
                   暂无包含短剧分类的采集源
                 </span>
               </div>
@@ -492,15 +492,13 @@ function DuanjuPageClient() {
                     sourceScrollContainerRef.current.scrollLeft = scrollLeftRef.current - walk;
                   }}
                 >
-                  <div className='flex gap-2 px-4 min-w-min'>
+                  <div className='flex gap-1.5 min-w-min'>
                     {sources.map((source) => (
                       <button
                         key={source.key}
                         onClick={() => handleSourceChange(source.key)}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
-                          selectedSource === source.key
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                        className={`mtv-cap flex-shrink-0 ${
+                          selectedSource === source.key ? 'is-on is-fill' : ''
                         }`}
                       >
                         {source.name}
@@ -518,7 +516,7 @@ function DuanjuPageClient() {
           <div className='max-w-4xl mx-auto mb-8'>
             {isMultiParent ? (
               <>
-                <div className='text-xs text-gray-500 dark:text-gray-400 mb-2 px-4'>
+                <div className='text-xs text-ui-ink-3 mb-2'>
                   类型
                 </div>
                 <div className='flex px-4 mb-4'>
@@ -533,7 +531,7 @@ function DuanjuPageClient() {
                 </div>
                 {subCategories.length > 0 && (
                   <div>
-                    <div className='text-xs text-gray-500 dark:text-gray-400 mb-2 px-4'>
+                    <div className='text-xs text-ui-ink-3 mb-2'>
                       分类
                     </div>
                     <div className='flex px-4'>
@@ -551,7 +549,7 @@ function DuanjuPageClient() {
               </>
             ) : (
               <div>
-                <div className='text-xs text-gray-500 dark:text-gray-400 mb-2 px-4'>
+                <div className='text-xs text-ui-ink-3 mb-2'>
                   分类
                 </div>
                 <div className='flex px-4'>
@@ -570,25 +568,25 @@ function DuanjuPageClient() {
         )}
 
         {selectedSource && !selectedCategory && (
-          <div className='text-center text-gray-500 py-8 dark:text-gray-400'>
+          <div className='text-center text-ui-ink-3 py-8'>
             当前采集源暂无短剧分类
           </div>
         )}
 
         {selectedSource && selectedCategory && (
-          <div className='max-w-[95%] mx-auto mt-8'>
+          <div className='mt-8'>
             <div className='mb-4'>
-              <h2 className='text-xl font-bold text-gray-800 dark:text-gray-200'>
+              <h2 className='text-xl font-bold text-ui-ink'>
                 短剧列表
               </h2>
             </div>
 
             {isLoadingVideos && currentPage === 1 ? (
               <div className='flex justify-center items-center h-40'>
-                <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500'></div>
+                <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-ui-accent'></div>
               </div>
             ) : videos.length === 0 ? (
-              <div className='text-center text-gray-500 py-8 dark:text-gray-400'>
+              <div className='text-center text-ui-ink-3 py-8'>
                 暂无短剧
               </div>
             ) : (
@@ -621,10 +619,10 @@ function DuanjuPageClient() {
 
                 <div ref={loadMoreRef} className='flex justify-center items-center py-8'>
                   {isLoadingVideos && (
-                    <div className='animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500'></div>
+                    <div className='animate-spin rounded-full h-6 w-6 border-b-2 border-ui-accent'></div>
                   )}
                   {!hasMore && videos.length > 0 && (
-                    <span className='text-sm text-gray-500 dark:text-gray-400'>
+                    <span className='text-sm text-ui-ink-3'>
                       没有更多了
                     </span>
                   )}
@@ -638,7 +636,7 @@ function DuanjuPageClient() {
       {/* 置顶（返回顶部）悬浮按钮 */}
       <button
         onClick={scrollToTop}
-        className={`fixed bottom-20 md:bottom-6 right-6 z-[500] w-12 h-12 bg-green-500/90 hover:bg-green-500 text-white rounded-full shadow-lg backdrop-blur-sm transition-all duration-300 ease-in-out flex items-center justify-center group ${
+        className={`fixed bottom-20 md:bottom-6 right-6 z-[500] w-12 h-12 bg-ui-accent/90 hover:bg-ui-accent text-white rounded-full shadow-lg backdrop-blur-sm transition-all duration-300 ease-in-out flex items-center justify-center group ${
           showBackToTop
             ? 'opacity-100 translate-y-0 pointer-events-auto'
             : 'opacity-0 translate-y-4 pointer-events-none'

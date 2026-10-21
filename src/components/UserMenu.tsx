@@ -22,6 +22,7 @@ import {
   MoveDown,
   MoveUp,
   Package,
+  Palette,
   Puzzle,
   Router as RouterIcon,
   Rss,
@@ -35,6 +36,7 @@ import {
   X,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useTheme } from 'next-themes';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -42,9 +44,14 @@ import { getAuthInfoFromBrowserCookie } from '@/lib/auth';
 import { clearAllDanmakuCache, getDanmakuCacheStats } from '@/lib/danmaku/api';
 import { SAVE_LIVE_PLAY_RECORDS_KEY } from '@/lib/db.client';
 import {
+  type HomeModule,
+  mergeHomeModules,
+  resolveSiteHomeModules,
+} from '@/lib/home-modules';
+import {
+  type LocalSettingsPayload,
   LOCAL_SETTINGS_KEYS,
   LOCAL_SETTINGS_SYNC_LAST_PULL_KEY,
-  type LocalSettingsPayload,
 } from '@/lib/local-settings-sync';
 import { clearBangumiImageFallbackCache } from '@/lib/utils';
 import { CURRENT_VERSION } from '@/lib/version';
@@ -67,7 +74,12 @@ interface AuthInfo {
   role?: 'owner' | 'admin' | 'user';
 }
 
-export const UserMenu: React.FC = () => {
+interface UserMenuProps {
+  /** 传入后完全接管触发按钮样式。顶栏的搜索 / 主题 / 用户共用同一个类，外观只有一个来源。 */
+  className?: string;
+}
+
+export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
   const router = useRouter();
   const { updateStatus, isChecking } = useVersionCheck();
   const [isOpen, setIsOpen] = useState(false);
@@ -93,6 +105,74 @@ export const UserMenu: React.FC = () => {
     useState<string>('localstorage');
   const [mounted, setMounted] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  // 外观主题：顶栏那个独立的主题按钮收进菜单后，主题状态由这里统一持有
+  const { theme, setTheme, resolvedTheme } = useTheme();
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(
+    null
+  );
+
+  // 面板由 Portal 渲染到 body、用 fixed 定位，所以位置只能按触发器实测坐标算：
+  // 桌面顶栏 64px、手机顶栏 48px（还要叠安全区），写死一个 top 必然压住导航栏。
+  // 图标按钮在 64px 顶栏里是垂直居中的（上下各 12px），只按按钮底边 +8 会算到 60，
+  // 比顶栏底边还高 4px，面板会压住导航栏；所以再以顶栏底边兜一次底。
+  const updateMenuPos = useCallback(() => {
+    const el = triggerRef.current;
+    if (!el || typeof window === 'undefined') return;
+    const rect = el.getBoundingClientRect();
+    const header = el.closest('header');
+    const headerBottom = header?.getBoundingClientRect().bottom ?? 0;
+    setMenuPos({
+      top: Math.max(rect.bottom + 8, headerBottom + 6),
+      right: Math.max(8, window.innerWidth - rect.right),
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    updateMenuPos();
+    window.addEventListener('resize', updateMenuPos);
+    window.addEventListener('scroll', updateMenuPos, true);
+    return () => {
+      window.removeEventListener('resize', updateMenuPos);
+      window.removeEventListener('scroll', updateMenuPos, true);
+    };
+  }, [isOpen, updateMenuPos]);
+
+  // 主题切换顺带同步浏览器地址栏配色（原来写死在 ThemeToggle 里）
+  useEffect(() => {
+    if (!mounted) return;
+    const color = resolvedTheme === 'dark' ? '#0c111c' : '#f9fbfe';
+    const existing = document.querySelector('meta[name="theme-color"]');
+    const meta =
+      existing ??
+      (() => {
+        const created = document.createElement('meta');
+        created.setAttribute('name', 'theme-color');
+        document.head.appendChild(created);
+        return created;
+      })();
+    meta.setAttribute('content', color);
+  }, [mounted, resolvedTheme]);
+
+  const themeOptions: { value: 'light' | 'dark' | 'system'; label: string }[] = [
+    { value: 'light', label: '浅色' },
+    { value: 'dark', label: '深色' },
+    { value: 'system', label: '跟随系统' },
+  ];
+  const themeLabel =
+    themeOptions.find((option) => option.value === theme)?.label ?? '跟随系统';
+
+  const applyTheme = (next: 'light' | 'dark' | 'system') => {
+    const doc = document as any;
+    // 「跟随系统」不放大范围转场：目标主题要先问了系统才知道，猜错会闪一下
+    if (next === 'system' || !doc.startViewTransition) {
+      setTheme(next);
+      return;
+    }
+    doc.startViewTransition(() => setTheme(next));
+  };
 
   // 订阅相关状态
   const [subscribeEnabled, setSubscribeEnabled] = useState(false);
@@ -174,7 +254,7 @@ export const UserMenu: React.FC = () => {
   const [preferMode, setPreferMode] = useState<
     'balanced' | 'resolution' | 'speed'
   >('balanced'); // 优选偏好：综合判定/分辨率优先/网速优先
-  const [speedTestTimeout, setSpeedTestTimeout] = useState(4000); // 测速超时时间（毫秒）
+  const [speedTestTimeout, setSpeedTestTimeout] = useState(8000); // 测速超时时间（毫秒）
   const [fluidSearch, setFluidSearch] = useState(true);
   const [tmdbBackdropDisabled, setTmdbBackdropDisabled] = useState(false);
   const [enableTrailers, setEnableTrailers] = useState(false);
@@ -298,27 +378,20 @@ export const UserMenu: React.FC = () => {
   const [isCloudBackupDropdownOpen, setIsCloudBackupDropdownOpen] =
     useState(false);
 
-  // 首页模块配置
-  interface HomeModule {
-    id: string;
-    name: string;
-    enabled: boolean;
-    order: number;
-  }
-
   type HomeBannerHeightScale = '1' | '1.5' | '2';
 
-  const defaultHomeModules: HomeModule[] = [
-    { id: 'hotMovies', name: '热门电影', enabled: true, order: 0 },
-    { id: 'hotDuanju', name: '热播短剧', enabled: true, order: 1 },
-    { id: 'bangumiCalendar', name: '新番放送', enabled: true, order: 2 },
-    { id: 'hotTvShows', name: '热门剧集', enabled: true, order: 3 },
-    { id: 'hotVarietyShows', name: '热门综艺', enabled: true, order: 4 },
-    { id: 'upcomingContent', name: '即将上映', enabled: true, order: 5 },
-  ];
+  // 首页模块配置：站点默认来自管理端，本机改过的以本机为准
+  /** 站点默认的首页模块（管理端 ThemeConfig.homeModules），没配过就回落内置目录。 */
+  const siteDefaultModules = (): HomeModule[] =>
+    resolveSiteHomeModules(
+      typeof window === 'undefined'
+        ? null
+        : ((window as any).RUNTIME_CONFIG?.HOME_MODULES ?? null)
+    );
 
-  const [homeModules, setHomeModules] =
-    useState<HomeModule[]>(defaultHomeModules);
+  const [homeModules, setHomeModules] = useState<HomeModule[]>(
+    siteDefaultModules
+  );
   const [homeBannerEnabled, setHomeBannerEnabled] = useState(true);
   const [homeBannerHeightScale, setHomeBannerHeightScale] =
     useState<HomeBannerHeightScale>('1');
@@ -560,7 +633,7 @@ export const UserMenu: React.FC = () => {
             if (messageEl) {
               messageEl.textContent = '订阅token已重置！';
               messageEl.className =
-                'text-xs text-center text-green-600 dark:text-green-400 mt-2';
+                'text-xs text-center text-ui-success mt-2';
               messageEl.classList.remove('hidden');
               setTimeout(() => {
                 messageEl.classList.add('hidden');
@@ -857,17 +930,24 @@ export const UserMenu: React.FC = () => {
         setHomeContinueWatchingEnabled(
           savedHomeContinueWatchingEnabled === 'true'
         );
+      } else {
+        // 没动过就用站点默认
+        setHomeContinueWatchingEnabled(
+          (window as any).RUNTIME_CONFIG?.HOME_CONTINUE_WATCHING !== false
+        );
       }
 
-      // 加载首页模块配置
+      // 加载首页模块配置：站点默认打底，本机改过的以本机为准
       const savedHomeModules = localStorage.getItem('homeModules');
+      let parsedHomeModules: unknown = null;
       if (savedHomeModules !== null) {
         try {
-          setHomeModules(JSON.parse(savedHomeModules));
+          parsedHomeModules = JSON.parse(savedHomeModules);
         } catch (error) {
           console.error('解析首页模块配置失败:', error);
         }
       }
+      setHomeModules(mergeHomeModules(siteDefaultModules(), parsedHomeModules));
 
       // 加载弹幕繁简转换设置
       const savedDanmakuTraditionalToSimplified = localStorage.getItem(
@@ -1436,6 +1516,8 @@ export const UserMenu: React.FC = () => {
   }, [isCloudBackupDropdownOpen]);
 
   const handleMenuClick = () => {
+    // 打开前先量一次触发器：面板和它在同一次渲染里定位，不会先闪到左上角
+    if (!isOpen) updateMenuPos();
     setIsOpen(!isOpen);
   };
 
@@ -2236,8 +2318,10 @@ export const UserMenu: React.FC = () => {
     setDisableAutoLoadDanmaku(!defaultDanmakuAutoLoad);
     setHomeBannerEnabled(true);
     setHomeBannerHeightScale('1');
-    setHomeContinueWatchingEnabled(true);
-    setHomeModules(defaultHomeModules);
+    setHomeContinueWatchingEnabled(
+      (window as any).RUNTIME_CONFIG?.HOME_CONTINUE_WATCHING !== false
+    );
+    setHomeModules(siteDefaultModules());
     setDanmakuTraditionalToSimplified(false);
     setSearchTraditionalToSimplified(false);
 
@@ -2277,8 +2361,8 @@ export const UserMenu: React.FC = () => {
       localStorage.setItem('danmaku_heatmap_disabled', 'false');
       localStorage.setItem('homeBannerEnabled', 'true');
       localStorage.setItem('homeBannerHeightScale', '1');
-      localStorage.setItem('homeContinueWatchingEnabled', 'true');
-      localStorage.setItem('homeModules', JSON.stringify(defaultHomeModules));
+      localStorage.removeItem('homeContinueWatchingEnabled');
+      localStorage.removeItem('homeModules');
       localStorage.setItem('danmakuTraditionalToSimplified', 'false');
       localStorage.setItem('searchTraditionalToSimplified', 'false');
       window.dispatchEvent(new CustomEvent('homeModulesUpdated'));
@@ -2364,7 +2448,7 @@ export const UserMenu: React.FC = () => {
         setPreferMode('balanced');
         break;
       case 'speedTestTimeout':
-        setSpeedTestTimeout(4000);
+        setSpeedTestTimeout(8000);
         break;
       case 'maxConcurrentDownloads':
         setMaxConcurrentDownloads(6);
@@ -2478,10 +2562,12 @@ export const UserMenu: React.FC = () => {
         setHomeBannerHeightScale('1');
         break;
       case 'homeContinueWatchingEnabled':
-        setHomeContinueWatchingEnabled(true);
+        setHomeContinueWatchingEnabled(
+          (window as any).RUNTIME_CONFIG?.HOME_CONTINUE_WATCHING !== false
+        );
         break;
       case 'homeModules':
-        setHomeModules(defaultHomeModules);
+        setHomeModules(siteDefaultModules());
         break;
       case 'danmakuTraditionalToSimplified':
         setDanmakuTraditionalToSimplified(false);
@@ -2910,7 +2996,7 @@ export const UserMenu: React.FC = () => {
       ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
       : currentRole === 'admin'
       ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
-      : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+      : 'bg-ui-success-soft text-ui-success';
 
   const handleOpenProfileCenter = () => {
     setIsOpen(false);
@@ -2927,171 +3013,183 @@ export const UserMenu: React.FC = () => {
       />
 
       {/* 菜单面板 */}
-      <div className='fixed top-14 right-4 w-56 bg-white dark:bg-gray-900 rounded-lg shadow-xl z-[1001] border border-gray-200/50 dark:border-gray-700/50 overflow-hidden select-none'>
+      <div
+        className='mtv-umenu select-none'
+        style={{
+          top: menuPos?.top ?? 64,
+          right: menuPos?.right ?? 16,
+          maxHeight: menuPos
+            ? `calc(100dvh - ${menuPos.top + 12}px)`
+            : undefined,
+        }}
+      >
         {/* 用户信息区域 */}
-        <div className='px-3 py-1 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-800 dark:to-gray-800/50'>
-          <div className='flex items-start justify-between gap-3'>
-            <button
-              onClick={handleOpenProfileCenter}
-              className='flex items-center gap-3 rounded-xl px-2 py-1 text-left hover:bg-white/70 dark:hover:bg-gray-700/40 transition-colors'
-            >
-              <div className='relative flex h-11 w-11 items-center justify-center rounded-full bg-blue-500 text-lg font-semibold text-white shadow-sm'>
-                <span>{avatarText}</span>
-                {shouldShowRoleBadge && (
-                  <span
-                    className={`absolute left-1/2 top-[calc(100%-6px)] z-10 -translate-x-1/2 inline-flex min-w-[26px] items-center justify-center whitespace-nowrap rounded-full px-1.5 py-[2px] text-[8px] leading-none font-medium shadow-sm ${roleBadgeClassName}`}
-                  >
-                    {currentRoleText}
-                  </span>
-                )}
-              </div>
-              <div className='min-w-0'>
-                <span className='block max-w-[84px] truncate text-sm font-semibold text-gray-900 dark:text-gray-100 leading-none'>
-                  {currentUsername}
-                </span>
-              </div>
-            </button>
+        <button
+          type='button'
+          onClick={handleOpenProfileCenter}
+          className='mtv-umenu-head'
+        >
+          <span className='mtv-umenu-avatar'>{avatarText}</span>
+          <span className='mtv-umenu-id'>
+            <span className='mtv-umenu-name'>{currentUsername}</span>
+            <span className='mtv-umenu-role'>
+              {currentRoleText}
+              {' · 存储 '}
+              {displayStorageType === 'localstorage'
+                ? '本地'
+                : displayStorageType}
+            </span>
+          </span>
+        </button>
 
-            <div className='pt-1 text-right'>
-              <div className='text-[10px] text-gray-400 dark:text-gray-500'>
-                <div>数据存储</div>
-                <div className='mt-0.5'>
-                  {displayStorageType === 'localstorage'
-                    ? '本地'
-                    : displayStorageType}
-                </div>
-              </div>
-            </div>
-          </div>
+        <div className='mtv-umenu-div' />
+
+        {/* 通知按钮 */}
+        <button
+          type='button'
+          onClick={() => {
+            setIsOpen(false);
+            setIsNotificationPanelOpen(true);
+          }}
+          className='mtv-umenu-item'
+        >
+          <Bell />
+          <span>通知中心</span>
+          {unreadCount > 0 && (
+            <span className='ml-auto inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[length:11px] font-semibold leading-none text-white'>
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
+        </button>
+
+        {/* 我的收藏按钮 */}
+        <button
+          type='button'
+          onClick={() => {
+            setIsOpen(false);
+            setIsFavoritesPanelOpen(true);
+          }}
+          className='mtv-umenu-item'
+        >
+          <Star />
+          <span>我的收藏</span>
+        </button>
+
+        {/* 设置按钮 */}
+        <button type='button' onClick={handleSettings} className='mtv-umenu-item'>
+          <Settings />
+          <span>设置</span>
+        </button>
+
+        {/* 外观主题：原来顶栏那个太阳/月亮按钮收进来，原地三段式切换 */}
+        <div className='mtv-umenu-item is-static'>
+          <Palette />
+          <span>外观主题</span>
+          <span className='mtv-umenu-tail'>{themeLabel}</span>
+        </div>
+        <div className='mtv-umenu-seg'>
+          {themeOptions.map((option) => (
+            <button
+              key={option.value}
+              type='button'
+              aria-pressed={theme === option.value}
+              onClick={() => applyTheme(option.value)}
+            >
+              {option.label}
+            </button>
+          ))}
         </div>
 
-        {/* 菜单项 */}
-        <div className='py-1'>
-          {/* 通知按钮 */}
+        <div className='mtv-umenu-div' />
+
+        {/* 管理面板按钮 */}
+        {showAdminPanel && (
           <button
-            onClick={() => {
-              setIsOpen(false);
-              setIsNotificationPanelOpen(true);
-            }}
-            className='w-full px-3 py-2 text-left flex items-center gap-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-sm relative'
+            type='button'
+            onClick={handleAdminPanel}
+            className='mtv-umenu-item'
           >
-            <Bell className='w-4 h-4 text-gray-500 dark:text-gray-400' />
-            <span className='font-medium'>通知中心</span>
-            {unreadCount > 0 && (
-              <span className='ml-auto px-2 py-0.5 text-xs font-medium bg-red-500 text-white rounded-full'>
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </span>
+            <Shield />
+            <span>管理面板</span>
+          </button>
+        )}
+
+        {/* 离线下载按钮 */}
+        {showOfflineDownload && (
+          <button
+            type='button'
+            onClick={() => {
+              setIsOfflineDownloadPanelOpen(true);
+              setIsOpen(false);
+            }}
+            className='mtv-umenu-item'
+          >
+            <Download />
+            <span>离线下载</span>
+          </button>
+        )}
+
+        {/* 电视访问按钮 */}
+        <button
+          type='button'
+          onClick={handleSubscribe}
+          className='mtv-umenu-item'
+        >
+          <Monitor />
+          <span>电视访问</span>
+        </button>
+
+        {/* 生态应用按钮 */}
+        <button
+          type='button'
+          onClick={() => {
+            setIsOpen(false);
+            setIsEcoAppsOpen(true);
+          }}
+          className='mtv-umenu-item'
+        >
+          <Package />
+          <span>生态应用</span>
+        </button>
+
+        <div className='mtv-umenu-div' />
+
+        {/* 登出按钮 */}
+        <button
+          type='button'
+          onClick={handleLogout}
+          className='mtv-umenu-item is-danger'
+        >
+          <LogOut />
+          <span>退出登录</span>
+        </button>
+
+        <div className='mtv-umenu-div' />
+
+        {/* 版本信息 */}
+        <button
+          type='button'
+          onClick={() => {
+            setIsVersionPanelOpen(true);
+            handleCloseMenu();
+          }}
+          className='mtv-umenu-ver'
+        >
+          <span className='font-mono'>v{CURRENT_VERSION}</span>
+          {!isChecking &&
+            updateStatus &&
+            updateStatus !== UpdateStatus.FETCH_FAILED && (
+              <span
+                className={`h-2 w-2 rounded-full ${
+                  updateStatus === UpdateStatus.HAS_UPDATE
+                    ? 'bg-yellow-500'
+                    : updateStatus === UpdateStatus.NO_UPDATE
+                    ? 'bg-ui-success'
+                    : ''
+                }`}
+              />
             )}
-          </button>
-
-          {/* 我的收藏按钮 */}
-          <button
-            onClick={() => {
-              setIsOpen(false);
-              setIsFavoritesPanelOpen(true);
-            }}
-            className='w-full px-3 py-2 text-left flex items-center gap-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-sm relative'
-          >
-            <Star className='w-4 h-4 text-gray-500 dark:text-gray-400' />
-            <span className='font-medium'>我的收藏</span>
-          </button>
-
-          {/* 设置按钮 */}
-          <button
-            onClick={handleSettings}
-            className='w-full px-3 py-2 text-left flex items-center gap-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-sm'
-          >
-            <Settings className='w-4 h-4 text-gray-500 dark:text-gray-400' />
-            <span className='font-medium'>设置</span>
-          </button>
-
-          {/* 管理面板按钮 */}
-          {showAdminPanel && (
-            <button
-              onClick={handleAdminPanel}
-              className='w-full px-3 py-2 text-left flex items-center gap-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-sm'
-            >
-              <Shield className='w-4 h-4 text-gray-500 dark:text-gray-400' />
-              <span className='font-medium'>管理面板</span>
-            </button>
-          )}
-
-          {/* 离线下载按钮 */}
-          {showOfflineDownload && (
-            <button
-              onClick={() => {
-                setIsOfflineDownloadPanelOpen(true);
-                setIsOpen(false);
-              }}
-              className='w-full px-3 py-2 text-left flex items-center gap-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-sm'
-            >
-              <Download className='w-4 h-4 text-gray-500 dark:text-gray-400' />
-              <span className='font-medium'>离线下载</span>
-            </button>
-          )}
-
-          {/* 电视访问按钮 */}
-          <button
-            onClick={handleSubscribe}
-            className='w-full px-3 py-2 text-left flex items-center gap-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-sm'
-          >
-            <Monitor className='w-4 h-4 text-gray-500 dark:text-gray-400' />
-            <span className='font-medium'>电视访问</span>
-          </button>
-
-          {/* 生态应用按钮 */}
-          <button
-            onClick={() => {
-              setIsOpen(false);
-              setIsEcoAppsOpen(true);
-            }}
-            className='w-full px-3 py-2 text-left flex items-center gap-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-sm'
-          >
-            <Package className='w-4 h-4 text-gray-500 dark:text-gray-400' />
-            <span className='font-medium'>生态应用</span>
-          </button>
-
-          {/* 分割线 */}
-          <div className='my-1 border-t border-gray-200 dark:border-gray-700'></div>
-
-          {/* 登出按钮 */}
-          <button
-            onClick={handleLogout}
-            className='w-full px-3 py-2 text-left flex items-center gap-2.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-sm'
-          >
-            <LogOut className='w-4 h-4' />
-            <span className='font-medium'>登出</span>
-          </button>
-
-          {/* 分割线 */}
-          <div className='my-1 border-t border-gray-200 dark:border-gray-700'></div>
-
-          {/* 版本信息 */}
-          <button
-            onClick={() => {
-              setIsVersionPanelOpen(true);
-              handleCloseMenu();
-            }}
-            className='w-full px-3 py-2 text-center flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors text-xs'
-          >
-            <div className='flex items-center gap-1'>
-              <span className='font-mono'>v{CURRENT_VERSION}</span>
-              {!isChecking &&
-                updateStatus &&
-                updateStatus !== UpdateStatus.FETCH_FAILED && (
-                  <div
-                    className={`w-2 h-2 rounded-full -translate-y-2 ${
-                      updateStatus === UpdateStatus.HAS_UPDATE
-                        ? 'bg-yellow-500'
-                        : updateStatus === UpdateStatus.NO_UPDATE
-                        ? 'bg-green-400'
-                        : ''
-                    }`}
-                  ></div>
-                )}
-            </div>
-          </button>
-        </div>
+        </button>
       </div>
     </>
   );
@@ -3176,7 +3274,7 @@ export const UserMenu: React.FC = () => {
                           handleRestoreFromCloud();
                         }}
                         disabled={syncBusy}
-                        className='w-full px-3 py-2 text-left text-sm text-green-500 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors'
+                        className='w-full px-3 py-2 text-left text-sm text-ui-accent hover:bg-ui-accent-soft transition-colors'
                       >
                         恢复云端备份
                       </button>
@@ -3233,7 +3331,7 @@ export const UserMenu: React.FC = () => {
                         onClick={() =>
                           setIsDoubanDropdownOpen(!isDoubanDropdownOpen)
                         }
-                        className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
+                        className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
                       >
                         {
                           doubanDataSourceOptions.find(
@@ -3264,13 +3362,13 @@ export const UserMenu: React.FC = () => {
                               }}
                               className={`w-full px-3 py-2.5 text-left text-sm transition-colors duration-150 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 ${
                                 doubanDataSource === option.value
-                                  ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400'
+                                  ? 'bg-ui-accent-soft text-ui-accent'
                                   : 'text-gray-900 dark:text-gray-100'
                               }`}
                             >
                               <span className='truncate'>{option.label}</span>
                               {doubanDataSource === option.value && (
-                                <Check className='w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 ml-2' />
+                                <Check className='w-4 h-4 text-ui-accent flex-shrink-0 ml-2' />
                               )}
                             </button>
                           ))}
@@ -3313,7 +3411,7 @@ export const UserMenu: React.FC = () => {
                       </div>
                       <input
                         type='text'
-                        className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
+                        className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
                         placeholder='例如: https://proxy.example.com/fetch?url='
                         value={doubanProxyUrl}
                         onChange={(e) =>
@@ -3348,7 +3446,7 @@ export const UserMenu: React.FC = () => {
                             !isDoubanBackupDropdownOpen
                           )
                         }
-                        className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
+                        className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
                       >
                         {
                           doubanDataSourceOptions.find(
@@ -3377,13 +3475,13 @@ export const UserMenu: React.FC = () => {
                               }}
                               className={`w-full px-3 py-2.5 text-left text-sm transition-colors duration-150 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 ${
                                 doubanDataSourceBackup === option.value
-                                  ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400'
+                                  ? 'bg-ui-accent-soft text-ui-accent'
                                   : 'text-gray-900 dark:text-gray-100'
                               }`}
                             >
                               <span className='truncate'>{option.label}</span>
                               {doubanDataSourceBackup === option.value && (
-                                <Check className='w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 ml-2' />
+                                <Check className='w-4 h-4 text-ui-accent flex-shrink-0 ml-2' />
                               )}
                             </button>
                           ))}
@@ -3404,7 +3502,7 @@ export const UserMenu: React.FC = () => {
                       </div>
                       <input
                         type='text'
-                        className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
+                        className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
                         placeholder='例如: https://proxy.example.com/fetch?url='
                         value={doubanProxyUrlBackup}
                         onChange={(e) =>
@@ -3447,7 +3545,7 @@ export const UserMenu: React.FC = () => {
                             !isDoubanImageProxyDropdownOpen
                           )
                         }
-                        className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
+                        className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
                       >
                         {
                           doubanImageProxyTypeOptions.find(
@@ -3478,13 +3576,13 @@ export const UserMenu: React.FC = () => {
                               }}
                               className={`w-full px-3 py-2.5 text-left text-sm transition-colors duration-150 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 ${
                                 doubanImageProxyType === option.value
-                                  ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400'
+                                  ? 'bg-ui-accent-soft text-ui-accent'
                                   : 'text-gray-900 dark:text-gray-100'
                               }`}
                             >
                               <span className='truncate'>{option.label}</span>
                               {doubanImageProxyType === option.value && (
-                                <Check className='w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 ml-2' />
+                                <Check className='w-4 h-4 text-ui-accent flex-shrink-0 ml-2' />
                               )}
                             </button>
                           ))}
@@ -3527,7 +3625,7 @@ export const UserMenu: React.FC = () => {
                       </div>
                       <input
                         type='text'
-                        className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
+                        className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
                         placeholder='例如: https://proxy.example.com/fetch?url='
                         value={doubanImageProxyUrl}
                         onChange={(e) =>
@@ -3562,7 +3660,7 @@ export const UserMenu: React.FC = () => {
                             !isDoubanImageProxyBackupDropdownOpen
                           )
                         }
-                        className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
+                        className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
                       >
                         {
                           doubanImageProxyTypeOptions.find(
@@ -3594,13 +3692,13 @@ export const UserMenu: React.FC = () => {
                               }}
                               className={`w-full px-3 py-2.5 text-left text-sm transition-colors duration-150 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 ${
                                 doubanImageProxyTypeBackup === option.value
-                                  ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400'
+                                  ? 'bg-ui-accent-soft text-ui-accent'
                                   : 'text-gray-900 dark:text-gray-100'
                               }`}
                             >
                               <span className='truncate'>{option.label}</span>
                               {doubanImageProxyTypeBackup === option.value && (
-                                <Check className='w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 ml-2' />
+                                <Check className='w-4 h-4 text-ui-accent flex-shrink-0 ml-2' />
                               )}
                             </button>
                           ))}
@@ -3621,7 +3719,7 @@ export const UserMenu: React.FC = () => {
                       </div>
                       <input
                         type='text'
-                        className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
+                        className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
                         placeholder='例如: https://proxy.example.com/fetch?url='
                         value={doubanImageProxyUrlBackup}
                         onChange={(e) =>
@@ -3651,7 +3749,7 @@ export const UserMenu: React.FC = () => {
                     </div>
                     <input
                       type='text'
-                      className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
+                      className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
                       placeholder='例如: https://image.tmdb.org'
                       value={tmdbImageBaseUrl}
                       onChange={(e) =>
@@ -3689,7 +3787,7 @@ export const UserMenu: React.FC = () => {
                             onClick={() =>
                               setIsAnimeDropdownOpen(!isAnimeDropdownOpen)
                             }
-                            className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
+                            className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
                           >
                             {
                               animeDataSourceOptions.find(
@@ -3716,7 +3814,7 @@ export const UserMenu: React.FC = () => {
                                   }}
                                   className={`w-full px-3 py-2.5 text-left text-sm transition-colors duration-150 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 ${
                                     animeDataSource === option.value
-                                      ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400'
+                                      ? 'bg-ui-accent-soft text-ui-accent'
                                       : 'text-gray-900 dark:text-gray-100'
                                   }`}
                                 >
@@ -3724,7 +3822,7 @@ export const UserMenu: React.FC = () => {
                                     {option.label}
                                   </span>
                                   {animeDataSource === option.value && (
-                                    <Check className='w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 ml-2' />
+                                    <Check className='w-4 h-4 text-ui-accent flex-shrink-0 ml-2' />
                                   )}
                                 </button>
                               ))}
@@ -3748,7 +3846,7 @@ export const UserMenu: React.FC = () => {
                                 !isAnimeBackupDropdownOpen
                               )
                             }
-                            className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
+                            className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
                           >
                             {
                               animeDataSourceOptions.find(
@@ -3778,7 +3876,7 @@ export const UserMenu: React.FC = () => {
                                   }}
                                   className={`w-full px-3 py-2.5 text-left text-sm transition-colors duration-150 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 ${
                                     animeDataSourceBackup === option.value
-                                      ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400'
+                                      ? 'bg-ui-accent-soft text-ui-accent'
                                       : 'text-gray-900 dark:text-gray-100'
                                   }`}
                                 >
@@ -3786,7 +3884,7 @@ export const UserMenu: React.FC = () => {
                                     {option.label}
                                   </span>
                                   {animeDataSourceBackup === option.value && (
-                                    <Check className='w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 ml-2' />
+                                    <Check className='w-4 h-4 text-ui-accent flex-shrink-0 ml-2' />
                                   )}
                                 </button>
                               ))}
@@ -3804,7 +3902,7 @@ export const UserMenu: React.FC = () => {
                         </label>
                         <input
                           type='text'
-                          className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
+                          className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
                           placeholder='例如: https://api.bgm.tv 或 https://bangumi-proxy.example.com'
                           value={animeCustomBaseUrl}
                           onChange={(e) =>
@@ -3825,7 +3923,7 @@ export const UserMenu: React.FC = () => {
                       </label>
                       <input
                         type='text'
-                        className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
+                        className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
                         placeholder='例如: https://proxy.example.com'
                         value={animeImageBaseUrl}
                         onChange={(e) =>
@@ -3838,7 +3936,7 @@ export const UserMenu: React.FC = () => {
                       </p>
                     </div>
 
-                    <details className='group rounded-lg border border-green-200 bg-green-50/60 p-3 dark:border-green-900/50 dark:bg-green-900/10'>
+                    <details className='group rounded-lg border border-ui-accent bg-ui-accent-soft p-3'>
                       <summary className='flex cursor-pointer list-none items-center justify-between gap-2'>
                         <div className='min-w-0'>
                           <label className='text-xs font-medium text-gray-700 dark:text-gray-300'>
@@ -3858,12 +3956,12 @@ export const UserMenu: React.FC = () => {
                               handleCopyBangumiProxyScript();
                             }}
                             disabled={!bangumiProxyScript}
-                            className='inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50'
+                            className='inline-flex items-center gap-1.5 rounded-lg bg-ui-accent px-3 py-2 text-xs font-semibold text-white transition hover:bg-ui-accent disabled:cursor-not-allowed disabled:opacity-50'
                           >
                             <Copy className='h-3.5 w-3.5' />
                             {bangumiProxyScriptCopied ? '已复制' : '复制脚本'}
                           </button>
-                          <ChevronDown className='h-4 w-4 text-green-600 transition-transform group-open:rotate-180 dark:text-green-400' />
+                          <ChevronDown className='h-4 w-4 text-ui-accent transition-transform group-open:rotate-180' />
                         </div>
                       </summary>
                       <pre className='mt-3 max-h-40 overflow-auto rounded-lg border border-gray-200 bg-white p-3 text-xs text-gray-700 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-300'>
@@ -3916,7 +4014,7 @@ export const UserMenu: React.FC = () => {
                             handleAggregateToggle(e.target.checked)
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors dark:bg-gray-600'></div>
+                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
                         <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
@@ -3942,7 +4040,7 @@ export const UserMenu: React.FC = () => {
                             handleOptimizationToggle(e.target.checked)
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors dark:bg-gray-600'></div>
+                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
                         <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
@@ -3957,7 +4055,7 @@ export const UserMenu: React.FC = () => {
                             优选策略
                             <button
                               type='button'
-                              className='group relative inline-flex h-4 w-4 items-center justify-center rounded-full text-gray-400 transition-colors hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500/50 dark:text-gray-500 dark:hover:text-gray-300'
+                              className='group relative inline-flex h-4 w-4 items-center justify-center rounded-full text-gray-400 transition-colors hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-ui-accent dark:text-gray-500 dark:hover:text-gray-300'
                               aria-label='优选策略说明'
                             >
                               <CircleHelp className='h-3.5 w-3.5' />
@@ -3974,7 +4072,7 @@ export const UserMenu: React.FC = () => {
                               onClick={() => handlePreferStrategyChange('fast')}
                               className={`rounded-md px-4 py-1.5 text-xs font-medium transition-all ${
                                 preferStrategy === 'fast'
-                                  ? 'bg-white text-green-600 shadow-sm dark:bg-gray-700 dark:text-green-400'
+                                  ? 'bg-white text-ui-accent shadow-sm dark:bg-gray-700'
                                   : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
                               }`}
                             >
@@ -3985,7 +4083,7 @@ export const UserMenu: React.FC = () => {
                               onClick={() => handlePreferStrategyChange('full')}
                               className={`rounded-md px-4 py-1.5 text-xs font-medium transition-all ${
                                 preferStrategy === 'full'
-                                  ? 'bg-white text-green-600 shadow-sm dark:bg-gray-700 dark:text-green-400'
+                                  ? 'bg-white text-ui-accent shadow-sm dark:bg-gray-700'
                                   : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
                               }`}
                             >
@@ -4001,7 +4099,7 @@ export const UserMenu: React.FC = () => {
                             优选偏好
                             <button
                               type='button'
-                              className='group relative inline-flex h-4 w-4 items-center justify-center rounded-full text-gray-400 transition-colors hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500/50 dark:text-gray-500 dark:hover:text-gray-300'
+                              className='group relative inline-flex h-4 w-4 items-center justify-center rounded-full text-gray-400 transition-colors hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-ui-accent dark:text-gray-500 dark:hover:text-gray-300'
                               aria-label='优选偏好说明'
                             >
                               <CircleHelp className='h-3.5 w-3.5' />
@@ -4020,7 +4118,7 @@ export const UserMenu: React.FC = () => {
                               onClick={() => handlePreferModeChange('balanced')}
                               className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-all sm:flex-none ${
                                 preferMode === 'balanced'
-                                  ? 'bg-white text-green-600 shadow-sm dark:bg-gray-700 dark:text-green-400'
+                                  ? 'bg-white text-ui-accent shadow-sm dark:bg-gray-700'
                                   : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
                               }`}
                             >
@@ -4033,7 +4131,7 @@ export const UserMenu: React.FC = () => {
                               }
                               className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-all sm:flex-none ${
                                 preferMode === 'resolution'
-                                  ? 'bg-white text-green-600 shadow-sm dark:bg-gray-700 dark:text-green-400'
+                                  ? 'bg-white text-ui-accent shadow-sm dark:bg-gray-700'
                                   : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
                               }`}
                             >
@@ -4044,7 +4142,7 @@ export const UserMenu: React.FC = () => {
                               onClick={() => handlePreferModeChange('speed')}
                               className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-all sm:flex-none ${
                                 preferMode === 'speed'
-                                  ? 'bg-white text-green-600 shadow-sm dark:bg-gray-700 dark:text-green-400'
+                                  ? 'bg-white text-ui-accent shadow-sm dark:bg-gray-700'
                                   : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
                               }`}
                             >
@@ -4072,13 +4170,13 @@ export const UserMenu: React.FC = () => {
                           onChange={(e) =>
                             handleSpeedTestTimeoutChange(Number(e.target.value))
                           }
-                          className='flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700'
+                          className='mtv-range'
                           style={{
-                            background: `linear-gradient(to right, #10b981 0%, #10b981 ${
+                            background: `linear-gradient(to right, var(--ui-accent) 0%, var(--ui-accent) ${
                               ((speedTestTimeout - 4000) / (30000 - 4000)) * 100
-                            }%, #e5e7eb ${
+                            }%, var(--ui-surface-3) ${
                               ((speedTestTimeout - 4000) / (30000 - 4000)) * 100
-                            }%, #e5e7eb 100%)`,
+                            }%, var(--ui-surface-3) 100%)`,
                           }}
                         />
                       </div>
@@ -4087,7 +4185,7 @@ export const UserMenu: React.FC = () => {
                           onClick={() => handleSpeedTestTimeoutChange(4000)}
                           className={`px-2 py-0.5 rounded ${
                             speedTestTimeout === 4000
-                              ? 'bg-green-500 text-white'
+                              ? 'bg-ui-accent text-white'
                               : 'hover:bg-gray-200 dark:hover:bg-gray-700'
                           }`}
                         >
@@ -4097,7 +4195,7 @@ export const UserMenu: React.FC = () => {
                           onClick={() => handleSpeedTestTimeoutChange(10000)}
                           className={`px-2 py-0.5 rounded ${
                             speedTestTimeout === 10000
-                              ? 'bg-green-500 text-white'
+                              ? 'bg-ui-accent text-white'
                               : 'hover:bg-gray-200 dark:hover:bg-gray-700'
                           }`}
                         >
@@ -4107,7 +4205,7 @@ export const UserMenu: React.FC = () => {
                           onClick={() => handleSpeedTestTimeoutChange(20000)}
                           className={`px-2 py-0.5 rounded ${
                             speedTestTimeout === 20000
-                              ? 'bg-green-500 text-white'
+                              ? 'bg-ui-accent text-white'
                               : 'hover:bg-gray-200 dark:hover:bg-gray-700'
                           }`}
                         >
@@ -4117,7 +4215,7 @@ export const UserMenu: React.FC = () => {
                           onClick={() => handleSpeedTestTimeoutChange(30000)}
                           className={`px-2 py-0.5 rounded ${
                             speedTestTimeout === 30000
-                              ? 'bg-green-500 text-white'
+                              ? 'bg-ui-accent text-white'
                               : 'hover:bg-gray-200 dark:hover:bg-gray-700'
                           }`}
                         >
@@ -4150,7 +4248,7 @@ export const UserMenu: React.FC = () => {
                             handleFluidSearchToggle(e.target.checked)
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors dark:bg-gray-600'></div>
+                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
                         <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
@@ -4176,7 +4274,7 @@ export const UserMenu: React.FC = () => {
                             handleTmdbBackdropDisabledToggle(e.target.checked)
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors dark:bg-gray-600'></div>
+                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
                         <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
@@ -4202,7 +4300,7 @@ export const UserMenu: React.FC = () => {
                             handleEnableTrailersToggle(e.target.checked)
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors dark:bg-gray-600'></div>
+                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
                         <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
@@ -4230,7 +4328,7 @@ export const UserMenu: React.FC = () => {
                             )
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors dark:bg-gray-600'></div>
+                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
                         <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
@@ -4256,7 +4354,7 @@ export const UserMenu: React.FC = () => {
                             handleExactSearchToggle(e.target.checked)
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors dark:bg-gray-600'></div>
+                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
                         <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
@@ -4282,7 +4380,7 @@ export const UserMenu: React.FC = () => {
                             handleSaveLivePlayRecordsToggle(e.target.checked)
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors dark:bg-gray-600'></div>
+                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
                         <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
@@ -4342,13 +4440,13 @@ export const UserMenu: React.FC = () => {
                             Number(e.target.value)
                           )
                         }
-                        className='flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700'
+                        className='mtv-range'
                         style={{
-                          background: `linear-gradient(to right, #10b981 0%, #10b981 ${
+                          background: `linear-gradient(to right, var(--ui-accent) 0%, var(--ui-accent) ${
                             ((maxConcurrentDownloads - 1) / (10 - 1)) * 100
-                          }%, #e5e7eb ${
+                          }%, var(--ui-surface-3) ${
                             ((maxConcurrentDownloads - 1) / (10 - 1)) * 100
-                          }%, #e5e7eb 100%)`,
+                          }%, var(--ui-surface-3) 100%)`,
                         }}
                       />
                     </div>
@@ -4357,7 +4455,7 @@ export const UserMenu: React.FC = () => {
                         onClick={() => handleMaxConcurrentDownloadsChange(1)}
                         className={`px-2 py-0.5 rounded ${
                           maxConcurrentDownloads === 1
-                            ? 'bg-green-500 text-white'
+                            ? 'bg-ui-accent text-white'
                             : 'hover:bg-gray-200 dark:hover:bg-gray-700'
                         }`}
                       >
@@ -4367,7 +4465,7 @@ export const UserMenu: React.FC = () => {
                         onClick={() => handleMaxConcurrentDownloadsChange(10)}
                         className={`px-2 py-0.5 rounded ${
                           maxConcurrentDownloads === 10
-                            ? 'bg-green-500 text-white'
+                            ? 'bg-ui-accent text-white'
                             : 'hover:bg-gray-200 dark:hover:bg-gray-700'
                         }`}
                       >
@@ -4406,13 +4504,13 @@ export const UserMenu: React.FC = () => {
                             Number(e.target.value)
                           )
                         }
-                        className='flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700'
+                        className='mtv-range'
                         style={{
-                          background: `linear-gradient(to right, #10b981 0%, #10b981 ${
+                          background: `linear-gradient(to right, var(--ui-accent) 0%, var(--ui-accent) ${
                             ((downloadThreadsPerTask - 1) / (32 - 1)) * 100
-                          }%, #e5e7eb ${
+                          }%, var(--ui-surface-3) ${
                             ((downloadThreadsPerTask - 1) / (32 - 1)) * 100
-                          }%, #e5e7eb 100%)`,
+                          }%, var(--ui-surface-3) 100%)`,
                         }}
                       />
                     </div>
@@ -4421,7 +4519,7 @@ export const UserMenu: React.FC = () => {
                         onClick={() => handleDownloadThreadsPerTaskChange(1)}
                         className={`px-2 py-0.5 rounded ${
                           downloadThreadsPerTask === 1
-                            ? 'bg-green-500 text-white'
+                            ? 'bg-ui-accent text-white'
                             : 'hover:bg-gray-200 dark:hover:bg-gray-700'
                         }`}
                       >
@@ -4431,7 +4529,7 @@ export const UserMenu: React.FC = () => {
                         onClick={() => handleDownloadThreadsPerTaskChange(32)}
                         className={`px-2 py-0.5 rounded ${
                           downloadThreadsPerTask === 32
-                            ? 'bg-green-500 text-white'
+                            ? 'bg-ui-accent text-white'
                             : 'hover:bg-gray-200 dark:hover:bg-gray-700'
                         }`}
                       >
@@ -4470,13 +4568,13 @@ export const UserMenu: React.FC = () => {
                             Number(e.target.value)
                           )
                         }
-                        className='flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700'
+                        className='mtv-range'
                         style={{
-                          background: `linear-gradient(to right, #10b981 0%, #10b981 ${
+                          background: `linear-gradient(to right, var(--ui-accent) 0%, var(--ui-accent) ${
                             ((downloadSegmentTimeout - 30000) / (300000 - 30000)) * 100
-                          }%, #e5e7eb ${
+                          }%, var(--ui-surface-3) ${
                             ((downloadSegmentTimeout - 30000) / (300000 - 30000)) * 100
-                          }%, #e5e7eb 100%)`,
+                          }%, var(--ui-surface-3) 100%)`,
                         }}
                       />
                     </div>
@@ -4485,7 +4583,7 @@ export const UserMenu: React.FC = () => {
                         onClick={() => handleDownloadSegmentTimeoutChange(30000)}
                         className={`px-2 py-0.5 rounded cursor-pointer ${
                           downloadSegmentTimeout === 30000
-                            ? 'bg-green-500 text-white'
+                            ? 'bg-ui-accent text-white'
                             : 'hover:bg-gray-200 dark:hover:bg-gray-700'
                         }`}
                       >
@@ -4495,7 +4593,7 @@ export const UserMenu: React.FC = () => {
                         onClick={() => handleDownloadSegmentTimeoutChange(120000)}
                         className={`px-2 py-0.5 rounded cursor-pointer ${
                           downloadSegmentTimeout === 120000
-                            ? 'bg-green-500 text-white'
+                            ? 'bg-ui-accent text-white'
                             : 'hover:bg-gray-200 dark:hover:bg-gray-700'
                         }`}
                       >
@@ -4505,7 +4603,7 @@ export const UserMenu: React.FC = () => {
                         onClick={() => handleDownloadSegmentTimeoutChange(300000)}
                         className={`px-2 py-0.5 rounded cursor-pointer ${
                           downloadSegmentTimeout === 300000
-                            ? 'bg-green-500 text-white'
+                            ? 'bg-ui-accent text-white'
                             : 'hover:bg-gray-200 dark:hover:bg-gray-700'
                         }`}
                       >
@@ -4529,7 +4627,7 @@ export const UserMenu: React.FC = () => {
                           value='browser'
                           checked={downloadMode === 'browser'}
                           onChange={() => handleDownloadModeChange('browser')}
-                          className='w-4 h-4 text-green-500'
+                          className='w-4 h-4 text-ui-accent'
                         />
                         <span className='text-sm text-gray-700 dark:text-gray-300'>
                           浏览器下载（合并为单文件）
@@ -4544,7 +4642,7 @@ export const UserMenu: React.FC = () => {
                           onChange={() =>
                             handleDownloadModeChange('filesystem')
                           }
-                          className='w-4 h-4 text-green-500'
+                          className='w-4 h-4 text-ui-accent'
                         />
                         <span className='text-sm text-gray-700 dark:text-gray-300'>
                           File System API（保存分片到本地目录）
@@ -4559,7 +4657,7 @@ export const UserMenu: React.FC = () => {
                           onChange={() =>
                             handleDownloadModeChange('indexeddb')
                           }
-                          className='mt-0.5 w-4 h-4 text-green-500'
+                          className='mt-0.5 w-4 h-4 text-ui-accent'
                         />
                         <span className='text-sm text-gray-700 dark:text-gray-300'>
                           IndexedDB 缓存（应用内离线播放）
@@ -4583,7 +4681,7 @@ export const UserMenu: React.FC = () => {
                           />
                           <button
                             onClick={handleSelectSavePath}
-                            className='px-4 py-2 text-sm bg-green-500 text-white rounded hover:bg-green-600 transition-colors'
+                            className='px-4 py-2 text-sm bg-ui-accent text-white rounded hover:bg-ui-accent transition-colors'
                           >
                             选择目录
                           </button>
@@ -4660,7 +4758,7 @@ export const UserMenu: React.FC = () => {
                             getBufferStrategyFromSlider(sliderValue);
                           handleBufferStrategyChange(strategy);
                         }}
-                        className='w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-green-500'
+                        className='w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-ui-accent'
                         style={{
                           background: `linear-gradient(to right, rgb(34 197 94) 0%, rgb(34 197 94) ${
                             (getSliderValueFromStrategy(bufferStrategy) / 3) *
@@ -4677,7 +4775,7 @@ export const UserMenu: React.FC = () => {
                         <span
                           className={
                             bufferStrategy === 'low'
-                              ? 'font-semibold text-green-600 dark:text-green-400'
+                              ? 'font-semibold text-ui-accent'
                               : ''
                           }
                         >
@@ -4686,7 +4784,7 @@ export const UserMenu: React.FC = () => {
                         <span
                           className={
                             bufferStrategy === 'medium'
-                              ? 'font-semibold text-green-600 dark:text-green-400'
+                              ? 'font-semibold text-ui-accent'
                               : ''
                           }
                         >
@@ -4695,7 +4793,7 @@ export const UserMenu: React.FC = () => {
                         <span
                           className={
                             bufferStrategy === 'high'
-                              ? 'font-semibold text-green-600 dark:text-green-400'
+                              ? 'font-semibold text-ui-accent'
                               : ''
                           }
                         >
@@ -4704,7 +4802,7 @@ export const UserMenu: React.FC = () => {
                         <span
                           className={
                             bufferStrategy === 'ultra'
-                              ? 'font-semibold text-green-600 dark:text-green-400'
+                              ? 'font-semibold text-ui-accent'
                               : ''
                           }
                         >
@@ -4743,7 +4841,7 @@ export const UserMenu: React.FC = () => {
                             handleNextEpisodePreCacheToggle(e.target.checked)
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors dark:bg-gray-600'></div>
+                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
                         <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
@@ -4771,7 +4869,7 @@ export const UserMenu: React.FC = () => {
                             )
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors dark:bg-gray-600'></div>
+                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
                         <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
@@ -4799,7 +4897,7 @@ export const UserMenu: React.FC = () => {
                             )
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors dark:bg-gray-600'></div>
+                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
                         <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
@@ -4848,7 +4946,7 @@ export const UserMenu: React.FC = () => {
                             handleDisableAutoLoadDanmakuToggle(e.target.checked)
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors dark:bg-gray-600'></div>
+                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
                         <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
@@ -4876,7 +4974,7 @@ export const UserMenu: React.FC = () => {
                             )
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors dark:bg-gray-600'></div>
+                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
                         <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
@@ -4902,7 +5000,7 @@ export const UserMenu: React.FC = () => {
                             handleDanmakuHeatmapDisabledToggle(e.target.checked)
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors dark:bg-gray-600'></div>
+                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
                         <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
@@ -4930,7 +5028,7 @@ export const UserMenu: React.FC = () => {
                             )
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors dark:bg-gray-600'></div>
+                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
                         <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
@@ -4958,13 +5056,13 @@ export const UserMenu: React.FC = () => {
                         onChange={(e) =>
                           handleDanmakuMaxCountChange(parseInt(e.target.value))
                         }
-                        className='flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700'
+                        className='mtv-range'
                         style={{
-                          background: `linear-gradient(to right, #10b981 0%, #10b981 ${
+                          background: `linear-gradient(to right, var(--ui-accent) 0%, var(--ui-accent) ${
                             (danmakuMaxCount / 10000) * 100
-                          }%, #e5e7eb ${
+                          }%, var(--ui-surface-3) ${
                             (danmakuMaxCount / 10000) * 100
-                          }%, #e5e7eb 100%)`,
+                          }%, var(--ui-surface-3) 100%)`,
                         }}
                       />
                     </div>
@@ -4976,7 +5074,7 @@ export const UserMenu: React.FC = () => {
                         onClick={() => handleDanmakuMaxCountChange(0)}
                         className={`absolute px-2 py-0.5 rounded ${
                           danmakuMaxCount === 0
-                            ? 'bg-green-500 text-white'
+                            ? 'bg-ui-accent text-white'
                             : 'hover:bg-gray-200 dark:hover:bg-gray-700'
                         }`}
                         style={{ left: '0%', transform: 'translateX(0%)' }}
@@ -4987,7 +5085,7 @@ export const UserMenu: React.FC = () => {
                         onClick={() => handleDanmakuMaxCountChange(3000)}
                         className={`absolute px-2 py-0.5 rounded ${
                           danmakuMaxCount === 3000
-                            ? 'bg-green-500 text-white'
+                            ? 'bg-ui-accent text-white'
                             : 'hover:bg-gray-200 dark:hover:bg-gray-700'
                         }`}
                         style={{ left: '30%', transform: 'translateX(-50%)' }}
@@ -4998,7 +5096,7 @@ export const UserMenu: React.FC = () => {
                         onClick={() => handleDanmakuMaxCountChange(5000)}
                         className={`absolute px-2 py-0.5 rounded ${
                           danmakuMaxCount === 5000
-                            ? 'bg-green-500 text-white'
+                            ? 'bg-ui-accent text-white'
                             : 'hover:bg-gray-200 dark:hover:bg-gray-700'
                         }`}
                         style={{ left: '50%', transform: 'translateX(-50%)' }}
@@ -5009,7 +5107,7 @@ export const UserMenu: React.FC = () => {
                         onClick={() => handleDanmakuMaxCountChange(10000)}
                         className={`absolute px-2 py-0.5 rounded ${
                           danmakuMaxCount === 10000
-                            ? 'bg-green-500 text-white'
+                            ? 'bg-ui-accent text-white'
                             : 'hover:bg-gray-200 dark:hover:bg-gray-700'
                         }`}
                         style={{ left: '100%', transform: 'translateX(-100%)' }}
@@ -5070,7 +5168,7 @@ export const UserMenu: React.FC = () => {
                       <div
                         className={`text-sm p-3 rounded-lg border ${
                           clearCacheMessage.includes('成功')
-                            ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-300'
+                            ? 'bg-ui-accent-soft border-ui-accent text-ui-accent'
                             : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300'
                         }`}
                       >
@@ -5173,7 +5271,7 @@ export const UserMenu: React.FC = () => {
                         title={homeBannerEnabled ? '点击隐藏' : '点击显示'}
                       >
                         {homeBannerEnabled ? (
-                          <Eye className='w-5 h-5 text-green-600 dark:text-green-400' />
+                          <Eye className='w-5 h-5 text-ui-success' />
                         ) : (
                           <EyeOff className='w-5 h-5 text-gray-400 dark:text-gray-500' />
                         )}
@@ -5204,7 +5302,7 @@ export const UserMenu: React.FC = () => {
                         }
                       >
                         {homeContinueWatchingEnabled ? (
-                          <Eye className='w-5 h-5 text-green-600 dark:text-green-400' />
+                          <Eye className='w-5 h-5 text-ui-success' />
                         ) : (
                           <EyeOff className='w-5 h-5 text-gray-400 dark:text-gray-500' />
                         )}
@@ -5238,7 +5336,7 @@ export const UserMenu: React.FC = () => {
                             title={module.enabled ? '点击隐藏' : '点击显示'}
                           >
                             {module.enabled ? (
-                              <Eye className='w-5 h-5 text-green-600 dark:text-green-400' />
+                              <Eye className='w-5 h-5 text-ui-success' />
                             ) : (
                               <EyeOff className='w-5 h-5 text-gray-400 dark:text-gray-500' />
                             )}
@@ -5281,24 +5379,21 @@ export const UserMenu: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* 恢复默认按钮 */}
+                  {/* 恢复默认按钮：回到站点默认，同时清掉本机覆盖 */}
                   <button
                     onClick={() => {
-                      setHomeModules(defaultHomeModules);
+                      setHomeModules(siteDefaultModules());
                       setHomeBannerEnabled(true);
                       setHomeBannerHeightScale('1');
-                      setHomeContinueWatchingEnabled(true);
+                      setHomeContinueWatchingEnabled(
+                        (window as any).RUNTIME_CONFIG
+                          ?.HOME_CONTINUE_WATCHING !== false
+                      );
                       if (typeof window !== 'undefined') {
-                        localStorage.setItem(
-                          'homeModules',
-                          JSON.stringify(defaultHomeModules)
-                        );
+                        localStorage.removeItem('homeModules');
+                        localStorage.removeItem('homeContinueWatchingEnabled');
                         localStorage.setItem('homeBannerEnabled', 'true');
                         localStorage.setItem('homeBannerHeightScale', '1');
-                        localStorage.setItem(
-                          'homeContinueWatchingEnabled',
-                          'true'
-                        );
                         window.dispatchEvent(
                           new CustomEvent('homeModulesUpdated')
                         );
@@ -5409,7 +5504,7 @@ export const UserMenu: React.FC = () => {
           {/* 标题栏 */}
           <div className='mb-6 flex items-start justify-between gap-4'>
             <div>
-              <div className='inline-flex items-center gap-2 rounded-full bg-green-500/10 px-3 py-1 text-xs font-bold text-green-600 dark:text-green-400'>
+              <div className='inline-flex items-center gap-2 rounded-full bg-ui-accent-soft px-3 py-1 text-xs font-bold text-ui-accent'>
                 <Monitor className='h-4 w-4' />
                 TV ACCESS
               </div>
@@ -5419,7 +5514,7 @@ export const UserMenu: React.FC = () => {
             </div>
             <button
               onClick={handleCloseSubscribe}
-              className='flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 dark:hover:bg-white/10 dark:hover:text-white'
+              className='flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-accent dark:hover:bg-white/10 dark:hover:text-white'
               aria-label='Close'
             >
               <X className='h-5 w-5' />
@@ -5442,7 +5537,7 @@ export const UserMenu: React.FC = () => {
                     setTvAccessTab(item.key);
                     if (item.key !== 'web') closeTvQrScanner();
                   }}
-                  className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm font-black transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500/70 ${
+                  className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm font-black transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-accent ${
                     active
                       ? 'bg-white text-slate-950 shadow-sm dark:bg-slate-950 dark:text-white'
                       : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
@@ -5460,7 +5555,7 @@ export const UserMenu: React.FC = () => {
             <section className='rounded-2xl border border-slate-200 bg-slate-50 p-5 dark:border-white/10 dark:bg-white/[0.04]'>
               <div className='flex items-center justify-between gap-3'>
                 <div className='flex items-center gap-3'>
-                  <div className='flex h-11 w-11 items-center justify-center rounded-2xl bg-green-500 text-white shadow-lg shadow-green-500/25'>
+                  <div className='flex h-11 w-11 items-center justify-center rounded-2xl bg-ui-accent text-white shadow-lg shadow-ui-accent'>
                     <Rss className='h-5 w-5' />
                   </div>
                   <div>
@@ -5475,7 +5570,7 @@ export const UserMenu: React.FC = () => {
                 <span
                   className={`rounded-full px-2.5 py-1 text-xs font-bold ${
                     subscribeEnabled
-                      ? 'bg-green-500/10 text-green-600 dark:text-green-400'
+                      ? 'bg-ui-accent-soft text-ui-accent'
                       : 'bg-slate-200 text-slate-500 dark:bg-white/10 dark:text-slate-400'
                   }`}
                 >
@@ -5499,13 +5594,13 @@ export const UserMenu: React.FC = () => {
                     <button
                       type='button'
                       onClick={() => setSubscribeAdFilterEnabled((prev) => !prev)}
-                      className='flex w-full cursor-pointer items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-green-400 dark:border-white/10 dark:bg-slate-900/70'
+                      className='flex w-full cursor-pointer items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-ui-accent dark:border-white/10 dark:bg-slate-900/70'
                     >
                       <div>
                         <div className='text-sm font-bold text-slate-800 dark:text-slate-200'>去广告</div>
                         <div className='mt-1 text-xs text-slate-500 dark:text-slate-400'>开启后通过代理处理播放链接</div>
                       </div>
-                      <span className={`h-5 w-9 rounded-full p-0.5 transition ${subscribeAdFilterEnabled ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-700'}`}>
+                      <span className={`h-5 w-9 rounded-full p-0.5 transition ${subscribeAdFilterEnabled ? 'bg-ui-accent' : 'bg-slate-300 dark:bg-slate-700'}`}>
                         <span className={`block h-4 w-4 rounded-full bg-white transition ${subscribeAdFilterEnabled ? 'translate-x-4' : ''}`} />
                       </span>
                     </button>
@@ -5531,13 +5626,13 @@ export const UserMenu: React.FC = () => {
                     <div className='flex gap-2'>
                       <input
                         type='text'
-                        className='min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-green-500 dark:border-white/10 dark:bg-slate-900 dark:text-slate-200'
+                        className='min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-ui-accent dark:border-white/10 dark:bg-slate-900 dark:text-slate-200'
                         value={subscribeUrl}
                         readOnly
                       />
                       <button
                         onClick={handleCopySubscribeUrl}
-                        className='inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-black text-white transition hover:bg-green-700'
+                        className='inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-ui-accent px-4 py-2.5 text-sm font-black text-white transition hover:bg-ui-accent'
                       >
                         <Copy className='h-4 w-4' />
                         {copySuccess ? '已复制' : '复制'}
@@ -5740,7 +5835,7 @@ export const UserMenu: React.FC = () => {
               </label>
               <input
                 type='password'
-                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400'
+                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-transparent transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400'
                 placeholder='请输入新密码'
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
@@ -5755,7 +5850,7 @@ export const UserMenu: React.FC = () => {
               </label>
               <input
                 type='password'
-                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400'
+                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-transparent transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400'
                 placeholder='请再次输入新密码'
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -5782,7 +5877,7 @@ export const UserMenu: React.FC = () => {
             </button>
             <button
               onClick={handleSubmitChangePassword}
-              className='flex-1 px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+              className='flex-1 px-4 py-2 text-sm font-medium text-white bg-ui-accent hover:bg-ui-accent rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
               disabled={passwordLoading || !newPassword || !confirmPassword}
             >
               {passwordLoading ? '修改中...' : '确认修改'}
@@ -5998,7 +6093,7 @@ export const UserMenu: React.FC = () => {
                         href='https://github.com/mtvpls/Selene-Build/releases'
                         target='_blank'
                         rel='noopener noreferrer'
-                        className='inline-flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition-colors'
+                        className='inline-flex items-center gap-2 px-4 py-2 bg-ui-accent hover:bg-ui-accent text-white text-sm font-medium rounded-lg transition-colors'
                       >
                         <Download className='w-4 h-4' />
                         下载
@@ -6126,11 +6221,18 @@ export const UserMenu: React.FC = () => {
     <>
       <div className='relative'>
         <button
+          ref={triggerRef}
+          type='button'
           onClick={handleMenuClick}
-          className='w-10 h-10 p-2 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-200/50 dark:text-gray-300 dark:hover:bg-gray-700/50 transition-colors'
-          aria-label='User Menu'
+          className={
+            className ||
+            'flex h-10 w-10 items-center justify-center rounded-full p-2 text-ui-ink-2 transition-colors hover:bg-ui-surface-3 hover:text-ui-ink'
+          }
+          aria-label='用户菜单'
+          aria-haspopup='menu'
+          aria-expanded={isOpen}
         >
-          <User className='w-full h-full' />
+          <User className='h-full w-full' />
         </button>
         {/* 版本更新红点 */}
         {updateStatus === UpdateStatus.HAS_UPDATE && (

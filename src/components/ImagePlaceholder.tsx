@@ -11,7 +11,7 @@ const ImagePlaceholder = ({
   className?: string;
 }) => (
   <div
-    className={cn('w-full rounded-lg', aspectRatio, className)}
+    className={cn('w-full rounded-ui-md', aspectRatio, className)}
     style={{
       background:
         'linear-gradient(90deg, var(--skeleton-color) 25%, var(--skeleton-highlight) 50%, var(--skeleton-color) 75%)',

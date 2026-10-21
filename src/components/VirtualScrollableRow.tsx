@@ -81,12 +81,12 @@ export default function VirtualScrollableRow({
   const visibleChildren = children.slice(visibleRange.start, visibleRange.end);
 
   return (
-    <div className="relative group">
+    <div className="relative group/row">
       {/* 左侧滚动按钮 */}
       {showLeftScroll && (
         <button
           onClick={scrollLeft}
-          className="absolute left-0 top-1/2 -translate-y-1/2 z-[600] bg-white/90 dark:bg-gray-800/90 p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white dark:hover:bg-gray-700"
+          className="absolute left-0 top-1/2 -translate-y-1/2 z-[600] bg-white/90 dark:bg-gray-800/90 p-2 rounded-full shadow-lg opacity-0 group-hover/row:opacity-100 transition-opacity hover:bg-white dark:hover:bg-gray-700"
           aria-label="向左滚动"
         >
           <ChevronLeft className="w-6 h-6 text-gray-700 dark:text-gray-200" />
@@ -117,7 +117,7 @@ export default function VirtualScrollableRow({
       {showRightScroll && (
         <button
           onClick={scrollRight}
-          className="absolute right-0 top-1/2 -translate-y-1/2 z-[600] bg-white/90 dark:bg-gray-800/90 p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white dark:hover:bg-gray-700"
+          className="absolute right-0 top-1/2 -translate-y-1/2 z-[600] bg-white/90 dark:bg-gray-800/90 p-2 rounded-full shadow-lg opacity-0 group-hover/row:opacity-100 transition-opacity hover:bg-white dark:hover:bg-gray-700"
           aria-label="向右滚动"
         >
           <ChevronRight className="w-6 h-6 text-gray-700 dark:text-gray-200" />

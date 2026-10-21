@@ -1,5 +1,6 @@
 'use client';
 
+
 import { useCallback,useEffect, useState } from 'react';
 
 import { useEnableComments } from '@/hooks/useEnableComments';
@@ -21,16 +22,23 @@ interface Recommendation {
   poster: string;
   rating: string;
   mediaType?: 'movie' | 'tv';
+  /** 年份，来自 release_date / first_air_date */
+  year?: string;
+  /** 类型名，已按 genre_ids 翻好并拼成一行 */
+  genres?: string;
 }
 
 interface SmartRecommendationsProps {
   doubanId?: number;
   videoTitle: string;
+  /** rail：右栏竖排紧凑网格，给播放页详情区用；row：默认的横向滚动行 */
+  variant?: 'row' | 'rail';
 }
 
 export default function SmartRecommendations({
   doubanId,
   videoTitle,
+  variant = 'row',
 }: SmartRecommendationsProps) {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(false);
@@ -202,7 +210,7 @@ export default function SmartRecommendations({
   if (loading && recommendations.length === 0) {
     return (
       <div className='flex justify-center items-center py-8'>
-        <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-green-500'></div>
+        <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-ui-accent'></div>
       </div>
     );
   }
@@ -212,40 +220,52 @@ export default function SmartRecommendations({
     return null;
   }
 
-  return (
-    <div className='mt-6 -mx-3 md:mx-0 md:px-4'>
-      <div className='bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden'>
-        {/* 标题 */}
-        <div className='px-3 md:px-6 py-4 border-b border-gray-200 dark:border-gray-700'>
-          <h3 className='text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2'>
-            <svg className='w-5 h-5' fill='currentColor' viewBox='0 0 24 24'>
-              <path d='M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z'/>
-            </svg>
-            更多推荐
-          </h3>
-        </div>
 
-        {/* 推荐内容 */}
-        <div className='px-3 pt-3 md:px-6 md:pt-6'>
-          <ScrollableRow scrollDistance={600} bottomPadding='pb-2'>
-            {recommendations.map((rec, index) => (
-              <div
-                key={rec.doubanId || rec.tmdbId || index}
-                className='min-w-[96px] w-24 sm:min-w-[140px] sm:w-[140px]'
-              >
-                <VideoCard
-                  title={rec.title}
-                  poster={rec.poster}
-                  rate={rec.rating}
-                  douban_id={rec.doubanId ? parseInt(rec.doubanId) : undefined}
-                  tmdb_id={rec.tmdbId}
-                  from={rec.doubanId ? 'douban' : 'tmdb'}
-                />
-              </div>
-            ))}
-          </ScrollableRow>
+  // 右栏：横向滚动行在 320px 宽的栏里放不下两张卡，换成两列紧凑网格。
+  if (variant === 'rail') {
+    return (
+      <div className='mtv-play-card'>
+        <div className='mtv-play-sec'>相关推荐</div>
+        <div className='flex flex-wrap gap-3'>
+          {recommendations.slice(0, 8).map((rec, index) => (
+            <div
+              key={rec.doubanId || rec.tmdbId || index}
+              className='w-[calc(50%-6px)]'
+            >
+              <VideoCard
+                title={rec.title}
+                poster={rec.poster}
+                rate={rec.rating}
+                douban_id={rec.doubanId ? parseInt(rec.doubanId) : undefined}
+                tmdb_id={rec.tmdbId}
+                from={rec.doubanId ? 'douban' : 'tmdb'}
+              />
+            </div>
+          ))}
         </div>
       </div>
+    );
+  }
+  return (
+    <div className='mtv-play-card mtv-play-reclist'>
+      <div className='mtv-play-sec'>更多推荐</div>
+      <ScrollableRow scrollDistance={600} bottomPadding='pb-0'>
+        {recommendations.map((rec, index) => (
+          <div
+            key={rec.doubanId || rec.tmdbId || index}
+            className='min-w-[96px] w-24 sm:min-w-[140px] sm:w-[140px]'
+          >
+            <VideoCard
+              title={rec.title}
+              poster={rec.poster}
+              rate={rec.rating}
+              douban_id={rec.doubanId ? parseInt(rec.doubanId) : undefined}
+              tmdb_id={rec.tmdbId}
+              from={rec.doubanId ? 'douban' : 'tmdb'}
+            />
+          </div>
+        ))}
+      </ScrollableRow>
     </div>
   );
 }

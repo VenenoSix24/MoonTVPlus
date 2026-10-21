@@ -2,6 +2,154 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ==========================================================================
+   语义化设计令牌
+   --------------------------------------------------------------------------
+   浅色是默认值（:root），深色在 .dark 下覆盖。新样式只消费这里的变量，
+   不再散落 bg-white / bg-gray-* 字面量，换肤与改品牌色都只动这一处。
+
+   命名刻意避开 bg-white / bg-gray-* / border-gray / text-gray-* 这几族子串：
+   管理端主题层（/api/theme/css）会对它们做 [class*="..."] !important 覆盖，
+   撞上就会被强行改色。消费令牌的类名同样统一走 ui- / mtv- 前缀。
+   ========================================================================== */
+:root {
+  /* 表面层级：页面底 → 卡片 → 悬浮 → 控件 */
+  --ui-bg: #f5f6f9;
+  --ui-surface: #ffffff;
+  --ui-surface-2: #ffffff;
+  --ui-surface-3: #eef0f4;
+  /* 悬停面：控件 hover 时需要比静息态再深一档，否则 bg 与 hover:bg 会落成同一个色 */
+  --ui-surface-hover: #e2e6ee;
+
+  /* 文本层级 */
+  --ui-ink: #0e1524;
+  --ui-ink-2: #59636f;
+  --ui-ink-3: #8a93a1;
+
+  /* 描边 */
+  --ui-hair: rgba(14, 21, 36, 0.1);
+  --ui-hair-strong: rgba(14, 21, 36, 0.2);
+
+  /* 语义色：和品牌强调色分开。「保存成功 / 在线」这类状态不该跟着品牌色变红 */
+  --ui-success: #16a34a;
+  --ui-success-soft: color-mix(in srgb, var(--ui-success) 12%, transparent);
+  /* 危险操作（删除、清空、解绑）。与管理端的红不同：这里只是语义色，
+     不参与主题替换，软色给 hover 底。 */
+  --ui-danger: #dc2626;
+  --ui-danger-soft: color-mix(in srgb, var(--ui-danger) 12%, transparent);
+
+  /* 提醒类（HTTP 环境限制、配置缺失）。和 danger 分开：这些不是「出错了」，
+     是需要知道但不阻断的事。 */
+  --ui-warn: #b45309;
+  --ui-warn-soft: color-mix(in srgb, #f59e0b 14%, transparent);
+
+  /* 投影 */
+  --ui-elev-1: 0 1px 2px rgba(14, 21, 36, 0.07);
+  --ui-elev-2: 0 10px 28px -12px rgba(14, 21, 36, 0.2);
+  --ui-elev-3: 0 28px 64px -20px rgba(14, 21, 36, 0.3);
+
+  /* 圆角阶梯。档位对齐 Apple HIG 的常用值：控件 8 / 卡片 12 / 面板 16 / 大容器 24。
+     原来只有 6/10/16 三档，且 6px 在文件里定义了两遍，xs 与 md 全站零消费。 */
+  --ui-r-xs: 4px;
+  --ui-r-sm: 8px;
+  --ui-r-md: 12px;
+  --ui-r-lg: 16px;
+  --ui-r-xl: 24px;
+  --ui-r-full: 9999px;
+
+  /* 动效 */
+  --ui-dur-1: 140ms;
+  --ui-dur-2: 260ms;
+  --ui-dur-3: 420ms;
+  --ui-ease: cubic-bezier(0.22, 0.72, 0.24, 1);
+  --ui-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ---- 布局栅格：全站唯一的横向留白与纵向节奏 ---- */
+  --ui-gutter: clamp(16px, 4vw, 56px);
+  --ui-row-gap: clamp(32px, 3.4vw, 56px);
+  --ui-hero-gap: clamp(28px, 3vw, 48px);
+  --ui-header-h: 64px;
+  --ui-nav: color-mix(in srgb, var(--ui-bg) 92%, transparent);
+
+  /* ---- 字号阶梯 ----
+     命名与档位对齐 Apple HIG 的文本样式：
+     LargeTitle 34 / Title1 28 / Title2 22 / Headline 17 / Body 15 /
+     Caption1 12 / Caption2 11。大标题保留 clamp 做流式缩放，小字用定值。 */
+  --ui-fs-display: clamp(2rem, 4.6vw, 4.6rem); /* 32 → 74，Hero 主标题 */
+  --ui-fs-h1: clamp(1.5rem, 2.2vw, 2rem); /* 24 → 32，区块标题 */
+  --ui-fs-h2: 1.125rem; /* 18，行标题（Headline 17 上浮一档做中文可读性） */
+  --ui-fs-body: 0.9375rem; /* 15，正文 / 按钮 */
+  --ui-fs-meta: 0.75rem; /* 12，Caption 1，元信息 */
+  --ui-fs-micro: 0.6875rem; /* 11，Caption 2 */
+  /* 密集角标专用：卡片上的年份 / 集数 / 来源这类压在画面上的小字。
+     原来是 8px / 9px / 10px 三种任意值，8px 基本不可读。 */
+  --ui-fs-nano: 0.625rem; /* 10，比 HIG 下限再低一档，仅用于画面角标 */
+
+  --ui-sp-1: 4px;
+  --ui-sp-2: 8px;
+  --ui-sp-3: 12px;
+  --ui-sp-4: 16px;
+  --ui-sp-5: 24px;
+  --ui-sp-6: 32px;
+  --ui-sp-7: 48px;
+  --ui-sp-8: 64px;
+
+  /* 卡片只有三档尺度：紧凑 / 竖版默认 / 横版宽。
+     原来是 96/100/120/140/180/200 六种，同一视觉位六个尺寸。 */
+  --ui-card-sm: 112px;
+  --ui-card-md: clamp(120px, 11vw, 168px);
+  --ui-card-wide: clamp(180px, 15vw, 240px);
+
+  /* ---- 层级：替代散落的 500 / 600 / 999 / 9999 / 10001 ---- */
+  --ui-z-content: 0;
+  --ui-z-nav: 100;
+  --ui-z-overlay: 200;
+  --ui-z-panel: 300;
+  --ui-z-modal: 400;
+  --ui-z-toast: 500;
+}
+
+.dark {
+  --ui-bg: #000000;
+  --ui-surface: #141414;
+  --ui-surface-2: #1f1f1f;
+  --ui-surface-3: #2a2a2a;
+  --ui-surface-3: #2a2a2a;
+  --ui-surface-hover: #343434;
+  --ui-ink: #ffffff;
+  --ui-ink-2: #b3b3b3;
+  --ui-ink-3: #777777;
+
+  --ui-hair: rgba(255, 255, 255, 0.1);
+  --ui-hair-strong: rgba(255, 255, 255, 0.18);
+
+  /* 语义色：和品牌强调色分开。「保存成功 / 在线」这类状态不该跟着品牌色变红 */
+  --ui-success: #22c55e;
+  --ui-success-soft: color-mix(in srgb, var(--ui-success) 14%, transparent);
+  --ui-danger: #f87171;
+  --ui-danger-soft: color-mix(in srgb, var(--ui-danger) 16%, transparent);
+
+  /* 提醒类（HTTP 环境限制、配置缺失）。和 danger 分开：这些不是「出错了」，
+     是需要知道但不阻断的事。 */
+  --ui-warn: #fbbf24;
+  --ui-warn-soft: color-mix(in srgb, var(--ui-warn) 18%, transparent);
+
+  --ui-elev-1: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --ui-elev-2: 0 10px 28px -10px rgba(0, 0, 0, 0.75);
+  --ui-elev-3: 0 28px 64px -18px rgba(0, 0, 0, 0.88);
+}
+
+:root {
+  /*
+   * 品牌强调色。优先跟随管理端主题色 --theme-primary（内置主题会写它），
+   * 站长没配主题时回落到流媒体红。派生色由 color-mix 算，只需改这一个值。
+   */
+  --ui-accent: var(--theme-primary, #e50914);
+  --ui-accent-ink: #ffffff;
+  --ui-accent-soft: color-mix(in srgb, var(--ui-accent) 16%, transparent);
+  --ui-accent-glow: color-mix(in srgb, var(--ui-accent) 50%, transparent);
+}
+
 /* NProgress 进度条样式 */
 #nprogress {
   pointer-events: none;
@@ -25,7 +173,7 @@
   width: 100px;
   height: 100%;
   box-shadow: 0 0 10px rgba(59, 130, 246, 0.8), 0 0 5px rgba(59, 130, 246, 0.6);
-  opacity: 1.0;
+  opacity: 1;
   transform: rotate(3deg) translate(0px, -4px);
 }
 
@@ -67,18 +215,10 @@ body {
 }
 
 html:not(.dark) body {
-  background: linear-gradient(
-    180deg,
-    #e6f3fb 0%,
-    #eaf3f7 18%,
-    #f7f7f3 38%,
-    #e9ecef 60%,
-    #dbe3ea 80%,
-    #d3dde6 100%
-  );
-  background-attachment: fixed;
+  /* 原来是蓝色玻璃渐变。Hero 底部要融入页面，渐变会让接缝对不上，
+     而且这套渐变和新的中性色令牌也不搭，统一收敛成 --ui-bg。 */
+  background: var(--ui-bg);
 }
-
 /* 自定义滚动条样式 */
 ::-webkit-scrollbar {
   width: 8px;
@@ -218,7 +358,8 @@ div[data-media-provider] video {
     transform: scale(1);
     opacity: 0.6;
   }
-  75%, 100% {
+  75%,
+  100% {
     transform: scale(2);
     opacity: 0;
   }
@@ -226,7 +367,8 @@ div[data-media-provider] video {
 
 /* 水波纹缩放动画 - 第二层 (慢速脉冲) */
 @keyframes pulse-scale {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
     opacity: 0.4;
   }
@@ -238,7 +380,8 @@ div[data-media-provider] video {
 
 /* 主体徽章缩放动画 */
 @keyframes badge-scale {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
   }
   50% {
@@ -247,7 +390,8 @@ div[data-media-provider] video {
 }
 
 @keyframes reader-book-flip {
-  0%, 100% {
+  0%,
+  100% {
     transform: perspective(120px) rotateY(0deg) translateY(0);
   }
   30% {
@@ -271,7 +415,6 @@ div[data-media-provider] video {
   color: #d9924a;
 }
 
-
 /* TV 端遥控器焦点：深色选中 + 放大，而不是细边框 */
 .tv-focusable {
   position: relative;
@@ -281,12 +424,8 @@ div[data-media-provider] video {
   scroll-margin-right: 48px;
   transform-origin: center;
   scale: 1;
-  transition:
-    scale 180ms ease,
-    background-color 180ms ease,
-    color 180ms ease,
-    box-shadow 180ms ease,
-    opacity 180ms ease;
+  transition: scale 180ms ease, background-color 180ms ease, color 180ms ease,
+    box-shadow 180ms ease, opacity 180ms ease;
 }
 
 .tv-focusable:focus,
@@ -296,9 +435,7 @@ div[data-media-provider] video {
   scale: 1.055;
   background-color: rgba(15, 23, 42, 0.96) !important;
   color: #ffffff !important;
-  box-shadow:
-    0 18px 44px rgba(0, 0, 0, 0.68),
-    0 0 26px rgba(225, 29, 72, 0.38) !important;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.68), 0 0 26px rgba(225, 29, 72, 0.38) !important;
   z-index: 30;
 }
 
@@ -317,7 +454,11 @@ div[data-media-provider] video {
   position: absolute;
   inset: -3px;
   border-radius: inherit;
-  background: linear-gradient(135deg, rgba(255,255,255,0.22), rgba(225,29,72,0.28));
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.22),
+    rgba(225, 29, 72, 0.28)
+  );
   opacity: 0.45;
   pointer-events: none;
 }
@@ -332,6 +473,18 @@ div[data-media-provider] video {
   .tv-focusable:focus-visible,
   .tv-focused {
     transition: none;
+  }
+
+  /* Hero 的两处动效：文字块入场、模糊铺底推近。
+     必须整个关掉动画，而不是把时长压到 0——文字块靠 fill-mode: both 把起始帧钉在
+     opacity: 0，压时长会让它停在「即将可见」的那一帧；关掉才会回到自然状态。
+     铺底的基础 transform 就是 scale(1.15)，关掉等于定格在起始画面上，不会跳。 */
+  .mtv-hero-body {
+    animation: none;
+  }
+
+  .mtv-hero-art img.mtv-hero-art-fill-active {
+    animation: none;
   }
 }
 
@@ -412,8 +565,7 @@ html:not([data-loading-style]) .mtv-load-talisman {
   border: 2.5px solid var(--mtv-ink);
   border-radius: 3px;
   /* 不能裁切：进行中的光环/光点要能扩到格子外面 */
-  transition:
-    background 0.45s ease,
+  transition: background 0.45s ease,
     transform 0.34s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .mtv-panel svg {
@@ -421,9 +573,7 @@ html:not([data-loading-style]) .mtv-load-talisman {
   height: 22px;
   color: var(--mtv-ink);
   opacity: 0.22;
-  transition:
-    color 0.35s,
-    opacity 0.35s;
+  transition: color 0.35s, opacity 0.35s;
 }
 .mtv-panel span {
   font-size: 8px;
@@ -431,9 +581,7 @@ html:not([data-loading-style]) .mtv-load-talisman {
   letter-spacing: 0.06em;
   color: var(--mtv-ink);
   opacity: 0.22;
-  transition:
-    color 0.35s,
-    opacity 0.35s;
+  transition: color 0.35s, opacity 0.35s;
 }
 /* 已完成：整格填蓝，白图标 */
 .mtv-panel.on {
@@ -490,8 +638,11 @@ html:not([data-loading-style]) .mtv-load-talisman {
   position: absolute;
   inset: -6px;
   border-radius: 9px;
-  background:
-    radial-gradient(circle at 50% 0, var(--mtv-acc) 1.6px, transparent 2.4px),
+  background: radial-gradient(
+      circle at 50% 0,
+      var(--mtv-acc) 1.6px,
+      transparent 2.4px
+    ),
     radial-gradient(circle at 100% 50%, var(--mtv-acc) 1.6px, transparent 2.4px),
     radial-gradient(circle at 50% 100%, var(--mtv-acc) 1.6px, transparent 2.4px),
     radial-gradient(circle at 0 50%, var(--mtv-acc) 1.6px, transparent 2.4px),
@@ -602,7 +753,12 @@ html:not([data-loading-style]) .mtv-load-talisman {
     var(--mtv-acc) 0 0.7deg,
     transparent 0.7deg 15deg
   );
-  -webkit-mask: radial-gradient(circle, transparent 62%, #000 63% 70%, transparent 71%);
+  -webkit-mask: radial-gradient(
+    circle,
+    transparent 62%,
+    #000 63% 70%,
+    transparent 71%
+  );
   mask: radial-gradient(circle, transparent 62%, #000 63% 70%, transparent 71%);
   animation: mtv-spin 26s linear infinite;
 }
@@ -614,7 +770,12 @@ html:not([data-loading-style]) .mtv-load-talisman {
     var(--mtv-acc-hover) 0 7deg,
     transparent 7deg 18deg
   );
-  -webkit-mask: radial-gradient(circle, transparent 78%, #000 79% 86%, transparent 87%);
+  -webkit-mask: radial-gradient(
+    circle,
+    transparent 78%,
+    #000 79% 86%,
+    transparent 87%
+  );
   mask: radial-gradient(circle, transparent 78%, #000 79% 86%, transparent 87%);
   animation: mtv-spin 17s linear infinite reverse;
 }
@@ -672,19 +833,17 @@ html:not([data-loading-style]) .mtv-load-talisman {
   position: absolute;
   left: 50%;
   top: 50%;
-  margin: calc(var(--mtv-tal-s) * -8 / 150) 0 0 calc(var(--mtv-tal-s) * -6 / 150);
-  font-family: Georgia, 'Songti SC', 'Noto Serif CJK SC', 'Noto Serif SC', STSong,
-    SimSun, serif;
+  margin: calc(var(--mtv-tal-s) * -8 / 150) 0 0
+    calc(var(--mtv-tal-s) * -6 / 150);
+  font-family: Georgia, 'Songti SC', 'Noto Serif CJK SC', 'Noto Serif SC',
+    STSong, SimSun, serif;
   font-size: calc(var(--mtv-tal-s) * 12 / 150);
   font-weight: 600;
   color: var(--mtv-acc-hover);
   opacity: 0.26;
   transform: rotate(var(--a)) translateY(calc(var(--mtv-tal-s) * -63 / 150))
     rotate(calc(-1 * var(--a)));
-  transition:
-    opacity 0.4s,
-    color 0.4s,
-    text-shadow 0.4s;
+  transition: opacity 0.4s, color 0.4s, text-shadow 0.4s;
 }
 .mtv-rune.lit {
   opacity: 1;
@@ -990,17 +1149,8 @@ html[data-loading-style='grid'] .mtv-err-box {
   }
 }
 
-/* 加载遮罩用 fixed 铺满整个视口，桌面端要把左侧固定侧边栏的宽度让出来，
-   否则内容会按「含侧边栏的整屏」居中，看起来偏左。左偏移跟随侧边栏展开/收起：
-   Sidebar 收起时会在 <html> 上写 data-sidebar-collapsed。移动端无侧边栏，不偏移。 */
-@media (min-width: 768px) {
-  .mtv-load-overlay {
-    left: 16rem; /* 侧边栏展开 = w-64 */
-  }
-  html[data-sidebar-collapsed] .mtv-load-overlay {
-    left: 4rem; /* 侧边栏收起 = w-16 */
-  }
-}
+/* 加载遮罩用 fixed 铺满整个视口。桌面端导航已改成顶部条，不再占据左侧宽度，
+   所以左右都不需要让位。 */
 
 /* 方格款在 PC（≥1024）整体放大 2.5 倍：只放大铺满整屏的加载页那一版，
    播放器内的深色小图标（.mtv-on-dark）保持原样。用 transform 统一缩放，
@@ -1203,5 +1353,5844 @@ html[data-loading-style='grid'] .mtv-err-box {
   }
   .group:hover .mtv-rate-medal {
     transform: scale(0.85);
+  }
+}
+
+/* ==========================================================================
+   首页内容区：内容行 / 小节标题
+   --------------------------------------------------------------------------
+   类名统一走 mtv- 前缀，既避开管理端主题层的 [class*="..."] 覆盖，也便于和
+   既有的 mtv-load / mtv-rate 区分开。颜色只取自 --ui-* 令牌。
+   ========================================================================== */
+
+/* ---------- 内容行：横向吸附 ---------- */
+.mtv-rail {
+  scroll-snap-type: x proximity;
+}
+
+.mtv-rail > * {
+  scroll-snap-align: start;
+}
+
+/* ---------- 小节标题 ---------- */
+.mtv-row-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.mtv-row-title {
+  margin: 0;
+  font-size: var(--ui-fs-h2);
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  color: var(--ui-ink);
+}
+
+.mtv-row-sub {
+  font-size: var(--ui-fs-meta);
+  color: var(--ui-ink-3);
+}
+
+/* 「查看更多」：常显，不再做悬浮才出现 */
+.mtv-row-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: var(--ui-r-sm);
+  background: none;
+  cursor: pointer;
+  font-size: var(--ui-fs-meta);
+  font-weight: 500;
+  color: var(--ui-ink-3);
+  transition: color var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-row-more:hover {
+  color: var(--ui-ink);
+  background-color: var(--ui-surface-3);
+}
+
+.mtv-row-more:focus-visible {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: 2px;
+}
+
+/* 「继续观看」标题行右侧：清空 与 查看更多 是两个不同的可点目标。
+   原来「清空」是裸文字、紧贴着一个小圆箭头，间距只有 4px，很容易按错。
+   现在「查看更多」和下面各区块共用 .mtv-row-more 那颗胶囊，「清空」自带点击面，
+   中间再插一条细分割线把「清除」和「跳转」两类动作分开。 */
+.mtv-cw-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mtv-cw-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 9px;
+  border-radius: var(--ui-r-sm);
+  font-size: var(--ui-fs-meta);
+  font-weight: 500;
+  color: var(--ui-ink-3);
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-cw-clear:hover {
+  color: var(--ui-ink);
+  background-color: var(--ui-surface-3);
+}
+
+.mtv-cw-divider {
+  flex: none;
+  width: 1px;
+  height: 14px;
+  background-color: var(--ui-hair-strong);
+}
+
+.mtv-cw-clear:focus-visible {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: 2px;
+}
+
+/* ==========================================================================
+   桌面端顶部导航（取代固定侧栏）
+   --------------------------------------------------------------------------
+   只在 md 以上显示；移动端仍走 MobileHeader + MobileBottomNav。
+   链接过多时横向滚动，不换行撑高。
+   ========================================================================== */
+.mtv-topnav {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 40;
+  display: none;
+  align-items: center;
+  gap: 26px;
+  height: 64px;
+  padding: 0 var(--ui-gutter);
+  background-color: transparent;
+  transition:
+    background-color var(--ui-dur-2) var(--ui-ease),
+    box-shadow var(--ui-dur-2) var(--ui-ease);
+}
+
+/* 桌面顶栏和手机顶栏共用这一套前景色变量：压在 Hero 上时整套翻白，
+   回到普通页面再跟主题走。 */
+.mtv-topnav,
+.mtv-mheader {
+  --nav-ink: var(--ui-ink-2);
+  --nav-ink-hover: var(--ui-ink);
+  --nav-ink-active: var(--ui-ink);
+  --nav-hover-bg: color-mix(in srgb, var(--ui-ink) 8%, transparent);
+}
+
+/* 首页首屏：整条栏压在 Hero 上，文字翻白。
+   Hero 固定影院感（画面是深是浅不可控），导航跟主题走深灰字的话在浅色主题下就是
+   深灰压深画面，读不出来；跟着画面走白色才成立。 */
+.mtv-topnav.is-over-hero,
+.mtv-mheader.is-over-hero {
+  --nav-ink: rgba(255, 255, 255, 0.82);
+  --nav-ink-hover: #ffffff;
+  --nav-ink-active: #ffffff;
+  --nav-hover-bg: rgba(255, 255, 255, 0.12);
+}
+
+/* 顶部暗角：只在压着 Hero 时出现。
+   暗角必须是暗的 —— 之前写成「页面底色混透明」，深色下刚好等于 rgba(0,0,0,.72)
+   看不出问题，浅色下就变成在海报顶上糊了一条白带，和「顶栏透明」直接打架。
+   z-index:-1 让它落在顶栏自身背景之上、内容之下，不会盖住导航文字。 */
+.mtv-topnav::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 132px;
+  z-index: -1;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.72), transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--ui-dur-2) var(--ui-ease);
+}
+
+.mtv-topnav.is-over-hero::before {
+  opacity: 1;
+}
+
+/* 滚过 Hero：实底 + 模糊 + 一条发丝线，暗角退场 */
+.mtv-topnav.is-scrolled {
+  background-color: var(--ui-nav);
+  backdrop-filter: blur(16px) saturate(150%);
+  box-shadow: 0 1px 0 var(--ui-hair);
+}
+
+.mtv-topnav.is-scrolled::before {
+  opacity: 0;
+}
+
+.mtv-topnav-brand {
+  flex: none;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--ui-accent);
+  transition: opacity var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-topnav-brand:hover {
+  opacity: 0.8;
+}
+
+.mtv-topnav-links {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.mtv-topnav-links::-webkit-scrollbar {
+  display: none;
+}
+
+.mtv-topnav-link {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: var(--ui-r-sm);
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--nav-ink);
+  transition: color var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-topnav-link svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* hover 只提亮文字，不加底色 —— 实心色块压在深色栏上很脏 */
+.mtv-topnav-link:hover {
+  color: var(--nav-ink-hover);
+}
+
+/* 选中态：纯白 + 700，不加底色。原来是强调色文字 + 强调色底片，一整块红太吵 */
+.mtv-topnav-link[aria-current='page'] {
+  font-weight: 700;
+  color: var(--nav-ink-active);
+}
+
+.mtv-topnav-right {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+/* 顶栏右侧的统一图标按钮：搜索、主题、用户三者共用这一个类，尺寸、形状、配色
+   只有一个来源，不会各自漂移。
+   之前搜索走这里（36×36、圆角 8px、18px 图标），主题和用户各自写 Tailwind
+   （40×40、正圆、24px 图标），三个并排大小形状都不一样。 */
+.mtv-topnav-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--ui-r-full);
+  color: var(--nav-ink);
+  transition: color var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-topnav-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.mtv-topnav-icon:hover {
+  color: var(--nav-ink-hover);
+  background-color: var(--nav-hover-bg);
+}
+
+.mtv-topnav-icon:focus-visible {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: 2px;
+}
+/* ---------- 顶栏搜索入口 ---------- */
+/* 就是一个 mtv-topnav-icon 尺寸的图标按钮，点了直接进搜索页。不在这展开输入框：
+   顶栏是导航区，弹出的输入框会盖住导航，而搜完仍然要落在 /search 上。 */
+
+
+/* ---------- 「更多」入口 ---------- */
+/* 首页 Hero 下方原来那排彩色图标（直链播放 / 音乐 / 漫画 / 电子书 / 源站寻片 /
+   AI 问片）收进这里。桌面是贴着触发器的下拉，手机是底部面板。
+   配色只走 --ui-* 令牌，跟随主题，不再出现 blue/green/amber/purple 那几套写死的色。 */
+
+.mtv-more-anchor {
+  position: relative;
+  flex: none;
+}
+
+.mtv-more-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: var(--ui-z-panel);
+  width: 276px;
+  padding: 8px;
+  border-radius: var(--ui-r-lg);
+  border: 1px solid var(--ui-hair);
+  background-color: var(--ui-surface-2);
+  box-shadow: 0 20px 48px -18px rgba(0, 0, 0, 0.55);
+  animation: mtv-more-in var(--ui-dur-1) var(--ui-ease-out) both;
+}
+
+@keyframes mtv-more-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.mtv-more-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px;
+}
+
+.mtv-more-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 9px;
+  border: 0;
+  border-radius: var(--ui-r-md);
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  color: var(--ui-ink-2);
+  cursor: pointer;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-more-item:hover {
+  color: var(--ui-ink);
+  background-color: var(--ui-surface-3);
+}
+
+.mtv-more-item-ic {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background-color: var(--ui-surface-3);
+  color: var(--ui-ink-2);
+  transition: color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-more-item:hover .mtv-more-item-ic {
+  color: var(--ui-accent);
+}
+
+.mtv-more-item-t {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 手机端：底部面板。手机顶栏右侧那组加第三个按钮会压住居中的站名，
+   所以触发器放在搜索按钮右边，面板也从底部弹，不和顶栏抢空间。 */
+.mtv-more-sheet-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ui-z-panel);
+  display: flex;
+  align-items: flex-end;
+  background-color: rgba(0, 0, 0, 0.5);
+  animation: mtv-more-fade var(--ui-dur-1) var(--ui-ease) both;
+}
+
+@keyframes mtv-more-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.mtv-more-sheet {
+  width: 100%;
+  padding: 8px 12px calc(14px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--ui-hair);
+  border-radius: 18px 18px 0 0;
+  background-color: var(--ui-surface-2);
+  animation: mtv-more-sheet-in var(--ui-dur-3) var(--ui-ease-out) both;
+}
+
+@keyframes mtv-more-sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+.mtv-more-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 2px 10px;
+}
+
+.mtv-more-sheet-title {
+  font-size: var(--ui-fs-meta);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--ui-ink-3);
+}
+
+.mtv-more-sheet-close {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--ui-r-full);
+  background: none;
+  color: var(--ui-ink-3);
+  cursor: pointer;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-more-sheet-close:hover {
+  color: var(--ui-ink);
+  background-color: var(--ui-surface-3);
+}
+
+/* ---------- 用户菜单（顶栏头像下拉） ---------- */
+/* 和「更多」面板同一套写法：几何写在这里，颜色只走 --ui-* 令牌，深浅色自动跟。
+   面板由 Portal 渲染到 body，位置由组件按触发器实测坐标下发，这里不写 top/right。
+   hover 用 color-mix(墨色 7%) 而不是 --ui-surface-3：那是一整块面板表面色，压在
+   深色栏上像贴补丁；半透明墨色在深色下等于 rgba(255,255,255,.07)，浅色下自动变成
+   一层极淡的灰，两边都不会出现"实心灰块"。 */
+
+.mtv-umenu {
+  position: fixed;
+  z-index: 1001;
+  width: 268px;
+  max-width: calc(100vw - 24px);
+  padding: 6px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: var(--ui-r-lg);
+  border: 1px solid var(--ui-hair);
+  background-color: var(--ui-surface-2);
+  box-shadow: var(--ui-elev-3);
+  animation: mtv-more-in var(--ui-dur-1) var(--ui-ease-out) both;
+}
+
+.mtv-umenu-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-umenu-head:hover {
+  background-color: color-mix(in srgb, var(--ui-ink) 6%, transparent);
+}
+
+.mtv-umenu-avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--ui-r-full);
+  background: linear-gradient(150deg, #6d5bd0, #2f6fd0);
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.mtv-umenu-id {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mtv-umenu-name {
+  overflow: hidden;
+  font-size: 13.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--ui-ink);
+}
+
+.mtv-umenu-role {
+  margin-top: 2px;
+  overflow: hidden;
+  font-size: 11.5px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--ui-ink-3);
+}
+
+.mtv-umenu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 40px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  color: var(--ui-ink-2);
+  cursor: pointer;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-umenu-item > svg {
+  flex: none;
+  width: 17px;
+  height: 17px;
+  color: var(--ui-ink-3);
+  transition: color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-umenu-item:hover {
+  color: var(--ui-ink);
+  background-color: color-mix(in srgb, var(--ui-ink) 7%, transparent);
+}
+
+.mtv-umenu-item:hover > svg {
+  color: var(--ui-ink);
+}
+
+/* 「外观主题」这一行只是显示当前值，点击由下面的三段式负责 */
+.mtv-umenu-item.is-static {
+  cursor: default;
+}
+
+.mtv-umenu-item.is-static:hover {
+  color: var(--ui-ink-2);
+  background: none;
+}
+
+.mtv-umenu-tail {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--ui-ink-3);
+}
+
+.mtv-umenu-tail > svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  color: var(--ui-ink-3);
+}
+
+.mtv-umenu-div {
+  height: 1px;
+  margin: 6px 10px;
+  background-color: var(--ui-hair);
+}
+
+.mtv-umenu-item.is-danger,
+.mtv-umenu-item.is-danger > svg {
+  color: #ef4444;
+}
+
+.mtv-umenu-item.is-danger:hover {
+  color: #ef4444;
+  background-color: color-mix(in srgb, #ef4444 12%, transparent);
+}
+
+.mtv-umenu-seg {
+  display: flex;
+  gap: 2px;
+  margin: 2px 6px 8px;
+  padding: 3px;
+  border-radius: 10px;
+  background-color: var(--ui-surface-3);
+}
+
+.mtv-umenu-seg button {
+  flex: 1;
+  height: 28px;
+  border: 0;
+  border-radius: var(--ui-r-sm);
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ui-ink-3);
+  cursor: pointer;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-umenu-seg button:hover {
+  color: var(--ui-ink);
+}
+
+.mtv-umenu-seg button[aria-pressed='true'] {
+  color: var(--ui-ink);
+  background-color: var(--ui-surface-2);
+  box-shadow: var(--ui-elev-1);
+}
+
+.mtv-umenu-ver {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 34px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  font-size: var(--ui-fs-micro);
+  color: var(--ui-ink-3);
+  cursor: pointer;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-umenu-ver:hover {
+  color: var(--ui-ink-2);
+  background-color: color-mix(in srgb, var(--ui-ink) 5%, transparent);
+}
+
+/* ---------- /more 页（手机底栏第 5 格） ---------- */
+/* 底栏固定成五格之后，综艺、直播、影库、自定义这些挤不进去，全部收到这一页；
+   桌面也能直接访问，所以限宽居中，不铺满整行。 */
+
+.mtv-mp {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 4px var(--ui-gutter) 8px;
+}
+
+.mtv-mp-h1 {
+  padding: 8px 2px 18px;
+  font-size: var(--ui-fs-h1);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ui-ink);
+}
+
+.mtv-mp-group + .mtv-mp-group {
+  margin-top: 22px;
+}
+
+.mtv-mp-title {
+  padding: 0 14px 8px;
+  font-size: var(--ui-fs-micro);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--ui-ink-3);
+}
+
+.mtv-mp-list {
+  overflow: hidden;
+  border-radius: var(--ui-r-lg);
+  border: 1px solid var(--ui-hair);
+  background-color: var(--ui-surface-2);
+}
+
+.mtv-mp-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  height: 50px;
+  padding: 0 14px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.875rem;
+  text-align: left;
+  color: var(--ui-ink);
+  cursor: pointer;
+  transition: background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-mp-row + .mtv-mp-row {
+  border-top: 1px solid var(--ui-hair);
+}
+
+.mtv-mp-row:hover {
+  background-color: color-mix(in srgb, var(--ui-ink) 5%, transparent);
+}
+
+/* 「外观主题」这一行只显示当前值，点由下面的三段式负责 */
+.mtv-mp-row.is-static {
+  cursor: default;
+}
+
+
+/* ---------- 手机底栏：悬浮胶囊 ---------- */
+/* 不贴边：贴底时下层是纯色，backdrop-filter 糊不出东西，看着就是一条实心色带；
+   浮起来 10px 之后底下永远压着内容，模糊才有意义。
+   五格等分（flex:1 1 0; min-width:0），不再用 20vw + 横向滚动那套 —— 项数一变就会
+   把后面的格推出屏幕外，变成谁也发现不了的盲区。
+   限宽 360：五格各 68px 出头。再宽每格就散开了，图标之间空得发慌。 */
+
+.mtv-bnav {
+  position: fixed;
+  left: 50%;
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  z-index: var(--ui-z-nav);
+  width: calc(100% - 24px);
+  max-width: 360px;
+  height: 64px;
+  border-radius: var(--ui-r-full);
+  border: 1px solid var(--ui-hair);
+  /* 颜色全走令牌：深色是近黑的半透明，浅色自动变成白玻璃 */
+  background-color: color-mix(in srgb, var(--ui-surface) 76%, transparent);
+  backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: var(--ui-elev-2);
+  transform: translateX(-50%);
+}
+
+.mtv-bnav-list {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  height: 100%;
+  padding: 6px;
+}
+
+/* 选中底片：跟着当前格平移的一块中性底片；强调色只给图标和文字，不铺满整块 */
+.mtv-bnav-pill {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 6px;
+  width: calc((100% - 12px) / 5);
+  border-radius: var(--ui-r-full);
+  background-color: color-mix(in srgb, var(--ui-ink) 10%, transparent);
+  transition: transform 220ms var(--ui-ease);
+  pointer-events: none;
+}
+
+.mtv-bnav-item {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--ui-ink-2);
+  transition: color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-bnav-item svg {
+  width: 20px;
+  height: 20px;
+  transition: transform 120ms var(--ui-ease);
+}
+
+.mtv-bnav-item:active svg {
+  transform: scale(0.9);
+}
+
+/* line-height:1 是关键：正文行高（1.5 以上）会让字盒比字形高出一截，
+   居中之后图标被顶到贴边、文字离底很远，两边不对称。 */
+.mtv-bnav-item span {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: var(--ui-fs-micro);
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.mtv-bnav-item.is-active {
+  color: var(--ui-accent);
+}
+
+.mtv-bnav-item.is-active span {
+  font-weight: 650;
+}
+
+/* ---------- 手机顶栏 ---------- */
+/* 只留 搜索 / 站名 / 头像 三件东西，其余（更多、主题、更新通知）都搬走了：
+   更多进底栏第 5 格，主题进用户菜单，更新通知手机端本来就没有。
+   分割线用 inset 阴影而不是 border —— border 会把 48px 撑成 49px，顶栏下面的
+   留白就得跟着写成小数。 */
+
+.mtv-mheader {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: var(--ui-z-nav);
+  width: 100%;
+  background-color: color-mix(in srgb, var(--ui-surface) 80%, transparent);
+  backdrop-filter: blur(20px) saturate(150%);
+  box-shadow: inset 0 -1px 0 var(--ui-hair);
+  transition:
+    background-color var(--ui-dur-2) var(--ui-ease),
+    box-shadow var(--ui-dur-2) var(--ui-ease);
+}
+
+/* 压在 Hero 上时整条栏真透明：不留底色、不留模糊、不留发丝线，
+   前景换成白色（--nav-* 见顶栏那段）。 */
+.mtv-mheader.is-over-hero {
+  background-color: transparent;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+/* 播放页 / 直播页：底是固定的深色画布，没有 Hero 可以「透明压在上面」，
+   所以要一层磨砂实底。这条必须排在 .is-over-hero 之后 —— 两个类会同时挂上，
+   同优先级下后定义的胜出，否则背景又被改回透明（之前就是这样没生效）。 */
+.mtv-mheader.is-over-hero.is-on-dark {
+  background-color: rgba(10, 10, 12, 0.72);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.mtv-mp-row.is-static:hover {
+  background: none;
+}
+
+.mtv-mp-ic {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--ui-ink-2);
+}
+
+.mtv-mp-chev {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-left: auto;
+  color: var(--ui-ink-3);
+}
+
+.mtv-mp-row-t {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.mtv-mp-row-v {
+  flex: none;
+  margin-left: auto;
+  font-size: var(--ui-fs-meta);
+  color: var(--ui-ink-3);
+}
+
+.mtv-mp-theme {
+  padding: 0 14px 14px;
+}
+
+/* 主题三选：和用户菜单里那个同一个样子 */
+.mtv-mp-seg {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 10px;
+  background-color: var(--ui-surface-3);
+}
+
+.mtv-mp-seg button {
+  flex: 1;
+  height: 30px;
+  border: 0;
+  border-radius: var(--ui-r-sm);
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ui-ink-3);
+  cursor: pointer;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-mp-seg button:hover {
+    background-color: var(--ui-surface);
+}
+
+.mtv-mp-seg button[aria-pressed='true'] {
+  color: var(--ui-ink);
+  background-color: var(--ui-surface-2);
+  box-shadow: var(--ui-elev-1);
+}
+
+/* ---------- 通用弹窗外壳（跟随主题） ---------- */
+/* 播放页那套 .mtv-dialog 是写死深色的，只能给固定深色的播放页用；
+   这里给全站通用弹窗用，颜色必须跟着 --ui-* 令牌走。 */
+
+.mtv-ui-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ui-z-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background-color: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+}
+
+.mtv-ui-dialog {
+  width: 100%;
+  max-width: 440px;
+  overflow: hidden;
+  border-radius: var(--ui-r-lg);
+  border: 1px solid var(--ui-hair);
+  background-color: var(--ui-surface-2);
+  color: var(--ui-ink);
+  box-shadow: 0 32px 72px -24px rgba(0, 0, 0, 0.7);
+}
+
+.mtv-ui-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--ui-hair);
+}
+
+.mtv-ui-dialog-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ui-ink);
+}
+
+.mtv-ui-dialog-close {
+  display: grid;
+  place-items: center;
+  padding: 6px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--ui-ink-3);
+  cursor: pointer;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-ui-dialog-close:hover {
+  color: var(--ui-ink);
+  background-color: var(--ui-surface-3);
+}
+
+.mtv-ui-dialog-body {
+  padding: 16px 18px 18px;
+}
+
+.mtv-ui-dialog-note {
+  margin: 0 0 8px;
+  font-size: var(--ui-fs-meta);
+  line-height: 1.6;
+  color: var(--ui-ink-2);
+}
+
+.mtv-ui-dialog-note.is-faint {
+  color: var(--ui-ink-3);
+}
+
+.mtv-ui-input {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--ui-r-md);
+  border: 1px solid var(--ui-hair-strong);
+  background-color: var(--ui-surface-3);
+  font: inherit;
+  font-size: var(--ui-fs-body);
+  color: var(--ui-ink);
+  transition: border-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-ui-input::placeholder {
+  color: var(--ui-ink-3);
+}
+
+.mtv-ui-input:focus {
+  outline: none;
+  border-color: var(--ui-accent);
+}
+
+.mtv-ui-dialog-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.mtv-ui-btn {
+  padding: 9px 16px;
+  border-radius: var(--ui-r-md);
+  border: 1px solid var(--ui-hair-strong);
+  background: none;
+  font: inherit;
+  font-size: var(--ui-fs-body);
+  font-weight: 600;
+  color: var(--ui-ink-2);
+  cursor: pointer;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-ui-btn:hover {
+  color: var(--ui-ink);
+  background-color: var(--ui-surface-3);
+}
+
+.mtv-ui-btn.is-primary {
+  border-color: transparent;
+  background-color: var(--ui-accent);
+  color: #fff;
+}
+
+.mtv-ui-btn.is-primary:hover {
+  background-color: var(--ui-accent);
+  filter: brightness(1.08);
+}
+
+.mtv-ui-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+@media (min-width: 768px) {
+  .mtv-topnav {
+    display: flex;
+  }
+}
+
+/* ==========================================================================
+   首页 Hero（BannerCarousel）
+   --------------------------------------------------------------------------
+   Hero 跟随主题深浅色：浅色下换成浅色遮罩 + 深色字，画面提亮；深色下维持
+   原来的黑遮罩 + 白字。整组取值走 --hero-* 令牌，随 .dark 切换。
+   ========================================================================== */
+:root {
+  /* 浅色下的底部过渡只负责收尾：Hero 底边经径向遮罩后已经是 91% 页面底色，
+     这里 6% 就够。原来给到 18%（100px）是在补救一条本来就暗的边，那层渐变
+     本身就是看得见的白雾。 */
+  --hero-scrim: linear-gradient(0deg, var(--ui-bg) 0%, transparent 6%);
+  --hero-ink: #0e1524;
+  --hero-ink-2: rgba(14, 21, 36, 0.78);
+  --hero-art-filter: none;
+  --hero-panel-bg: rgba(255, 255, 255, 0.78);
+  --hero-panel-blur: blur(40px) saturate(180%);
+  --hero-panel-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55),
+    0 24px 56px -24px rgba(14, 21, 36, 0.5);
+  --hero-panel-pad: 22px 26px;
+  --hero-btn-bg: #0e1524;
+  --hero-btn-ink: #ffffff;
+  --hero-btn-bg-hover: #2a2a30;
+  --hero-btn-shadow: 0 6px 18px rgba(14, 21, 36, 0.22);
+  --hero-btn-shadow-hover: 0 10px 26px rgba(14, 21, 36, 0.3);
+  --hero-chip-bg: rgba(14, 21, 36, 0.13);
+  --hero-chip-hair: rgba(14, 21, 36, 0.12);
+  --hero-chip-ink: #0e1524;
+  --hero-ctl-bg: rgba(255, 255, 255, 0.72);
+  --hero-dot: rgba(14, 21, 36, 0.3);
+  --hero-ghost-bg: rgba(255, 255, 255, 0.55);
+  --hero-ghost-bg-hover: rgba(255, 255, 255, 0.82);
+  --hero-ghost-hair: rgba(14, 21, 36, 0.16);
+  --hero-ghost-hair-hover: rgba(14, 21, 36, 0.32);
+  --hero-title-shadow: rgba(255, 255, 255, 0.7);
+}
+
+.dark {
+  --hero-scrim: linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.92) 0%,
+      rgba(0, 0, 0, 0.72) 28%,
+      rgba(0, 0, 0, 0.28) 55%,
+      transparent 78%
+    ),
+    linear-gradient(
+      0deg,
+      var(--ui-bg) 0%,
+      rgba(0, 0, 0, 0.55) 14%,
+      transparent 38%
+    ),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.6) 0%, transparent 28%);
+  --hero-ink: #ffffff;
+  --hero-ink-2: rgba(255, 255, 255, 0.78);
+  --hero-art-filter: none;
+  --hero-btn-bg: #ffffff;
+  --hero-btn-ink: #000000;
+  --hero-btn-bg-hover: rgba(255, 255, 255, 0.82);
+  --hero-btn-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  --hero-btn-shadow-hover: 0 10px 28px rgba(0, 0, 0, 0.55);
+  --hero-chip-bg: rgba(255, 255, 255, 0.16);
+  --hero-chip-hair: rgba(255, 255, 255, 0.22);
+  --hero-chip-ink: #ffffff;
+  --hero-ctl-bg: rgba(0, 0, 0, 0.42);
+  --hero-dot: rgba(255, 255, 255, 0.4);
+  --hero-ghost-bg: rgba(255, 255, 255, 0.16);
+  --hero-ghost-bg-hover: rgba(255, 255, 255, 0.28);
+  --hero-ghost-hair: rgba(255, 255, 255, 0.3);
+  --hero-ghost-hair-hover: rgba(255, 255, 255, 0.5);
+  --hero-title-shadow: rgba(0, 0, 0, 0.55);
+  --hero-panel-bg: transparent;
+  --hero-panel-blur: none;
+  --hero-panel-shadow: none;
+  --hero-panel-pad: 0;
+}
+
+/* Hero 底部收边：让画面自己溶解进页面底色，而不是在上面刷一层页面色。
+   原来底部是一条「--ui-bg → 黑」的短渐变，深色下 --ui-bg 就是黑，看不出来；
+   浅色下等于把 #f5f6f9 直接涂在海报底部和分页点上，就是那条白雾。
+   改成给画面层加纵向 mask：最后 24px 渐隐到透明，露出页面本身。
+   mask 只能给 24px —— 分页点离底边只有 16px，再长就把点泡进浅色里了。
+   遮罩层也在这个 wrapper 内，所以会被一起溶解，底部不会留下一条硬黑边。 */
+.mtv-hero-art {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 calc(100% - 24px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    #000 calc(100% - 24px),
+    transparent 100%
+  );
+}
+
+/* 只给画面本身提亮/压灰。遮罩和画面在同一个 wrapper 里，
+   所以不能把 filter 加在 wrapper 上，否则遮罩会一起被提亮。 */
+.mtv-hero-art img,
+.mtv-hero-art video,
+.mtv-hero-art iframe {
+  filter: var(--hero-art-filter);
+  transition: filter var(--ui-dur-3) var(--ui-ease);
+}
+
+/* 画面两种画法共用铺满容器的基础，具体由 HeroArt 按图片实际宽高比切换。 */
+.mtv-hero-art img.mtv-hero-art-cover,
+.mtv-hero-art img.mtv-hero-art-fill {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 横版剧照：16:9 的画面塞进更扁的容器只能裁切。把裁切重心上移，主体通常在偏上
+   位置，比默认居中更不容易裁到脸。 */
+.mtv-hero-art img.mtv-hero-art-cover {
+  object-position: center 30%;
+}
+
+/* 竖版海报（豆瓣 / TX 数据源）：2:3 的图被 object-cover 塞进扁 Hero 只会裁出中间
+   一条，看着就像被拉扁铺满。改成两层——同一张图放大模糊铺底提供环境色，原图
+   object-contain 靠右立起来，比例不失真。 */
+.mtv-hero-art img.mtv-hero-art-fill {
+  object-position: center;
+  filter: blur(28px) saturate(170%) brightness(0.95);
+  transform: scale(1.15);
+}
+
+.dark .mtv-hero-art img.mtv-hero-art-fill {
+  filter: blur(28px) saturate(150%) brightness(0.5);
+}
+
+/* 缓慢推近。加在模糊铺底而不是海报上：海报要保持锐利，让景深层动起来才有纵深。
+   用 active 类触发而不是常驻动画——所有 slide 的画面一开始就全挂载了，常驻动画
+   会在轮到自己之前就跑完。 */
+.mtv-hero-art img.mtv-hero-art-fill-active {
+  animation: mtv-hero-kenburns 8s var(--ui-ease-out) forwards;
+}
+
+@keyframes mtv-hero-kenburns {
+  from {
+    transform: scale(1.15);
+  }
+  to {
+    transform: scale(1.24);
+  }
+}
+
+/* 铺底之上压一层径向渐变，把模糊色收成「围绕海报的一圈环境光」。
+   垂直半径必须比水平小得多（68% vs 86%）：原来 140% 的垂直半径让底部中央只被
+   盖住 42%，Hero 底边整条都是暗的；页面底色又是浅的，中间 90 级的落差只能靠
+   遮罩那 100px 渐变去抹——那层渐变就是看得见的白雾。
+   现在底边盖到 91%，落差只剩 14 级，遮罩只要 6% 收个尾。 */
+.mtv-hero-art-veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    86% 68% at 72% 46%,
+    transparent 0%,
+    transparent 20%,
+    color-mix(in srgb, var(--ui-bg) 40%, transparent) 46%,
+    color-mix(in srgb, var(--ui-bg) 80%, transparent) 72%,
+    var(--ui-bg) 92%
+  );
+}
+
+/* 右侧退开一个翻页按钮身位，免得悬停时按钮压在立起来的海报上 */
+.mtv-hero-art img.mtv-hero-art-subject {
+  position: absolute;
+  top: 50%;
+  right: calc(var(--ui-gutter) + 4rem);
+  width: auto;
+  height: min(88%, 520px);
+  transform: translateY(-50%);
+  border-radius: var(--ui-r-lg);
+  box-shadow: 0 30px 70px -24px rgba(14, 21, 36, 0.5),
+    0 0 0 1px rgba(14, 21, 36, 0.1);
+}
+
+.dark .mtv-hero-art img.mtv-hero-art-subject {
+  box-shadow: 0 30px 70px -24px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+/* 宽屏下 Hero 会拉到 3:1 以上，海报必须离开最右边缘，否则中间空一大块、
+   视觉重心整体偏左。600px 这个偏移是量出来的：1660px 视口下留白 230px，
+   和文字块到海报之间的间距接近，构成才平衡。 */
+@media (min-width: 1200px) {
+  .mtv-hero-art img.mtv-hero-art-subject {
+    right: clamp(calc(var(--ui-gutter) + 4rem), calc(50vw - 600px), 480px);
+  }
+}
+
+/* 竖版海报时左边本来就是从页面底色渐变过来的浅底，再叠一层白卡片只会像贴上去
+   的。去掉承载面，让 Hero 标题和下面的行标题共用同一个 --ui-gutter。 */
+.mtv-hero:has(.mtv-hero-art-fill) .mtv-hero-body {
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+/* 横版剧照（TMDB 数据源）：Hero 是一整幅电影画面，文字一律走「白字 + 左侧黑遮罩」，
+   不跟页面主题走。两个原因：
+   1. 画作本身是深是浅不可控，浅色字是唯一在两种画作上都成立的选择；
+   2. TMDB 的官方标题字是「白字 + 透明底」的资产，只认得深色背景——压在浅底上会
+      直接消失。
+   所以这一档固定影院感，页面本身仍是浅色。Apple TV+ / Disney+ 的浅色主题也是这么
+   处理的：Hero 保持影院感，只有内容区跟随主题。
+   选择器必须同时覆盖「横版剧照」和「有官方标题字」——之前只写了竖版海报那一档
+   （见下面 :has(.mtv-hero-art-fill)），数据源切成 TMDB 后卡片就漏回来了。 */
+.mtv-hero:has(.mtv-hero-art-cover),
+.mtv-hero:has(.mtv-hero-logo) {
+  /* 左侧黑遮罩保证文字可读，底部只留 6% 收尾。
+     底部这一层必须单调：之前写成「页面底色 → 黑 50% → 透明」，在浅色下就是
+     「浅 → 深 → 透明」，中间会鼓出一条比两边都亮的雾带。 */
+  --hero-scrim: linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.92) 0%,
+      rgba(0, 0, 0, 0.72) 28%,
+      rgba(0, 0, 0, 0.28) 55%,
+      transparent 78%
+    ),
+    linear-gradient(0deg, rgba(0, 0, 0, 0.55) 0%, transparent 7%);
+  --hero-ink: #ffffff;
+  --hero-ink-2: rgba(255, 255, 255, 0.78);
+  --hero-title-shadow: rgba(0, 0, 0, 0.55);
+  --hero-chip-bg: rgba(255, 255, 255, 0.16);
+  --hero-chip-ink: #ffffff;
+  --hero-chip-hair: rgba(255, 255, 255, 0.22);
+  --hero-btn-bg: #ffffff;
+  --hero-btn-ink: #000000;
+  --hero-btn-bg-hover: rgba(255, 255, 255, 0.82);
+  --hero-btn-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --hero-btn-shadow-hover: 0 12px 30px rgba(0, 0, 0, 0.5);
+  --hero-ghost-bg: rgba(255, 255, 255, 0.16);
+  --hero-ghost-bg-hover: rgba(255, 255, 255, 0.28);
+  --hero-ghost-hair: rgba(255, 255, 255, 0.3);
+  --hero-ghost-hair-hover: rgba(255, 255, 255, 0.55);
+  --hero-ctl-bg: rgba(0, 0, 0, 0.42);
+  --hero-dot: rgba(255, 255, 255, 0.4);
+  /* 文字不再需要承载面 */
+  --hero-panel-bg: transparent;
+  --hero-panel-blur: none;
+  --hero-panel-shadow: none;
+  --hero-panel-pad: 0;
+}
+
+/* 有官方标题字时，铺底那层「向页面底色淡出」会把它一起洗掉 */
+.mtv-hero:has(.mtv-hero-logo) .mtv-hero-art-veil {
+  display: none;
+}
+
+/* 深色下页面本身就是黑的，底部可以铺得更长，画面过渡更自然 */
+.dark .mtv-hero:has(.mtv-hero-art-cover),
+.dark .mtv-hero:has(.mtv-hero-logo) {
+  --hero-scrim: linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.92) 0%,
+      rgba(0, 0, 0, 0.72) 28%,
+      rgba(0, 0, 0, 0.28) 55%,
+      transparent 78%
+    ),
+    linear-gradient(
+      0deg,
+      var(--ui-bg) 0%,
+      rgba(0, 0, 0, 0.55) 14%,
+      transparent 38%
+    ),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.6) 0%, transparent 28%);
+}
+
+/* 手机端的两处覆盖。 */
+@media (max-width: 767px) {
+  /* 手机端不走双层处理，右侧那张立式海报直接不出。 */
+  .mtv-hero-art img.mtv-hero-art-subject {
+    display: none;
+  }
+
+  /* 桌面那套「左侧黑遮罩」在手机上不成立：90deg 的档位是按宽屏铺的，在 390px 上
+     78% 的位置还在屏幕里，等于整屏压了一层 0.28–0.92 的黑，海报直接被压成一片黑。
+     手机端内容居中，改成上下对称的纵向遮罩——上端压住顶栏、下端托住白色文字，
+     中间完整露出画面。
+     选择器要和上面浅色 / 深色两条逐一对齐：特异度相同，靠源码顺序取胜。 */
+  .mtv-hero:has(.mtv-hero-art-cover),
+  .mtv-hero:has(.mtv-hero-logo) {
+    --hero-scrim: linear-gradient(
+        180deg,
+        rgba(0, 0, 0, 0.45) 0%,
+        transparent 18%
+      ),
+      linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.78) 0%,
+        rgba(0, 0, 0, 0.72) 7%,
+        transparent 60%
+      );
+  }
+
+  /* 深色下页面本身就是黑的，底部可以铺得更长，过渡更自然 */
+  .dark .mtv-hero:has(.mtv-hero-art-cover),
+  .dark .mtv-hero:has(.mtv-hero-logo) {
+    --hero-scrim: linear-gradient(
+        180deg,
+        rgba(0, 0, 0, 0.55) 0%,
+        transparent 24%
+      ),
+      linear-gradient(
+        0deg,
+        var(--ui-bg) 0%,
+        rgba(0, 0, 0, 0.7) 10%,
+        transparent 64%
+      );
+  }
+}
+
+.mtv-hero-scrim {
+  background: var(--hero-scrim);
+  transition: background var(--ui-dur-3) var(--ui-ease);
+}
+
+/* 切屏时文字块自己入场一次。
+   画面是整块交叉淡入，文字如果只是原地换内容就会「啪」地跳一下，和画面节奏对不上
+   —— 看起来像三次独立切换而不是一次。这里让文字块跟着淡入并轻微上浮。
+   重挂载由组件上的 key={currentIndex} 触发；上浮幅度压得很小，避免和画面淡入
+   叠出「两层各动各的」的杂乱感。 */
+@keyframes mtv-hero-body-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* 文字承载面。深色下是透明的（沿用左侧黑遮罩），浅色下变成一块磨砂玻璃，
+   这样海报不用被白遮罩洗掉也能保证正文对比度。 */
+.mtv-hero-body {
+  padding: var(--hero-panel-pad);
+  border-radius: var(--ui-r-lg);
+  background-color: var(--hero-panel-bg);
+  backdrop-filter: var(--hero-panel-blur);
+  box-shadow: var(--hero-panel-shadow);
+  transition: background-color var(--ui-dur-3) var(--ui-ease);
+  animation: mtv-hero-body-in var(--ui-dur-3) var(--ui-ease-out) both;
+}
+
+.mtv-hero-title {
+  margin: 0;
+  font-size: var(--ui-fs-display);
+  font-weight: 800;
+  line-height: 1.02;
+  /* 字距按语言分流，不能一套打天下。
+     拉丁字母的 advance 只有 0.5–0.6em，两侧各留约 0.2em 空白，大字号下显得松，
+     所以要收到 -0.04em。
+     中文方块字的 advance 是整 1em（实测 73.6px 字号下每字正好 73.6px），本身
+     没有可收的空隙——再收 -0.04em 就是让相邻汉字重叠 4%，笔画会贴到一起。
+     所以中文归零，交给字体本来的字距。lang 由组件按片名内容判定。 */
+  letter-spacing: -0.04em;
+  /* 片名压在任何画面上都得读得清。Netflix 的标题 logo 自带描边/发光，我们用
+     一层极淡的投影做同等的事：近处一层收紧边缘，远处一层把字从花哨底上托起来。 */
+  text-shadow: 0 1px 2px var(--hero-title-shadow),
+    0 10px 30px var(--hero-title-shadow);
+  color: var(--hero-ink);
+  text-wrap: balance;
+}
+
+.mtv-hero-title:lang(zh) {
+  letter-spacing: 0;
+}
+
+/* 官方标题字（TMDB logos）。Netflix / Apple TV+ 的 Hero 片名走的就是这条：
+   用发行方做的品牌资产，而不是拿 UI 字体去打片名。取不到时组件回落到文字标题。 */
+.mtv-hero-logo {
+  display: block;
+  /* 宽度驱动：宽度由 JS 按「视觉面积」算好的高度乘宽高比得到（--logo-h 是 px），
+     高度交给 aspect-ratio。以前是固定 height + max-width，窄屏上 max-width
+     夹住宽度时高度不变，盒子会虚高一截。aspect-ratio 同时充当图片解码前的
+     占位，避免 logo 撑开时才跳版。 */
+  width: min(calc(var(--logo-h, 64px) * var(--logo-r, 3)), 30rem, 82vw);
+  aspect-ratio: var(--logo-r, 3);
+  height: auto;
+  object-fit: contain;
+  /* 盒子的宽高比取自原图，正常情况图形正好填满。但 SVG 标题字的声明尺寸和浏览器
+     实际渲染的比例偶尔对不上，contain 会把图形缩进中间、左右各留一条空档 ——
+     看起来就是「这个 logo 没有贴左」。把图形按左边对齐，留白就都跑到右侧去了。 */
+  object-position: center left;
+  /* 透明 PNG 用 drop-shadow 才贴着字形轮廓，box-shadow 会描出一个矩形 */
+  filter: drop-shadow(0 2px 12px var(--hero-title-shadow));
+  transition: filter var(--ui-dur-2) var(--ui-ease-out);
+}
+
+/* 深色单色标题字（由 /api/tmdb/logo-tone 判定）压在暗海报上读不出来，
+   整体反相成浅色。彩色 logo 饱和度高，不会被判定成 dark，不受影响。
+   brightness 略低于 1：反相把纯黑顶成纯白，白笔画在黑色遮罩上会光渗，
+   同一尺寸下看着比彩色 logo 粗一圈，压掉一点亮度把这份错觉抵回来。 */
+.mtv-hero-logo.is-dark {
+  filter: invert(1) brightness(0.94)
+    drop-shadow(0 2px 12px var(--hero-title-shadow));
+}
+
+.mtv-hero-meta {
+  color: var(--hero-ink-2);
+}
+
+.mtv-hero-chip {
+  padding: 2px 9px;
+  border-radius: var(--ui-r-full);
+  font-size: var(--ui-fs-meta);
+  font-weight: 600;
+  background-color: var(--hero-chip-bg);
+  color: var(--hero-chip-ink);
+  box-shadow: inset 0 0 0 1px var(--hero-chip-hair);
+  backdrop-filter: blur(8px);
+}
+
+/* 多源评分（Hero 与播放页共用）。
+   两个局部变量让它同时适配两种底：Hero 压在剧照上，播放页在卡片里。
+   Hero 容器把 --rating-ink 覆盖成 --hero-ink 即可跟着背景明暗自动反色。 */
+.mtv-rating-row,
+.mtv-rating-text {
+  --rating-ink: var(--ui-ink);
+  --rating-ink-2: var(--ui-ink-2);
+}
+
+.mtv-rating-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.mtv-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  color: var(--rating-ink);
+}
+
+.mtv-rating-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  height: 17px;
+  min-width: 17px;
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+.mtv-rating-badge img {
+  display: block;
+  width: 17px;
+  height: 17px;
+}
+
+/* IMDb / TMDB / Trakt 用彩色官方 logo：图标自带底色和圆角，
+   再垫一层色块就糊成一团，所以这里把底色和 padding 全部去掉 */
+.mtv-rating.is-imdb .mtv-rating-badge,
+.mtv-rating.is-tmdb .mtv-rating-badge,
+.mtv-rating.is-trakt .mtv-rating-badge {
+  min-width: 0;
+  padding: 0;
+  background: none;
+}
+
+/* 豆瓣是文字块而不是方形图标：宽度由「豆瓣」两个字自然撑开（约 26px），
+   要的是横向长方形，所以压矮的是高度而不是宽度 —— 和旁边 17/22px 的方块图标
+   拉开比例，一眼能认出这是另一个站点的标记。 */
+.mtv-rating.is-douban .mtv-rating-badge {
+  background-color: #2e963d;
+  color: #fff;
+  height: 14px;
+  padding: 0 4px;
+}
+
+/* 烂番茄与 Metacritic 保留 emoji：图形 logo 缩到 17px 认不出。
+   emoji 的视觉重心比字母小一圈，字号要压满格子才和旁边的方块图标一个量级。 */
+.mtv-rating.is-rt .mtv-rating-badge,
+.mtv-rating.is-metacritic .mtv-rating-badge {
+  min-width: 0;
+  padding: 0;
+  background: none;
+  font-size: 17px;
+}
+
+.mtv-rating-val,
+.mtv-rating-text-val {
+  font-variant-numeric: tabular-nums;
+}
+
+.mtv-rating-text {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 12px;
+  line-height: 1.2;
+  color: var(--rating-ink-2);
+}
+
+.mtv-rating-text-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.mtv-rating-sep {
+  margin: 0 7px;
+  opacity: 0.45;
+}
+
+.mtv-rating-text-val {
+  font-weight: 600;
+  color: var(--rating-ink);
+}
+
+/* 不跟主题走：Hero 底是剧照。浅色主题下 --hero-ink 是深色字，而「提亮画面」
+   只在有标题 logo 时才生效（.mtv-hero:has(.mtv-hero-logo)），纯文字标题的片子
+   不走那条分支，深色数字会直接糊进暗海报 —— 评分比标题小、又没有描边兜底，
+   最先看不见。这里固定亮色 + 一层暗投影，暗海报和亮海报两边都读得出来。
+
+   必须直接写在子容器上：.mtv-rating-row / .mtv-rating-text 自己会把 --rating-ink
+   重置成 --ui-ink，只写在父级会被它们盖掉，继承不下来 —— 浅色主题下评分就跟着
+   变成深色，压在剧照上等于没有。 */
+.mtv-hero-ratings {
+  display: flex;
+  justify-content: center;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+}
+
+.mtv-hero-ratings .mtv-rating-row,
+.mtv-hero-ratings .mtv-rating-text {
+  --rating-ink: #ffffff;
+  --rating-ink-2: rgba(255, 255, 255, 0.82);
+}
+
+.mtv-hero-ratings .mtv-rating-badge {
+  text-shadow: none;
+}
+
+/* 手机放三个源、桌面放五个。两版都渲染、显隐交给媒体查询，
+   避免首帧在服务端与客户端之间闪一下。 */
+.mtv-hero-ratings .is-wide {
+  display: none;
+}
+
+.mtv-hero-ratings .is-narrow {
+  display: flex;
+}
+
+/* Hero 里的评分要看得清图标：手机基准 13.5px / 图标 17px，
+   桌面 15px / 图标 20px。原来手机是 12px + 14px，压在剧照上糊成一条。 */
+@media (max-width: 767px) {
+  .mtv-hero-ratings .mtv-rating-row {
+    gap: 12px;
+  }
+
+  .mtv-hero-ratings .mtv-rating {
+    gap: 5px;
+    font-size: 13.5px;
+  }
+
+  .mtv-hero-ratings .mtv-rating-badge {
+    height: 17px;
+  }
+
+  .mtv-hero-ratings .mtv-rating-badge img {
+    width: 17px;
+    height: 17px;
+  }
+
+  /* 手机格子只有 17px，emoji 稍大一点就出框，收一档 */
+  .mtv-hero-ratings .mtv-rating.is-rt .mtv-rating-badge,
+  .mtv-hero-ratings .mtv-rating.is-metacritic .mtv-rating-badge {
+    font-size: 18px;
+  }
+}
+
+@media (min-width: 768px) {
+  .mtv-hero-ratings {
+    justify-content: flex-start;
+  }
+
+  .mtv-hero-ratings .is-wide {
+    display: flex;
+  }
+
+  .mtv-hero-ratings .is-narrow {
+    display: none;
+  }
+
+  .mtv-hero-ratings .mtv-rating {
+    gap: 8px;
+    font-size: 17px;
+  }
+
+  .mtv-hero-ratings .mtv-rating-badge {
+    height: 22px;
+  }
+
+  .mtv-hero-ratings .mtv-rating-badge img {
+    width: 22px;
+    height: 22px;
+  }
+
+  /* emoji 跟着 Hero 的图标格一起放大：22px 的格子里字号要压满才够大 */
+  .mtv-hero-ratings .mtv-rating.is-rt .mtv-rating-badge,
+  .mtv-hero-ratings .mtv-rating.is-metacritic .mtv-rating-badge {
+    font-size: 21px;
+  }
+
+  /* 豆瓣的高度跟着 Hero 走一档，但始终比同排的方块图标矮，保持横向长方形 */
+  .mtv-hero-ratings .mtv-rating.is-douban .mtv-rating-badge {
+    height: 18px;
+  }
+}
+
+/* 简介全展开，不再折叠。给一个上限兜底：实测豆瓣这批数据 85–185 字，在 576px
+   正文栏里最多 6 行（144px），离这个上限还有富余。真遇到超长简介时收在这里，
+   总比把标题顶出 Hero 被 overflow-hidden 裁掉强。
+   max() 的下限不能省：只写 30vh 的话，视口高度一小简介就被压没。 */
+.mtv-hero-syn {
+  max-height: max(180px, 30vh);
+  overflow: hidden;
+  color: var(--hero-ink-2);
+}
+
+/* Hero 的主次按钮。
+   参考 Netflix / Disney+ / Apple TV+ 的 Hero CTA：整颗胶囊而不是小圆角矩形，
+   主按钮实心并带一层柔和环境投影，让它从剧照上浮起来；次按钮走玻璃描边。
+   主次只靠填充区分，高度和圆角完全一致——靠尺寸拉开的话两个按钮会打架。
+   两者都补了 focus-visible 描边：Hero 上原本没有任何键盘焦点提示。 */
+.mtv-hero-play {
+  align-items: center;
+  gap: 10px;
+  height: 48px;
+  padding: 0 26px;
+  border-radius: var(--ui-r-full);
+  font-size: var(--ui-fs-body);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  background-color: var(--hero-btn-bg);
+  color: var(--hero-btn-ink);
+  box-shadow: var(--hero-btn-shadow);
+  transition: background-color var(--ui-dur-1) var(--ui-ease),
+    transform var(--ui-dur-1) var(--ui-ease),
+    box-shadow var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-hero-play:hover {
+  background-color: var(--hero-btn-bg-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--hero-btn-shadow-hover);
+}
+
+.mtv-hero-play:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* 播放三角的视觉重心偏左，纯居中看起来会往右跑，往左推 1px 校正 */
+.mtv-hero-play svg {
+  width: 18px;
+  height: 18px;
+  margin-left: -1px;
+  fill: currentColor;
+}
+
+.mtv-hero-play:focus-visible,
+.mtv-hero-more:focus-visible {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: 3px;
+}
+
+/* 次按钮：玻璃描边胶囊 */
+.mtv-hero-more {
+  align-items: center;
+  gap: 8px;
+  height: 48px;
+  padding: 0 22px;
+  border-radius: var(--ui-r-full);
+  font-size: var(--ui-fs-body);
+  font-weight: 600;
+  color: var(--hero-ink);
+  border: 1px solid var(--hero-ghost-hair);
+  background-color: var(--hero-ghost-bg);
+  backdrop-filter: blur(10px);
+  transition: background-color var(--ui-dur-1) var(--ui-ease),
+    border-color var(--ui-dur-1) var(--ui-ease),
+    transform var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-hero-more:hover {
+  background-color: var(--hero-ghost-bg-hover);
+  border-color: var(--hero-ghost-hair-hover);
+  transform: translateY(-1px);
+}
+
+.mtv-hero-more:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* 外链图标是附属符号，压低一档，别和文字抢重量 */
+.mtv-hero-more svg {
+  width: 15px;
+  height: 15px;
+  opacity: 0.7;
+}
+
+.mtv-hero-ctl {
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background-color: var(--hero-ctl-bg);
+  color: var(--hero-ink);
+  backdrop-filter: blur(8px);
+  transition: background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+/* 指示器参考「· ● ▬ ● ·」：当前张是一条白色长条，紧挨着的两颗放大一档，
+   更远的回到小圆点。一排等大的点看不出「现在在哪」，靠大小差才有位置感。
+   当前这条同时兼作自动播放进度：白色底片上压强调色填充，填满就切下一张。 */
+.mtv-hero-dot {
+  position: relative;
+  flex: none;
+  width: 6px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: var(--ui-r-full);
+  background-color: color-mix(in srgb, var(--hero-ink) 30%, transparent);
+  transition:
+    width var(--ui-dur-2) var(--ui-ease),
+    height var(--ui-dur-2) var(--ui-ease),
+    background-color var(--ui-dur-2) var(--ui-ease);
+}
+
+/* 离当前张一格的那两颗。颜色跟 --hero-ink 走，横版剧照（白字）和竖版海报
+   （深字浅底）两套配色的 Hero 都能对上。 */
+.mtv-hero-dot-near {
+  width: 9px;
+  height: 9px;
+  background-color: color-mix(in srgb, var(--hero-ink) 44%, transparent);
+}
+
+.mtv-hero-dot-active {
+  width: 28px;
+  height: 9px;
+  background-color: color-mix(in srgb, var(--hero-ink) 36%, transparent);
+}
+
+.mtv-hero-dot-fill {
+  position: absolute;
+  inset: 0;
+  background-color: var(--ui-accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+/* 时长由 JS 按 autoPlayInterval 内联写入，这里给个兜底值 */
+.mtv-hero-dot-fill-active {
+  animation: mtv-hero-dot-fill 5000ms linear forwards;
+}
+
+@keyframes mtv-hero-dot-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* Hero 高度向 16:9 靠。TMDB 的 backdrop 是 16:9，容器越扁裁掉得越多，
+   裁得越狠就越像"被放大铺满"。这里用 min-height 而不是 height，
+   站长在后台选的更大档位仍然生效。上限压到 560px：再高就只剩一片空画面，
+   文字和海报被拉开，反而更空。
+
+   margin-top:-64px 是让画面钻到顶部导航下面：顶栏在桌面是 fixed 覆盖层，
+   而 main 有 md:pt-16 的 64px 内边距，Hero 头顶就空出一条页面底色的白矩形，
+   透明顶栏压上去看到的就是那块白。提上来之后那条带子由画面填满，
+   min-height 同时加 64，可见画面高度不变（只是顶部多露出 64px 的画面）。 */
+@media (min-width: 768px) {
+  .mtv-hero {
+    margin-top: -64px;
+    min-height: calc(max(480px, min(44vw, 680px)) + 64px);
+  }
+}
+
+/* ==========================================================================
+   首页布局骨架
+   --------------------------------------------------------------------------
+   行与 Hero 共用同一个 --ui-gutter，所以两者左边缘天然对齐，
+   不需要再算「内容区最大宽度」的偏移。
+   ========================================================================== */
+.mtv-page {
+  padding-inline: var(--ui-gutter);
+  padding-bottom: var(--ui-sp-6);
+}
+
+/* 内容行：行间距走统一节奏，替代固定 mb-8 */
+.mtv-row {
+  margin-bottom: var(--ui-row-gap);
+}
+
+/* Hero 内容承载区：左右用同一 gutter，和下面各行的卡片左边缘对齐 */
+.mtv-hero-wrap {
+  padding: var(--ui-sp-5) var(--ui-gutter) var(--ui-sp-7);
+}
+
+/* 卡片容器只有三档尺度，替代原来的 96 / 100 / 120 / 140 / 180 / 200 六种 */
+/* flex: none 是必须的：卡片活在 overflow-x 的 flex 行里，
+   没有它就会被 flex-shrink 按各自的 min-content 宽度不等量压缩——
+   标题长的卡片压得少、标题短的压得多，同一行宽度参差，海报高度也跟着参差。 */
+.mtv-card-sm {
+  flex: none;
+  width: var(--ui-card-sm);
+}
+
+.mtv-card-md {
+  flex: none;
+  width: var(--ui-card-md);
+}
+
+.mtv-card-wide {
+  flex: none;
+  width: var(--ui-card-wide);
+}
+
+/* 继续观看：同一部剧命中多个源时右上角标一下来源。
+   播放记录以「源 + 源内 id」为主键，三个源就是三条记录，卡片本身长得一模一样，
+   不标来源会被当成重复项。默认不给 VideoCard 传源名（hideSource），它那个徽章
+   落在右下角，会和底部的播放进度条打架。 */
+.mtv-cw-src {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 20;
+  max-width: 62%;
+  overflow: hidden;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background-color: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  font-size: var(--ui-fs-nano);
+  font-weight: 600;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.92);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+}
+/* ==========================================================================
+   手机端 Hero
+   --------------------------------------------------------------------------
+   参考主流影视 App 的手机端做法：竖屏里让画面占掉六成屏高，内容块居中压在
+   画面上，信息一行行收紧。
+
+   两个必须解决的问题：
+   1. Tailwind 给的基础高度只有 200px，而内容需要 300px 上下。承载区是底部
+      对齐（items-end），内容一旦超出，溢出的方向朝上——标题顶出 Hero 被
+      overflow-hidden 裁掉，整块挤成一团。
+   2. 竖版海报塞进竖屏天然合适（2:3 对 9:19.5），不像横版那样要裁掉一大半。
+   ========================================================================== */
+@media (max-width: 767px) {
+  /* 画面占掉约七成屏高。
+     高度按 150vw 定：2:3 的海报要完整显示，容器比例就得是 0.67，
+     390px 宽对应 585px 高，正好等于 150vw。再用 72vh 封顶，
+     免得在矮屏手机上把内容全挤出屏幕。 */
+  .mtv-hero {
+    /* 手机顶栏也是 fixed 覆盖层，main 的 mt 让 Hero 从顶栏下沿开始，头顶会留一条
+       页面底色；把 Hero 提上去让画面钻到顶栏下面，min-height 同步加回顶栏高度
+       （48 + 安全区），可见画面高度不变。 */
+    margin-top: calc(-48px - env(safe-area-inset-top));
+    min-height: calc(min(150vw, 72vh) + 48px + env(safe-area-inset-top));
+  }
+
+  /* 内容块居中压在画面上 */
+  .mtv-hero-wrap {
+    align-items: flex-end;
+    justify-content: center;
+    text-align: center;
+    padding-bottom: var(--ui-sp-7);
+  }
+
+  .mtv-hero-body {
+    max-width: 100%;
+  }
+
+  /* 元信息与操作区都要跟着居中 */
+  .mtv-hero-meta,
+  .mtv-hero-actions {
+    justify-content: center;
+  }
+
+  /* 标题字放大并居中：它现在是画面的视觉中心，不再是一行说明文字。
+     注意 logo 是 <img>（块级替换元素），text-align 管不到它，必须用自动外边距。 */
+  .mtv-hero-logo {
+    /* 手机按同一比例缩放：--logo-h 是 JS 按视觉面积算出来的 px 值。
+       这里跟着改成宽度驱动，与基础规则保持同一套算法。 */
+    width: min(
+      calc(var(--logo-h, 64px) * 0.86 * var(--logo-r, 3)),
+      30rem,
+      82vw
+    );
+    margin-inline: auto;
+  }
+
+  /* 参考设计里手机端没有 CTA：整块画面可点即播，再放一个按钮是多余的一层 */
+  .mtv-hero-actions {
+    display: none;
+  }
+
+  /* 元信息改成一行「· 分隔」的弱化文字，不再是一排胶囊标签 */
+  .mtv-hero-chip {
+    padding: 0;
+    background: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    font-weight: 500;
+    color: var(--hero-ink-2);
+  }
+
+  .mtv-hero-chip + .mtv-hero-chip::before {
+    content: '·';
+    margin: 0 5px;
+    opacity: 0.55;
+  }
+
+  /* 简介收 3 行：一条 120 字的简介在 390px 宽下要排 8 行，
+     全展开会把整块内容顶出画面。桌面端仍然是全展开。 */
+  .mtv-hero-syn {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    max-height: none;
+    overflow: hidden;
+  }
+
+  .mtv-hero-meta {
+    font-size: var(--ui-fs-meta);
+  }
+}
+
+/* ==========================================================================
+   卡片悬浮信息面板（方案 A · 卡内展开）
+   --------------------------------------------------------------------------
+   面板绝对定位在卡片内部、从底部滑出，所以滚动行的 overflow 裁不到它，
+   行距也不用改——这正是选 A 而不是 Netflix 式外扩的原因。
+   触屏没有 hover，这里直接用 @media (hover: hover) 兜住，不依赖 Tailwind 的
+   future.hoverOnlyWhenSupported（实测那个只覆盖了一部分规则）。
+   ========================================================================== */
+/* 面板的裁剪层。面板自己靠 translateY(10px) 起步，没有这层包裹时，
+   起步态和淡出尾巴都露在封面下方，看着像"从卡片外面浮进来"。 */
+.mtv-card-clip {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: var(--ui-r-md);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* 封面上的播放键。苹果那套是「半透明深色 + 强模糊 + 白色图形」，
+   既没有描边也没有纯白底：白色圆底压在彩色海报上会抢色，
+   一圈白描边则把它变成一张贴纸。
+
+   显隐刻意不走 opacity：祖先或元素自身 opacity < 1 时 Chrome 不渲染
+   backdrop-filter，于是整个透明度渐变期间按钮都是清晰的，看起来就是
+   「hover 之后过一会儿才糊上」。改用 visibility 做离散切换、transform
+   负责弹出感 —— 全程没有半透明中间态，模糊第一时间就到位。 */
+.mtv-card-play {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: var(--ui-r-full);
+  background: rgba(24, 24, 27, 0.34);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  color: #fff;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.24);
+  visibility: hidden;
+  transform: translateZ(0) scale(0.92);
+  transition: transform var(--ui-dur-2) var(--ui-ease-out),
+    background-color var(--ui-dur-2) var(--ui-ease-out),
+    box-shadow var(--ui-dur-2) var(--ui-ease-out);
+}
+
+/* 三角的几何重心偏左，右移 2px 才是视觉居中 */
+.mtv-card-play-tri {
+  width: 18px;
+  height: 18px;
+  margin-left: 2px;
+  fill: currentColor;
+  stroke: none;
+}
+
+@media (hover: hover) {
+  .group:hover .mtv-card-play {
+    visibility: visible;
+    transform: translateZ(0) scale(1);
+    background: rgba(52, 52, 56, 0.46);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.32);
+  }
+}
+
+.mtv-card-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  padding: var(--ui-sp-3);
+  border-radius: 0 0 var(--ui-r-md) var(--ui-r-md);
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.96),
+    rgba(0, 0, 0, 0.72) 70%,
+    transparent
+  );
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity var(--ui-dur-2) var(--ui-ease-out),
+    transform var(--ui-dur-2) var(--ui-ease-out);
+  pointer-events: none;
+}
+
+@media (hover: hover) {
+  .group:hover .mtv-card-panel {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+}
+
+.mtv-card-panel-acts {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-sp-2);
+  margin-bottom: var(--ui-sp-2);
+}
+
+.mtv-card-panel-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--ui-r-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-card-panel-btn-primary {
+  background: #fff;
+  color: #000;
+}
+
+.mtv-card-panel-btn-ghost {
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: #fff;
+}
+
+.mtv-card-panel-btn-ghost:hover {
+  border-color: #fff;
+}
+
+.mtv-card-panel-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: var(--ui-fs-nano);
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.mtv-card-panel-meta .mtv-card-panel-match {
+  /* 评分数字只做强调，不承载"高分/低分"语义，所以不给它颜色。这条原本是
+     硬编码的 #4ade80，扫 green-* 类名时漏掉的残留。 */
+  color: #fff;
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   分类页筛选器（douban / search 共用的胶囊控件）
+   --------------------------------------------------------------------------
+   容器定了「无容器」：筛选行直接铺在页面上，不再套一层毛玻璃卡。层级全靠
+   胶囊轨道自己的底片表达，跟首页「标题直接领着内容走」是一个路子。
+
+   选中态不给品牌色：分类筛选不是主操作，一屏里有多组同时选中，红色会在画面
+   上散成好几块。这里只用底片 + 文字提亮，品牌色留给真正的行动按钮。
+   ========================================================================== */
+.mtv-caps {
+  position: relative;
+  display: inline-flex;
+  padding: 3px;
+  border-radius: var(--ui-r-full);
+  background: color-mix(in srgb, var(--ui-ink) 8%, transparent);
+}
+
+/* 滑动指示块。位置与宽度由 JS 量按钮的实际像素得出，这里的 transition
+   只负责跟手，所以只需过渡 left 和 width。 */
+.mtv-caps-ind {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  border-radius: var(--ui-r-full);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-elev-1);
+  transition: left var(--ui-dur-2) var(--ui-ease-out),
+    width var(--ui-dur-2) var(--ui-ease-out);
+}
+
+/* 深色下 --ui-surface(#141414) 落在轨道(#1f1f1f)上几乎看不出来，
+   改半透明墨色，和底栏选中态同一套做法。 */
+.dark .mtv-caps-ind {
+  background: color-mix(in srgb, var(--ui-ink) 12%, transparent);
+  box-shadow: none;
+}
+
+/* CapsuleSwitch 的指示块挂在它自己的滚动容器里，那一层没有 padding，
+   所以不缩边，直接撑满轨道内高。 */
+.mtv-caps-ind.is-flush {
+  top: 0;
+  bottom: 0;
+}
+
+.mtv-cap {
+  position: relative;
+  z-index: 1;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  padding: 6px 13px;
+  border: 0;
+  border-radius: var(--ui-r-full);
+  background: transparent;
+  color: var(--ui-ink-2);
+  white-space: nowrap;
+  transition: color var(--ui-dur-2) var(--ui-ease),
+    background-color var(--ui-dur-2) var(--ui-ease);
+}
+
+.mtv-cap:hover {
+  color: var(--ui-ink);
+}
+
+.mtv-cap.is-on {
+  color: var(--ui-ink);
+  font-weight: 650;
+}
+
+/* 背景填充式选中。两个用处：
+     · 没有独立指示块的选择器（如星期）
+     · 下拉式筛选被展开的那个分类按钮（不管它当前是不是默认值）
+   颜色与 .mtv-caps-ind 一致，几处看起来才是一件东西。 */
+.mtv-cap.is-fill {
+  background: var(--ui-surface);
+  box-shadow: var(--ui-elev-1);
+  color: var(--ui-ink);
+}
+
+.dark .mtv-cap.is-fill {
+  background: color-mix(in srgb, var(--ui-ink) 12%, transparent);
+  box-shadow: none;
+}
+
+/* 横滚条藏滚动条：筛选行在窄屏必溢出，露出滚动条很难看 */
+.mtv-caps-wrap {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.mtv-caps-wrap::-webkit-scrollbar {
+  display: none;
+}
+
+/* --------------------------------------------------------------------------
+   下拉式多级筛选的弹层（MultiLevelSelector）
+   --------------------------------------------------------------------------
+   原来是 bg-white/95 + backdrop-blur 的毛玻璃卡，跟「不要液态玻璃」的结论
+   冲突。换实底 + 发丝线 + elev-3：它浮在整页之上，投影比模糊更能表达层级。
+   -------------------------------------------------------------------------- */
+.mtv-filter-pop {
+  background: var(--ui-surface-2);
+  border: 1px solid var(--ui-hair);
+  border-radius: var(--ui-r-lg);
+  box-shadow: var(--ui-elev-3);
+}
+
+.mtv-filter-opt {
+  padding: 6px 10px;
+  border: 0;
+  border-radius: var(--ui-r-sm);
+  background: transparent;
+  font-size: 13px;
+  line-height: 1.35;
+  text-align: left;
+  color: var(--ui-ink-2);
+  cursor: pointer;
+  transition: background-color var(--ui-dur-2) var(--ui-ease),
+    color var(--ui-dur-2) var(--ui-ease);
+}
+
+.mtv-filter-opt:hover {
+  background: color-mix(in srgb, var(--ui-ink) 8%, transparent);
+  color: var(--ui-ink);
+}
+
+.mtv-filter-opt.is-on {
+  background: color-mix(in srgb, var(--ui-ink) 12%, transparent);
+  color: var(--ui-ink);
+  font-weight: 650;
+}
+
+/* 设置面板里的 range 滑块。填充色渐变由内联样式给（要按当前值算百分比），
+   这里只管尺寸和轨道圆角 —— 原来这五个滑块各自抄了一遍同样的 Tailwind 类。 */
+.mtv-range {
+  flex: 1;
+  height: 8px;
+  border-radius: var(--ui-r-sm);
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+/* ==========================================================================
+   路由切换过渡
+   --------------------------------------------------------------------------
+   挂在 PageLayout 的 main 内容上，没有用 app/template.tsx：template 会把整
+   棵子树重挂，导航栏也在里面，动画期间底栏那个 fixed 胶囊会跟着抖一下。
+
+   只用 opacity。transform 和 filter 都会让子元素的 position: fixed 改以这
+   个容器为参照，播放页的全屏层会瞬间错位 —— 淡入是唯一不打破定位的写法。
+
+   同一路由内改 searchParams（切换筛选条件）不会重挂 PageLayout，所以这类
+   操作不会触发整页动画，只有真正换页才播一次。
+   ========================================================================== */
+.mtv-route-in {
+  animation: mtv-route-in var(--ui-dur-2) var(--ui-ease-out) both;
+}
+
+@keyframes mtv-route-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mtv-route-in {
+    animation: none;
+  }
+}
+
+/* ==========================================================================
+   播放页强调色
+   --------------------------------------------------------------------------
+   播放页此前整套用的是原版 MoonTV 的绿（green-* / emerald-*，共 70 处），而站点
+   品牌色早已是 --ui-accent。现已全部改走 ui-accent 工具类，只有四处 Tailwind
+   表达不了的留在这里：
+     · 渐变（Tailwind 的 from-/to- 只能吃静态色值，--ui-accent 是 CSS 变量）
+     · 带透明度的描边（/30 这类透明度修饰符需要 RGB 三元组，hex 变量用不了）
+     · 带透明度的投影（同上，shadow-<color>/25 不会生成）
+   这样换品牌色只改 --ui-accent 一处，播放页自动跟随。
+   ========================================================================== */
+.mtv-play-grad {
+  background-image: linear-gradient(
+    to right,
+    var(--ui-accent),
+    color-mix(in srgb, var(--ui-accent) 78%, #000)
+  );
+}
+
+.mtv-play-hair-soft {
+  border-color: color-mix(in srgb, var(--ui-accent) 30%, transparent);
+}
+
+.mtv-play-glow {
+  background-image: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--ui-accent) 15%, transparent),
+    transparent
+  );
+}
+
+/* 品牌色投影。Tailwind v3 的透明度修饰符对 CSS 变量色值不生效
+   （--ui-accent 是 var(...)，shadow-ui-accent/25 压根不会生成），只能手写：
+   给出 --tw-shadow-color，并把 --tw-shadow 指回 colored 版本。 */
+.mtv-shadow-accent {
+  --tw-shadow-color: color-mix(in srgb, var(--ui-accent) 25%, transparent);
+  --tw-shadow: var(--tw-shadow-colored);
+}
+
+/* ==========================================================================
+   播放页背景
+   --------------------------------------------------------------------------
+   之前是剧照 blur(5px) 直接铺满：糊掉的图仍然是亮的、仍然在抢注意力，正文压在
+   上面就得跟着背景在黑白之间来回切（tmdbBackdrop ? 'text-white' : …）。
+   改成三层 —— 近黑底 / 剧照环境光 / 沉降渐变：剧照只贡献色相、不作为可辨识
+   图像出现，正文永远落在实底上，对比度不再依赖剧照本身亮不亮。
+   ========================================================================== */
+.mtv-play-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: #0a0a0b;
+}
+
+.mtv-play-ambient {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 52%;
+  z-index: 0;
+  pointer-events: none;
+  background-size: cover;
+  background-position: center 28%;
+  background-repeat: no-repeat;
+  filter: blur(80px) saturate(180%) brightness(0.62);
+  opacity: 0.42;
+  transform: scale(1.3);
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    #000 0%,
+    #000 30%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(180deg, #000 0%, #000 30%, transparent 100%);
+}
+
+.mtv-play-settle {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    transparent 14%,
+    rgba(10, 10, 11, 0.78) 33%,
+    rgba(10, 10, 11, 0.95) 48%,
+    #0a0a0b 62%
+  );
+}
+
+/* 播放器容器：原来只有圆角 + 一个 dark: 才有的描边，画面浮不起来。
+   换成令牌圆角 + 常态细描边 + 一层环境投影。不加 overflow:hidden —— 播放器的
+   加载蒙层和控制条是绝对定位的，裁掉会出问题。 */
+.mtv-play-player {
+  border-radius: var(--ui-r-md);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 26px 60px -20px rgba(0, 0, 0, 0.9);
+}
+
+/* 右侧栏：和播放器同一套圆角/描边，另加一层极淡的承托面，让「选集 / 换源 /
+   弹幕」这个面板和播放器读起来是一套东西，而不是一块裸内容。 */
+.mtv-play-rail {
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.075);
+  background-color: rgba(255, 255, 255, 0.035);
+  /* 窄屏收起换源列表后会把侧栏滚回视口顶部（见 toggleAllSources），
+     这里让开顶栏的高度 */
+  scroll-margin-top: 72px;
+}
+
+/* 右侧栏主 Tab（选集 / 换源 / 弹幕）：原来只靠字色区分，切过去没有落点。
+   给每个 tab 一条居中的下划线，激活时才浮出来，压在栏的底边上。 */
+/* 侧栏根节点不再带左右内边距（各 tab 内容自己管），所以这里不需要再用负
+   外边距把自己撑到栏边 —— 直接整宽即可。 */
+.mtv-play-tabbar {
+  display: flex;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.075);
+}
+
+.mtv-play-tab {
+  position: relative;
+  flex: 1;
+  padding-block: 13px;
+  text-align: center;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--mtv-ink-3);
+  transition: color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-play-tab::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -1px;
+  width: 28px;
+  height: 2px;
+  border-radius: 9999px;
+  background-color: var(--ui-accent);
+  opacity: 0;
+  transform: translateX(-50%) scaleX(0.4);
+  transition:
+    opacity var(--ui-dur-2) var(--ui-ease),
+    transform var(--ui-dur-2) var(--ui-ease);
+}
+
+.mtv-play-tab-active::after {
+  opacity: 1;
+  transform: translateX(-50%) scaleX(1);
+}
+
+/* 定稿：激活的 Tab 是白字 + 品牌色下划线，字本身不变色 */
+.mtv-play-tab-active {
+  color: #fff;
+}
+
+/* 播放页固定深色，浮层不能跟着主题走 —— 浅色主题下 --ui-surface-2 是白的，
+   白底菜单压在近黑的右侧栏上会刺眼。这里给一套固定的深色浮层。 */
+.mtv-play-pop {
+  background-color: #1a1a1e;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 18px 44px -14px rgba(0, 0, 0, 0.9);
+}
+
+.mtv-play-pop-item {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.mtv-play-pop-item:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+/* 「更多」面板里的按钮标签常显。工具栏上按钮靠 hover 展开标签是为了省地方，
+   但在下拉面板里这么做会让面板跟着 hover 一起重排。手机上标签本来就是
+   `hidden`，所以这里只影响 lg 及以上。 */
+.mtv-play-pop button > span {
+  max-width: none;
+  margin-left: 0.25rem;
+}
+
+/* ==========================================================================
+   播放页 · 按定稿落地的结构类（design-preview/play-d.html）
+   --------------------------------------------------------------------------
+   定稿是「A 的骨架 + A 的操作区 + B 的卡片分层 + C 的详情内容」：
+   上半部分（播放器 + 右侧栏 / 标题行 / 操作区）用 A —— 操作区是纯文字按钮，
+   没有卡片底、没有胶囊；从详情区开始换成 B 的「面 + 描边」，内容是 C 的。
+   这里把定稿里的 .pg-* 逐条搬过来，只把 --accent 换成 --ui-accent；
+   ink / hair 用定稿给的固定值 —— 播放页恒为深色，不跟主题走。
+   ========================================================================== */
+.mtv-play-root {
+  --mtv-card: rgba(255, 255, 255, 0.04);
+  --mtv-hair: rgba(255, 255, 255, 0.085);
+  --mtv-hair-2: rgba(255, 255, 255, 0.1);
+  --mtv-ink: #f5f5f7;
+  --mtv-ink-2: rgba(255, 255, 255, 0.62);
+  --mtv-ink-3: rgba(255, 255, 255, 0.4);
+  /*
+   * 播放页恒为深色，但 html 上挂的是用户主题（可能是 light），
+   * 于是挂在页面里的子组件（弹幕面板 / 选集过滤 / 矫正标题）读 ui-* 会拿到浅色值，
+   * 变成「深色页面里嵌一块浅色控件」。这里把 ui-* 也一并钉成深色。
+   */
+  --ui-surface-2: #1f1f1f;
+  --ui-surface-3: #2a2a2a;
+  --ui-surface-hover: #343434;
+  --ui-ink: #ffffff;
+  --ui-ink-2: #b3b3b3;
+  --ui-ink-3: #777777;
+  --ui-hair: rgba(255, 255, 255, 0.1);
+  --ui-hair-strong: rgba(255, 255, 255, 0.18);
+  /* 失败态的红也得钉死：浅色主题给的是 #dc2626，压在近黑底上偏闷 */
+  --ui-danger: #f87171;
+  --ui-danger-soft: rgba(248, 113, 113, 0.14);
+}
+
+/* 标题行徽章：年份 / 类型是描边胶囊，完结状态另有一套强调色；评分排在最后 */
+.mtv-play-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 9px;
+  /* 徽章行下面就是「剧情简介」，原来两者贴着（实测间距 0），挤成一团 */
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.mtv-play-badge {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 9999px;
+  border: 1px solid var(--mtv-hair-2);
+  color: var(--mtv-ink-2);
+}
+
+.mtv-play-badge-done {
+  border-color: color-mix(in srgb, var(--ui-accent) 45%, transparent);
+  color: #ff6b72;
+  background-color: color-mix(in srgb, var(--ui-accent) 10%, transparent);
+}
+
+/* 多源评分行：独立在标题行下面。原来是一个琥珀色评分胶囊挤在标题右边，
+   和「标题 + 收藏 + 详情」抢同一行的宽度，加进 IMDb / 烂番茄之后必然换行 */
+.mtv-play-ratings {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 4px 0;
+}
+
+.mtv-play-ratings .mtv-rating {
+  font-size: 14px;
+}
+
+.mtv-play-ratings .mtv-rating-badge {
+  height: 18px;
+  min-width: 18px;
+  font-size: 9.5px;
+}
+
+/* 标题行右侧的小图标按钮（收藏 / 详情）。原来收藏是 28px 的裸图标、详情是
+   一个 16px 的「详」字，两者差了一倍，跟 25px 高的评分胶囊也不齐。
+   统一成 26px 圆形热区 + 17px 图标 */
+.mtv-play-iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 9999px;
+  background-color: transparent;
+  color: var(--mtv-ink-2);
+  cursor: pointer;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-play-iconbtn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--mtv-ink);
+}
+
+.mtv-play-iconbtn svg {
+  width: 17px;
+  height: 17px;
+}
+
+/* 允许标题收缩：超长标题自己换行，不要把收藏 / 详情挤出去 */
+.mtv-play-title {
+  min-width: 0;
+}
+
+/* 手机端：标题占剩下的宽度，图标留在右侧同一行。
+   原来这里是 flex: 0 0 100% 让标题独占整行 —— 那时标题行还挂着评分胶囊，
+   实在挤不下才这么办；评分搬到独立行之后，这条规则只会把图标顶到标题下方 */
+@media (max-width: 640px) {
+  .mtv-play-title {
+    flex: 1 1 auto;
+    text-align: left;
+  }
+}
+
+/* 操作区：纯文字按钮 —— 无底色、无胶囊。分隔符把「常用 / 更多 / 网盘与 AI」分开 */
+.mtv-play-acts {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.mtv-play-act {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 13px;
+  border-radius: 9px;
+  font-size: 13.5px;
+  font-weight: 550;
+  color: var(--mtv-ink-2);
+  background: none;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-play-act:hover {
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.07);
+}
+
+.mtv-play-act-primary {
+  color: #fff;
+}
+
+.mtv-play-act-primary .mtv-play-act-ic {
+  color: var(--ui-accent);
+}
+
+/* 主要操作的图标跟着品牌色走 —— 文字保持白色。这条规则曾经被脚本误插进
+   .mtv-play-badges 的块内；postcss 没有 nesting 插件，浏览器会按后代选择器
+   解析，等于整条失效。现在回到它该在的位置。 */
+.mtv-play-act-primary > svg {
+  color: var(--ui-accent);
+}
+
+.mtv-play-act-ic {
+  display: grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  flex: none;
+  color: currentColor;
+}
+
+.mtv-play-act-sep {
+  width: 1px;
+  height: 18px;
+  background-color: var(--mtv-hair-2);
+  margin: 0 7px;
+}
+
+/* 详情区：左宽右窄。上面压一条分界线，从这里开始用「面 + 描边」 */
+.mtv-play-detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 14px;
+  border-top: 1px solid var(--mtv-hair);
+  padding-top: 20px;
+  align-items: start;
+}
+
+.mtv-play-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.mtv-play-card {
+  background-color: var(--mtv-card);
+  border: 1px solid var(--mtv-hair);
+  border-radius: 16px;
+  padding: 20px 22px;
+}
+/* 播放页失败态：标题 / 错误块 / 操作按钮 / 底部推荐。
+   这一屏原来是一套 gray-*、red-* 加渐变按钮的老写法，和播放页其他面板
+   不是一个语言。底色跟着 --mtv-card 走，语义色统一用 --ui-danger。 */
+.mtv-play-errtitle {
+  margin-bottom: 14px;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--mtv-ink);
+}
+
+.mtv-play-errbox {
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--ui-danger) 28%, transparent);
+  border-radius: 12px;
+  background-color: var(--ui-danger-soft);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--ui-danger);
+}
+
+.mtv-play-errhint {
+  margin-top: 10px;
+  font-size: 12.5px;
+  color: var(--mtv-ink-3);
+}
+
+.mtv-play-erractions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.mtv-play-erraction {
+  display: flex;
+  width: 100%;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 20px;
+  border: 1px solid var(--mtv-hair);
+  border-radius: 12px;
+  background-color: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mtv-ink);
+  cursor: pointer;
+  transition:
+    background-color var(--ui-dur-1) var(--ui-ease),
+    border-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-play-erraction:hover {
+  border-color: var(--ui-hair-strong);
+  background-color: color-mix(in srgb, var(--mtv-ink) 7%, transparent);
+}
+
+.mtv-play-erraction.is-primary {
+  border-color: transparent;
+  background-color: var(--ui-accent);
+  color: var(--ui-accent-ink);
+}
+
+.mtv-play-erraction.is-primary:hover {
+  background-color: color-mix(in srgb, var(--ui-accent) 88%, #000);
+}
+
+/* 也许你想看：失败态底部那排兜底推荐 */
+.mtv-play-recs {
+  width: 100%;
+  max-width: 60rem;
+  margin-top: 18px;
+  padding: 16px 18px;
+  border: 1px solid var(--mtv-hair);
+  border-radius: 16px;
+  background-color: var(--mtv-card);
+}
+
+.mtv-play-recs-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mtv-play-recs-row {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 4px;
+  cursor: grab;
+}
+
+.mtv-play-recs-row:active {
+  cursor: grabbing;
+}
+
+/* 播放页主栏底部的横排推荐 */
+.mtv-play-reclist {
+  margin-top: 22px;
+}
+.mtv-play-sec {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mtv-ink-3);
+  margin-bottom: 13px;
+}
+
+.mtv-play-sec-sub {
+  margin-top: 22px;
+}
+
+.mtv-play-syn {
+  font-size: 14.5px;
+  line-height: 1.8;
+  color: var(--mtv-ink-2);
+  max-width: 78ch;
+  white-space: pre-line;
+}
+
+.mtv-play-syn em {
+  color: var(--mtv-ink);
+  font-style: normal;
+  font-weight: 600;
+}
+
+.mtv-play-meta {
+  display: flex;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+
+.mtv-play-meta dt {
+  font-size: 11.5px;
+  color: var(--mtv-ink-3);
+  margin-bottom: 4px;
+}
+
+.mtv-play-meta dd {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.mtv-play-stills {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.mtv-play-still {
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  border-radius: 8px;
+  object-fit: cover;
+  filter: brightness(0.86);
+  border: 1px solid var(--mtv-hair-2);
+}
+
+.mtv-play-cast {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+
+.mtv-play-cast::-webkit-scrollbar {
+  display: none;
+}
+
+.mtv-play-person {
+  flex: none;
+  width: 88px;
+  text-align: center;
+}
+
+.mtv-play-avatar {
+  width: 88px;
+  height: 88px;
+  border-radius: 9999px;
+  object-fit: cover;
+  background-color: #1c1c21;
+  border: 1px solid var(--mtv-hair-2);
+  margin-bottom: 8px;
+}
+
+.mtv-play-pname {
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.mtv-play-prole {
+  font-size: 11px;
+  color: var(--mtv-ink-3);
+  margin-top: 2px;
+}
+
+/* ---------- 豆瓣短评 ---------- */
+/* 短评原来是一堆 bg-gray-50 灰盒子套在浅色卡片壳里，和播放页的
+   「深色承托面 + 细描边」不是一套。改成细线分隔的列表 */
+.mtv-play-cmts {
+  display: flex;
+  flex-direction: column;
+}
+
+.mtv-play-cmt-stat {
+  font-size: 12px;
+  color: var(--mtv-ink-3);
+  margin-bottom: 2px;
+}
+
+.mtv-play-cmt {
+  padding: 16px 0;
+  border-top: 1px solid var(--mtv-hair);
+}
+
+.mtv-play-cmt:first-child {
+  border-top: 0;
+  padding-top: 2px;
+}
+
+.mtv-play-cmt-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 9px;
+}
+
+.mtv-play-cmt-avatar {
+  display: block;
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  object-fit: cover;
+  background-color: var(--mtv-hair-2);
+}
+
+.mtv-play-cmt-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--mtv-ink);
+  text-decoration: none;
+  transition: color 0.16s ease;
+}
+
+.mtv-play-cmt-name:hover {
+  color: var(--ui-accent);
+}
+
+.mtv-play-cmt-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.mtv-play-cmt-star {
+  width: 13px;
+  height: 13px;
+  fill: rgba(255, 255, 255, 0.16);
+  flex: none;
+}
+
+.mtv-play-cmt-star-on {
+  fill: #ffb020;
+}
+
+.mtv-play-cmt-time {
+  font-size: 11.5px;
+  color: var(--mtv-ink-3);
+  margin-top: 3px;
+}
+
+.mtv-play-cmt-votes {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  color: var(--mtv-ink-3);
+  flex: none;
+}
+
+.mtv-play-cmt-votes-ic {
+  width: 14px;
+  height: 14px;
+}
+
+.mtv-play-cmt-body {
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--mtv-ink-2);
+  white-space: pre-wrap;
+}
+
+.mtv-play-cmt-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+  padding: 30px 0 26px;
+  text-align: center;
+}
+
+.mtv-play-cmt-empty-ic {
+  width: 42px;
+  height: 42px;
+  color: var(--mtv-ink-3);
+  opacity: 0.7;
+}
+
+.mtv-play-cmt-empty-t {
+  font-size: 13px;
+  color: var(--mtv-ink-3);
+}
+
+.mtv-play-cmt-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 9999px;
+  background-color: var(--ui-accent);
+  color: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.16s ease;
+}
+
+.mtv-play-cmt-btn:hover {
+  filter: brightness(1.1);
+}
+
+.mtv-play-cmt-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.mtv-play-cmt-btn-ic {
+  width: 15px;
+  height: 15px;
+}
+
+.mtv-play-cmt-spin {
+  width: 26px;
+  height: 26px;
+  border-radius: 9999px;
+  border: 2px solid var(--mtv-hair-2);
+  border-top-color: var(--ui-accent);
+  animation: mtv-play-cmt-spin 0.8s linear infinite;
+}
+
+@keyframes mtv-play-cmt-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.mtv-play-cmt-foot {
+  padding: 16px 0 2px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--mtv-ink-3);
+}
+
+/* 侧滑抽屉：播放页专属，同样是固定深色 */
+.mtv-drawer {
+  background-color: #141416;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: -24px 0 60px -20px rgba(0, 0, 0, 0.85);
+}
+
+.mtv-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mtv-drawer-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* ---------- 播放页浮层外壳：弹窗 / 抽屉 ---------- */
+/* 这些浮层挂在 .mtv-play-root 之外，拿不到 --mtv-* 令牌，所以这里写死深色值 ——
+   播放页本身就是固定深色，不随主题走 */
+.mtv-dialog-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.62);
+  backdrop-filter: blur(6px);
+}
+
+.mtv-dialog {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: #141416;
+  color: #fff;
+  box-shadow: 0 32px 80px -24px rgba(0, 0, 0, 0.9);
+}
+
+.mtv-dialog-head {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mtv-dialog-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.mtv-dialog-close {
+  border: 0;
+  border-radius: 8px;
+  padding: 7px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  transition:
+    color 0.16s ease,
+    background-color 0.16s ease;
+}
+
+.mtv-dialog-close:hover {
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.mtv-dialog-body {
+  position: relative;
+  padding: 16px 20px;
+}
+
+/* 面板内可点区域的 hover：墨色 7%，深浅色都成立，不用实心灰 */
+.mtv-hover-ink {
+  transition: background-color 0.16s ease;
+}
+
+.mtv-hover-ink:hover {
+  background-color: color-mix(in srgb, var(--ui-ink) 7%, transparent);
+}
+/* ---------- 选择弹幕源 ---------- */
+/* 一个源一行：序号 / 封面 / 标题 + 标签 / 箭头。原来每行是一整块灰底卡片，
+   带彩色 emoji 标签和 hover 才出现的提示文字，卡片套卡片，一屏只能放下两个。 */
+.mtv-dlgsrc {
+  display: flex;
+  max-width: 620px;
+  max-height: 84vh;
+  margin: 0 16px;
+  flex-direction: column;
+}
+
+.mtv-dlgsrc-sub {
+  margin-top: 5px;
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.mtv-dlgsrc-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  padding: 14px 16px;
+}
+
+.mtv-dlgsrc-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  background-color: rgba(255, 255, 255, 0.03);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color var(--ui-dur-1) var(--ui-ease),
+    border-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-dlgsrc-item:hover {
+  border-color: color-mix(in srgb, var(--ui-accent) 45%, transparent);
+  background-color: color-mix(in srgb, var(--ui-accent) 8%, transparent);
+}
+
+.mtv-dlgsrc-idx {
+  flex: none;
+  width: 18px;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.32);
+  transition: color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-dlgsrc-item:hover .mtv-dlgsrc-idx {
+  color: var(--ui-accent);
+}
+
+.mtv-dlgsrc-poster {
+  flex: none;
+  width: 40px;
+  height: 56px;
+  overflow: hidden;
+  border-radius: 6px;
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.mtv-dlgsrc-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mtv-dlgsrc-main {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mtv-dlgsrc-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.mtv-dlgsrc-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.mtv-dlgsrc-tag {
+  padding: 1px 7px;
+  border-radius: 5px;
+  background-color: rgba(255, 255, 255, 0.07);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.mtv-dlgsrc-tag.is-id {
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.mtv-dlgsrc-arrow {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: rgba(255, 255, 255, 0.28);
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    transform var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-dlgsrc-item:hover .mtv-dlgsrc-arrow {
+  color: var(--ui-accent);
+  transform: translateX(2px);
+}
+
+.mtv-dlgsrc-foot {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mtv-dlgsrc-cancel {
+  height: 36px;
+  padding: 0 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9px;
+  background-color: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.62);
+  cursor: pointer;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    border-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-dlgsrc-cancel:hover {
+  border-color: rgba(255, 255, 255, 0.24);
+  color: #fff;
+}
+
+@media (max-width: 767px) {
+  /* 手机上同样居中。贴底一是会压在悬浮底栏上，二是把上方整片屏幕浪费掉，
+     而这类弹窗本身就是「扫一眼、点一个」的短操作，居中才是预期位置。 */
+  .mtv-dlgsrc {
+    max-width: none;
+    max-height: 86vh;
+    margin: 0 14px;
+    border-radius: 18px;
+  }
+
+  .mtv-dlgsrc-body {
+    padding: 12px;
+  }
+
+  .mtv-dlgsrc-item {
+    gap: 10px;
+    padding: 9px 10px;
+  }
+
+  .mtv-dlgsrc-poster {
+    width: 34px;
+    height: 48px;
+  }
+
+  .mtv-dlgsrc-cancel {
+    width: 100%;
+  }
+}
+
+/* ---------- 选择要下载的集数 ---------- */
+/* 这个面板里塞了五截：头部（标题 + 全选/清空）、可选的离线开关、分页、集数网格、
+   底部汇总与按钮。原来整体是 w-[90vw] + px-6，五段横向内边距吃掉三成宽度，手机上
+   标题行、离线说明、底部栏全在换行。这里统一成播放页浮层：桌面居中定宽，手机贴底
+   整宽，内边距收到 14px，底部按钮并排各占一半。 */
+.mtv-dl-ep {
+  display: flex;
+  max-width: 880px;
+  max-height: 82vh;
+  margin: 0 20px;
+  flex-direction: column;
+  /* 弹窗用 createPortal 挂在 body 上，拿不到 .mtv-play-root 里钉死的深色值。
+     失败态的红在这里补一份，免得浅色主题下 #dc2626 压在近黑面板上偏闷。 */
+  --ui-danger: #f87171;
+}
+
+.mtv-dl-ep-sub {
+  margin-top: 4px;
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.mtv-dl-ep-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+}
+
+.mtv-dl-ep-act {
+  height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-dl-ep-act:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.mtv-dl-ep-offline {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.mtv-dl-ep-offline-icon {
+  display: flex;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.mtv-dl-ep-offline-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.mtv-dl-ep-offline-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.mtv-dl-ep-offline-desc {
+  margin-top: 2px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.mtv-dl-ep-badge {
+  padding: 1px 6px;
+  border-radius: 5px;
+  background-color: color-mix(in srgb, var(--ui-accent) 18%, transparent);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--ui-accent);
+}
+
+.mtv-dl-ep-switch {
+  position: relative;
+  flex: none;
+  width: 40px;
+  height: 23px;
+  border: 0;
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 0.16);
+  cursor: pointer;
+  transition: background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-dl-ep-switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 17px;
+  height: 17px;
+  border-radius: 9999px;
+  background-color: #fff;
+  transition: transform var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-dl-ep-switch.is-on {
+  background-color: var(--ui-accent);
+}
+
+.mtv-dl-ep-switch.is-on::after {
+  transform: translateX(17px);
+}
+
+.mtv-dl-ep-pages {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mtv-dl-ep-pagescroll {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.mtv-dl-ep-pagescroll::-webkit-scrollbar {
+  display: none;
+}
+
+.mtv-dl-ep-pagelist {
+  display: flex;
+  gap: 6px;
+  width: max-content;
+}
+
+.mtv-dl-ep-page {
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 7px;
+  background-color: transparent;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.62);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--ui-dur-1) var(--ui-ease),
+    border-color var(--ui-dur-1) var(--ui-ease),
+    color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-dl-ep-page:hover {
+  border-color: rgba(255, 255, 255, 0.24);
+  color: #fff;
+}
+
+.mtv-dl-ep-page.is-on {
+  border-color: transparent;
+  background-color: var(--ui-accent);
+  color: var(--ui-accent-ink);
+}
+
+.mtv-dl-ep-sort {
+  display: flex;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 7px;
+  background-color: transparent;
+  color: rgba(255, 255, 255, 0.62);
+  cursor: pointer;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    border-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-dl-ep-sort:hover {
+  border-color: rgba(255, 255, 255, 0.24);
+  color: #fff;
+}
+
+.mtv-dl-ep-grid {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 8px;
+  overflow-y: auto;
+  padding: 14px 16px;
+}
+
+.mtv-dl-ep-cell {
+  position: relative;
+  display: flex;
+  height: 38px;
+  min-width: 42px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background-color: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.78);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--ui-dur-1) var(--ui-ease),
+    border-color var(--ui-dur-1) var(--ui-ease),
+    color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-dl-ep-cell:hover {
+  border-color: rgba(255, 255, 255, 0.24);
+  background-color: rgba(255, 255, 255, 0.07);
+  color: #fff;
+}
+
+.mtv-dl-ep-cell.is-on {
+  border-color: transparent;
+  background-color: var(--ui-accent);
+  color: var(--ui-accent-ink);
+}
+
+.mtv-dl-ep-cell.is-current::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 5px;
+  height: 5px;
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 0.85);
+}
+
+.mtv-dl-ep-foot {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mtv-dl-ep-sum {
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.mtv-dl-ep-sum strong {
+  font-weight: 600;
+  color: var(--ui-accent);
+}
+
+.mtv-dl-ep-sum .is-warn {
+  color: var(--ui-danger);
+}
+
+.mtv-dl-ep-note {
+  margin-left: 6px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.mtv-dl-ep-btns {
+  display: flex;
+  flex: none;
+  gap: 8px;
+}
+
+.mtv-dl-ep-btn {
+  height: 38px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9px;
+  background-color: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.62);
+  cursor: pointer;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    border-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-dl-ep-btn:hover {
+  border-color: rgba(255, 255, 255, 0.24);
+  color: #fff;
+}
+
+.mtv-dl-ep-btn.is-primary {
+  border-color: transparent;
+  background-color: var(--ui-accent);
+  color: var(--ui-accent-ink);
+}
+
+.mtv-dl-ep-btn.is-primary:hover {
+  background-color: color-mix(in srgb, var(--ui-accent) 88%, #000);
+}
+
+.mtv-dl-ep-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* 手机：贴底整宽。头部让出两行（标题一行、全选清空一行），离线开关的说明文字
+   直接收掉，底部汇总和按钮上下排。 */
+@media (max-width: 767px) {
+  .mtv-dl-ep {
+    max-width: none;
+    max-height: 86vh;
+    margin: 0 14px;
+    border-radius: 18px;
+  }
+
+  .mtv-dl-ep .mtv-dialog-head {
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px;
+  }
+
+  /* 标题块只占剩余宽度，不整行吃满 —— 吃满会把「全选 / 清空 / ×」挤到第二行
+     右对齐，左边就空出一大块，看着像根本没对齐。 */
+  .mtv-dl-ep .mtv-dialog-head > div:first-child {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .mtv-dl-ep .mtv-dialog-title,
+  .mtv-dl-ep .mtv-dl-ep-sub {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mtv-dl-ep-offline {
+    padding: 8px 14px;
+  }
+
+  .mtv-dl-ep-offline-desc {
+    display: none;
+  }
+
+  .mtv-dl-ep-pages {
+    padding: 8px 14px;
+  }
+
+  .mtv-dl-ep-grid {
+    gap: 7px;
+    padding: 12px 14px;
+  }
+
+  .mtv-dl-ep-cell {
+    height: 36px;
+    min-width: 40px;
+    padding: 0 8px;
+    font-size: 12.5px;
+  }
+
+  .mtv-dl-ep-foot {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 10px 14px;
+  }
+
+  .mtv-dl-ep-btns {
+    width: 100%;
+  }
+
+  .mtv-dl-ep-btn {
+    flex: 1;
+  }
+}
+/* 快捷键分组与键帽 */
+.mtv-key-group {
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background-color: rgba(255, 255, 255, 0.03);
+  padding: 12px;
+}
+
+.mtv-key-group-t {
+  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.mtv-key-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  transition: background-color 0.16s ease;
+}
+
+.mtv-key-row:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.mtv-key-cap {
+  display: inline-block;
+  min-width: 28px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background-color: rgba(255, 255, 255, 0.07);
+  text-align: center;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.mtv-key-plus {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.mtv-key-desc {
+  text-align: right;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+/* 右侧栏工具条与集数网格 */
+.mtv-play-rail-body {
+  padding: 14px;
+}
+
+.mtv-play-rail-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.mtv-play-select {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 34px;
+  padding: 0 11px;
+  border-radius: 9px;
+  border: 1px solid var(--mtv-hair-2);
+  background-color: rgba(0, 0, 0, 0.3);
+  font-size: 12.5px;
+  color: var(--mtv-ink-2);
+}
+
+.mtv-play-mini {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  border: 1px solid var(--mtv-hair-2);
+  background-color: rgba(0, 0, 0, 0.3);
+  color: var(--mtv-ink-2);
+  flex: none;
+}
+
+
+/* 桌面端侧栏右上角的「隐藏」按钮。原来是一枚 bg-white/80 + 灰描边的白色
+   胶囊，压在近黑的侧栏上很突兀；换成和工具条按钮同一套深色描边 */
+.mtv-play-hidebtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 11px;
+  border-radius: 9999px;
+  border: 1px solid var(--mtv-hair-2);
+  background-color: rgba(0, 0, 0, 0.3);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mtv-ink-2);
+  cursor: pointer;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    border-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-play-hidebtn:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.mtv-play-hidebtn-ic {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  transition: transform var(--ui-dur-2) var(--ui-ease);
+}
+.mtv-play-eps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.mtv-play-ep {
+  display: grid;
+  place-items: center;
+  height: 44px;
+  border-radius: 9px;
+  border: 1px solid var(--mtv-hair-2);
+  background-color: rgba(255, 255, 255, 0.035);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mtv-ink-2);
+  font-variant-numeric: tabular-nums;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease),
+    border-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-play-ep:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.mtv-play-ep-on,
+.mtv-play-ep-on:hover {
+  background-color: var(--ui-accent);
+  border-color: var(--ui-accent);
+  color: #fff;
+  box-shadow: 0 8px 20px -6px color-mix(in srgb, var(--ui-accent) 70%, transparent);
+}
+
+/* ==========================================================================
+   播放页 · 侧栏重做（选集 / 换源 / 弹幕）
+   --------------------------------------------------------------------------
+   原来的侧栏是「分类 tab 条 + 竖排带集名的列表」：分类 tab 是定宽 w-20 的
+   横向条，旁边两个图标按钮靠 translate-y-[-4px] 硬顶上去假装对齐；选集默认
+   列表视图，47 集就是 47 行要滚。
+   现在换成「工具条 + 集数网格」：范围选择器吃掉剩余宽度（点开菜单，不是原生
+   select —— 原生 select 的下拉面板在深色影院底上改不了配色），两个 34px 方
+   按钮和它同高；集数用等宽数字格，激活格走品牌色 + 投影。
+   ========================================================================== */
+.mtv-play-select,
+.mtv-play-mini {
+  cursor: pointer;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    border-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-play-select:hover,
+.mtv-play-mini:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.mtv-play-select svg {
+  flex: none;
+  transition: transform var(--ui-dur-2) var(--ui-ease);
+}
+
+.mtv-play-select[aria-expanded='true'] svg {
+  transform: rotate(180deg);
+}
+
+.mtv-play-mini:disabled {
+  color: var(--mtv-ink-3);
+  cursor: not-allowed;
+  border-color: var(--mtv-hair);
+}
+
+.mtv-play-ep {
+  position: relative;
+  cursor: pointer;
+}
+
+.mtv-play-ep-on {
+  cursor: default;
+}
+
+/* 已观看的集：右上角一个品牌色小点。定稿没有这个，但播放记录本来就在算，
+   丢掉等于退功能 */
+.mtv-play-ep-dot {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 5px;
+  height: 5px;
+  border-radius: 9999px;
+  background-color: var(--ui-accent);
+}
+
+.mtv-play-ep-on .mtv-play-ep-dot {
+  background-color: rgba(255, 255, 255, 0.85);
+}
+
+/* 集数网格的宿主。桌面端侧栏和播放器等高，网格要能滚；滚动条收窄到 6px，
+   免得在近黑底上切出一条亮边。 */
+.mtv-play-eps-host {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+}
+
+.mtv-play-eps-host::-webkit-scrollbar {
+  width: 6px;
+}
+
+.mtv-play-eps-host::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.16);
+  border-radius: 9999px;
+}
+
+.mtv-play-eps-host::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+/* 窄屏集数走横向滑动。横向条不产生竖向滚动容器，所以手指竖向拖动不再被这块
+   吃掉 —— 页面能正常往下滚。这是「手机端滑到侧栏里出不来」的根治办法。 */
+@media (max-width: 1023px) {
+  .mtv-play-eps-host {
+    flex: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mtv-play-eps-host::-webkit-scrollbar {
+    display: none;
+  }
+
+/* 换源列表里标出「正在播的就是这个源」。排序不再把它置顶之后，需要一个
+   静态的标记 —— 行本身已经有品牌色底，再加一枚小胶囊更明确 */
+.mtv-play-srcnow {
+  flex: none;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  background-color: var(--ui-accent);
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+}
+
+  .mtv-play-eps {
+    display: flex;
+    gap: 8px;
+  }
+
+  .mtv-play-eps > * {
+    flex: none;
+    width: 52px;
+  }
+}
+
+/* 侧栏宿主：窄屏不给固定高度 —— 给了高度就必然要在里面塞一个竖向滚动条，
+   那个滚动条就是「往下滑结果滑进了选集里」的元凶。桌面端和播放器等高的
+   高度由 lg 断点补回来。 */
+.mtv-play-rail-host {
+  position: relative;
+  z-index: 10;
+}
+
+@media (min-width: 1024px) {
+  .mtv-play-rail-host {
+    height: 100%;
+  }
+}
+
+/* 弹幕面板自己需要确定高度才能布局（内部是 h-full + flex-1 overflow-y-auto），
+   窄屏下侧栏不再有固定高度，所以在这里给它一个。 */
+.mtv-play-danmaku-host {
+  height: 420px;
+}
+
+@media (min-width: 1024px) {
+  .mtv-play-danmaku-host {
+    height: auto;
+    flex: 1;
+    min-height: 0;
+  }
+}
+
+/* ==========================================================================
+   窄屏下换源列表默认只留前 4 个源：侧栏去掉内部滚动条之后，几十个源会把页面
+   撑到两千多 px，把详情推到很远。桌面端列表本来就在栏内滚，不裁剪。
+   ========================================================================== */
+.mtv-play-sources-more {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .mtv-play-sources.is-capped > *:nth-child(n + 5) {
+    display: none;
+  }
+
+  .mtv-play-sources-more {
+    display: block;
+  }
+}
+
+/* ==========================================================================
+   播放页 · 换源工具条（排序规则 + 全部重测）
+   ========================================================================== */
+.mtv-play-srctools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex: none;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.075);
+}
+
+.mtv-play-sortmode {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 9px;
+  border: 1px solid var(--mtv-hair-2);
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.mtv-play-sortbtn {
+  padding: 4px 10px;
+  border-radius: 7px;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--mtv-ink-3);
+  cursor: pointer;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-play-sortbtn:hover {
+  color: var(--mtv-ink);
+}
+
+.mtv-play-sortbtn-on,
+.mtv-play-sortbtn-on:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.mtv-play-srcretest {
+  flex: none;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ui-accent);
+  cursor: pointer;
+  transition: opacity var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-play-srcretest:hover {
+  opacity: 0.8;
+}
+
+/* ==========================================================================
+   播放页 · 「更多」面板
+   --------------------------------------------------------------------------
+   原来直接沿用桌面端的形态：绝对定位 + 左偏移（跟着按钮的 offsetLeft）+ 自动
+   宽度，手机上按钮在第四位，偏移已经有 200 多 px，面板再一撑就顶出右边界；
+   而且面板里的标签是 hidden lg:inline，窄屏只剩一排 32px 图标。
+   窄屏改成整宽单列列表：标签常显、点哪行哪行高亮，不再有横向溢出。
+   ========================================================================== */
+.mtv-play-morepanel {
+  position: absolute;
+  top: 100%;
+  z-index: 50;
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  width: max-content;
+  max-width: min(92vw, 46rem);
+  max-height: 70vh;
+  overflow-y: auto;
+  border-radius: 14px;
+  padding: 8px;
+}
+
+/* 「更多」面板：桌面也走纵向列表。
+   原来桌面上是 flex-wrap 横排，一溜自带底色的小方块（紫 / 琥珀 / 白）挤在深色
+   面板里，三套色系互相抢；手机端又切成纵向，两档形态不一致。这里统一成
+   「图标 + 名称」一行一项，颜色只留给图标本身。 */
+.mtv-play-pop.mtv-play-morepanel {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 2px;
+  min-width: 190px;
+  padding: 6px;
+  border-radius: 16px;
+}
+
+.mtv-play-pop.mtv-play-morepanel > button {
+  display: flex;
+  width: 100%;
+  height: auto;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 9px 11px;
+  border: none;
+  border-radius: 10px;
+  background-color: transparent;
+  background-image: none;
+  box-shadow: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.82);
+  text-align: left;
+}
+
+.mtv-play-pop.mtv-play-morepanel > button:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  background-image: none;
+  box-shadow: none;
+  color: #fff;
+  transform: none;
+}
+
+/* 标签常显：桌面上原来要 hover 才展开宽度 */
+.mtv-play-pop.mtv-play-morepanel > button > span {
+  display: inline;
+  max-width: none;
+  margin-left: 0;
+  overflow: visible;
+  white-space: nowrap;
+  color: inherit;
+}
+
+/* 图标统一尺寸，不再各自带彩色底座 */
+.mtv-play-pop.mtv-play-morepanel > button > img,
+.mtv-play-pop.mtv-play-morepanel > button > svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+
+/* 开关类按钮（HLS.js / 原生 HLS）的开启态 */
+.mtv-play-pop.mtv-play-morepanel > button[aria-pressed='true'] {
+  background-color: rgba(255, 255, 255, 0.1);
+  background-image: none;
+  color: #fff;
+}
+@media (max-width: 1023px) {
+  .mtv-play-morepanel {
+    left: 0 !important;
+    right: 0;
+    width: auto;
+    max-width: none;
+    max-height: min(58vh, 400px);
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+    padding: 6px;
+    border-radius: 16px;
+  }
+
+  /* 窄屏下每项都是整宽行：图标 + 常显标签 */
+  .mtv-play-morepanel > button {
+    width: 100%;
+    height: auto;
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    font-size: 13.5px;
+    border-radius: 10px;
+    border: none;
+    background: none;
+    box-shadow: none;
+  }
+
+  .mtv-play-morepanel > button:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .mtv-play-morepanel > button > span {
+    display: inline;
+    max-width: none;
+    margin-left: 0;
+    overflow: visible;
+  }
+
+  .mtv-play-morepanel > button > img {
+    width: 16px;
+    height: 16px;
+    flex: none;
+  }
+}
+
+/* ==========================================================================
+   播放页 · 剧照灯箱
+   ========================================================================== */
+.mtv-play-still {
+  transition:
+    filter var(--ui-dur-2) var(--ui-ease),
+    transform var(--ui-dur-2) var(--ui-ease);
+}
+
+.mtv-play-still-btn {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: zoom-in;
+}
+
+.mtv-play-still-btn:hover .mtv-play-still,
+.mtv-play-still-btn:focus-visible .mtv-play-still {
+  filter: brightness(1);
+  transform: scale(1.04);
+}
+
+.mtv-play-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 4vh 4vw;
+  background-color: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(8px);
+  cursor: zoom-out;
+}
+
+.mtv-play-lightbox img {
+  max-width: 100%;
+  max-height: 92vh;
+  /* 放大看的是原图，不裁圆角 —— 原图什么样就什么样 */
+  border-radius: 0;
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.9);
+}
+
+.mtv-play-lightbox-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background-color: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  cursor: pointer;
+}
+
+.mtv-play-lightbox-count {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 5px 12px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background-color: rgba(0, 0, 0, 0.55);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* ==========================================================================
+   播放页 · 分集卡片与播出日历
+   --------------------------------------------------------------------------
+   定稿（参考 App）的选集是「剧照 + 播出日期 / 时长 + 分集名 + 简介」的卡片。
+   侧栏在桌面 375×750、窄屏全宽但高度自适应，所以同一张卡按断点换排布：
+   桌面单列竖向铺满栏高，窄屏横滑（横条不产生竖向滚动容器，不吃竖向拖动）。
+   ========================================================================== */
+.mtv-play-epcards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+}
+
+.mtv-play-epcards::-webkit-scrollbar {
+  width: 6px;
+}
+
+.mtv-play-epcards::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.16);
+  border-radius: 9999px;
+}
+
+.mtv-play-epcard-slot {
+  flex: none;
+  width: 100%;
+  min-width: 0;
+}
+
+.mtv-play-epcard {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 1px solid var(--mtv-hair-2);
+  border-radius: 12px;
+  background-color: var(--mtv-card);
+  overflow: hidden;
+  text-align: left;
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition:
+    border-color var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-play-epcard:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+  background-color: rgba(255, 255, 255, 0.07);
+}
+
+.mtv-play-epcard-on,
+.mtv-play-epcard-on:hover {
+  border-color: var(--ui-accent);
+  background-color: color-mix(in srgb, var(--ui-accent) 12%, transparent);
+  cursor: default;
+}
+.mtv-play-epcard-art {
+  /* 必须显式 block：这是个 <span>，行内元素的 aspect-ratio 不生效，
+     高度会塌成 0（图片虽然 100% 宽但撑不开容器） */
+  display: block;
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background-color: #16161a;
+  overflow: hidden;
+}
+.mtv-play-epcard-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.9);
+}
+
+.mtv-play-epcard-on .mtv-play-epcard-img {
+  filter: brightness(1);
+}
+
+/* 剧照还在路上：铺一块占满 16:9 的呼吸占位，数据回来换成真图，
+   请求失败才退回大号集数 */
+.mtv-play-epcard-skel {
+  position: absolute;
+  inset: 0;
+  background-color: color-mix(in srgb, var(--ui-ink) 7%, transparent);
+  animation: mtv-skel-pulse 1.4s var(--ui-ease) infinite;
+}
+
+/* 没有 TMDB 剧照时的回落：大号集数，不留一块空画面 */
+.mtv-play-epcard-num {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 30px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--mtv-ink-3);
+}
+
+.mtv-play-epcard-on .mtv-play-epcard-num {
+  color: #fff;
+}
+
+.mtv-play-epcard-tag {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background-color: rgba(0, 0, 0, 0.62);
+  backdrop-filter: blur(6px);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.mtv-play-epcard-on .mtv-play-epcard-tag {
+  background-color: var(--ui-accent);
+}
+
+/* 已看过的集：剧照右上角一个标签。原来是个 6px 的小圆点，太小认不出来 */
+.mtv-play-epcard-watched {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background-color: rgba(0, 0, 0, 0.62);
+  backdrop-filter: blur(6px);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.mtv-play-epcard-body {
+  display: block;
+  padding: 9px 11px 11px;
+}
+
+.mtv-play-epcard-meta {
+  display: flex;
+  gap: 8px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--mtv-ink-3);
+}
+
+.mtv-play-epcard-t {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--mtv-ink);
+}
+
+.mtv-play-epcard-on .mtv-play-epcard-t {
+  color: #fff;
+}
+
+.mtv-play-epcard-syn {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin-top: 4px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--mtv-ink-3);
+}
+
+
+@media (min-width: 1024px) {
+  /* 桌面端保持上下结构，只把剧照收小一点：卡片左右各留 16px 内边距，
+     剧照从「铺满 335 宽 → 16:9 得 188 高」缩到 303×170。
+     注意不能靠压 aspect-ratio 来变矮 —— 那是裁图，人会拦腰裁断；
+     缩宽度才是「原图不变、只是小一点」。 */
+  .mtv-play-epcard {
+    padding: 16px 16px 0;
+  }
+
+  .mtv-play-epcard-art {
+    border-radius: 10px;
+  }
+
+  .mtv-play-epcard-body {
+    padding: 10px 0 14px;
+  }
+}
+
+/* 播出日历 */
+/* 播出日历入口 + 月历。整行是个按钮，点开/收起下面的月历 */
+.mtv-play-aircal-wrap {
+  flex: none;
+  margin-bottom: 10px;
+}
+
+.mtv-play-aircal {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 11px;
+  border: 1px solid var(--mtv-hair-2);
+  background-color: rgba(0, 0, 0, 0.28);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-play-aircal:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.mtv-play-aircal-ic {
+  width: 17px;
+  height: 17px;
+  flex: none;
+  color: var(--ui-accent);
+}
+
+.mtv-play-aircal-txt {
+  flex: 1;
+  min-width: 0;
+}
+
+.mtv-play-aircal-t {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--mtv-ink);
+}
+
+.mtv-play-aircal-s {
+  margin-top: 1px;
+  overflow: hidden;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--mtv-ink-3);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mtv-play-aircal-prog {
+  flex: none;
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--mtv-ink-2);
+}
+
+.mtv-play-aircal-chev {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--mtv-ink-3);
+  transition: transform var(--ui-dur-2) var(--ui-ease);
+}
+
+.mtv-play-aircal-chev-open {
+  transform: rotate(180deg);
+}
+
+/* ---- 月历：7 列 × 6 行固定网格，首尾补邻月日期，切月不跳动 ---- */
+.mtv-play-cal {
+  margin-top: 8px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--mtv-hair-2);
+  background-color: rgba(0, 0, 0, 0.28);
+}
+
+.mtv-play-cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.mtv-play-cal-title {
+  font-size: 13.5px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--mtv-ink);
+}
+
+.mtv-play-cal-nav {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 8px;
+  border: 1px solid var(--mtv-hair-2);
+  background-color: rgba(255, 255, 255, 0.04);
+  color: var(--mtv-ink-2);
+  cursor: pointer;
+  transition: color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-play-cal-nav:hover {
+  color: #fff;
+}
+
+.mtv-play-cal-week,
+.mtv-play-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
+}
+
+.mtv-play-cal-week {
+  margin-bottom: 4px;
+}
+
+.mtv-play-cal-week span {
+  text-align: center;
+  font-size: 10.5px;
+  color: var(--mtv-ink-3);
+}
+
+.mtv-play-cal-day {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  min-height: 40px;
+  padding: 4px 1px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: none;
+  font-family: inherit;
+  color: var(--mtv-ink-2);
+}
+
+.mtv-play-cal-day:not(:disabled) {
+  cursor: pointer;
+}
+
+.mtv-play-cal-num {
+  font-size: 12.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+/* 邻月的日子压暗但保留占位 */
+.mtv-play-cal-day-out .mtv-play-cal-num,
+.mtv-play-cal-day-out .mtv-play-cal-eps {
+  opacity: 0.32;
+}
+
+/* 已播：底色托起来；未播：只描边，表示「排上了但还没到」 */
+.mtv-play-cal-day-aired {
+  background-color: rgba(255, 255, 255, 0.09);
+  color: var(--mtv-ink);
+}
+
+.mtv-play-cal-day-up {
+  border-color: var(--mtv-hair-2);
+}
+
+.mtv-play-cal-day-aired:hover,
+.mtv-play-cal-day-up:hover {
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+/* 当前播放那一集所在的那天 */
+.mtv-play-cal-day-on,
+.mtv-play-cal-day-on:hover {
+  background-color: var(--ui-accent);
+  border-color: var(--ui-accent);
+  color: #fff;
+}
+
+.mtv-play-cal-eps {
+  font-size: 9.5px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--mtv-ink-3);
+}
+
+.mtv-play-cal-day-aired .mtv-play-cal-eps,
+.mtv-play-cal-day-on .mtv-play-cal-eps {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+/* 今天：右上角一个小点 */
+.mtv-play-cal-today {
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  width: 4px;
+  height: 4px;
+  border-radius: 9999px;
+  background-color: var(--ui-accent);
+}
+
+.mtv-play-cal-day-on .mtv-play-cal-today {
+  background-color: #fff;
+}
+
+@media (max-width: 1023px) {
+  /* 窄屏卡片横滑 */
+  .mtv-play-epcards {
+    flex: none;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 4px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mtv-play-epcards::-webkit-scrollbar {
+    display: none;
+  }
+  .mtv-play-epcard-slot {
+    /* 最小宽度压到 140：768 那一档侧栏只有 165px 宽，196 会让卡片比容器还宽 */
+    width: clamp(140px, 62%, 248px);
+    scroll-snap-align: start;
+  }
+
+  /* 卡片等高。横滑行是 align-items: stretch，槽位已经被拉到最高那张的高度，
+     但卡片本身 height: auto，所以只有标题换行的那张是高的 —— 这里铺满槽位。 */
+  .mtv-play-epcard {
+    height: 100%;
+  }
+}
+
+/* ==========================================================================
+   播放页 · 窄屏回落
+   --------------------------------------------------------------------------
+   详情区是「左宽 + 右 320px」两栏，窄屏下 320px 会把左栏挤成一条竖线
+   （标题竖排、徽章堆成一列）。定稿用容器查询，这里用媒体查询，断点对齐
+   栅格自身的 lg / sm。
+   ========================================================================== */
+@media (max-width: 1023px) {
+  .mtv-play-detail {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  /* 操作区：A 的纯文字风格保留，但改成图标在上、文字在下的五宫格 */
+  .mtv-play-acts {
+    padding: 10px 8px 4px;
+    gap: 0;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+  }
+
+  .mtv-play-act {
+    flex-direction: column;
+    gap: 4px;
+    height: auto;
+    padding: 6px 8px;
+    font-size: 10.5px;
+    border-radius: 10px;
+    flex: 1;
+  }
+
+  .mtv-play-act-sep {
+    display: none;
+  }
+
+  /* 手机端只留四项：下载 / 复制链接 / 去广告 / 更多 —— 快捷键、网盘搜索、
+     AI 问片在窄屏是次要的，挤进来会把这一行压变形 */
+  .mtv-play-act-secondary {
+    display: none;
+  }
+
+  .mtv-play-detail {
+    gap: 12px;
+    padding-top: 16px;
+  }
+
+  .mtv-play-col {
+    gap: 12px;
+  }
+
+  /* 集数格：定稿手机端是 5 列栅格、40px 高。原来只有 ≤1023px 的横向条，
+     到手机上就只剩一排能横着划，30 集要划好几屏 */
+  .mtv-play-eps {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 7px;
+  }
+
+  .mtv-play-eps > * {
+    width: auto;
+    height: 40px;
+    font-size: 12.5px;
+  }
+
+  .mtv-play-card {
+    border-radius: 15px;
+    padding: 16px;
+  }
+
+  /* 作品信息：窄屏改成两列栅格。原来是 flex + wrap，每项宽度不同就随机折行
+     （一行很多、一行很少）；两列栅格保证稳定的 22 / 223 分组 */
+  .mtv-play-meta {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 16px;
+  }
+
+  .mtv-play-meta > div {
+    min-width: 0;
+  }
+
+  .mtv-play-meta dd {
+    overflow-wrap: anywhere;
+    font-size: 13px;
+  }
+
+  .mtv-play-stills {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+}
+
+/* ==========================================================================
+   导航无障碍兜底
+   ========================================================================== */
+/* 系统里关掉「透明效果」时，悬浮/毛玻璃一律退回纯色并去掉 backdrop-filter：
+   模糊层在低端设备上本来就卡，而且纯色底可读性只高不低。 */
+@media (prefers-reduced-transparency: reduce) {
+  .mtv-topnav.is-scrolled,
+  .mtv-mheader,
+  .mtv-bnav,
+  .mtv-umenu {
+    backdrop-filter: none;
+  }
+
+  .mtv-topnav.is-scrolled,
+  .mtv-mheader {
+    background-color: var(--ui-surface);
+  }
+
+  .mtv-bnav {
+    background-color: #161618;
+  }
+}
+
+/* 关掉动效时，底片平移、搜索展开、顶栏透明→实底都直接切 */
+@media (prefers-reduced-motion: reduce) {
+  .mtv-topnav,
+  .mtv-topnav::before,
+  .mtv-search,
+  .mtv-search-input,
+  .mtv-search-cancel,
+  .mtv-bnav-pill,
+  .mtv-bnav-item svg,
+  .mtv-mheader,
+  .mtv-umenu,
+  .mtv-mp-row {
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
+  }
+}
+
+/* ==========================================================================
+   路由级骨架（app/loading.tsx）
+   --------------------------------------------------------------------------
+   切 tab 时的占位。只给"形状"，不给真内容——目标是让眼睛立刻看到"在加载"，
+   而不是盯着静止画面猜点了没有。颜色只走 --ui-* 令牌，深浅主题都成立。
+   ========================================================================== */
+.mtv-skel {
+  padding: var(--ui-sp-5) var(--ui-gutter) var(--ui-sp-7);
+}
+
+.mtv-skel-hero {
+  height: min(34vh, 300px);
+  border-radius: var(--ui-r-lg);
+}
+
+.mtv-skel-row {
+  margin-top: var(--ui-sp-6);
+}
+
+.mtv-skel-title {
+  width: 128px;
+  height: 18px;
+  border-radius: var(--ui-r-xs);
+}
+
+.mtv-skel-cards {
+  display: flex;
+  gap: var(--ui-sp-3);
+  margin-top: var(--ui-sp-4);
+  overflow: hidden;
+}
+
+.mtv-skel-card {
+  flex: none;
+  width: var(--ui-card-md);
+  aspect-ratio: 2 / 3;
+  border-radius: var(--ui-r-md);
+}
+
+/* ==========================================================================
+   首页首屏占位
+   --------------------------------------------------------------------------
+   首页是 client component，服务端只能把 loading=true 那一版渲进 HTML。以前
+   这些占位是各模块各写一遍的 gray-* 灰块（8px 圆角、也没有 Hero），首屏于是
+   看起来像上一版的列表页。
+
+   Hero 容器直接复用 .mtv-hero 的上提与最小高度规则，这里只换底色和内容形状，
+   所以骨架的高度、位置和真 Hero 完全一致，数据落地时不跳版。
+   ========================================================================== */
+.mtv-skel-poster {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  border-radius: var(--ui-r-md);
+}
+
+/* 继续观看那一行是 3:2 的横版卡 */
+.mtv-skel-poster.is-wide {
+  aspect-ratio: 3 / 2;
+}
+
+.mtv-skel-line {
+  width: 72%;
+  height: 14px;
+  margin-top: var(--ui-sp-2);
+  border-radius: var(--ui-r-xs);
+}
+
+/* 居中版：分类页的骨架标题条比首页行骨架窄，且要居中 */
+.mtv-skel-line.is-center {
+  width: 68%;
+  margin-inline: auto;
+}
+
+.mtv-hero-skel {
+  background: color-mix(in srgb, var(--ui-ink) 6%, transparent);
+}
+
+.mtv-hero-skel-body {
+  position: absolute;
+  left: var(--ui-gutter);
+  right: var(--ui-gutter);
+  bottom: clamp(28px, 5vw, 64px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-sp-3);
+}
+
+.mtv-hero-skel-title {
+  width: min(44%, 320px);
+  height: clamp(26px, 3.2vw, 42px);
+  border-radius: var(--ui-r-sm);
+}
+
+.mtv-hero-skel-meta {
+  width: min(26%, 180px);
+  height: 12px;
+  border-radius: var(--ui-r-xs);
+}
+
+@media (max-width: 767px) {
+  /* 手机端真 Hero 的内容是居中的，骨架跟着居中 */
+  .mtv-hero-skel-body {
+    align-items: center;
+    bottom: 44px;
+  }
+
+  .mtv-hero-skel-title {
+    width: 62%;
+    height: 32px;
+  }
+
+  .mtv-hero-skel-meta {
+    width: 40%;
+  }
+}
+
+.mtv-skel-hero,
+.mtv-skel-title,
+.mtv-skel-card,
+.mtv-skel-poster,
+.mtv-skel-line,
+.mtv-hero-skel-title,
+.mtv-hero-skel-meta {
+  background-color: color-mix(in srgb, var(--ui-ink) 7%, transparent);
+  animation: mtv-skel-pulse 1.4s var(--ui-ease) infinite;
+}
+
+/* Hero 里的两块压在暗画面上，7% 太淡，抬到 12% */
+.mtv-hero-skel-title,
+.mtv-hero-skel-meta {
+  background-color: color-mix(in srgb, var(--ui-ink) 12%, transparent);
+}
+
+@keyframes mtv-skel-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mtv-skel-hero,
+  .mtv-skel-title,
+  .mtv-skel-card,
+  .mtv-skel-poster,
+  .mtv-skel-line,
+  .mtv-hero-skel-title,
+  .mtv-hero-skel-meta,
+  .mtv-play-epcard-skel {
+    animation: none;
+  }
+}
+
+/* ============================================================
+   银幕点亮（第四种初始化加载样式）
+   起手是一条 1px 光带从中心向两侧展开，到位后淡成呼吸线，
+   文案跟着浮上来；之后循环只剩呼吸线的 opacity 和一条高光扫过。
+   全程只动 transform / opacity，都留在合成层。
+   ============================================================ */
+html[data-loading-style='silver-screen'] .mtv-load-silver {
+  /* 单独写显示规则而不是塞进上面那条共用规则：这里要 grid 居中，
+     共用规则给的是 display: block */
+  display: grid;
+  place-items: center;
+  min-height: 34vh;
+  padding: 0 var(--ui-gutter);
+}
+
+.mtv-load-silver {
+  --mtv-silver-ink: var(--ui-ink);
+  --mtv-silver-ink-2: var(--ui-ink-2);
+}
+
+/* 播放器蒙层是深色底，和另两款一样固定走暗色 */
+.mtv-load-silver.mtv-on-dark {
+  --mtv-silver-ink: #fff;
+  --mtv-silver-ink-2: rgba(255, 255, 255, 0.72);
+}
+
+.mtv-silver {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: min(340px, 78vw);
+  text-align: center;
+}
+
+.mtv-silver-rail {
+  position: relative;
+  width: 100%;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* 光带本体：scaleX 从中心展开，展开完接着呼吸，两个动画串起来 */
+.mtv-silver-line {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--mtv-silver-ink) 50%,
+    transparent 100%
+  );
+  transform: scaleX(0);
+  animation: mtv-silver-open 620ms cubic-bezier(0.22, 1, 0.36, 1) both,
+    mtv-silver-breath 2.6s ease-in-out 620ms infinite;
+}
+
+/* 高光在呼吸线上扫过。宽 42% 从左侧外扫到右侧外，rail 裁掉出界部分 */
+.mtv-silver-sheen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 42%;
+  height: 1px;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--mtv-silver-ink) 50%,
+    transparent 100%
+  );
+  opacity: 0;
+  animation: mtv-silver-sweep 3.2s ease-in-out 700ms infinite;
+}
+
+.mtv-silver-msg {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--mtv-silver-ink);
+  opacity: 0;
+  transform: translateY(6px);
+  animation: mtv-silver-in 420ms ease-out 380ms both;
+}
+
+.mtv-silver-step {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--mtv-silver-ink-2);
+  opacity: 0;
+  transform: translateY(6px);
+  animation: mtv-silver-in 420ms ease-out 560ms both;
+}
+
+@keyframes mtv-silver-open {
+  from {
+    transform: scaleX(0);
+    opacity: 0.4;
+  }
+
+  to {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
+@keyframes mtv-silver-breath {
+  0%,
+  100% {
+    opacity: 0.32;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes mtv-silver-sweep {
+  0% {
+    transform: translateX(-110%);
+    opacity: 0;
+  }
+
+  20% {
+    opacity: 0.85;
+  }
+
+  80% {
+    opacity: 0.85;
+  }
+
+  100% {
+    transform: translateX(260%);
+    opacity: 0;
+  }
+}
+
+@keyframes mtv-silver-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mtv-silver-line,
+  .mtv-silver-sheen,
+  .mtv-silver-msg,
+  .mtv-silver-step {
+    animation: none;
+  }
+
+  .mtv-silver-line {
+    transform: scaleX(1);
+  }
+
+  .mtv-silver-sheen {
+    display: none;
+  }
+
+  .mtv-silver-msg,
+  .mtv-silver-step {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ==========================================================================
+   搜索页 · 输入框
+   --------------------------------------------------------------------------
+   原来同时挂了 border 和 focus:ring-2：聚焦时是「发丝线 + 一圈实心环」两层描边，
+   叠上浏览器自己的 outline 就是红蓝相间的三圈。这里只留一层 —— 发丝线在聚焦时
+   换成强调色，外面用一圈柔光托着，不再画第二道硬边。
+   ========================================================================== */
+.mtv-search-field {
+  border: 1px solid var(--ui-hair);
+  outline: none;
+  transition:
+    border-color var(--ui-dur-1) var(--ui-ease),
+    box-shadow var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-search-field:focus,
+.mtv-search-field:focus-visible {
+  outline: none;
+  border-color: var(--ui-accent);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--ui-accent) 16%, transparent);
+}
+
+.mtv-search-field::-webkit-search-cancel-button {
+  display: none;
+}
+
+/* ==========================================================================
+   播放页 · 换源卡片
+   --------------------------------------------------------------------------
+   一张卡片只留两行：标题 + 画质徽标，源名 + 速度 + 延迟。
+   原来是四层堆叠（标题/画质、源名胶囊、三个各配一种颜色的指标、重测按钮），
+   手机 360px 宽下每张卡占 100px 高，六个源就出屏；三个彩色数字并排，扫过去
+   全是色块。重测按钮只在测速失败的源上出现 —— 顶部本来就有「全部重测」。
+   ========================================================================== */
+.mtv-play-src {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  transition:
+    background-color var(--ui-dur-1) var(--ui-ease),
+    border-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-play-src:hover {
+  background-color: color-mix(in srgb, var(--ui-ink) 7%, transparent);
+}
+
+/* 当前源：左侧一根强调竖条 + 极淡底色。原来用整圈描边，六个源并排时
+   看着像六张都被选中了。 */
+.mtv-play-src.is-current {
+  background-color: color-mix(in srgb, var(--ui-accent) 9%, transparent);
+  border-color: color-mix(in srgb, var(--ui-accent) 24%, transparent);
+}
+
+.mtv-play-src.is-current::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 3px;
+  height: 22px;
+  margin-top: -11px;
+  border-radius: 0 3px 3px 0;
+  background-color: var(--ui-accent);
+}
+
+.mtv-play-src-poster {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 48px;
+  border-radius: 6px;
+  overflow: hidden;
+  background-color: var(--ui-surface-3);
+}
+
+.mtv-play-src-body {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mtv-play-src-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.mtv-play-src-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--ui-ink);
+}
+
+.mtv-play-src-badge {
+  flex: none;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background-color: color-mix(in srgb, var(--ui-ink) 9%, transparent);
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--ui-ink-2);
+}
+
+.mtv-play-src-badge.is-ultra {
+  background-color: color-mix(in srgb, var(--ui-accent) 15%, transparent);
+  color: var(--ui-accent);
+}
+
+.mtv-play-src-badge.is-bad {
+  background-color: var(--ui-danger-soft);
+  color: var(--ui-danger);
+}
+
+/* 源名行：只放源名和集数，不再和指标抢同一行的宽度 */
+.mtv-play-src-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 11.5px;
+  color: var(--ui-ink-3);
+  white-space: nowrap;
+}
+
+.mtv-play-src-name {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mtv-play-src-ep::before {
+  content: '·';
+  margin-right: 6px;
+  opacity: 0.5;
+}
+
+/* 指标行：速度 / 延迟 / 码率三样各给一个语义色。
+   速度决定能不能顺畅看，用强调色；延迟高意味着拖动要等，用琥珀；码率决定画质，
+   用紫。三个色都压在中亮度附近，并排不打架，也不会盖过标题。 */
+/* 指标行：三列固定宽度，列内左对齐。
+   数字宽度天然不等（864.8 KB/s / 4.6 MB/s / 1.8 Mbps），用 · 串起来每行的起止
+   位置都不一样，扫下来眼睛得一直重新找对齐线。改成 grid 之后三项各自成列，
+   纵向对得齐。 */
+.mtv-play-src-metrics {
+  display: grid;
+  grid-template-columns: 74px 54px minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.mtv-play-src-speed {
+  font-weight: 600;
+  color: var(--ui-accent);
+}
+
+.mtv-play-src-ping {
+  color: var(--ui-metric-ping);
+}
+
+.mtv-play-src-bitrate {
+  color: var(--ui-metric-bitrate);
+}
+
+/* 当前排序依据的那一列套一层胶囊 —— 换源列表按什么排的，一眼能看出来。
+   不能用整列宽的下划线：这两个 span 是 grid item，宽度等于列宽，数字只占其中
+   一段，线会一路画到空白处。这里让元素收缩到内容宽再上底色，负 margin 把文字
+   拉回原来的左缘，列宽和纵向对齐都不受影响。currentColor 保证胶囊跟着各列自己
+   的语义色走（速度用强调色、码率用紫）。 */
+.mtv-play-src-speed.is-sort-key,
+.mtv-play-src-bitrate.is-sort-key {
+  width: fit-content;
+  margin-left: -6px;
+  padding: 0 6px;
+  border-radius: 9999px;
+  background-color: color-mix(in srgb, currentColor 16%, transparent);
+  font-weight: 600;
+}
+.mtv-play-src-fail {
+  grid-column: 1 / -1;
+  color: var(--ui-danger);
+}
+
+/* 超时不等于「访问不了」—— 只是没在阈值内测出来，慢源往往照样能播。
+   用中性色，别和真正打不开的源染成一样红。 */
+.mtv-play-src-fail.is-timeout {
+  color: var(--ui-ink-3);
+}
+
+.mtv-play-src-now {
+  flex: none;
+  padding: 1px 7px;
+  border-radius: 9999px;
+  background-color: var(--ui-accent);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--ui-accent-ink);
+}
+
+/* 置顶：管理员钉住的线路。用提醒色区分于「当前」的强调色 —— 一个是系统状态，
+   一个是人工标记，不该长成同一个样子。 */
+.mtv-play-src-pin {
+  flex: none;
+  margin-left: auto;
+  padding: 1px 7px;
+  border-radius: 9999px;
+  background-color: var(--ui-warn-soft);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--ui-warn);
+}
+
+/* 备注：管理员写在视频源配置里的说明，压到源名下一行，最多两行。它和源名同字号、
+   挤在同一块区域，只换颜色扫一眼还是分不出来 —— 用竖线 + 淡底 + 「备注」小标签
+   三层把它标出来，一眼就能看出这不是源本身的属性。 */
+.mtv-play-src-remark {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin-top: 4px;
+  padding: 3px 8px 3px 7px;
+  border-left: 2px solid color-mix(in srgb, var(--ui-accent) 50%, transparent);
+  border-radius: 0 5px 5px 0;
+  background-color: color-mix(in srgb, var(--ui-accent) 7%, transparent);
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--ui-ink-2);
+  word-break: break-word;
+}
+
+.mtv-play-src-remark::before {
+  content: '备注';
+  margin-right: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ui-ink-3);
+}
+
+.mtv-play-src-retry {
+  flex: none;
+  padding: 2px 8px;
+  border: 1px solid var(--ui-hair);
+  border-radius: 6px;
+  background: none;
+  font: inherit;
+  font-size: 11px;
+  color: var(--ui-ink-2);
+  cursor: pointer;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    border-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-play-src-retry:hover {
+  border-color: var(--ui-ink-3);
+  color: var(--ui-ink);
+}
+
+.mtv-play-src-retry:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* 手机：封面再收一档、字号压一级，一屏能多装两个源 */
+@media (max-width: 767px) {
+  .mtv-play-src {
+    gap: 8px;
+    padding: 7px 8px;
+  }
+
+  .mtv-play-src-poster {
+    width: 28px;
+    height: 40px;
+  }
+
+  .mtv-play-src-title {
+    font-size: 13px;
+  }
+
+  .mtv-play-src-meta {
+    gap: 6px;
+    font-size: 11px;
+  }
+
+  .mtv-play-src-metrics {
+    grid-template-columns: 68px 50px minmax(0, 1fr);
+    gap: 6px;
+    font-size: 11px;
+  }
+}
+
+/* 桌面侧栏更宽，卡片跟着舒展 */
+@media (min-width: 1024px) {
+  .mtv-play-src {
+    gap: 12px;
+    padding: 9px 12px;
+  }
+
+  .mtv-play-src-poster {
+    width: 38px;
+    height: 54px;
+  }
+
+  .mtv-play-src-title {
+    font-size: 14px;
+  }
+
+  .mtv-play-src-meta {
+    font-size: 12px;
+  }
+
+  .mtv-play-src-metrics {
+    grid-template-columns: 82px 58px minmax(0, 1fr);
+    font-size: 12px;
+  }
+}
+
+/* 延迟 / 码率两个语义色。深浅色各一档 —— 浅色底上用深一点的琥珀和紫，
+   深色底上提亮，保证两种主题下都够读。掩色不在别处复用，所以就近定义。 */
+:root {
+  --ui-metric-ping: #b45309;
+  --ui-metric-bitrate: #7c3aed;
+}
+
+.dark {
+  --ui-metric-ping: #fbbf24;
+  --ui-metric-bitrate: #a78bfa;
+}
+
+/* ==========================================================================
+   HTTP 环境限制提示
+   --------------------------------------------------------------------------
+   原来是写死的 bg-white / dark:bg-gray-800 加 yellow、blue 两套色，深浅主题各写
+   一遍，和其他弹层完全不是一个语言。现在改成令牌：实底 + 发丝线 + 投影，
+   提醒色走 --ui-warn（和表示「出错了」的 --ui-danger 分开）。
+   ========================================================================== */
+.mtv-httpwarn-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background-color: color-mix(in srgb, #000 55%, transparent);
+  opacity: 0;
+  transition: opacity var(--ui-dur-2) var(--ui-ease);
+}
+
+.mtv-httpwarn-scrim.is-open {
+  opacity: 1;
+}
+
+.mtv-httpwarn-card {
+  width: 100%;
+  max-width: 420px;
+  border: 1px solid var(--ui-hair);
+  border-radius: 16px;
+  background-color: var(--ui-surface);
+  box-shadow: var(--ui-elev-3);
+  transform: scale(0.96);
+  transition: transform var(--ui-dur-2) var(--ui-ease);
+}
+
+.mtv-httpwarn-scrim.is-open .mtv-httpwarn-card {
+  transform: scale(1);
+}
+
+.mtv-httpwarn-body {
+  padding: 20px;
+}
+
+.mtv-httpwarn-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mtv-httpwarn-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background-color: var(--ui-warn-soft);
+  color: var(--ui-warn);
+}
+
+.mtv-httpwarn-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--ui-ink);
+}
+
+.mtv-httpwarn-close {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--ui-ink-3);
+  cursor: pointer;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-httpwarn-close:hover {
+  background-color: color-mix(in srgb, var(--ui-ink) 7%, transparent);
+  color: var(--ui-ink);
+}
+
+.mtv-httpwarn-text {
+  margin: 14px 0 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--ui-ink-2);
+}
+
+.mtv-httpwarn-list {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  list-style: disc;
+  font-size: 13px;
+  line-height: 1.9;
+  color: var(--ui-ink-2);
+}
+
+.mtv-httpwarn-tip {
+  margin: 12px 0 0;
+  padding: 8px 11px;
+  border-radius: 9px;
+  background-color: var(--ui-warn-soft);
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.6;
+  color: var(--ui-warn);
+}
+
+.mtv-httpwarn-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.mtv-httpwarn-btn {
+  flex: 1;
+  height: 38px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color var(--ui-dur-1) var(--ui-ease),
+    border-color var(--ui-dur-1) var(--ui-ease),
+    color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-httpwarn-btn.is-ghost {
+  border-color: var(--ui-hair);
+  background: none;
+  color: var(--ui-ink-2);
+}
+
+.mtv-httpwarn-btn.is-ghost:hover {
+  background-color: color-mix(in srgb, var(--ui-ink) 7%, transparent);
+  color: var(--ui-ink);
+}
+
+.mtv-httpwarn-btn.is-primary {
+  background-color: var(--ui-accent);
+  color: var(--ui-accent-ink);
+}
+
+.mtv-httpwarn-btn.is-primary:hover {
+  filter: brightness(1.08);
+}
+
+/* 手机：从底部浮上来比居中更好按，同时避开底部指示条 */
+@media (max-width: 767px) {
+  .mtv-httpwarn-scrim {
+    align-items: flex-end;
+    padding: 12px;
+  }
+
+  .mtv-httpwarn-card {
+    max-width: none;
+    border-radius: 18px;
+    transform: translateY(16px);
+  }
+
+  .mtv-httpwarn-scrim.is-open .mtv-httpwarn-card {
+    transform: translateY(0);
+  }
+
+  .mtv-httpwarn-body {
+    padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
   }
 }

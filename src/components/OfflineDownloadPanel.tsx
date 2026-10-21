@@ -150,7 +150,7 @@ export function OfflineDownloadPanel({ isOpen, onClose }: OfflineDownloadPanelPr
       case 'paused':
         return 'text-yellow-500 dark:text-yellow-400';
       case 'completed':
-        return 'text-green-500 dark:text-green-400';
+        return 'text-ui-accent ';
       case 'error':
         return 'text-red-500 dark:text-red-400';
       default:
@@ -296,7 +296,7 @@ export function OfflineDownloadPanel({ isOpen, onClose }: OfflineDownloadPanelPr
                         {episodes.map((ep) => (
                           <div
                             key={ep.id}
-                            className='flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs rounded group'
+                            className='flex items-center gap-1 px-2 py-1 bg-ui-accent-soft  text-ui-accent  text-xs rounded group'
                           >
                             <span>第{ep.episodeIndex + 1}集</span>
                             <button
@@ -396,7 +396,7 @@ export function OfflineDownloadPanel({ isOpen, onClose }: OfflineDownloadPanelPr
                           task.status === 'downloading'
                             ? 'bg-gradient-to-r from-blue-500 to-purple-600 animate-pulse'
                             : task.status === 'completed'
-                            ? 'bg-green-500'
+                            ? 'bg-ui-accent'
                             : task.status === 'error'
                             ? 'bg-red-500'
                             : 'bg-gray-400'

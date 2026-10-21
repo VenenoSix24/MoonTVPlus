@@ -1,37 +1,73 @@
 /* eslint-disable @next/next/no-img-element */
 
 import {
+  ArrowUpDown,
+  CalendarDays,
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  GalleryHorizontal,
   LayoutGrid,
-  List as ListIcon,
   Link as LinkIcon,
   MoreVertical,
   Settings,
   Wand2,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { createPortal } from 'react-dom';
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from 'react';
+import { createPortal } from 'react-dom';
 
 import type { DanmakuComment,DanmakuEpisode,DanmakuSelection } from '@/lib/danmaku/types';
 import { generateStorageKey, getCachedPlayRecordsSnapshot } from '@/lib/db.client';
 import { isEpisodeHiddenByFilter } from '@/lib/episode-filter';
 import { loadAllLocalEpisodeProgressRecords } from '@/lib/episode-progress';
 import { isNetdiskSource } from '@/lib/netdisk/source';
+import { resolveSourceKey } from '@/lib/source-key';
 import { EpisodeFilterConfig,SearchResult } from '@/lib/types';
-import { getVideoResolutionFromM3u8, SpeedTestError } from '@/lib/utils';
 import type { SpeedTestErrorType } from '@/lib/utils';
+import { getVideoResolutionFromM3u8, SpeedTestError } from '@/lib/utils';
+import { useLongPress } from '@/hooks/useLongPress';
 
 import DanmakuPanel from '@/components/DanmakuPanel';
 import EpisodeFilterSettings from '@/components/EpisodeFilterSettings';
 import EpisodeTitleCorrectDialog from '@/components/EpisodeTitleCorrectDialog';
 import ProxyImage from '@/components/ProxyImage';
-import { useLongPress } from '@/hooks/useLongPress';
+
+type SourceMetaShape = { remark?: string; pinned?: boolean };
+
+/**
+ * 取某个源的备注 / 置顶，两级回退：
+ *   1. 线路级 —— script:<脚本 key>:<线路 id>，给单独一条线路写的
+ *   2. 脚本级 —— <脚本 key>，该脚本下所有线路共用
+ *
+ * 两个字段分别回退，整体覆盖会出岔子：给某条线路单独写了备注，它就会连脚本级
+ * 的置顶一起丢掉，用户看到的是「只改了个备注，置顶没了」。
+ *
+ * 非脚本源两个 key 指向同一份数据，直接返回即可。
+ */
+function pickSourceMeta(
+  map: Record<string, SourceMetaShape>,
+  rawSource?: string
+): SourceMetaShape | undefined {
+  const value = String(rawSource || '');
+  const exact = map[value];
+  const inherited = map[resolveSourceKey(value)];
+  if (exact === inherited || !exact || !inherited) {
+    return exact || inherited;
+  }
+  return {
+    remark: exact.remark !== undefined ? exact.remark : inherited.remark,
+    pinned: exact.pinned !== undefined ? exact.pinned : inherited.pinned,
+  };
+}
 
 /** 选集按钮上显示的短标签（数字等）；全名仍保留在 originalTitle 供长按查看 */
 function getEpisodeDisplayLabel(
@@ -83,6 +119,25 @@ function getEpisodeDisplayLabel(
   return title;
 }
 
+/** 分组标签的显示文案：分季分组原样显示（S01 / 其他），集数区间补上「集」并
+ *  把连字符两侧留空 —— 对齐定稿里的「1 - 12 集」 */
+function formatEpisodeGroupLabel(label: string): string {
+  if (/^S\d+$/i.test(label) || label === '其他') {
+    return label;
+  }
+  return `${label.replace('-', ' - ')} 集`;
+}
+
+/** 码率文案（"2.5 Mbps" / "1234 Kbps"）→ Kbps 数值，用于「画质优先」排序。
+ *  拿不到就返回 -1，自然排到最后。 */
+function parseBitrateToKbps(bitrate?: string): number {
+  if (!bitrate) return -1;
+  const match = bitrate.match(/([\d.]+)\s*(Kbps|Mbps|kb\/s|mb\/s)/i);
+  if (!match) return -1;
+  const value = Number.parseFloat(match[1]);
+  if (!Number.isFinite(value)) return -1;
+  return /^m/i.test(match[2]) ? value * 1000 : value;
+}
 interface EpisodeNamePopupState {
   title: string;
   x: number;
@@ -90,31 +145,34 @@ interface EpisodeNamePopupState {
   placement: 'top' | 'bottom';
 }
 
-interface EpisodeButtonProps {
+interface EpisodeChipProps {
   episodeNumber: number;
   isActive: boolean;
   isWatched: boolean;
   originalTitle?: string;
-  inactiveEpisodeClass: string;
   /** 仅 netdisk 源启用长按/右键查看全名 */
   enableOriginalNamePopup?: boolean;
   onSelect: (zeroBasedIndex: number) => void;
   onShowOriginalName: (title: string, rect: DOMRect) => void;
 }
 
-/** 单集按钮：点击选集；netdisk 时移动端长按 / 桌面右键显示原集名 popup */
-const EpisodeButton: React.FC<EpisodeButtonProps> = ({
+/** 集数格：定稿的数字格（等宽数字、激活走品牌色 + 投影）。
+ *  纯数字标签补零到两位（01 / 12），OVA 这类非数字标签原样显示。
+ *  netdisk 源下保留移动端长按 / 桌面右键查看原集名。 */
+const EpisodeChip: React.FC<EpisodeChipProps> = ({
   episodeNumber,
   isActive,
   isWatched,
   originalTitle,
-  inactiveEpisodeClass,
   enableOriginalNamePopup = false,
   onSelect,
   onShowOriginalName,
 }) => {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const displayLabel = getEpisodeDisplayLabel(originalTitle, episodeNumber);
+  const chipLabel = /^\d+$/.test(displayLabel)
+    ? displayLabel.padStart(2, '0')
+    : displayLabel;
   // 只要返回了原始集名就允许右键/长按。即使短标签与原名相同，
   // 也不能把按钮设为 disabled，否则 PC 端不会触发 contextmenu。
   const canShowOriginalName =
@@ -122,7 +180,10 @@ const EpisodeButton: React.FC<EpisodeButtonProps> = ({
 
   const showOriginalName = useCallback(() => {
     if (!canShowOriginalName || !buttonRef.current) return;
-    onShowOriginalName(originalTitle!, buttonRef.current.getBoundingClientRect());
+    onShowOriginalName(
+      originalTitle!,
+      buttonRef.current.getBoundingClientRect()
+    );
   }, [canShowOriginalName, onShowOriginalName, originalTitle]);
 
   const longPressProps = useLongPress({
@@ -139,9 +200,7 @@ const EpisodeButton: React.FC<EpisodeButtonProps> = ({
     <button
       ref={buttonRef}
       type='button'
-      // 仅在可显示原名时保持可交互，否则当前集恢复禁用状态。
       disabled={canShowOriginalName ? undefined : isActive || undefined}
-      aria-disabled={isActive || undefined}
       aria-current={isActive ? 'true' : undefined}
       onClick={() => {
         if (!isActive) {
@@ -158,15 +217,14 @@ const EpisodeButton: React.FC<EpisodeButtonProps> = ({
           : undefined
       }
       {...(canShowOriginalName ? longPressProps : {})}
-      className={`relative h-10 min-w-10 px-3 py-2 flex items-center justify-center text-sm font-medium rounded-md transition-all duration-200 whitespace-nowrap font-mono border ${
-        canShowOriginalName ? 'select-none' : ''
+      title={
+        originalTitle && originalTitle.trim() !== ''
+          ? `第 ${episodeNumber} 集 · ${originalTitle.trim()}`
+          : `第 ${episodeNumber} 集`
       }
-        ${isActive
-          ? 'bg-green-500 text-white border-green-400 shadow-lg shadow-green-500/25 dark:bg-green-600 cursor-default'
-          : isWatched
-            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:scale-105 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-700/60 dark:hover:bg-emerald-900/30'
-            : inactiveEpisodeClass
-        }`.trim()}
+      className={`mtv-play-ep ${isActive ? 'mtv-play-ep-on' : ''} ${
+        canShowOriginalName ? 'select-none' : ''
+      }`.trim()}
       style={
         canShowOriginalName
           ? ({
@@ -176,35 +234,114 @@ const EpisodeButton: React.FC<EpisodeButtonProps> = ({
             } as React.CSSProperties)
           : undefined
       }
-      title={isWatched && !isActive ? '已观看过' : undefined}
     >
-      {isWatched && !isActive && (
-        <span className='absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400' />
-      )}
-      {displayLabel}
+      {chipLabel}
+      {isWatched && !isActive && <span className='mtv-play-ep-dot' />}
     </button>
   );
 };
 
-interface EpisodeListItemProps {
+/** 播出日期只保留 YYYY-MM-DD；没有或格式不对就原样返回 */
+function formatAirDate(date?: string): string {
+  if (!date) return '';
+  const match = date.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return match ? `${match[1]}-${match[2]}-${match[3]}` : date;
+}
+
+/** Date → 'YYYY-MM-DD'（本地时区）。播出日期只按日历日比较，不涉及时分秒 */
+function toDateKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+/** 把集号列表压成区间文案：[1,2,3,4] → '1-4'，[7] → '7'，不连续就逗号连起来 */
+function formatEpisodeRange(episodes: number[]): string {
+  if (episodes.length === 0) return '';
+  const sorted = [...episodes].sort((a, b) => a - b);
+  const contiguous = sorted.every((n, i) => n === sorted[0] + i);
+  if (!contiguous) return sorted.join(',');
+  return sorted.length === 1
+    ? `${sorted[0]}`
+    : `${sorted[0]}-${sorted[sorted.length - 1]}`;
+}
+
+interface CalendarCell {
+  /** 'YYYY-MM-DD' */
+  key: string;
+  day: number;
+  /** 是否属于当前展示的月份（首尾会补上邻月的日子） */
+  inMonth: boolean;
+  /** 这一天更新的集号 */
+  episodes: number[];
+}
+
+/** 生成 6×7 的月历网格。周日开头，首尾补齐邻月日期，保证行数固定不跳动。 */
+function buildMonthGrid(
+  monthKey: string,
+  airDates: Map<string, number[]>
+): CalendarCell[] {
+  const [year, month] = monthKey.split('-').map(Number);
+  const startOffset = new Date(year, month - 1, 1).getDay();
+  return Array.from({ length: 42 }, (_, i) => {
+    const date = new Date(year, month - 1, 1 - startOffset + i);
+    const key = toDateKey(date);
+    return {
+      key,
+      day: date.getDate(),
+      inMonth: date.getMonth() === month - 1,
+      episodes: airDates.get(key) ?? [],
+    };
+  });
+}
+
+/** 分集卡片用的数据（按集号-1 索引传入） */
+export interface EpisodeCardData {
+  /** 分集名，弹幕 / TMDB 已合过优先级 */
+  name?: string;
+  overview?: string;
+  runtime?: number;
+  airDate?: string;
+  /** 已拼好图片地址的剧照 */
+  still?: string;
+}
+
+/** 播出日历汇总。只有存在未播集数时才有值 —— 完结剧不显示这一行。 */
+export interface AirCalendar {
+  airedCount: number;
+  totalCount: number;
+  lastEpisodeNumber: number;
+  lastAirDate: string;
+  nextEpisodeNumber: number;
+  nextAirDate: string;
+}
+
+interface EpisodeCardProps {
   episodeNumber: number;
   isActive: boolean;
   isWatched: boolean;
-  /** 弹幕/TMDB 提供的分集名称 */
-  name: string;
-  inactiveRowClass: string;
+  data?: EpisodeCardData;
+  /** 剧照还在加载：用骨架占位，而不是先显示集号 */
+  loading?: boolean;
+  /** TMDB 没有数据时的分集名回落（弹幕分集名） */
+  fallbackName?: string;
   onSelect: (zeroBasedIndex: number) => void;
 }
 
-/** 单集列表行：有分集名称（弹幕/TMDB）时用列表形式展示，序号 + 名称 */
-const EpisodeListItem: React.FC<EpisodeListItemProps> = ({
+/** 分集卡片：剧照 + 播出日期 / 时长 + 分集名 + 简介。
+ *  没有 TMDB 数据时退回「大号集数」，不会留一块空画面。 */
+const EpisodeCard: React.FC<EpisodeCardProps> = ({
   episodeNumber,
   isActive,
   isWatched,
-  name,
-  inactiveRowClass,
+  data,
+  loading = false,
+  fallbackName,
   onSelect,
 }) => {
+  const title =
+    data?.name?.trim() || fallbackName?.trim() || `第 ${episodeNumber} 集`;
+  const airDate = formatAirDate(data?.airDate);
+  const hasMeta = Boolean(airDate) || Boolean(data?.runtime);
+
   return (
     <button
       type='button'
@@ -215,30 +352,42 @@ const EpisodeListItem: React.FC<EpisodeListItemProps> = ({
           onSelect(episodeNumber - 1);
         }
       }}
-      title={name}
-      className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg border text-left transition-all duration-200 ${
-        isActive
-          ? 'bg-green-500 text-white border-green-400 shadow-lg shadow-green-500/25 dark:bg-green-600 cursor-default'
-          : isWatched
-            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-700/60 dark:hover:bg-emerald-900/30'
-            : inactiveRowClass
-      }`.trim()}
+      title={title}
+      className={`mtv-play-epcard ${isActive ? 'mtv-play-epcard-on' : ''}`.trim()}
     >
-      <span
-        className={`flex-shrink-0 h-7 min-w-[1.75rem] px-1.5 flex items-center justify-center rounded-md text-xs font-mono font-semibold ${
-          isActive
-            ? 'bg-white/20 text-white'
-            : isWatched
-              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-300'
-              : 'bg-black/5 dark:bg-white/10'
-        }`}
-      >
-        {episodeNumber}
+      <span className='mtv-play-epcard-art'>
+        {data?.still ? (
+          <ProxyImage
+            originalSrc={data.still}
+            alt={title}
+            className='mtv-play-epcard-img'
+          />
+        ) : loading ? (
+          <span className='mtv-play-epcard-skel' aria-hidden='true' />
+        ) : (
+          <span className='mtv-play-epcard-num'>
+            {String(episodeNumber).padStart(2, '0')}
+          </span>
+        )}
+        <span className='mtv-play-epcard-tag'>
+          {isActive ? '正在播放' : `第 ${episodeNumber} 集`}
+        </span>
+        {isWatched && !isActive && (
+          <span className='mtv-play-epcard-watched'>已看过</span>
+        )}
       </span>
-      <span className='flex-1 truncate text-sm font-medium'>{name}</span>
-      {isWatched && !isActive && (
-        <span className='flex-shrink-0 h-1.5 w-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400' />
-      )}
+      <span className='mtv-play-epcard-body'>
+        {hasMeta && (
+          <span className='mtv-play-epcard-meta'>
+            {airDate && <span>{airDate}</span>}
+            {data?.runtime ? <span>{data.runtime} 分钟</span> : null}
+          </span>
+        )}
+        <span className='mtv-play-epcard-t'>{title}</span>
+        {data?.overview && (
+          <span className='mtv-play-epcard-syn'>{data.overview}</span>
+        )}
+      </span>
     </button>
   );
 };
@@ -260,6 +409,17 @@ interface EpisodeSelectorProps {
   episodes_titles: string[];
   /** 弹幕/TMDB 提供的分集名称（按 episodeNumber-1 索引）；存在时选集以列表形式展示 */
   richEpisodeNames?: (string | undefined)[];
+  /** 分集卡片的数据（剧照 / 简介 / 时长 / 播出日期），按 episodeNumber-1 索引 */
+  episodeCards?: (EpisodeCardData | undefined)[] | null;
+  /** 剧照 / 简介还在路上：卡片先显示骨架，不要先闪一下集号再换成剧照 */
+  episodeCardsLoading?: boolean;
+  /** 播出日历汇总；为 null 表示已完结或没有播出日期，不显示这一行 */
+  airCalendar?: AirCalendar | null;
+  /**
+   * 选集面板当前展示的集号区间。父组件据此按需拉取对应的 TMDB 季 ——
+   * 1000+ 集的剧只看当前这一段，不把二十多季全拉一遍
+   */
+  onVisibleEpisodesChange?: (range: { start: number; end: number }) => void;
   /** 每页显示多少集，默认 50 */
   episodesPerPage?: number;
   /** 当前选中的集数（1 开始） */
@@ -303,6 +463,10 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
   totalEpisodes,
   episodes_titles,
   richEpisodeNames,
+  episodeCards,
+  episodeCardsLoading = false,
+  airCalendar,
+  onVisibleEpisodesChange,
   episodesPerPage = 50,
   value = 1,
   onChange,
@@ -327,36 +491,28 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
   onShowToast,
 }) => {
   const router = useRouter();
+  // 文字色一律走 ui-* 令牌。播放页恒为深色，而 .mtv-play-root 已经把 ui-* 钉成
+  // 深色值；写成 gray-x + dark:gray-y 的话，浅色主题下会拿到浅色变体，
+  // 结果就是深灰字压在深色面板上。下载状态那几个紫/黄/橙/红/蓝是语义色，
+  // 不跟主题走，保持原样。
   const mutedTextClass = useLightTextOnBackdrop
     ? 'text-white/80'
-    : 'text-gray-600 dark:text-gray-300';
+    : 'text-ui-ink-2';
   const faintTextClass = useLightTextOnBackdrop
     ? 'text-white/65'
-    : 'text-gray-500 dark:text-gray-400';
+    : 'text-ui-ink-3';
   const inactiveTabClass = useLightTextOnBackdrop
     ? 'text-white/85 hover:text-white bg-white/10 dark:bg-white/5 hover:bg-white/15 dark:hover:bg-white/10'
-    : 'text-gray-700 hover:text-green-600 bg-black/5 dark:bg-white/5 dark:text-gray-300 dark:hover:text-green-400 hover:bg-black/3 dark:hover:bg-white/3';
-  const inactiveActionTextClass = useLightTextOnBackdrop
-    ? 'text-white/85 hover:text-white'
-    : 'text-gray-700 hover:text-green-600 dark:text-gray-300 dark:hover:text-green-400';
-  const iconButtonClass = useLightTextOnBackdrop
-    ? 'text-white/85 hover:text-white hover:bg-white/15'
-    : 'text-gray-700 hover:text-green-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-green-400 dark:hover:bg-white/20';
-  const inactiveEpisodeClass = useLightTextOnBackdrop
-    ? 'bg-white/15 text-white border-white/10 hover:bg-white/25 hover:scale-105'
-    : 'bg-gray-200 text-gray-700 border-transparent hover:bg-gray-300 hover:scale-105 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600';
-  const inactiveEpisodeRowClass = useLightTextOnBackdrop
-    ? 'bg-white/10 text-white border-white/10 hover:bg-white/20'
-    : 'bg-gray-100 text-gray-700 border-transparent hover:bg-gray-200 dark:bg-gray-800/60 dark:text-gray-200 dark:border-white/5 dark:hover:bg-gray-700/70';
+    : 'text-ui-ink-2 hover:text-ui-accent bg-ui-hair hover:bg-ui-hair-strong';
   const sourceTitleClass = useLightTextOnBackdrop
     ? 'text-white'
-    : 'text-gray-900 dark:text-gray-100';
+    : 'text-ui-ink';
   const sourcePillTextClass = useLightTextOnBackdrop
     ? 'text-white/85'
-    : 'text-gray-700 dark:text-gray-300';
+    : 'text-ui-ink-2';
   const disabledTextClass = useLightTextOnBackdrop
     ? 'text-white/45 cursor-not-allowed'
-    : 'text-gray-400 dark:text-gray-500 cursor-not-allowed';
+    : 'text-ui-ink-3 cursor-not-allowed';
 
   const parseSxxExxTitle = useCallback((title?: string) => {
     const match = title?.match(/[Ss](\d+)[Ee](\d{1,4}(?:\.\d+)?)/);
@@ -561,9 +717,13 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
   }, [currentSource, currentId, episodeProgressContentKey, totalEpisodes, value]);
 
   // 主要的 tab 状态：'danmaku' | 'episodes' | 'sources'
-  // 默认显示选集选项卡，但如果是房员则显示弹幕
+  //
+  // 电影没有选集可挑，默认落到「换源」—— 那里至少还有源列表和测速。落到
+  // episodes 会渲染出一张选不动的「第 1 集」卡片，而 tab 条上根本没有「选集」
+  // 按钮（它按 totalEpisodes > 1 隐藏），看着就像面板卡死了。
+  const noEpisodePicker = totalEpisodes <= 1;
   const [activeTab, setActiveTab] = useState<'danmaku' | 'episodes' | 'sources'>(
-    isRoomMember ? 'danmaku' : 'episodes'
+    isRoomMember ? 'danmaku' : noEpisodePicker ? 'sources' : 'episodes'
   );
 
   // 当房员状态变化时，自动切换到弹幕选项卡
@@ -572,6 +732,14 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
       setActiveTab('danmaku');
     }
   }, [isRoomMember, activeTab]);
+
+  // totalEpisodes 是异步到位的：首帧往往还是占位值，等它确认「这是电影」之后
+  // 再把 tab 从 episodes 挪走。
+  useEffect(() => {
+    if (!isRoomMember && noEpisodePicker && activeTab === 'episodes') {
+      setActiveTab('sources');
+    }
+  }, [isRoomMember, noEpisodePicker, activeTab]);
 
   // 当前分组索引（0 开始）
   const initialPage = Math.max(
@@ -589,14 +757,73 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
   // 手动矫正标题弹窗状态（矫正配置按 videoTitle 存 localStorage，由播放页消费）
   const [showTitleCorrect, setShowTitleCorrect] = useState<boolean>(false);
 
-  // 集数视图模式（列表/网格）与三点菜单
-  const [episodeViewMode, setEpisodeViewMode] = useState<'grid' | 'list'>(
-    'grid'
-  );
-  // 用户是否手动切过视图（切过后不再随分集名自动切换）
-  const userSetViewModeRef = useRef<boolean>(false);
+  // 集数视图模式：分集卡片（定稿，默认）/ 数字网格。原「列表」视图在卡片
+  // 上线后是重复信息，已去掉。
+  const [episodeViewMode, setEpisodeViewMode] = useState<'card' | 'grid'>('card');
+  // 卡片横滑容器：播出日历选日期后要把卡片条滚到那一集
+  const cardStripRef = useRef<HTMLDivElement>(null);
+  // 侧栏根节点：窄屏展开/收起换源列表时要拿它量位置（见 toggleAllSources）
+  const railRef = useRef<HTMLDivElement>(null);
+  const railTopBeforeRef = useRef<number | null>(null);
   const [showEpisodeMenu, setShowEpisodeMenu] = useState<boolean>(false);
   const episodeMenuRef = useRef<HTMLDivElement>(null);
+
+  // 范围选择器（原来是一条横向的分类 tab 条，靠滚轮横向滚动；改成下拉菜单，
+  // 那条链路的 wheel 监听也一并删掉了 —— 它本身就是一个滚轮陷阱）
+  const [showRangeMenu, setShowRangeMenu] = useState<boolean>(false);
+  const rangeMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showRangeMenu) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        rangeMenuRef.current &&
+        !rangeMenuRef.current.contains(e.target as Node)
+      ) {
+        setShowRangeMenu(false);
+      }
+    };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowRangeMenu(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKey);
+    };
+  }, [showRangeMenu]);
+
+  // 窄屏换源列表默认只列前 4 个（见 .mtv-play-sources.is-capped）
+  const [showAllSources, setShowAllSources] = useState<boolean>(false);
+
+  // 窄屏展开/收起换源列表：切换前记一下侧栏顶端的位置，收起后用它把视口拉回来
+  const toggleAllSources = useCallback(() => {
+    railTopBeforeRef.current =
+      railRef.current?.getBoundingClientRect().top ?? null;
+    setShowAllSources((v) => !v);
+  }, []);
+
+  useEffect(() => {
+    const before = railTopBeforeRef.current;
+    railTopBeforeRef.current = null;
+    const rail = railRef.current;
+    if (before === null || !rail) return;
+
+    // 收起时列表短了两千多 px，页面总高跟着变短，浏览器会把 scrollTop 夹到新的
+    // 最大值 —— 视口就飘到很下面去了（用户实测反馈）。直接把侧栏顶端滚回视口
+    // 顶部（顶栏高度由 .mtv-play-rail 的 scroll-margin-top 让开），也就是用户
+    // 开始往下翻列表之前的位置。展开时不干预。
+    if (showAllSources) return;
+    // 用 'auto' 不用 'smooth'：smooth 依赖渲染帧，面板/后台标签页里会静默失效，
+    // 结果就是「什么都不做」。这里是纠错性质的滚动，位置正确比动效重要。
+    rail.scrollIntoView({ block: 'start', behavior: 'auto' });
+  }, [showAllSources]);
+
+  // 换源排序规则（见 sortedSources）
+  const [sourceSortMode, setSourceSortMode] = useState<'speed' | 'quality'>(
+    'speed'
+  );
 
   // 读取本地"优选和测速"开关，默认开启
   const [optimizationEnabled] = useState<boolean>(() => {
@@ -613,7 +840,8 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
     return true;
   });
 
-  // 读取测速超时设置，默认4秒
+  // 读取测速超时设置。默认 8 秒 —— 4 秒太紧：HLS 首次拉 manifest 加首片，
+  // 在跨境线路上经常超，于是被判「测速超时」，点进去其实照样能播。
   const [speedTestTimeout] = useState<number>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('speedTestTimeout');
@@ -621,7 +849,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
         return Number(saved);
       }
     }
-    return 4000;
+    return 8000;
   });
 
   // 集数过滤逻辑
@@ -778,7 +1006,13 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
         return true;
       });
 
-      if (pendingSources.length === 0) return;
+      // 没有待测的源（例如已被预计算结果填满）也要把标志置上 —— 原来这里直接
+      // return，标志位永远停在 false，sortedSources 里的排序被整段挡掉，
+      // 表现就是「测完速了但排序跟没排一样」
+      if (pendingSources.length === 0) {
+        if (!initialTestingCompleted) setInitialTestingCompleted(true);
+        return;
+      }
 
       // 标记开始初始测速
       setIsInitialTesting(true);
@@ -847,78 +1081,6 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
     return groups.map((group) => group.label);
   }, [episodeGroupsAsc, descending]);
 
-  const categoryContainerRef = useRef<HTMLDivElement>(null);
-  const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
-
-  // 添加鼠标悬停状态管理
-  const [isCategoryHovered, setIsCategoryHovered] = useState(false);
-
-  // 阻止页面竖向滚动
-  const preventPageScroll = useCallback((e: WheelEvent) => {
-    if (isCategoryHovered) {
-      e.preventDefault();
-    }
-  }, [isCategoryHovered]);
-
-  // 处理滚轮事件，实现横向滚动
-  const handleWheel = useCallback((e: WheelEvent) => {
-    if (isCategoryHovered && categoryContainerRef.current) {
-      e.preventDefault(); // 阻止默认的竖向滚动
-
-      const container = categoryContainerRef.current;
-      const scrollAmount = e.deltaY * 2; // 调整滚动速度
-
-      // 根据滚轮方向进行横向滚动
-      container.scrollBy({
-        left: scrollAmount,
-        behavior: 'smooth'
-      });
-    }
-  }, [isCategoryHovered]);
-
-  // 添加全局wheel事件监听器
-  useEffect(() => {
-    if (isCategoryHovered) {
-      // 鼠标悬停时阻止页面滚动
-      document.addEventListener('wheel', preventPageScroll, { passive: false });
-      document.addEventListener('wheel', handleWheel, { passive: false });
-    } else {
-      // 鼠标离开时恢复页面滚动
-      document.removeEventListener('wheel', preventPageScroll);
-      document.removeEventListener('wheel', handleWheel);
-    }
-
-    return () => {
-      document.removeEventListener('wheel', preventPageScroll);
-      document.removeEventListener('wheel', handleWheel);
-    };
-  }, [isCategoryHovered, preventPageScroll, handleWheel]);
-
-  // 当分页切换时，将激活的分页标签滚动到视口中间
-  useEffect(() => {
-    const btn = buttonRefs.current[displayPage];
-    const container = categoryContainerRef.current;
-    if (btn && container) {
-      // 手动计算滚动位置，只滚动分页标签容器
-      const containerRect = container.getBoundingClientRect();
-      const btnRect = btn.getBoundingClientRect();
-      const scrollLeft = container.scrollLeft;
-
-      // 计算按钮相对于容器的位置
-      const btnLeft = btnRect.left - containerRect.left + scrollLeft;
-      const btnWidth = btnRect.width;
-      const containerWidth = containerRect.width;
-
-      // 计算目标滚动位置，使按钮居中
-      const targetScrollLeft = btnLeft - (containerWidth - btnWidth) / 2;
-
-      // 平滑滚动到目标位置
-      container.scrollTo({
-        left: targetScrollLeft,
-        behavior: 'smooth',
-      });
-    }
-  }, [displayPage, pageCount]);
 
   // 处理换源tab点击，只在点击时才搜索
   const handleSourceTabClick = () => {
@@ -948,6 +1110,172 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
     [onChange, value]
   );
 
+  // 播出日历：日期 → 该日更新的集号。用 episodeCards 的 airDate（TMDB 播出
+  // 日期），只统计当前源实际有的集数。
+  const airDateMap = useMemo(() => {
+    const map = new Map<string, number[]>();
+    if (!episodeCards) return map;
+    episodeCards.forEach((card, index) => {
+      const date = card?.airDate;
+      if (!date) return;
+      const key = date.slice(0, 10);
+      map.set(key, [...(map.get(key) ?? []), index + 1]);
+    });
+    return map;
+  }, [episodeCards]);
+
+  const todayKey = useMemo(() => toDateKey(new Date()), []);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState('');
+
+  // 默认落在「最新已播」那一集所在的月份。用源内实际有播出日期的集算，而不是
+  // TMDB 该季 —— 完结剧没有 airCalendar，落到「今天」会打开一个空月历。
+  const latestAirDate = useMemo(() => {
+    let latest = '';
+    airDateMap.forEach((_, date) => {
+      if (date > latest) latest = date;
+    });
+    return latest;
+  }, [airDateMap]);
+  const shownMonth = calendarMonth || (latestAirDate || todayKey).slice(0, 7);
+  const calendarCells = useMemo(
+    () => buildMonthGrid(shownMonth, airDateMap),
+    [shownMonth, airDateMap]
+  );
+  const [shownYear, shownMonthNumber] = shownMonth.split('-').map(Number);
+
+  // 当前正在播放那一集的播出日期，用于在日历上标出「你在这里」
+  const activeDayKey = episodeCards?.[value - 1]?.airDate?.slice(0, 10);
+
+  // 日历行的汇总。用源里实际有播出日期的集数算，而不是 TMDB 该季的总集数 ——
+  // 源里可能只上架了 2 集，拿 TMDB 的 8 集当分母会显示成「2 / 8」，误导。
+  const airSummary = useMemo(() => {
+    const entries = Array.from(airDateMap.entries()).sort(([a], [b]) =>
+      a.localeCompare(b)
+    );
+    if (entries.length === 0) return null;
+    let total = 0;
+    let aired = 0;
+    let latestAiredEpisode: number | undefined;
+    let latestAiredDate = '';
+    for (const [date, episodes] of entries) {
+      total += episodes.length;
+      if (date <= todayKey) {
+        aired += episodes.length;
+        latestAiredEpisode = episodes[episodes.length - 1];
+        latestAiredDate = date;
+      }
+    }
+    return {
+      total,
+      aired,
+      firstDate: entries[0][0],
+      lastDate: entries[entries.length - 1][0],
+      latestAiredEpisode,
+      latestAiredDate,
+    };
+  }, [airDateMap, todayKey]);
+
+  const shiftCalendarMonth = useCallback(
+    (delta: number) => {
+      const [year, month] = shownMonth.split('-').map(Number);
+      const next = new Date(year, month - 1 + delta, 1);
+
+      setCalendarMonth(
+        `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`
+      );
+    },
+    [shownMonth]
+  );
+
+  // 把卡片条滚到某一集并居中。按 data-episode 找，不依赖渲染顺序。
+  // 桌面端是竖排（滚 top）、窄屏是横排（滚 left），按实际的 flex-direction 决定
+  // 滚哪个方向 —— 另一个方向虽然 overflow 是 hidden，程序化滚动仍然会生效，
+  // 不判断的话会把内容推歪。
+  // 用 'auto' 不用 'smooth'：smooth 依赖渲染帧，面板 / 后台标签页里会静默失效。
+  const scrollStripToEpisode = useCallback((episodeNumber: number) => {
+    const strip = cardStripRef.current;
+    if (!strip) return;
+    const slot = strip.querySelector<HTMLElement>(
+      `[data-episode="${episodeNumber}"]`
+    );
+    if (!slot) return;
+
+    const stripRect = strip.getBoundingClientRect();
+    const slotRect = slot.getBoundingClientRect();
+
+    if (getComputedStyle(strip).flexDirection === 'column') {
+      strip.scrollTo({
+        top:
+          strip.scrollTop +
+          (slotRect.top - stripRect.top) -
+          (strip.clientHeight - slotRect.height) / 2,
+      });
+    } else {
+      strip.scrollTo({
+        left:
+          strip.scrollLeft +
+          (slotRect.left - stripRect.left) -
+          (strip.clientWidth - slotRect.width) / 2,
+      });
+    }
+  }, []);
+
+  // 进入播放页（含从播放记录 / 历史恢复）时，把卡片条滚到正在播的那一集 ——
+  // 否则不管在播第几集，卡片列表永远停在第一集。
+  //
+  // 首屏几帧内 detail 还没到、栅格高度也没定，卡片尺寸量出来是 0，直接滚会算出
+  // 位移 0 什么也不做。所以轮询到「卡片条有高度且真的能滚」再执行。
+  // 用 setTimeout 而不是 requestAnimationFrame：rAF 依赖渲染帧，面板 / 后台
+  // 标签页里不产生帧，回调永远不触发（'smooth' 滚动失效也是同一个原因）。
+  useEffect(() => {
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let attempts = 0;
+
+    const tick = () => {
+      if (cancelled) return;
+
+      const strip = cardStripRef.current;
+      const slot = strip?.querySelector(`[data-episode="${value}"]`);
+      const ready =
+        strip &&
+        slot &&
+        strip.clientHeight > 0 &&
+        (strip.scrollHeight > strip.clientHeight ||
+          strip.scrollWidth > strip.clientWidth);
+
+      if (ready) {
+        scrollStripToEpisode(value);
+        return;
+      }
+      // 最多等 20 次 × 80ms ≈ 1.6s，避免分集数据一直不来时空转
+      if (attempts++ < 20) {
+        timer = setTimeout(tick, 80);
+      }
+    };
+
+    tick();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [value, episodeViewMode, totalEpisodes, scrollStripToEpisode]);
+
+  // 点日历上的某一天 → 切到那天更新的第一集，并把卡片条滚过去
+  const handleCalendarDay = useCallback(
+    (episodes: number[]) => {
+      const target = episodes[0];
+      if (!target) return;
+      if (target !== value) {
+        onChange?.(target - 1);
+      }
+      scrollStripToEpisode(target);
+      setShowCalendar(false);
+    },
+    [onChange, value, scrollStripToEpisode]
+  );
+
   const handleSourceClick = useCallback(
     (source: SearchResult) => {
       onSourceChange?.(source.source, source.id, source.title);
@@ -973,11 +1301,224 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
     return unit === 'MB/s' ? value * 1024 : value;
   }, []);
 
+  // ---- 源备注 / 置顶 ----
+  // 管理员在视频源配置里写的备注，以及被置顶的源。置顶的源恒排最前 —— 测速
+  // 成功失败都不动位置，方便把主用线路钉死在第一位。
+  const [sourceMetaMap, setSourceMetaMap] = useState<
+    Record<string, { remark?: string; pinned?: boolean }>
+  >({});
+
+  // 每次切到换源页签都重拉一次：参数是在管理面板改的，这边只挂着旧结果的话，
+  // 改完备注回到播放页会看不到变化。
+  useEffect(() => {
+    if (activeTab !== 'sources') return;
+    let alive = true;
+    fetch('/api/source-meta', { cache: 'no-store' })
+      .then((resp) => (resp.ok ? resp.json() : null))
+      .then(
+        (
+          data: {
+            items?: Record<string, { remark?: string; pinned?: boolean }>;
+          } | null
+        ) => {
+          if (!alive || !data?.items) return;
+          setSourceMetaMap(data.items);
+        }
+      )
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [activeTab]);
+
+  // ---- 测速重排不打断滑动 ----
+  // 测速是分批并发跑的，每回来一批 sortedSources 就重算一次，整个列表顺序跟着
+  // 换。用户正往下滑的时候手底下的卡片被抽走，滑到一半就断了。两层处理：
+  //   1. 滚动期间冻结顺序（只有速度数字在变），停手 180ms 后再放行；
+  //   2. 放行时按「视口顶部那张卡片」做滚动锚定 —— 重排前后让它停在原地，别的
+  //      卡片在它上下换位。之前用 FLIP 平移，卡片是从原位滑走的，用户看着还是
+  //      被拖动；锚定是反过来补 scrollTop，视线落点完全不动。
+  const sourcesListRef = useRef<HTMLDivElement | null>(null);
+  const scrollIdleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollBusyRef = useRef(false);
+  const frozenOrderRef = useRef<string[] | null>(null);
+  const lastOrderRef = useRef<string[]>([]);
+  const anchorRef = useRef<{ key: string; top: number } | null>(null);
+  const anchorLoopRef = useRef<number | null>(null);
+  const anchorLoopUntilRef = useRef(0);
+  const [scrollBusy, setScrollBusy] = useState(false);
+
+  // 真正在滚的元素不一定是列表自己 —— 手机上的换源是底部抽屉，内层可能没有
+  // 滚动空间，滚的是外面那层。从列表往上找第一个「装不下且有滚动条」的祖先。
+  const resolveScrollHost = useCallback((): HTMLElement | null => {
+    const base = sourcesListRef.current;
+    if (!base) return null;
+    let node: HTMLElement | null = base;
+    while (node) {
+      const style = getComputedStyle(node);
+      if (
+        /(auto|scroll)/.test(style.overflowY) &&
+        node.scrollHeight > node.clientHeight + 4
+      ) {
+        return node;
+      }
+      node = node.parentElement;
+    }
+    return base;
+  }, []);
+
+  // 记下视口顶部第一张卡片，以及它离滚动容器顶边的距离。重排后拿同一个 key
+  // 再量一次，差值补进 scrollTop 就够了。
+  const captureAnchor = useCallback(() => {
+    const host = sourcesListRef.current;
+    if (!host) return;
+    const cards = Array.from(
+      host.querySelectorAll<HTMLElement>('[data-src-key]')
+    );
+    if (cards.length === 0) return;
+    const frame = resolveScrollHost();
+    const frameTop = frame ? frame.getBoundingClientRect().top : 0;
+    for (const card of cards) {
+      const rect = card.getBoundingClientRect();
+      if (rect.bottom - frameTop <= 0) continue;
+      const key = card.dataset.srcKey;
+      if (key) anchorRef.current = { key, top: rect.top - frameTop };
+      return;
+    }
+  }, [resolveScrollHost]);
+
+  // 交互期间逐帧刷新锚点。只靠 scroll 事件不够 —— 列表在手机上是触摸滑动、
+  // 桌面是滚轮，两种都可能不触发容器自身的 scroll（滚的是外层或整页），锚点
+  // 一旦过期，重排后就会按老位置补偿，人就被拽回去了。
+  const kickAnchorLoop = useCallback(() => {
+    anchorLoopUntilRef.current = performance.now() + 400;
+    if (anchorLoopRef.current != null) return;
+    const tick = () => {
+      captureAnchor();
+      if (performance.now() < anchorLoopUntilRef.current) {
+        anchorLoopRef.current = requestAnimationFrame(tick);
+      } else {
+        anchorLoopRef.current = null;
+      }
+    };
+    anchorLoopRef.current = requestAnimationFrame(tick);
+  }, [captureAnchor]);
+
+  // 换源列表的排序结果：
+  //   1. 被置顶的源恒在最前，测速排名不参与，成功失败都不动位置
+  //   2. 其余按所选规则：速度优先 → 网速降序，相同再比画质；画质优先反过来
+  // 测速未完成的源速度为 -1，自然落到最后。
+  const baseSortedSources = useMemo(() => {
+    const keyOf = (source: SearchResult) => `${source.source}-${source.id}`;
+    return [...availableSources].sort((a, b) => {
+      const pinnedDiff =
+        (pickSourceMeta(sourceMetaMap, b.source)?.pinned ? 1 : 0) -
+        (pickSourceMeta(sourceMetaMap, a.source)?.pinned ? 1 : 0);
+      if (pinnedDiff !== 0) return pinnedDiff;
+
+      // 不设「等全部测完再排」的闸门：那个标志位一旦没翻上来，排序就整段失效，
+      // 用户看到的是「测完速了顺序还是乱的」。没有数据的源速度为 -1，天然排在
+      // 最后，边测边排也不会错乱。
+      const aInfo = videoInfoMap.get(keyOf(a));
+
+      const bInfo = videoInfoMap.get(keyOf(b));
+      const speedDiff =
+        (bInfo ? parseSpeedToKBps(bInfo.loadSpeed) : -1) -
+        (aInfo ? parseSpeedToKBps(aInfo.loadSpeed) : -1);
+      // 「画质优先」按码率排，不按 1080p / 4K 这种标称档位 —— 同样标 1080p
+      // 的源实际码率能差一倍，标称值说明不了清晰度
+      const bitrateDiff =
+        (bInfo ? parseBitrateToKbps(bInfo.bitrate) : -1) -
+        (aInfo ? parseBitrateToKbps(aInfo.bitrate) : -1);
+
+      return sourceSortMode === 'quality'
+        ? bitrateDiff || speedDiff
+        : speedDiff || bitrateDiff;
+    });
+  }, [
+    availableSources,
+    videoInfoMap,
+    parseSpeedToKBps,
+    sourceSortMode,
+    sourceMetaMap,
+  ]);
+
+  // 滚动中沿用进入滚动前的顺序，其余时候用最新排序
+  const sortedSources = useMemo(() => {
+    const frozen = frozenOrderRef.current;
+    if (!scrollBusy || !frozen) return baseSortedSources;
+    const rank = new Map(frozen.map((key, index) => [key, index]));
+    const keyOf = (source: SearchResult) => `${source.source}-${source.id}`;
+    return [...baseSortedSources].sort(
+      (a, b) =>
+        (rank.get(keyOf(a)) ?? Number.MAX_SAFE_INTEGER) -
+        (rank.get(keyOf(b)) ?? Number.MAX_SAFE_INTEGER)
+    );
+  }, [baseSortedSources, scrollBusy]);
+
+  useEffect(() => {
+    lastOrderRef.current = sortedSources.map(
+      (source) => `${source.source}-${source.id}`
+    );
+  }, [sortedSources]);
+
+  const markListBusy = useCallback(() => {
+    if (!scrollBusyRef.current) {
+      scrollBusyRef.current = true;
+      frozenOrderRef.current = lastOrderRef.current;
+      setScrollBusy(true);
+    }
+    if (scrollIdleTimerRef.current) clearTimeout(scrollIdleTimerRef.current);
+    scrollIdleTimerRef.current = setTimeout(() => {
+      scrollBusyRef.current = false;
+      frozenOrderRef.current = null;
+      setScrollBusy(false);
+    }, 180);
+    kickAnchorLoop();
+  }, [kickAnchorLoop]);
+
+  useEffect(
+    () => () => {
+      if (scrollIdleTimerRef.current) clearTimeout(scrollIdleTimerRef.current);
+      if (anchorLoopRef.current != null) cancelAnimationFrame(anchorLoopRef.current);
+    },
+    []
+  );
+
+  // 重排后把锚点拉回原位：scrollTop 直接补差值，卡片本身不带任何动画，视线
+  // 落点会像没动过一样。
+  //
+  // 补完越界的就不补 —— 越界意味着锚点那张卡自己飞到视口外了（常见于它测出来
+  // 最快、被判到列表第一位）。这时候硬跟就会把用户拽回顶部，宁可让滚动位置
+  // 原地不动。
+  useLayoutEffect(() => {
+    const list = sourcesListRef.current;
+    if (!list) return;
+    const frame = resolveScrollHost();
+    const anchor = anchorRef.current;
+    if (frame && anchor) {
+      const target = Array.from(
+        list.querySelectorAll<HTMLElement>('[data-src-key]')
+      ).find((card) => card.dataset.srcKey === anchor.key);
+      if (target) {
+        const frameTop = frame.getBoundingClientRect().top;
+        const delta = target.getBoundingClientRect().top - frameTop - anchor.top;
+        const next = frame.scrollTop + delta;
+        const maxScroll = frame.scrollHeight - frame.clientHeight;
+        if (Math.abs(delta) > 1 && next >= 0 && next <= maxScroll) {
+          frame.scrollTop = next;
+        }
+      }
+    }
+    captureAnchor();
+  }, [sortedSources, captureAnchor, resolveScrollHost]);
+
   // 重新测试单个源
   const handleRetestSource = useCallback(
     async (source: SearchResult, e: React.MouseEvent) => {
       e.stopPropagation(); // 阻止事件冒泡，避免触发换源
       const sourceKey = `${source.source}-${source.id}`;
+
 
       // 标记为正在测试
       setRetestingSources((prev) => new Set(prev).add(sourceKey));
@@ -1012,24 +1553,32 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
     episodes: [],
   };
 
-  // 弹幕/TMDB 提供了分集名称时，选集改为列表形式展示
-  const hasRichEpisodeNames = useMemo(
-    () =>
-      Array.isArray(richEpisodeNames) &&
-      richEpisodeNames.some((n) => !!n && n.trim() !== ''),
-    [richEpisodeNames]
-  );
+  // 工具条上显示的当前范围文案
+  const currentGroupLabel = formatEpisodeGroupLabel(currentEpisodeGroup.label);
 
-  // 无有效分集名（弹幕+TMDB 两路都失败）→ 无条件强制网格，避免残留列表视图用「第x集」兜底填满；
-  // 有分集名时才自动列表，且尊重用户手动切换
+  // 把当前展示的集号区间报给父组件，让它只拉这一段覆盖到的 TMDB 季。
+  // 父组件那边用「值没变就返回 prev」的 setState 兜底，这里不必自己防抖
   useEffect(() => {
-    if (!hasRichEpisodeNames) {
-      setEpisodeViewMode('grid');
-      return;
+    if (!onVisibleEpisodesChange) return;
+    // 用 memo 化的分组表 + 下标取，别依赖 currentEpisodeGroup（那个是就地构造的
+    // 表达式，每次渲染都是新对象，会让这个 effect 每帧都跑）
+    const episodes = episodeGroupsAsc[currentPage]?.episodes;
+    if (!episodes || episodes.length === 0) return;
+    if (episodes.length === 0) return;
+    let start = Number.POSITIVE_INFINITY;
+    let end = 0;
+    for (const episodeNumber of episodes) {
+      if (isEpisodeFiltered(episodeNumber)) continue;
+      if (episodeNumber < start) start = episodeNumber;
+      if (episodeNumber > end) end = episodeNumber;
     }
-    if (userSetViewModeRef.current) return;
-    setEpisodeViewMode('list');
-  }, [hasRichEpisodeNames]);
+    if (!Number.isFinite(start) || end === 0) return;
+    onVisibleEpisodesChange({ start, end });
+  }, [currentPage, episodeGroupsAsc, isEpisodeFiltered, onVisibleEpisodesChange]);
+
+  // 定稿的选集是数字网格，所以不再「有分集名就自动切列表」——那个自动切换会
+  // 让 47 集的剧变成 47 行要滚。分集名挪到每格的 title（悬停可见），网盘源下
+  // 长按 / 右键仍能看全名；想要带名字的列表可以在「更多」菜单里手动切。
 
   // 点击菜单外部关闭三点菜单
   useEffect(() => {
@@ -1048,20 +1597,19 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
   }, [showEpisodeMenu]);
 
   return (
-    <div className='md:ml-2 px-4 py-0 h-full rounded-xl bg-black/10 dark:bg-white/5 flex flex-col border border-white/0 dark:border-white/30 overflow-hidden'>
+    <div
+      ref={railRef}
+      className='mtv-play-rail flex h-full flex-col overflow-hidden'
+    >
       {/* 主要的 Tab 切换 - 无缝融入设计 */}
-      <div className='flex mb-1 -mx-6 flex-shrink-0'>
+      <div className='mtv-play-tabbar'>
         {/* 选集选项卡 - 仅在多集时显示 */}
         {totalEpisodes > 1 && (
           <div
             onClick={() => !isRoomMember && setActiveTab('episodes')}
-            className={`flex-1 py-3 px-6 text-center transition-all duration-200 font-medium relative
-              ${isRoomMember ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
-              ${activeTab === 'episodes'
-                ? 'text-green-600 dark:text-green-400'
-                : inactiveTabClass
-              }
-            `.trim()}
+            className={`mtv-play-tab ${isRoomMember ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'} ${
+              activeTab === 'episodes' ? 'mtv-play-tab-active text-ui-accent' : inactiveTabClass
+            }`}
           >
             选集
             {isRoomMember && <span className="ml-1 text-xs">🔒</span>}
@@ -1071,13 +1619,9 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
         {/* 换源选项卡 */}
         <div
           onClick={() => !isRoomMember && handleSourceTabClick()}
-          className={`flex-1 py-3 px-6 text-center transition-all duration-200 font-medium relative
-            ${isRoomMember ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
-            ${activeTab === 'sources'
-              ? 'text-green-600 dark:text-green-400'
-              : inactiveTabClass
-            }
-          `.trim()}
+          className={`mtv-play-tab ${isRoomMember ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'} ${
+            activeTab === 'sources' ? 'mtv-play-tab-active text-ui-accent' : inactiveTabClass
+          }`}
         >
           换源
           {isRoomMember && <span className="ml-1 text-xs">🔒</span>}
@@ -1086,12 +1630,9 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
         {/* 弹幕选项卡 */}
         <div
           onClick={() => setActiveTab('danmaku')}
-          className={`flex-1 py-3 px-6 text-center cursor-pointer transition-all duration-200 font-medium
-            ${activeTab === 'danmaku'
-              ? 'text-green-600 dark:text-green-400'
-              : inactiveTabClass
-            }
-          `.trim()}
+          className={`mtv-play-tab cursor-pointer ${
+            activeTab === 'danmaku' ? 'mtv-play-tab-active text-ui-accent' : inactiveTabClass
+          }`}
         >
           弹幕
         </div>
@@ -1099,7 +1640,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
 
       {/* 弹幕 Tab 内容 */}
       {activeTab === 'danmaku' && onDanmakuSelect && (
-        <div className='flex-1 min-h-0 overflow-hidden'>
+        <div className='mtv-play-danmaku-host overflow-hidden px-4 py-4'>
           <DanmakuPanel
             videoTitle={videoTitle || ''}
             currentEpisodeIndex={value - 1}
@@ -1112,123 +1653,118 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
       )}
 
       {/* 选集 Tab 内容 */}
-      {activeTab === 'episodes' && (
-        <>
-          {/* 分类标签 */}
-          <div className='relative z-30 flex items-center gap-4 mb-4 border-b border-gray-300 dark:border-gray-700 -mx-6 px-6 flex-shrink-0'>
-            <div
-              className='flex-1 overflow-x-auto'
-              ref={categoryContainerRef}
-              onMouseEnter={() => setIsCategoryHovered(true)}
-              onMouseLeave={() => setIsCategoryHovered(false)}
-            >
-              <div className='flex gap-2 min-w-max'>
-                {categories.map((label, idx) => {
-                  const isActive = idx === displayPage;
-                  return (
+      {activeTab === 'episodes' && totalEpisodes > 1 && (
+        <div className='mtv-play-rail-body flex min-h-0 flex-1 flex-col'>
+          {/* 工具条：范围选择器吃掉剩余宽度，倒序 / 更多两个方按钮与它同高。
+              原来是一条定宽 w-20 的横向 tab 条 + 两个靠 translate-y-[-4px] 硬
+              顶上去的图标按钮 —— 既对不齐，又要在栏内横向滚。 */}
+          <div className='mtv-play-rail-toolbar'>
+            <div className='relative min-w-0 flex-1' ref={rangeMenuRef}>
+              <button
+                type='button'
+                className='mtv-play-select w-full'
+                aria-haspopup='menu'
+                aria-expanded={showRangeMenu}
+                onClick={() => setShowRangeMenu((v) => !v)}
+              >
+                <span className='truncate'>{currentGroupLabel}</span>
+                <ChevronDown className='h-3.5 w-3.5' />
+              </button>
+              {showRangeMenu && (
+                <div
+                  className='mtv-play-pop absolute top-full right-0 left-0 z-50 mt-2 max-h-72 overflow-y-auto rounded-xl py-1'
+                  role='menu'
+                >
+                  {categories.map((label, idx) => (
                     <button
                       key={label}
-                      ref={(el) => {
-                        buttonRefs.current[idx] = el;
+                      type='button'
+                      role='menuitem'
+                      className='mtv-play-pop-item flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm transition-colors'
+                      onClick={() => {
+                        handleCategoryClick(idx);
+                        setShowRangeMenu(false);
                       }}
-                      onClick={() => handleCategoryClick(idx)}
-                      className={`w-20 relative py-2 text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 text-center 
-                        ${isActive
-                          ? 'text-green-500 dark:text-green-400'
-                          : inactiveActionTextClass
-                        }
-                      `.trim()}
                     >
-                      {label}
-                      {isActive && (
-                        <div className='absolute bottom-0 left-0 right-0 h-0.5 bg-green-500 dark:bg-green-400' />
+                      <span>{formatEpisodeGroupLabel(label)}</span>
+                      {idx === displayPage && (
+                        <Check className='h-3.5 w-3.5 flex-shrink-0' />
                       )}
                     </button>
-                  );
-                })}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
-            {/* 向上/向下按钮 */}
+
+            {/* 视图切换：分集卡片（默认）/ 数字网格 */}
             <button
-              className={`flex-shrink-0 w-8 h-8 rounded-md flex items-center justify-center ${iconButtonClass} transition-colors transform translate-y-[-4px]`}
-              onClick={() => {
-                // 切换集数排序（正序/倒序）
-                setDescending((prev) => !prev);
-              }}
+              type='button'
+              className='mtv-play-mini'
+              onClick={() =>
+                setEpisodeViewMode((mode) => (mode === 'card' ? 'grid' : 'card'))
+              }
+              title={
+                episodeViewMode === 'card' ? '切换到数字网格' : '切换到分集卡片'
+              }
+              aria-pressed={episodeViewMode === 'card'}
             >
-              <svg
-                className='w-4 h-4'
-                fill='none'
-                stroke='currentColor'
-                viewBox='0 0 24 24'
-              >
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth='2'
-                  d='M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4'
-                />
-              </svg>
+              {episodeViewMode === 'card' ? (
+                <LayoutGrid className='h-4 w-4' />
+              ) : (
+                <GalleryHorizontal className='h-4 w-4' />
+              )}
             </button>
-            {/* 更多菜单（集数视图切换 / 集数屏蔽 / 手动矫正标题） */}
-            <div
-              className='relative flex-shrink-0 transform translate-y-[-4px]'
-              ref={episodeMenuRef}
+
+            {/* 正序 / 倒序 */}
+            <button
+              type='button'
+              className='mtv-play-mini'
+              onClick={() => setDescending((prev) => !prev)}
+              title={descending ? '当前倒序，点击切正序' : '当前正序，点击切倒序'}
+              aria-pressed={descending}
             >
+              <ArrowUpDown className='h-4 w-4' />
+            </button>
+
+            {/* 更多菜单（集数视图切换 / 集数屏蔽 / 手动矫正标题） */}
+            <div className='relative flex-shrink-0' ref={episodeMenuRef}>
               <button
-                className={`w-8 h-8 rounded-md flex items-center justify-center ${iconButtonClass} transition-colors`}
+                type='button'
+                className='mtv-play-mini'
                 onClick={() => setShowEpisodeMenu((v) => !v)}
                 title='更多'
                 aria-haspopup='menu'
                 aria-expanded={showEpisodeMenu}
               >
-                <MoreVertical className='w-4 h-4' />
+                <MoreVertical className='h-4 w-4' />
               </button>
               {showEpisodeMenu && (
                 <div
-                  className='absolute right-0 top-9 z-50 min-w-[9rem] rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg py-1'
+                  className='mtv-play-pop absolute top-full right-0 z-50 mt-2 min-w-[9rem] rounded-xl py-1'
                   role='menu'
                 >
                   <button
+                    type='button'
                     role='menuitem'
-                    className='w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors'
-                    onClick={() => {
-                      userSetViewModeRef.current = true;
-                      setEpisodeViewMode((m) =>
-                        m === 'list' ? 'grid' : 'list'
-                      );
-                      setShowEpisodeMenu(false);
-                    }}
-                  >
-                    {episodeViewMode === 'list' ? (
-                      <LayoutGrid className='w-4 h-4' />
-                    ) : (
-                      <ListIcon className='w-4 h-4' />
-                    )}
-                    <span>
-                      {episodeViewMode === 'list' ? '网格视图' : '列表视图'}
-                    </span>
-                  </button>
-                  <button
-                    role='menuitem'
-                    className='w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors'
+                    className='mtv-play-pop-item flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors'
                     onClick={() => {
                       setShowFilterSettings(true);
                       setShowEpisodeMenu(false);
                     }}
                   >
-                    <Settings className='w-4 h-4' />
+                    <Settings className='h-4 w-4' />
                     <span>集数屏蔽</span>
                   </button>
                   <button
+                    type='button'
                     role='menuitem'
-                    className='w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors'
+                    className='mtv-play-pop-item flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors'
                     onClick={() => {
                       setShowTitleCorrect(true);
                       setShowEpisodeMenu(false);
                     }}
                   >
-                    <Wand2 className='w-4 h-4' />
+                    <Wand2 className='h-4 w-4' />
                     <span>手动矫正标题</span>
                   </button>
                 </div>
@@ -1236,87 +1772,241 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
             </div>
           </div>
 
-          {/* 集数列表（列表视图）/ 网格 */}
-          {episodeViewMode === 'list' ? (
-            <div className='flex flex-col gap-2 overflow-y-auto flex-1 content-start pb-4'>
+          {/* 播出日历：只要有播出日期就出现（完结剧也能看到每集什么时候播的）。
+              点整行展开月历，月历里点某一天就切到那天更新的第一集。 */}
+          {airSummary && (
+            <div className='mtv-play-aircal-wrap'>
+              <button
+                type='button'
+                className='mtv-play-aircal'
+                onClick={() => setShowCalendar((v) => !v)}
+                aria-expanded={showCalendar}
+                aria-label='播出日历'
+                title={
+                  airCalendar
+                    ? `下一集 ${formatAirDate(airCalendar.nextAirDate)} 更新`
+                    : undefined
+                }
+              >
+                <CalendarDays className='mtv-play-aircal-ic' />
+                <div className='mtv-play-aircal-txt'>
+                  <div className='mtv-play-aircal-t'>播出日历</div>
+                  <div className='mtv-play-aircal-s'>
+                    {airSummary.latestAiredEpisode
+                      ? `更新至 第 ${airSummary.latestAiredEpisode} 集 · ${formatAirDate(airSummary.latestAiredDate)}`
+                      : `首播 ${formatAirDate(airSummary.firstDate)}`}
+                  </div>
+                </div>
+                <span className='mtv-play-aircal-prog'>
+                  {airSummary.aired} / {airSummary.total}
+                </span>
+                <ChevronDown
+                  className={`mtv-play-aircal-chev ${
+                    showCalendar ? 'mtv-play-aircal-chev-open' : ''
+                  }`}
+                />
+              </button>
+
+              {showCalendar && (
+                <div className='mtv-play-cal'>
+                  <div className='mtv-play-cal-head'>
+                    <button
+                      type='button'
+                      className='mtv-play-cal-nav'
+                      onClick={() => shiftCalendarMonth(-1)}
+                      aria-label='上个月'
+                    >
+                      <ChevronLeft className='h-4 w-4' />
+                    </button>
+                    <div className='mtv-play-cal-title'>
+                      {shownYear} 年 {shownMonthNumber} 月
+                    </div>
+                    <button
+                      type='button'
+                      className='mtv-play-cal-nav'
+                      onClick={() => shiftCalendarMonth(1)}
+                      aria-label='下个月'
+                    >
+                      <ChevronRight className='h-4 w-4' />
+                    </button>
+                  </div>
+
+                  <div className='mtv-play-cal-week'>
+                    {['日', '一', '二', '三', '四', '五', '六'].map(
+                      (weekday) => (
+                        <span key={weekday}>{weekday}</span>
+                      )
+                    )}
+                  </div>
+
+                  <div className='mtv-play-cal-grid'>
+                    {calendarCells.map((cell) => {
+                      const hasEpisodes = cell.episodes.length > 0;
+                      const isAired = hasEpisodes && cell.key <= todayKey;
+                      return (
+                        <button
+                          key={cell.key}
+                          type='button'
+                          disabled={!hasEpisodes}
+                          onClick={() => handleCalendarDay(cell.episodes)}
+                          className={[
+                            'mtv-play-cal-day',
+                            cell.inMonth ? '' : 'mtv-play-cal-day-out',
+                            isAired ? 'mtv-play-cal-day-aired' : '',
+                            hasEpisodes && !isAired ? 'mtv-play-cal-day-up' : '',
+                            hasEpisodes && cell.key === activeDayKey
+                              ? 'mtv-play-cal-day-on'
+                              : '',
+                          ]
+                            .filter(Boolean)
+                            .join(' ')}
+                          title={
+                            hasEpisodes
+                              ? `第 ${formatEpisodeRange(cell.episodes)} 集`
+                              : undefined
+                          }
+                        >
+                          <span className='mtv-play-cal-num'>{cell.day}</span>
+                          {cell.key === todayKey && (
+                            <span className='mtv-play-cal-today' />
+                          )}
+                          {hasEpisodes && (
+                            <span className='mtv-play-cal-eps'>
+                              {formatEpisodeRange(cell.episodes)}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 集数：分集卡片（默认）/ 数字网格。两者在窄屏都是横向滚动 ——
+              横向条不产生竖向滚动容器，手指竖向拖动不再被这一块吃掉。 */}
+          {episodeViewMode === 'card' ? (
+            <div className='mtv-play-epcards' ref={cardStripRef}>
               {(() => {
                 const episodes = descending
                   ? [...currentEpisodeGroup.episodes].reverse()
                   : currentEpisodeGroup.episodes;
                 // 过滤掉被屏蔽的集数，但保持原有索引
                 return episodes
-                  .filter(episodeNumber => !isEpisodeFiltered(episodeNumber))
-                  .map((episodeNumber) => {
-                    const rawName = richEpisodeNames?.[episodeNumber - 1];
-                    const name =
-                      rawName && rawName.trim() !== ''
-                        ? rawName.trim()
-                        : `第 ${episodeNumber} 集`;
-                    return (
-                      <EpisodeListItem
+                  .filter((episodeNumber) => !isEpisodeFiltered(episodeNumber))
+                  .map((episodeNumber) => (
+                    <span
+                      key={episodeNumber}
+                      data-episode={episodeNumber}
+                      className='mtv-play-epcard-slot'
+                    >
+                      <EpisodeCard
+                        episodeNumber={episodeNumber}
+                        isActive={episodeNumber === value}
+                        isWatched={watchedEpisodes.has(episodeNumber)}
+                        data={episodeCards?.[episodeNumber - 1]}
+                        fallbackName={richEpisodeNames?.[episodeNumber - 1]}
+                        loading={episodeCardsLoading}
+                        onSelect={handleEpisodeClick}
+                      />
+                    </span>
+                  ));
+              })()}
+            </div>
+          ) : (
+            <div className='mtv-play-eps-host'>
+              <div className='mtv-play-eps'>
+                {(() => {
+                  const episodes = descending
+                    ? [...currentEpisodeGroup.episodes].reverse()
+                    : currentEpisodeGroup.episodes;
+                  // 过滤掉被屏蔽的集数，但保持原有索引
+                  return episodes
+                    .filter(
+                      (episodeNumber) => !isEpisodeFiltered(episodeNumber)
+                    )
+                    .map((episodeNumber) => (
+                      <EpisodeChip
                         key={episodeNumber}
                         episodeNumber={episodeNumber}
                         isActive={episodeNumber === value}
                         isWatched={watchedEpisodes.has(episodeNumber)}
-                        name={name}
-                        inactiveRowClass={inactiveEpisodeRowClass}
+                        originalTitle={episodes_titles?.[episodeNumber - 1]}
+                        enableOriginalNamePopup={isNetdiskSource(currentSource)}
                         onSelect={handleEpisodeClick}
+                        onShowOriginalName={showEpisodeNamePopup}
                       />
-                    );
-                  });
-              })()}
-            </div>
-          ) : (
-            <div className='flex flex-wrap gap-3 overflow-y-auto flex-1 content-start pb-4'>
-              {(() => {
-                const episodes = descending
-                  ? [...currentEpisodeGroup.episodes].reverse()
-                  : currentEpisodeGroup.episodes;
-                // 过滤掉被屏蔽的集数，但保持原有索引
-                return episodes
-                  .filter(episodeNumber => !isEpisodeFiltered(episodeNumber))
-                  .map((episodeNumber) => (
-                    <EpisodeButton
-                      key={episodeNumber}
-                      episodeNumber={episodeNumber}
-                      isActive={episodeNumber === value}
-                      isWatched={watchedEpisodes.has(episodeNumber)}
-                      originalTitle={episodes_titles?.[episodeNumber - 1]}
-                      inactiveEpisodeClass={inactiveEpisodeClass}
-                      enableOriginalNamePopup={isNetdiskSource(currentSource)}
-                      onSelect={handleEpisodeClick}
-                      onShowOriginalName={showEpisodeNamePopup}
-                    />
-                  ));
-              })()}
+                    ));
+                })()}
+              </div>
             </div>
           )}
-        </>
+        </div>
       )}
 
       {/* 换源 Tab 内容 */}
       {activeTab === 'sources' && (
-        <div className='flex flex-col h-full mt-2'>
-          {/* 全部重测按钮 - 右上角 */}
-          {!sourceSearchLoading && !sourceSearchError && availableSources.length > 0 && (
-            <div className='flex justify-end mb-2 px-2 pb-2 border-b border-gray-300 dark:border-gray-700'>
-              <button
-                onClick={retestAllSources}
-                disabled={isRetestingAll || retestingSources.size > 0 || isInitialTesting}
-                className={`text-xs font-medium transition-colors ${
-                  isRetestingAll || retestingSources.size > 0 || isInitialTesting
-                    ? disabledTextClass
-                    : 'text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer'
-                }`}
-              >
-                {isRetestingAll ? '重测中...' : isInitialTesting ? '测速中...' : '全部重测'}
-              </button>
-            </div>
-          )}
-
+        <div className='flex h-full flex-col px-4 py-4'>
+          {/* 工具条：排序规则 + 全部重测。排序只在测速完成后生效（没有测速
+              数据时无从比较），未完成时按源顺序展示。 */}
+          {!sourceSearchLoading &&
+            !sourceSearchError &&
+            availableSources.length > 0 && (
+              <div className='mtv-play-srctools'>
+                <div
+                  className='mtv-play-sortmode'
+                  role='group'
+                  aria-label='换源排序规则'
+                >
+                  <button
+                    type='button'
+                    className={`mtv-play-sortbtn ${
+                      sourceSortMode === 'speed' ? 'mtv-play-sortbtn-on' : ''
+                    }`}
+                    aria-pressed={sourceSortMode === 'speed'}
+                    onClick={() => setSourceSortMode('speed')}
+                  >
+                    速度优先
+                  </button>
+                  <button
+                    type='button'
+                    className={`mtv-play-sortbtn ${
+                      sourceSortMode === 'quality' ? 'mtv-play-sortbtn-on' : ''
+                    }`}
+                    aria-pressed={sourceSortMode === 'quality'}
+                    onClick={() => setSourceSortMode('quality')}
+                  >
+                    画质优先
+                  </button>
+                </div>
+                <button
+                  type='button'
+                  onClick={retestAllSources}
+                  disabled={
+                    isRetestingAll ||
+                    retestingSources.size > 0 ||
+                    isInitialTesting
+                  }
+                  className={`mtv-play-srcretest ${
+                    isRetestingAll ||
+                    retestingSources.size > 0 ||
+                    isInitialTesting
+                      ? disabledTextClass
+                      : ''
+                  }`}
+                >
+                  {isRetestingAll
+                    ? '重测中…'
+                    : isInitialTesting
+                      ? '测速中…'
+                      : '全部重测'}
+                </button>
+              </div>
+            )}
           {sourceSearchLoading && (
             <div className='flex items-center justify-center py-8'>
-              <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-green-500'></div>
+              <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-ui-accent'></div>
               <span className={`ml-2 text-sm ${mutedTextClass}`}>
                 搜索中...
               </span>
@@ -1327,7 +2017,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
             <div className='flex items-center justify-center py-8'>
               <div className='text-center'>
                 <div className='text-red-500 text-2xl mb-2'>⚠️</div>
-                <p className='text-sm text-red-600 dark:text-red-400'>
+                <p className='text-sm text-red-400'>
                   {sourceSearchError}
                 </p>
               </div>
@@ -1350,56 +2040,42 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
           {!sourceSearchLoading &&
             !sourceSearchError &&
             availableSources.length > 0 && (
-              <div className='flex-1 overflow-y-auto space-y-2 pb-20'>
-                {availableSources
-                  .sort((a, b) => {
-                    const aIsCurrent =
-                      a.source?.toString() === currentSource?.toString() &&
-                      a.id?.toString() === currentId?.toString();
-                    const bIsCurrent =
-                      b.source?.toString() === currentSource?.toString() &&
-                      b.id?.toString() === currentId?.toString();
-
-                    // 当前源始终置顶
-                    if (aIsCurrent && !bIsCurrent) return -1;
-                    if (!aIsCurrent && bIsCurrent) return 1;
-
-                    // 如果初始测速已完成，按网速排序（快的在前）
-                    if (initialTestingCompleted) {
-                      const aKey = `${a.source}-${a.id}`;
-                      const bKey = `${b.source}-${b.id}`;
-                      const aInfo = videoInfoMap.get(aKey);
-                      const bInfo = videoInfoMap.get(bKey);
-
-                      const aSpeed = aInfo ? parseSpeedToKBps(aInfo.loadSpeed) : -1;
-                      const bSpeed = bInfo ? parseSpeedToKBps(bInfo.loadSpeed) : -1;
-
-                      // 速度快的排在前面（降序）
-                      return bSpeed - aSpeed;
-                    }
-
-                    return 0;
-                  })
-                  .map((source, index) => {
+              <div
+                ref={sourcesListRef}
+                onScroll={markListBusy}
+                onTouchMove={markListBusy}
+                onWheel={markListBusy}
+                className='flex-1 overflow-y-auto space-y-2 pb-2'
+              >
+                <div
+                  className={`mtv-play-sources ${
+                    showAllSources ? '' : 'is-capped'
+                  }`}
+                >
+                {sortedSources
+                  .map((source) => {
                     const isCurrentSource =
                       source.source?.toString() === currentSource?.toString() &&
                       source.id?.toString() === currentId?.toString();
+                    const sourceKey = `${source.source}-${source.id}`;
+                    const videoInfo = videoInfoMap.get(sourceKey);
+                    const sourceMeta =
+                      pickSourceMeta(sourceMetaMap, source.source);
                     return (
                       <div
-                        key={`${source.source}-${source.id}`}
+                        key={sourceKey}
+                        data-src-key={sourceKey}
                         onClick={() =>
                           !isCurrentSource && handleSourceClick(source)
                         }
-                        className={`flex items-start gap-3 px-2 py-3 rounded-lg transition-all select-none duration-200 relative
-                      ${isCurrentSource
-                         ? 'bg-green-500/10 dark:bg-green-500/20 border-green-500/30 border'
-                          : 'hover:bg-gray-200/50 dark:hover:bg-white/10 hover:scale-[1.02] cursor-pointer'
-                          }`.trim()}
+                        className={`mtv-play-src ${
+                          isCurrentSource ? 'is-current' : 'cursor-pointer'
+                        }`.trim()}
                       >
                         {/* 封面 */}
-                        <div className='flex-shrink-0 w-12 h-20 bg-gray-300 dark:bg-gray-600 rounded overflow-hidden flex items-center justify-center'>
+                        <div className='mtv-play-src-poster'>
                           {source.source === 'directplay' ? (
-                            <LinkIcon className='w-6 h-6 text-blue-500' />
+                            <LinkIcon className='w-5 h-5 text-ui-accent' />
                           ) : source.poster ? (
                             <ProxyImage
                               originalSrc={source.poster}
@@ -1414,159 +2090,162 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                           ) : null}
                         </div>
 
-                        {/* 信息区域 */}
-                        <div className='flex-1 min-w-0 flex flex-col justify-between h-20'>
-                          {/* 标题和分辨率 - 顶部 */}
-                          <div className='flex items-start justify-between gap-3 h-6'>
-                            <div className='flex-1 min-w-0 relative group/title'>
-                              <h3 className={`font-medium text-base truncate ${sourceTitleClass} leading-none`}>
-                                {source.title}
-                              </h3>
-                              {/* 标题级别的 tooltip - 第一个元素不显示 */}
-                              {index !== 0 && (
-                                <div className='absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-800 text-white text-xs rounded-md shadow-lg opacity-0 invisible group-hover/title:opacity-100 group-hover/title:visible transition-all duration-200 ease-out delay-100 whitespace-nowrap z-[500] pointer-events-none'>
-                                  {source.title}
-                                  <div className='absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800'></div>
-                                </div>
-                              )}
-                            </div>
-                            {(() => {
-                              const sourceKey = `${source.source}-${source.id}`;
-                              const videoInfo = videoInfoMap.get(sourceKey);
-
-                              if (videoInfo && videoInfo.quality !== '未知') {
-                                if (videoInfo.hasError) {
-                                  return (
-                                    <div className='bg-gray-500/10 dark:bg-gray-400/20 text-red-600 dark:text-red-400 px-1.5 py-0 rounded text-xs flex-shrink-0 min-w-[50px] text-center'>
-                                      {videoInfo.errorType === 'timeout'
-                                        ? '超时'
-                                        : '无法访问'}
-                                    </div>
-                                  );
-                                } else {
-                                  // 根据分辨率设置不同颜色：2K、4K为紫色，1080p、720p为绿色，其他为黄色
-                                  const isUltraHigh = ['4K', '2K'].includes(
-                                    videoInfo.quality
-                                  );
-                                  const isHigh = ['1080p', '720p'].includes(
-                                    videoInfo.quality
-                                  );
-                                  const textColorClasses = isUltraHigh
-                                    ? 'text-purple-600 dark:text-purple-400'
-                                    : isHigh
-                                      ? 'text-green-600 dark:text-green-400'
-                                      : 'text-yellow-600 dark:text-yellow-400';
-
-                                  return (
-                                    <div
-                                      className={`bg-gray-500/10 dark:bg-gray-400/20 ${textColorClasses} px-1.5 py-0 rounded text-xs flex-shrink-0 min-w-[50px] text-center`}
-                                    >
-                                      {videoInfo.quality}
-                                    </div>
-                                  );
-                                }
-                              }
-
-                              return null;
-                            })()}
+                        <div className='mtv-play-src-body'>
+                          {/* 第一行：标题 + 画质/错误徽标 */}
+                          <div className='mtv-play-src-head'>
+                            <span
+                              className='mtv-play-src-title'
+                              title={source.title}
+                            >
+                              {source.title}
+                            </span>
+                            {/* 「当前」贴着标题走，不推到卡片最右边 —— 靠右会把整行
+                                重心拽过去，窄屏下还会和右侧按钮挤在一起，看着像错位。 */}
+                            {isCurrentSource && (
+                              <span className='mtv-play-src-now'>当前</span>
+                            )}
+                            {/* 分辨率紧接「当前」放，置顶单独靠到最右 —— 一个是片子
+                                本身的属性，一个是人工标记，不该挤在同一头 */}
+                            {videoInfo && videoInfo.quality !== '未知' && (
+                              <span
+                                className={`mtv-play-src-badge ${
+                                  videoInfo.hasError
+                                    ? 'is-bad'
+                                    : ['4K', '2K'].includes(videoInfo.quality)
+                                      ? 'is-ultra'
+                                      : ''
+                                }`}
+                              >
+                                {videoInfo.hasError
+                                  ? videoInfo.errorType === 'timeout'
+                                    ? '超时'
+                                    : '无法访问'
+                                  : videoInfo.quality}
+                              </span>
+                            )}
+                            {sourceMeta?.pinned && (
+                              <span className='mtv-play-src-pin'>置顶</span>
+                            )}
                           </div>
 
-                          {/* 源名称和集数信息 - 垂直居中 */}
-                          <div className='flex items-center justify-between'>
-                            <span className={`text-xs px-2 py-1 border rounded ${sourcePillTextClass} ${
-                              source.source === 'xiaoya' ? 'border-blue-500' : isNetdiskSource(source.source) ? 'border-purple-500' : source.source === 'openlist' || source.source === 'emby' || source.source?.startsWith('emby_')
-                           ? 'border-yellow-500'
-                                : 'border-gray-500/60'
-                      }`}>
+                          {/* 第二行：源名 · 集数；第三行：速度 · 延迟 · 码率。
+                              原来五样东西挤一行，窄屏下源名被压成 0 宽、码率被截断
+                              成「1.4 MI」。拆两行之后每一项都有固定位置。 */}
+                          <div className='mtv-play-src-meta'>
+                            <span className='mtv-play-src-name'>
                               {source.source_name}
                             </span>
                             {source.episodes.length > 1 && (
-                              <span className={`text-xs ${faintTextClass} font-medium`}>
+                              <span className='mtv-play-src-ep'>
                                 {source.episodes.length} 集
                               </span>
                             )}
                           </div>
-
-                          {/* 网络信息 - 底部 */}
-                          <div className='flex items-end justify-between h-6'>
-                            <div className='flex items-end gap-3'>
-                              {(() => {
-                                const sourceKey = `${source.source}-${source.id}`;
-                                const videoInfo = videoInfoMap.get(sourceKey);
-                                if (videoInfo) {
-                                  if (!videoInfo.hasError) {
-                                    return (
-                                      <div className='flex items-end gap-3 text-xs'>
-                                        <div className='text-green-600 dark:text-green-400 font-medium text-xs'>
-                                          {videoInfo.loadSpeed}
-                                        </div>
-                                        <div className='text-orange-600 dark:text-orange-400 font-medium text-xs'>
-                                          {videoInfo.pingTime}ms
-                                        </div>
-                                        {videoInfo.bitrate && videoInfo.bitrate !== '未知' && (
-                                          <div className='text-purple-600 dark:text-purple-400 font-medium text-xs'>
-                                            {videoInfo.bitrate}
-                                          </div>
-                                        )}
-                                      </div>
-                                    );
-                                  } else {
-                                    return (
-                                      <div className='text-red-500/90 dark:text-red-400 font-medium text-xs'>
-                                        {videoInfo.errorType === 'timeout'
-                                          ? '测速超时'
-                                          : '源无法访问'}
-                                      </div>
-                                    );
-                                  }
-                                }
-                                return null;
-                              })()}
+                          {sourceMeta?.remark && (
+                            <div
+                              className='mtv-play-src-remark'
+                              title={sourceMeta.remark}
+                            >
+                              {sourceMeta.remark}
                             </div>
-                            {/* 重新测试按钮 */}
-                            {(() => {
-                              // 私人影库、Emby 和小雅不显示重新测试按钮
-                              if (source.source === 'openlist' || source.source === 'emby' || source.source.startsWith('emby_') || source.source === 'xiaoya') {
-                                return null;
-                              }
-
-                              const sourceKey = `${source.source}-${source.id}`;
-                              const isTesting = retestingSources.has(sourceKey);
-                              const videoInfo = videoInfoMap.get(sourceKey);
-
-                              // 只有第一次测试完成后（有测速数据）才显示重新测试按钮
-                              if (videoInfo) {
-                                return (
-                                  <button
-                                    onClick={(e) => handleRetestSource(source, e)}
-                                    disabled={isTesting}
-                                    className={`text-xs font-medium transition-colors ${
-                                      isTesting
-                                        ? disabledTextClass
-                                        : 'text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer'
+                          )}
+                          {videoInfo && (
+                            <div className='mtv-play-src-metrics'>
+                              {videoInfo.hasError ? (
+                                <span
+                                  className={`mtv-play-src-fail ${
+                                    videoInfo.errorType === 'timeout'
+                                      ? 'is-timeout'
+                                      : ''
+                                  }`.trim()}
+                                >
+                                  {videoInfo.errorType === 'timeout'
+                                    ? '测速超时'
+                                    : '源无法访问'}
+                                </span>
+                              ) : (
+                                <>
+                                  <span
+                                    className={`mtv-play-src-speed${
+                                      sourceSortMode === 'speed'
+                                        ? ' is-sort-key'
+                                        : ''
                                     }`}
                                   >
-                                    {isTesting ? '测试中...' : '重新测试'}
-                                  </button>
-                                );
-                              }
-                              return null;
-                            })()}
+                                    {videoInfo.loadSpeed}
+                                  </span>
+                                  <span className='mtv-play-src-ping'>
+                                    {videoInfo.pingTime}ms
+                                  </span>
+                                  {videoInfo.bitrate &&
+                                    videoInfo.bitrate !== '未知' && (
+                                      <span
+                                        className={`mtv-play-src-bitrate${
+                                          sourceSortMode === 'quality'
+                                            ? ' is-sort-key'
+                                            : ''
+                                        }`}
+                                      >
+                                        {videoInfo.bitrate}
+                                      </span>
+                                    )}
+                                </>
+                              )}
+                            </div>
+                          )}
                           </div>
-                        </div>
+                        {/* 失败源的重测。正常源不挂 —— 工具条上已经有「全部重测」，
+                            每张卡片再重复一遍纯属噪音。 */}
+                        {!isCurrentSource &&
+                          (() => {
+                            const skipRetest =
+                              source.source === 'openlist' ||
+                              source.source === 'emby' ||
+                              source.source.startsWith('emby_') ||
+                              source.source === 'xiaoya';
+                            if (skipRetest) return null;
+                            if (!videoInfo || !videoInfo.hasError) return null;
+                            const testing = retestingSources.has(sourceKey);
+                            return (
+                              <button
+                                type='button'
+                                onClick={(e) => handleRetestSource(source, e)}
+                                disabled={testing}
+                                className='mtv-play-src-retry'
+                              >
+                                {testing ? '测试中' : '重测'}
+                              </button>
+                            );
+                          })()}
                       </div>
                     );
                   })}
+                </div>
+                {/* 窄屏默认只列前 4 个源：侧栏去掉内部滚动条之后，几十个源会
+                    把页面撑到两千多 px，把详情推到很远。桌面端列表本来就在
+                    栏内滚，不裁剪。 */}
+                {availableSources.length > 4 && (
+                  <button
+                    type='button'
+                    className='mtv-play-sources-more mtv-play-pop-item w-full rounded-lg px-3 py-2 text-center text-xs transition-colors'
+                    onClick={toggleAllSources}
+                  >
+                    {showAllSources
+                      ? '收起'
+                      : `展开全部 ${availableSources.length} 个播放源`}
+                  </button>
+                )}
+
                 {/* 后台加载提示 */}
                 {backgroundSourcesLoading && (
-                  <div className='flex items-center justify-center py-6 border-t border-gray-300 dark:border-gray-700'>
-                    <div className='animate-spin rounded-full h-6 w-6 border-b-2 border-green-500'></div>
+                  <div className='flex items-center justify-center py-6 border-t border-white/10'>
+                    <div className='animate-spin rounded-full h-6 w-6 border-b-2 border-ui-accent'></div>
                     <span className={`ml-2 text-sm ${mutedTextClass}`}>
                       正在加载更多播放源...
                     </span>
                   </div>
                 )}
-                <div className='flex-shrink-0 mt-auto pt-2 border-t border-gray-400 dark:border-gray-700'>
+                <div className='flex-shrink-0 mt-auto pt-2 border-t border-ui-hair'>
                   <button
                     onClick={() => {
                       if (videoTitle) {
@@ -1575,7 +2254,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                         );
                       }
                     }}
-                    className={`w-full text-center text-xs ${faintTextClass} hover:text-green-500 dark:hover:text-green-400 transition-colors py-2`}
+                    className={`w-full text-center text-xs ${faintTextClass} hover:text-ui-accent transition-colors py-2`}
                   >
                     影片匹配有误？点击去搜索
                   </button>

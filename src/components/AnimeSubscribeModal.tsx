@@ -98,7 +98,7 @@ export default function AnimeSubscribeModal({
   const chipClass = (active: boolean) =>
     `px-2 py-0.5 text-xs rounded-full border transition-colors ${
       active
-        ? 'bg-green-600 text-white border-green-600'
+        ? 'bg-ui-accent text-white border-ui-accent'
         : 'bg-gray-50 dark:bg-gray-700/60 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-600'
     }`;
 
@@ -486,7 +486,7 @@ export default function AnimeSubscribeModal({
                             key={ep}
                             className={`px-2 py-0.5 text-xs rounded-full border ${
                               isNew
-                                ? 'bg-green-600 text-white border-green-600'
+                                ? 'bg-ui-accent text-white border-ui-accent'
                                 : 'bg-gray-50 dark:bg-gray-700/60 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600'
                             }`}
                             title={isNew ? '新集数，会触发下载' : '不大于当前集数，不会下载'}
@@ -618,7 +618,7 @@ export default function AnimeSubscribeModal({
               type='button'
               onClick={handleSubmit}
               disabled={loading}
-              className='px-4 py-2 rounded-lg text-sm bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 flex items-center gap-2'
+              className='px-4 py-2 rounded-lg text-sm bg-ui-accent text-white hover:bg-ui-accent disabled:opacity-50 flex items-center gap-2'
             >
               {loading ? <Loader2 size={16} className='animate-spin' /> : null}
               添加订阅

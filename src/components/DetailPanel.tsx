@@ -47,6 +47,8 @@ interface DetailPanelProps {
   source?: string;
   useDrawer?: boolean;
   drawerWidth?: string;
+  /** 强制深色：播放页用。抽屉走 portal 挂到 body，拿不到页面的深色作用域 */
+  forceDark?: boolean;
 }
 
 interface DetailData {
@@ -93,7 +95,7 @@ interface GalleryImage {
   vote_average?: number;
   vote_count?: number;
   iso_639_1?: string | null;
-  imageType: 'backdrop' | 'poster';
+  imageType: 'backdrop' | 'poster' | 'logo';
 }
 
 // 从多个 TMDB 搜索结果中挑选最匹配的一个
@@ -164,6 +166,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
   source,
   useDrawer = false,
   drawerWidth = 'w-full md:w-[25%]',
+  forceDark = false,
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -1199,7 +1202,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
   const galleryEntryButton = canShowGalleryEntry ? (
     <button
       onClick={openGallery}
-      className='inline-flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-colors'
+      className='inline-flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg bg-ui-accent hover:brightness-110 text-white transition-colors'
     >
       <Images size={16} />
       照片墙
@@ -1248,6 +1251,8 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
           ? image.height / image.width
           : image.imageType === 'poster'
           ? 1.5
+          : image.imageType === 'logo'
+          ? 0.35
           : 0.5625;
       const renderHeight = Math.max(Math.round(columnWidth * ratio), 80);
       const top = columnHeights[targetColumn];
@@ -1290,7 +1295,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
     >
       {galleryLoading && (
         <div className='flex items-center justify-center py-20'>
-          <div className='animate-spin rounded-full h-10 w-10 border-b-2 border-green-500'></div>
+          <div className='animate-spin rounded-full h-10 w-10 border-b-2 border-ui-accent'></div>
         </div>
       )}
 
@@ -1301,7 +1306,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
       )}
 
       {!galleryLoading && !galleryError && galleryImages.length === 0 && (
-        <div className='text-center py-12 text-gray-500 dark:text-gray-400'>
+        <div className='text-center py-12 text-ui-ink-3'>
           暂无图片
         </div>
       )}
@@ -1315,13 +1320,15 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
           }}
         >
           {virtualGalleryLayout.visibleItems.map((image) => {
+            // 标题字是透明 PNG，尺寸比剧照小得多，取 original 纯属浪费带宽
+            const isLogo = image.imageType === 'logo';
             const imageUrl = getTMDBImageUrl(
               image.file_path,
-              image.imageType === 'poster' ? 'w500' : 'original'
+              image.imageType === 'backdrop' ? 'original' : 'w500'
             );
             const thumbUrl = getTMDBImageUrl(
               image.file_path,
-              image.imageType === 'poster' ? 'w342' : 'w780'
+              image.imageType === 'backdrop' ? 'w780' : isLogo ? 'w300' : 'w342'
             );
 
             return (
@@ -1336,7 +1343,9 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                 }}
               >
                 <div
-                  className='relative w-full h-full overflow-hidden rounded-md bg-gray-100 dark:bg-gray-800 cursor-pointer hover:opacity-90 transition-opacity'
+                  className={`relative w-full h-full overflow-hidden rounded-md cursor-pointer hover:opacity-90 transition-opacity ${
+                    isLogo ? 'bg-neutral-800' : 'bg-ui-surface-3 '
+                  }`}
                   onClick={() => handleImageClick(imageUrl)}
                 >
                   <ProxyImage
@@ -1344,11 +1353,17 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                     alt={`${detailData?.title || title}-gallery-${
                       image.index + 1
                     }`}
-                    className='absolute inset-0 w-full h-full object-cover'
+                    className={`absolute inset-0 w-full h-full ${
+                      isLogo ? 'object-contain p-3' : 'object-cover'
+                    }`}
                     draggable={false}
                   />
                   <div className='absolute left-2 top-2 px-2 py-0.5 rounded-full text-xs bg-black/60 text-white'>
-                    {image.imageType === 'poster' ? '海报' : '剧照'}
+                    {image.imageType === 'poster'
+                      ? '海报'
+                      : image.imageType === 'logo'
+                      ? '标题字'
+                      : '剧照'}
                   </div>
                 </div>
               </div>
@@ -1360,23 +1375,23 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
   );
 
   const galleryHeader = (
-    <div className='flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800'>
+    <div className='flex items-center justify-between p-4 border-b border-ui-hair'>
       <div>
-        <h3 className='text-lg font-semibold text-gray-900 dark:text-gray-100'>
+        <h3 className='text-lg font-semibold text-ui-ink'>
           照片墙
         </h3>
         {!galleryLoading && (
-          <p className='text-sm text-gray-500 dark:text-gray-400'>
+          <p className='text-sm text-ui-ink-3'>
             共 {galleryTotal} 张
           </p>
         )}
       </div>
       <button
         onClick={() => setShowGallery(false)}
-        className='p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors'
+        className='p-2 rounded-full hover:bg-ui-surface-hover transition-colors'
         aria-label='关闭照片墙'
       >
-        <X size={20} className='text-gray-500 dark:text-gray-400' />
+        <X size={20} className='text-ui-ink-3' />
       </button>
     </div>
   );
@@ -1385,7 +1400,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
     useDrawer ? (
       <div className='fixed inset-0 z-[10000] flex items-center justify-end pointer-events-none'>
         <div
-          className={`relative ${drawerWidth} h-full bg-white dark:bg-gray-900 shadow-2xl overflow-hidden flex flex-col pointer-events-auto`}
+          className={`relative ${drawerWidth} h-full bg-ui-surface-2 shadow-2xl overflow-hidden flex flex-col pointer-events-auto`}
         >
           {galleryHeader}
           {galleryBody}
@@ -1397,7 +1412,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
           className='absolute inset-0 bg-black/60'
           onClick={() => setShowGallery(false)}
         />
-        <div className='relative w-full max-w-6xl max-h-[90vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col'>
+        <div className='relative w-full max-w-6xl max-h-[90vh] bg-ui-surface-2 rounded-2xl shadow-2xl overflow-hidden flex flex-col'>
           {galleryHeader}
           {galleryBody}
         </div>
@@ -1406,23 +1421,23 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
   ) : null;
 
   const episodeStillsHeader = (
-    <div className='flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800'>
+    <div className='flex items-center justify-between p-4 border-b border-ui-hair'>
       <div>
-        <h3 className='text-lg font-semibold text-gray-900 dark:text-gray-100'>
+        <h3 className='text-lg font-semibold text-ui-ink'>
           {episodeStillsTitle || '剧照'}
         </h3>
         {!episodeStillsLoading && !episodeStillsError && (
-          <p className='text-sm text-gray-500 dark:text-gray-400'>
+          <p className='text-sm text-ui-ink-3'>
             共 {episodeStills.length} 张
           </p>
         )}
       </div>
       <button
         onClick={() => setShowEpisodeStills(false)}
-        className='p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors'
+        className='p-2 rounded-full hover:bg-ui-surface-hover transition-colors'
         aria-label='关闭剧照'
       >
-        <X size={20} className='text-gray-500 dark:text-gray-400' />
+        <X size={20} className='text-ui-ink-3' />
       </button>
     </div>
   );
@@ -1431,7 +1446,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
     <div className='flex-1 overflow-y-auto overflow-x-hidden p-4'>
       {episodeStillsLoading && (
         <div className='flex items-center justify-center py-20'>
-          <div className='animate-spin rounded-full h-10 w-10 border-b-2 border-green-500'></div>
+          <div className='animate-spin rounded-full h-10 w-10 border-b-2 border-ui-accent'></div>
         </div>
       )}
 
@@ -1444,7 +1459,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
       {!episodeStillsLoading &&
         !episodeStillsError &&
         episodeStills.length === 0 && (
-          <div className='text-center py-12 text-gray-500 dark:text-gray-400'>
+          <div className='text-center py-12 text-ui-ink-3'>
             暂无剧照
           </div>
         )}
@@ -1456,7 +1471,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
             {episodeStills.map((stillUrl, index) => (
               <div
                 key={`${stillUrl}-${index}`}
-                className='relative aspect-video overflow-hidden rounded-md bg-gray-100 dark:bg-gray-800 cursor-pointer hover:opacity-90 transition-opacity'
+                className='relative aspect-video overflow-hidden rounded-md bg-ui-surface-3 cursor-pointer hover:opacity-90 transition-opacity'
                 onClick={() => handleImageClick(stillUrl)}
               >
                 <ProxyImage
@@ -1476,7 +1491,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
     useDrawer ? (
       <div className='fixed inset-0 z-[10000] flex items-center justify-end pointer-events-none'>
         <div
-          className={`relative ${drawerWidth} h-full bg-white dark:bg-gray-900 shadow-2xl overflow-hidden flex flex-col pointer-events-auto`}
+          className={`relative ${drawerWidth} h-full bg-ui-surface-2 shadow-2xl overflow-hidden flex flex-col pointer-events-auto`}
         >
           {episodeStillsHeader}
           {episodeStillsBody}
@@ -1488,7 +1503,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
           className='absolute inset-0 bg-black/60'
           onClick={() => setShowEpisodeStills(false)}
         />
-        <div className='relative w-full max-w-4xl max-h-[90vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col'>
+        <div className='relative w-full max-w-4xl max-h-[90vh] bg-ui-surface-2 rounded-2xl shadow-2xl overflow-hidden flex flex-col'>
           {episodeStillsHeader}
           {episodeStillsBody}
         </div>
@@ -1497,21 +1512,21 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
   ) : null;
 
   const tmdbCorrectionHeader = (
-    <div className='flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800'>
+    <div className='flex items-center justify-between p-4 border-b border-ui-hair'>
       <div>
-        <h3 className='text-lg font-semibold text-gray-900 dark:text-gray-100'>
+        <h3 className='text-lg font-semibold text-ui-ink'>
           纠正匹配
         </h3>
-        <p className='text-sm text-gray-500 dark:text-gray-400'>
+        <p className='text-sm text-ui-ink-3'>
           选择正确的条目
         </p>
       </div>
       <button
         onClick={() => setShowTmdbCorrection(false)}
-        className='p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors'
+        className='p-2 rounded-full hover:bg-ui-surface-hover transition-colors'
         aria-label='关闭纠错'
       >
-        <X size={20} className='text-gray-500 dark:text-gray-400' />
+        <X size={20} className='text-ui-ink-3' />
       </button>
     </div>
   );
@@ -1533,11 +1548,11 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
               onClick={() => handleSelectTmdbResult(result)}
               className={`flex items-start gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
                 isActive
-                  ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-green-500'
-                  : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  ? 'bg-ui-accent-soft ring-2 ring-ui-accent'
+                  : 'bg-ui-surface-3 hover:bg-ui-surface-hover '
               }`}
             >
-              <div className='relative w-12 h-16 rounded overflow-hidden bg-gray-200 dark:bg-gray-700 flex-shrink-0'>
+              <div className='relative w-12 h-16 rounded overflow-hidden bg-ui-surface-3 flex-shrink-0'>
                 {resultPoster ? (
                   <ProxyImage
                     originalSrc={resultPoster}
@@ -1547,26 +1562,26 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                   />
                 ) : (
                   <div className='w-full h-full flex items-center justify-center'>
-                    <Film size={20} className='text-gray-400' />
+                    <Film size={20} className='text-ui-ink-3' />
                   </div>
                 )}
               </div>
               <div className='flex-1 min-w-0'>
                 <div className='flex items-center gap-2'>
-                  <p className='text-sm font-medium text-gray-900 dark:text-gray-100 truncate'>
+                  <p className='text-sm font-medium text-ui-ink truncate'>
                     {resultTitle}
                   </p>
-                  <span className='flex-shrink-0 px-1.5 py-0.5 rounded text-[10px] bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'>
+                  <span className='flex-shrink-0 px-1.5 py-0.5 rounded text-[10px] bg-ui-surface-3 text-ui-ink-2'>
                     {result.media_type === 'tv' ? '剧集' : '电影'}
                   </span>
                 </div>
                 {resultYear && (
-                  <p className='text-xs text-gray-500 dark:text-gray-400 mt-0.5'>
+                  <p className='text-xs text-ui-ink-3 mt-0.5'>
                     {resultYear}
                   </p>
                 )}
                 {result.overview && (
-                  <p className='text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2'>
+                  <p className='text-xs text-ui-ink-3 mt-1 line-clamp-2'>
                     {result.overview}
                   </p>
                 )}
@@ -1582,7 +1597,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
     useDrawer ? (
       <div className='fixed inset-0 z-[10000] flex items-center justify-end pointer-events-none'>
         <div
-          className={`relative ${drawerWidth} h-full bg-white dark:bg-gray-900 shadow-2xl overflow-hidden flex flex-col pointer-events-auto`}
+          className={`relative ${drawerWidth} h-full bg-ui-surface-2 shadow-2xl overflow-hidden flex flex-col pointer-events-auto`}
         >
           {tmdbCorrectionHeader}
           {tmdbCorrectionBody}
@@ -1594,7 +1609,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
           className='absolute inset-0 bg-black/60'
           onClick={() => setShowTmdbCorrection(false)}
         />
-        <div className='relative w-full max-w-lg max-h-[90vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col'>
+        <div className='relative w-full max-w-lg max-h-[90vh] bg-ui-surface-2 rounded-2xl shadow-2xl overflow-hidden flex flex-col'>
           {tmdbCorrectionHeader}
           {tmdbCorrectionBody}
         </div>
@@ -1608,26 +1623,26 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
     <div className='fixed inset-0 z-[9999] flex items-center justify-end pointer-events-none'>
       {/* 详情面板 - 抽屉模式 */}
       <div
-        className={`relative ${drawerWidth} h-full bg-white dark:bg-gray-900 shadow-2xl overflow-hidden flex flex-col transition-transform duration-300 ease-out pointer-events-auto ${
+        className={`relative ${drawerWidth} h-full bg-ui-surface-2 shadow-2xl overflow-hidden flex flex-col transition-transform duration-300 ease-out pointer-events-auto ${
           isAnimating ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         {/* 头部 */}
-        <div className='flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800 sticky top-0 bg-white dark:bg-gray-900 z-10'>
-          <h2 className='text-xl font-semibold text-gray-900 dark:text-gray-100'>
+        <div className='flex items-center justify-between p-4 border-b border-ui-hair sticky top-0 bg-ui-surface-2 z-10'>
+          <h2 className='text-xl font-semibold text-ui-ink'>
             详情
           </h2>
           <div className='flex items-center gap-2'>
             {currentSource === 'tmdb' && tmdbResults.length > 1 && (
               <button
                 onClick={() => setShowTmdbCorrection(true)}
-                className='p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-150'
+                className='p-2 rounded-full hover:bg-ui-surface-hover transition-colors duration-150'
                 title='匹配错误?点此纠正'
                 aria-label='纠正匹配结果'
               >
                 <SearchCheck
                   size={18}
-                  className='text-gray-500 dark:text-gray-400'
+                  className='text-ui-ink-3'
                 />
               </button>
             )}
@@ -1636,23 +1651,23 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                 onClick={() =>
                   window.open(externalUrl, '_blank', 'noopener,noreferrer')
                 }
-                className='p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-150'
+                className='p-2 rounded-full hover:bg-ui-surface-hover transition-colors duration-150'
                 title='打开外部页面'
                 aria-label='打开外部页面'
               >
                 <ExternalLink
                   size={18}
-                  className='text-gray-500 dark:text-gray-400'
+                  className='text-ui-ink-3'
                 />
               </button>
             )}
             <button
               onClick={onClose}
-              className='p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-150'
+              className='p-2 rounded-full hover:bg-ui-surface-hover transition-colors duration-150'
               title='关闭'
               aria-label='关闭'
             >
-              <X size={20} className='text-gray-500 dark:text-gray-400' />
+              <X size={20} className='text-ui-ink-3' />
             </button>
           </div>
         </div>
@@ -1661,7 +1676,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
         <div className='overflow-y-auto max-h-[calc(90vh-4rem)]'>
           {loading && (
             <div className='flex items-center justify-center py-20'>
-              <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-green-500'></div>
+              <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-ui-accent'></div>
             </div>
           )}
 
@@ -1672,13 +1687,13 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
               </div>
 
               {/* 数据源显示和切换 - 错误时也显示 */}
-              <div className='mt-6 pt-4 border-t border-gray-200 dark:border-gray-700'>
+              <div className='mt-6 pt-4 border-t border-ui-hair'>
                 <div className='flex items-center justify-between gap-3 flex-wrap'>
                   <div className='flex items-center gap-2'>
-                    <span className='text-sm text-gray-500 dark:text-gray-400'>
+                    <span className='text-sm text-ui-ink-3'>
                       数据来源:
                     </span>
-                    <span className='text-sm font-medium text-gray-700 dark:text-gray-300 uppercase'>
+                    <span className='text-sm font-medium text-ui-ink-2 uppercase'>
                       {currentSource === 'douban' && 'Douban'}
                       {currentSource === 'bangumi' && 'Bangumi'}
                       {currentSource === 'cms' && 'CMS'}
@@ -1691,7 +1706,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                       <button
                         onClick={handleToggleSource}
                         disabled={loading}
-                        className='px-3 py-1.5 text-sm rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+                        className='px-3 py-1.5 text-sm rounded-lg bg-ui-accent hover:brightness-110 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
                       >
                         切换到 TMDB
                       </button>
@@ -1702,7 +1717,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                         <button
                           onClick={handleToggleSource}
                           disabled={loading}
-                          className='px-3 py-1.5 text-sm rounded-lg bg-gray-500 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+                          className='px-3 py-1.5 text-sm rounded-lg bg-ui-surface-3 hover:bg-ui-surface-hover text-ui-ink transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
                         >
                           切换回{' '}
                           {originalSource === 'douban'
@@ -1725,7 +1740,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                 {detailData.poster && (
                   <div className='flex flex-col items-start gap-3 flex-shrink-0'>
                     <div
-                      className='relative w-32 h-48 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 cursor-pointer hover:opacity-90 transition-opacity'
+                      className='relative w-32 h-48 rounded-lg overflow-hidden bg-ui-surface-3 cursor-pointer hover:opacity-90 transition-opacity'
                       onClick={() => handleImageClick(detailData.poster!)}
                     >
                       <ProxyImage
@@ -1739,12 +1754,12 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                   </div>
                 )}
                 <div className='flex-1 min-w-0'>
-                  <h3 className='text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2'>
+                  <h3 className='text-2xl font-bold text-ui-ink mb-2'>
                     {detailData.title}
                   </h3>
                   {detailData.originalTitle &&
                     detailData.originalTitle !== detailData.title && (
-                      <p className='text-sm text-gray-500 dark:text-gray-400 mb-3'>
+                      <p className='text-sm text-ui-ink-3 mb-3'>
                         {detailData.originalTitle}
                       </p>
                     )}
@@ -1756,11 +1771,11 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                         size={20}
                         className='text-yellow-500 fill-yellow-500'
                       />
-                      <span className='text-lg font-semibold text-gray-900 dark:text-gray-100'>
+                      <span className='text-lg font-semibold text-ui-ink'>
                         {detailData.rating.value.toFixed(1)}
                       </span>
                       {detailData.rating.count > 0 && (
-                        <span className='text-sm text-gray-500 dark:text-gray-400'>
+                        <span className='text-sm text-ui-ink-3'>
                           ({detailData.rating.count} 评价)
                         </span>
                       )}
@@ -1773,7 +1788,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                       {detailData.genres.map((genre, index) => (
                         <span
                           key={index}
-                          className='px-2 py-1 text-xs rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                          className='px-2 py-1 text-xs rounded bg-ui-surface-3 text-ui-ink-2'
                         >
                           {genre}
                         </span>
@@ -1782,7 +1797,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                   )}
 
                   {/* 年份和时长 */}
-                  <div className='flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400'>
+                  <div className='flex flex-wrap gap-4 text-sm text-ui-ink-2'>
                     {detailData.year && (
                       <div className='flex items-center gap-1'>
                         <Calendar size={16} />
@@ -1808,10 +1823,10 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
               {/* 简介 */}
               {(detailData.intro || detailData.overview) && (
                 <div className='mb-6'>
-                  <h4 className='text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2'>
+                  <h4 className='text-lg font-semibold text-ui-ink mb-2'>
                     简介
                   </h4>
-                  <p className='text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap'>
+                  <p className='text-ui-ink-2 leading-relaxed whitespace-pre-wrap'>
                     {detailData.intro || detailData.overview}
                   </p>
                 </div>
@@ -1820,11 +1835,11 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
               {/* 导演和演员 */}
               {detailData.directors && detailData.directors.length > 0 && (
                 <div className='mb-4'>
-                  <h4 className='text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2 flex items-center gap-2'>
+                  <h4 className='text-sm font-semibold text-ui-ink mb-2 flex items-center gap-2'>
                     <Users size={16} />
                     导演
                   </h4>
-                  <p className='text-gray-700 dark:text-gray-300'>
+                  <p className='text-ui-ink-2'>
                     {detailData.directors.map((d) => d.name).join(', ')}
                   </p>
                 </div>
@@ -1832,7 +1847,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
 
               {detailData.actors && detailData.actors.length > 0 && (
                 <div className='mb-4'>
-                  <h4 className='text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2 flex items-center gap-2'>
+                  <h4 className='text-sm font-semibold text-ui-ink mb-2 flex items-center gap-2'>
                     <Users size={16} />
                     演员
                   </h4>
@@ -1860,7 +1875,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                           >
                             {actor.profile_path ? (
                               <div
-                                className='relative w-20 h-20 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 mb-2 cursor-pointer hover:opacity-80 transition-opacity'
+                                className='relative w-20 h-20 rounded-full overflow-hidden bg-ui-surface-3 mb-2 cursor-pointer hover:opacity-80 transition-opacity'
                                 onClick={() =>
                                   handleImageClick(
                                     getTMDBImageUrl(
@@ -1881,8 +1896,8 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                                 />
                               </div>
                             ) : (
-                              <div className='w-20 h-20 rounded-full bg-gray-200 dark:bg-gray-700 mb-2 flex items-center justify-center'>
-                                <Users size={28} className='text-gray-400' />
+                              <div className='w-20 h-20 rounded-full bg-ui-surface-3 mb-2 flex items-center justify-center'>
+                                <Users size={28} className='text-ui-ink-3' />
                               </div>
                             )}
                             <a
@@ -1891,13 +1906,13 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                               )}`}
                               target='_blank'
                               rel='noopener noreferrer'
-                              className='text-xs font-medium text-gray-900 dark:text-gray-100 text-center w-20 line-clamp-2 hover:text-green-600 dark:hover:text-green-400 transition-colors cursor-pointer'
+                              className='text-xs font-medium text-ui-ink text-center w-20 line-clamp-2 hover:text-ui-accent dark:hover:text-ui-accent transition-colors cursor-pointer'
                               onClick={(e) => e.stopPropagation()}
                             >
                               {actor.name}
                             </a>
                             {actor.character && (
-                              <p className='text-xs text-gray-500 dark:text-gray-400 text-center w-20 line-clamp-2'>
+                              <p className='text-xs text-ui-ink-3 text-center w-20 line-clamp-2'>
                                 {actor.character}
                               </p>
                             )}
@@ -1906,7 +1921,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                       </div>
                     </div>
                   ) : (
-                    <p className='text-gray-700 dark:text-gray-300'>
+                    <p className='text-ui-ink-2'>
                       {detailData.actors
                         .slice(0, 10)
                         .map((a) => a.name)
@@ -1920,11 +1935,11 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
               <div className='grid grid-cols-2 gap-4 text-sm'>
                 {detailData.countries && detailData.countries.length > 0 && (
                   <div>
-                    <h4 className='font-semibold text-gray-900 dark:text-gray-100 mb-1 flex items-center gap-1'>
+                    <h4 className='font-semibold text-ui-ink mb-1 flex items-center gap-1'>
                       <Globe size={14} />
                       国家/地区
                     </h4>
-                    <p className='text-gray-700 dark:text-gray-300'>
+                    <p className='text-ui-ink-2'>
                       {detailData.countries.join(', ')}
                     </p>
                   </div>
@@ -1932,11 +1947,11 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
 
                 {detailData.languages && detailData.languages.length > 0 && (
                   <div>
-                    <h4 className='font-semibold text-gray-900 dark:text-gray-100 mb-1 flex items-center gap-1'>
+                    <h4 className='font-semibold text-ui-ink mb-1 flex items-center gap-1'>
                       <Tag size={14} />
                       语言
                     </h4>
-                    <p className='text-gray-700 dark:text-gray-300'>
+                    <p className='text-ui-ink-2'>
                       {detailData.languages.join(', ')}
                     </p>
                   </div>
@@ -1944,11 +1959,11 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
 
                 {detailData.releaseDate && (
                   <div>
-                    <h4 className='font-semibold text-gray-900 dark:text-gray-100 mb-1 flex items-center gap-1'>
+                    <h4 className='font-semibold text-ui-ink mb-1 flex items-center gap-1'>
                       <Calendar size={14} />
                       上映日期
                     </h4>
-                    <p className='text-gray-700 dark:text-gray-300'>
+                    <p className='text-ui-ink-2'>
                       {detailData.releaseDate}
                     </p>
                   </div>
@@ -1956,10 +1971,10 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
 
                 {detailData.status && (
                   <div>
-                    <h4 className='font-semibold text-gray-900 dark:text-gray-100 mb-1'>
+                    <h4 className='font-semibold text-ui-ink mb-1'>
                       状态
                     </h4>
-                    <p className='text-gray-700 dark:text-gray-300'>
+                    <p className='text-ui-ink-2'>
                       {detailData.status}
                     </p>
                   </div>
@@ -1971,7 +1986,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                 <div className='mt-6'>
                   {loadingSeasons && (
                     <div className='flex items-center justify-center py-4'>
-                      <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-green-500'></div>
+                      <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-ui-accent'></div>
                     </div>
                   )}
 
@@ -1980,7 +1995,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                       {/* 季度列表 */}
                       {seasonData.seasons.length > 0 && (
                         <div className='mb-6'>
-                          <h4 className='text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3'>
+                          <h4 className='text-lg font-semibold text-ui-ink mb-3'>
                             季度
                           </h4>
                           <div className='grid grid-cols-2 sm:grid-cols-3 gap-3'>
@@ -1992,13 +2007,13 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                                 }
                                 className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${
                                   selectedSeason === season.season_number
-                                    ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-green-500'
-                                    : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                    ? 'bg-ui-accent-soft ring-2 ring-ui-accent'
+                                    : 'bg-ui-surface-3 hover:bg-ui-surface-hover '
                                 }`}
                               >
                                 {season.poster_path && (
                                   <div
-                                    className='relative w-12 h-16 rounded overflow-hidden bg-gray-200 dark:bg-gray-700 flex-shrink-0 hover:opacity-80 transition-opacity'
+                                    className='relative w-12 h-16 rounded overflow-hidden bg-ui-surface-3 flex-shrink-0 hover:opacity-80 transition-opacity'
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handleImageClick(
@@ -2021,10 +2036,10 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                                   </div>
                                 )}
                                 <div className='flex-1 min-w-0'>
-                                  <p className='text-sm font-medium text-gray-900 dark:text-gray-100 truncate'>
+                                  <p className='text-sm font-medium text-ui-ink truncate'>
                                     {season.name}
                                   </p>
-                                  <p className='text-xs text-gray-500 dark:text-gray-400'>
+                                  <p className='text-xs text-ui-ink-3'>
                                     {season.episode_count} 集
                                   </p>
                                 </div>
@@ -2037,7 +2052,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                       {/* 集数列表 */}
                       {seasonData.episodes.length > 0 && (
                         <div>
-                          <h4 className='text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3'>
+                          <h4 className='text-lg font-semibold text-ui-ink mb-3'>
                             {seasonData.seasons.find(
                               (s: any) => s.season_number === selectedSeason
                             )?.name || `第${selectedSeason}季`}
@@ -2067,8 +2082,8 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                                     id={`episode-${episode.episode_number}`}
                                     className={`flex-shrink-0 w-64 p-3 rounded ${
                                       isCurrentEpisode
-                                        ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-green-500'
-                                        : 'bg-gray-50 dark:bg-gray-800'
+                                        ? 'bg-ui-accent-soft ring-2 ring-ui-accent'
+                                        : 'bg-ui-surface-3 '
                                     }`}
                                     style={{
                                       pointerEvents: isDragging
@@ -2078,7 +2093,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                                   >
                                     {episode.still_path && (
                                       <div
-                                        className='relative w-full h-36 rounded overflow-hidden bg-gray-200 dark:bg-gray-700 mb-2 cursor-pointer hover:opacity-90 transition-opacity'
+                                        className='relative w-full h-36 rounded overflow-hidden bg-ui-surface-3 mb-2 cursor-pointer hover:opacity-90 transition-opacity'
                                         onClick={() =>
                                           handleEpisodeStillsClick(episode)
                                         }
@@ -2095,7 +2110,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                                         />
                                       </div>
                                     )}
-                                    <p className='text-sm font-medium text-gray-900 dark:text-gray-100 mb-1'>
+                                    <p className='text-sm font-medium text-ui-ink mb-1'>
                                       第{episode.episode_number}集:{' '}
                                       {episode.name}
                                     </p>
@@ -2112,7 +2127,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                                           }
                                           setExpandedEpisodes(newExpanded);
                                         }}
-                                        className={`text-xs text-gray-600 dark:text-gray-400 cursor-pointer ${
+                                        className={`text-xs text-ui-ink-2 cursor-pointer ${
                                           isExpanded ? '' : 'line-clamp-3'
                                         }`}
                                       >
@@ -2120,7 +2135,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                                       </p>
                                     )}
                                     {episode.air_date && (
-                                      <p className='text-xs text-gray-500 dark:text-gray-500 mt-1'>
+                                      <p className='text-xs text-ui-ink-3 mt-1'>
                                         {episode.air_date}
                                       </p>
                                     )}
@@ -2137,13 +2152,13 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
               )}
 
               {/* 数据源显示和切换 */}
-              <div className='mt-6 pt-4 border-t border-gray-200 dark:border-gray-700'>
+              <div className='mt-6 pt-4 border-t border-ui-hair'>
                 <div className='flex items-center justify-between gap-3 flex-wrap'>
                   <div className='flex items-center gap-2'>
-                    <span className='text-sm text-gray-500 dark:text-gray-400'>
+                    <span className='text-sm text-ui-ink-3'>
                       数据来源:
                     </span>
-                    <span className='text-sm font-medium text-gray-700 dark:text-gray-300 uppercase'>
+                    <span className='text-sm font-medium text-ui-ink-2 uppercase'>
                       {currentSource === 'douban' && 'Douban'}
                       {currentSource === 'bangumi' && 'Bangumi'}
                       {currentSource === 'cms' && 'CMS'}
@@ -2156,7 +2171,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                       <button
                         onClick={handleToggleSource}
                         disabled={loading}
-                        className='px-3 py-1.5 text-sm rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+                        className='px-3 py-1.5 text-sm rounded-lg bg-ui-accent hover:brightness-110 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
                       >
                         切换到 TMDB
                       </button>
@@ -2167,7 +2182,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                         <button
                           onClick={handleToggleSource}
                           disabled={loading}
-                          className='px-3 py-1.5 text-sm rounded-lg bg-gray-500 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+                          className='px-3 py-1.5 text-sm rounded-lg bg-ui-surface-3 hover:bg-ui-surface-hover text-ui-ink transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
                         >
                           切换回{' '}
                           {originalSource === 'douban'
@@ -2214,7 +2229,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
 
       {/* 详情面板 - 居中模式 */}
       <div
-        className='relative w-full max-w-2xl max-h-[90vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden transition-all duration-200 ease-out'
+        className='relative w-full max-w-2xl max-h-[90vh] bg-ui-surface-2 rounded-2xl shadow-2xl overflow-hidden transition-all duration-200 ease-out'
         style={{
           willChange: 'transform, opacity',
           backfaceVisibility: 'hidden',
@@ -2225,21 +2240,21 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
         }}
       >
         {/* 头部 */}
-        <div className='flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800 sticky top-0 bg-white dark:bg-gray-900 z-10'>
-          <h2 className='text-xl font-semibold text-gray-900 dark:text-gray-100'>
+        <div className='flex items-center justify-between p-4 border-b border-ui-hair sticky top-0 bg-ui-surface-2 z-10'>
+          <h2 className='text-xl font-semibold text-ui-ink'>
             详情
           </h2>
           <div className='flex items-center gap-2'>
             {currentSource === 'tmdb' && tmdbResults.length > 1 && (
               <button
                 onClick={() => setShowTmdbCorrection(true)}
-                className='p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-150'
+                className='p-2 rounded-full hover:bg-ui-surface-hover transition-colors duration-150'
                 title='匹配错误?点此纠正'
                 aria-label='纠正匹配结果'
               >
                 <SearchCheck
                   size={18}
-                  className='text-gray-500 dark:text-gray-400'
+                  className='text-ui-ink-3'
                 />
               </button>
             )}
@@ -2248,23 +2263,23 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                 onClick={() =>
                   window.open(externalUrl, '_blank', 'noopener,noreferrer')
                 }
-                className='p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-150'
+                className='p-2 rounded-full hover:bg-ui-surface-hover transition-colors duration-150'
                 title='打开外部页面'
                 aria-label='打开外部页面'
               >
                 <ExternalLink
                   size={18}
-                  className='text-gray-500 dark:text-gray-400'
+                  className='text-ui-ink-3'
                 />
               </button>
             )}
             <button
               onClick={onClose}
-              className='p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-150'
+              className='p-2 rounded-full hover:bg-ui-surface-hover transition-colors duration-150'
               title='关闭'
               aria-label='关闭'
             >
-              <X size={20} className='text-gray-500 dark:text-gray-400' />
+              <X size={20} className='text-ui-ink-3' />
             </button>
           </div>
         </div>
@@ -2273,7 +2288,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
         <div className='overflow-y-auto max-h-[calc(90vh-4rem)]'>
           {loading && (
             <div className='flex items-center justify-center py-20'>
-              <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-green-500'></div>
+              <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-ui-accent'></div>
             </div>
           )}
 
@@ -2284,13 +2299,13 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
               </div>
 
               {/* 数据源显示和切换 - 错误时也显示 */}
-              <div className='mt-6 pt-4 border-t border-gray-200 dark:border-gray-700'>
+              <div className='mt-6 pt-4 border-t border-ui-hair'>
                 <div className='flex items-center justify-between'>
                   <div className='flex items-center gap-2'>
-                    <span className='text-sm text-gray-500 dark:text-gray-400'>
+                    <span className='text-sm text-ui-ink-3'>
                       数据来源:
                     </span>
-                    <span className='text-sm font-medium text-gray-700 dark:text-gray-300 uppercase'>
+                    <span className='text-sm font-medium text-ui-ink-2 uppercase'>
                       {currentSource === 'douban' && 'Douban'}
                       {currentSource === 'bangumi' && 'Bangumi'}
                       {currentSource === 'cms' && 'CMS'}
@@ -2301,7 +2316,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                     <button
                       onClick={handleToggleSource}
                       disabled={loading}
-                      className='px-3 py-1.5 text-sm rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+                      className='px-3 py-1.5 text-sm rounded-lg bg-ui-accent hover:brightness-110 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
                     >
                       切换到 TMDB
                     </button>
@@ -2312,7 +2327,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                       <button
                         onClick={handleToggleSource}
                         disabled={loading}
-                        className='px-3 py-1.5 text-sm rounded-lg bg-gray-500 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+                        className='px-3 py-1.5 text-sm rounded-lg bg-ui-surface-3 hover:bg-ui-surface-hover text-ui-ink transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
                       >
                         切换回{' '}
                         {originalSource === 'douban'
@@ -2334,7 +2349,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                 {detailData.poster && (
                   <div className='flex flex-col items-start gap-3 flex-shrink-0'>
                     <div
-                      className='relative w-32 h-48 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 cursor-pointer hover:opacity-90 transition-opacity'
+                      className='relative w-32 h-48 rounded-lg overflow-hidden bg-ui-surface-3 cursor-pointer hover:opacity-90 transition-opacity'
                       onClick={() => handleImageClick(detailData.poster!)}
                     >
                       <ProxyImage
@@ -2348,12 +2363,12 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                   </div>
                 )}
                 <div className='flex-1 min-w-0'>
-                  <h3 className='text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2'>
+                  <h3 className='text-2xl font-bold text-ui-ink mb-2'>
                     {detailData.title}
                   </h3>
                   {detailData.originalTitle &&
                     detailData.originalTitle !== detailData.title && (
-                      <p className='text-sm text-gray-500 dark:text-gray-400 mb-3'>
+                      <p className='text-sm text-ui-ink-3 mb-3'>
                         {detailData.originalTitle}
                       </p>
                     )}
@@ -2365,11 +2380,11 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                         size={20}
                         className='text-yellow-500 fill-yellow-500'
                       />
-                      <span className='text-lg font-semibold text-gray-900 dark:text-gray-100'>
+                      <span className='text-lg font-semibold text-ui-ink'>
                         {detailData.rating.value.toFixed(1)}
                       </span>
                       {detailData.rating.count > 0 && (
-                        <span className='text-sm text-gray-500 dark:text-gray-400'>
+                        <span className='text-sm text-ui-ink-3'>
                           ({detailData.rating.count} 评价)
                         </span>
                       )}
@@ -2382,7 +2397,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                       {detailData.genres.map((genre, index) => (
                         <span
                           key={index}
-                          className='px-2 py-1 text-xs rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                          className='px-2 py-1 text-xs rounded bg-ui-surface-3 text-ui-ink-2'
                         >
                           {genre}
                         </span>
@@ -2391,7 +2406,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                   )}
 
                   {/* 年份和时长 */}
-                  <div className='flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400'>
+                  <div className='flex flex-wrap gap-4 text-sm text-ui-ink-2'>
                     {detailData.year && (
                       <div className='flex items-center gap-1'>
                         <Calendar size={16} />
@@ -2417,10 +2432,10 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
               {/* 简介 */}
               {(detailData.intro || detailData.overview) && (
                 <div className='mb-6'>
-                  <h4 className='text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2'>
+                  <h4 className='text-lg font-semibold text-ui-ink mb-2'>
                     简介
                   </h4>
-                  <p className='text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap'>
+                  <p className='text-ui-ink-2 leading-relaxed whitespace-pre-wrap'>
                     {detailData.intro || detailData.overview}
                   </p>
                 </div>
@@ -2429,11 +2444,11 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
               {/* 导演和演员 */}
               {detailData.directors && detailData.directors.length > 0 && (
                 <div className='mb-4'>
-                  <h4 className='text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2 flex items-center gap-2'>
+                  <h4 className='text-sm font-semibold text-ui-ink mb-2 flex items-center gap-2'>
                     <Users size={16} />
                     导演
                   </h4>
-                  <p className='text-gray-700 dark:text-gray-300'>
+                  <p className='text-ui-ink-2'>
                     {detailData.directors.map((d) => d.name).join(', ')}
                   </p>
                 </div>
@@ -2441,7 +2456,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
 
               {detailData.actors && detailData.actors.length > 0 && (
                 <div className='mb-4'>
-                  <h4 className='text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2 flex items-center gap-2'>
+                  <h4 className='text-sm font-semibold text-ui-ink mb-2 flex items-center gap-2'>
                     <Users size={16} />
                     演员
                   </h4>
@@ -2469,7 +2484,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                           >
                             {actor.profile_path ? (
                               <div
-                                className='relative w-20 h-20 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 mb-2 cursor-pointer hover:opacity-80 transition-opacity'
+                                className='relative w-20 h-20 rounded-full overflow-hidden bg-ui-surface-3 mb-2 cursor-pointer hover:opacity-80 transition-opacity'
                                 onClick={() =>
                                   handleImageClick(
                                     getTMDBImageUrl(
@@ -2490,8 +2505,8 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                                 />
                               </div>
                             ) : (
-                              <div className='w-20 h-20 rounded-full bg-gray-200 dark:bg-gray-700 mb-2 flex items-center justify-center'>
-                                <Users size={28} className='text-gray-400' />
+                              <div className='w-20 h-20 rounded-full bg-ui-surface-3 mb-2 flex items-center justify-center'>
+                                <Users size={28} className='text-ui-ink-3' />
                               </div>
                             )}
                             <a
@@ -2500,13 +2515,13 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                               )}`}
                               target='_blank'
                               rel='noopener noreferrer'
-                              className='text-xs font-medium text-gray-900 dark:text-gray-100 text-center w-20 line-clamp-2 hover:text-green-600 dark:hover:text-green-400 transition-colors cursor-pointer'
+                              className='text-xs font-medium text-ui-ink text-center w-20 line-clamp-2 hover:text-ui-accent dark:hover:text-ui-accent transition-colors cursor-pointer'
                               onClick={(e) => e.stopPropagation()}
                             >
                               {actor.name}
                             </a>
                             {actor.character && (
-                              <p className='text-xs text-gray-500 dark:text-gray-400 text-center w-20 line-clamp-2'>
+                              <p className='text-xs text-ui-ink-3 text-center w-20 line-clamp-2'>
                                 {actor.character}
                               </p>
                             )}
@@ -2515,7 +2530,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                       </div>
                     </div>
                   ) : (
-                    <p className='text-gray-700 dark:text-gray-300'>
+                    <p className='text-ui-ink-2'>
                       {detailData.actors
                         .slice(0, 10)
                         .map((a) => a.name)
@@ -2529,11 +2544,11 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
               <div className='grid grid-cols-2 gap-4 text-sm'>
                 {detailData.countries && detailData.countries.length > 0 && (
                   <div>
-                    <h4 className='font-semibold text-gray-900 dark:text-gray-100 mb-1 flex items-center gap-1'>
+                    <h4 className='font-semibold text-ui-ink mb-1 flex items-center gap-1'>
                       <Globe size={14} />
                       国家/地区
                     </h4>
-                    <p className='text-gray-700 dark:text-gray-300'>
+                    <p className='text-ui-ink-2'>
                       {detailData.countries.join(', ')}
                     </p>
                   </div>
@@ -2541,11 +2556,11 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
 
                 {detailData.languages && detailData.languages.length > 0 && (
                   <div>
-                    <h4 className='font-semibold text-gray-900 dark:text-gray-100 mb-1 flex items-center gap-1'>
+                    <h4 className='font-semibold text-ui-ink mb-1 flex items-center gap-1'>
                       <Tag size={14} />
                       语言
                     </h4>
-                    <p className='text-gray-700 dark:text-gray-300'>
+                    <p className='text-ui-ink-2'>
                       {detailData.languages.join(', ')}
                     </p>
                   </div>
@@ -2553,11 +2568,11 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
 
                 {detailData.releaseDate && (
                   <div>
-                    <h4 className='font-semibold text-gray-900 dark:text-gray-100 mb-1 flex items-center gap-1'>
+                    <h4 className='font-semibold text-ui-ink mb-1 flex items-center gap-1'>
                       <Calendar size={14} />
                       上映日期
                     </h4>
-                    <p className='text-gray-700 dark:text-gray-300'>
+                    <p className='text-ui-ink-2'>
                       {detailData.releaseDate}
                     </p>
                   </div>
@@ -2565,10 +2580,10 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
 
                 {detailData.status && (
                   <div>
-                    <h4 className='font-semibold text-gray-900 dark:text-gray-100 mb-1'>
+                    <h4 className='font-semibold text-ui-ink mb-1'>
                       状态
                     </h4>
-                    <p className='text-gray-700 dark:text-gray-300'>
+                    <p className='text-ui-ink-2'>
                       {detailData.status}
                     </p>
                   </div>
@@ -2580,7 +2595,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                 <div className='mt-6'>
                   {loadingSeasons && (
                     <div className='flex items-center justify-center py-4'>
-                      <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-green-500'></div>
+                      <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-ui-accent'></div>
                     </div>
                   )}
 
@@ -2589,7 +2604,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                       {/* 季度列表 */}
                       {seasonData.seasons.length > 0 && (
                         <div className='mb-6'>
-                          <h4 className='text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3'>
+                          <h4 className='text-lg font-semibold text-ui-ink mb-3'>
                             季度
                           </h4>
                           <div className='grid grid-cols-2 sm:grid-cols-3 gap-3'>
@@ -2601,13 +2616,13 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                                 }
                                 className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${
                                   selectedSeason === season.season_number
-                                    ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-green-500'
-                                    : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                    ? 'bg-ui-accent-soft ring-2 ring-ui-accent'
+                                    : 'bg-ui-surface-3 hover:bg-ui-surface-hover '
                                 }`}
                               >
                                 {season.poster_path && (
                                   <div
-                                    className='relative w-12 h-16 rounded overflow-hidden bg-gray-200 dark:bg-gray-700 flex-shrink-0 hover:opacity-80 transition-opacity'
+                                    className='relative w-12 h-16 rounded overflow-hidden bg-ui-surface-3 flex-shrink-0 hover:opacity-80 transition-opacity'
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handleImageClick(
@@ -2630,10 +2645,10 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                                   </div>
                                 )}
                                 <div className='flex-1 min-w-0'>
-                                  <p className='text-sm font-medium text-gray-900 dark:text-gray-100 truncate'>
+                                  <p className='text-sm font-medium text-ui-ink truncate'>
                                     {season.name}
                                   </p>
-                                  <p className='text-xs text-gray-500 dark:text-gray-400'>
+                                  <p className='text-xs text-ui-ink-3'>
                                     {season.episode_count} 集
                                   </p>
                                 </div>
@@ -2646,7 +2661,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                       {/* 集数列表 */}
                       {seasonData.episodes.length > 0 && (
                         <div>
-                          <h4 className='text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3'>
+                          <h4 className='text-lg font-semibold text-ui-ink mb-3'>
                             {seasonData.seasons.find(
                               (s: any) => s.season_number === selectedSeason
                             )?.name || `第${selectedSeason}季`}
@@ -2676,8 +2691,8 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                                     id={`episode-${episode.episode_number}`}
                                     className={`flex-shrink-0 w-64 p-3 rounded ${
                                       isCurrentEpisode
-                                        ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-green-500'
-                                        : 'bg-gray-50 dark:bg-gray-800'
+                                        ? 'bg-ui-accent-soft ring-2 ring-ui-accent'
+                                        : 'bg-ui-surface-3 '
                                     }`}
                                     style={{
                                       pointerEvents: isDragging
@@ -2687,7 +2702,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                                   >
                                     {episode.still_path && (
                                       <div
-                                        className='relative w-full h-36 rounded overflow-hidden bg-gray-200 dark:bg-gray-700 mb-2 cursor-pointer hover:opacity-90 transition-opacity'
+                                        className='relative w-full h-36 rounded overflow-hidden bg-ui-surface-3 mb-2 cursor-pointer hover:opacity-90 transition-opacity'
                                         onClick={() =>
                                           handleEpisodeStillsClick(episode)
                                         }
@@ -2704,7 +2719,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                                         />
                                       </div>
                                     )}
-                                    <p className='text-sm font-medium text-gray-900 dark:text-gray-100 mb-1'>
+                                    <p className='text-sm font-medium text-ui-ink mb-1'>
                                       第{episode.episode_number}集:{' '}
                                       {episode.name}
                                     </p>
@@ -2721,7 +2736,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                                           }
                                           setExpandedEpisodes(newExpanded);
                                         }}
-                                        className={`text-xs text-gray-600 dark:text-gray-400 cursor-pointer ${
+                                        className={`text-xs text-ui-ink-2 cursor-pointer ${
                                           isExpanded ? '' : 'line-clamp-3'
                                         }`}
                                       >
@@ -2729,7 +2744,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                                       </p>
                                     )}
                                     {episode.air_date && (
-                                      <p className='text-xs text-gray-500 dark:text-gray-500 mt-1'>
+                                      <p className='text-xs text-ui-ink-3 mt-1'>
                                         {episode.air_date}
                                       </p>
                                     )}
@@ -2746,13 +2761,13 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
               )}
 
               {/* 数据源显示和切换 */}
-              <div className='mt-6 pt-4 border-t border-gray-200 dark:border-gray-700'>
+              <div className='mt-6 pt-4 border-t border-ui-hair'>
                 <div className='flex items-center justify-between'>
                   <div className='flex items-center gap-2'>
-                    <span className='text-sm text-gray-500 dark:text-gray-400'>
+                    <span className='text-sm text-ui-ink-3'>
                       数据来源:
                     </span>
-                    <span className='text-sm font-medium text-gray-700 dark:text-gray-300 uppercase'>
+                    <span className='text-sm font-medium text-ui-ink-2 uppercase'>
                       {currentSource === 'douban' && 'Douban'}
                       {currentSource === 'bangumi' && 'Bangumi'}
                       {currentSource === 'cms' && 'CMS'}
@@ -2763,7 +2778,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                     <button
                       onClick={handleToggleSource}
                       disabled={loading}
-                      className='px-3 py-1.5 text-sm rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+                      className='px-3 py-1.5 text-sm rounded-lg bg-ui-accent hover:brightness-110 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
                     >
                       切换到 TMDB
                     </button>
@@ -2774,7 +2789,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                       <button
                         onClick={handleToggleSource}
                         disabled={loading}
-                        className='px-3 py-1.5 text-sm rounded-lg bg-gray-500 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+                        className='px-3 py-1.5 text-sm rounded-lg bg-ui-surface-3 hover:bg-ui-surface-hover text-ui-ink transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
                       >
                         切换回{' '}
                         {originalSource === 'douban'
@@ -2806,7 +2821,13 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
     </div>
   );
 
-  return createPortal(content, document.body);
+  // 播放页恒为深色，但抽屉是通过 portal 挂到 body 上的，拿不到页面里的深色作用域，
+  // 所以由调用方显式要求。首页那边跟着站点主题走，不传这个开关。
+  // 颜色也要显式给 —— body 上是 text-gray-900，光有 .dark 拿不到白字
+  return createPortal(
+    forceDark ? <div className='dark text-ui-ink'>{content}</div> : content,
+    document.body
+  );
 };
 
 export default DetailPanel;

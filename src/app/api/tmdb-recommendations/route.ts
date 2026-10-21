@@ -12,6 +12,33 @@ import {
 const searchCache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 1天
 
+// TMDB 类型 id -> 名称。推荐列表里只给 genre_ids，展示「年份 · 类型 · 评分」
+// 就得自己翻名字；这里只收常用的，查不到的直接不显示。
+const GENRE_NAMES: Record<number, string> = {
+  12: '冒险',
+  14: '奇幻',
+  16: '动画',
+  18: '剧情',
+  27: '恐怖',
+  28: '动作',
+  35: '喜剧',
+  36: '历史',
+  37: '西部',
+  53: '惊悚',
+  80: '犯罪',
+  99: '纪录',
+  878: '科幻',
+  9648: '悬疑',
+  10402: '音乐',
+  10749: '爱情',
+  10751: '家庭',
+  10752: '战争',
+  10759: '动作冒险',
+  10762: '儿童',
+  10765: '科幻奇幻',
+  10768: '战争政治',
+};
+
 // 移除季度信息的辅助函数
 function removeSeasonInfo(title: string): string {
   // 移除 "第一季"、"第1季"、"第一（1）季" 等格式
@@ -172,6 +199,12 @@ export async function GET(request: NextRequest) {
         poster: getTMDBImageUrl(r.poster_path, 'w342'),
         rating: r.vote_average ? r.vote_average.toFixed(1) : '',
         mediaType,
+        year: String(r.release_date || r.first_air_date || '').slice(0, 4),
+        genres: (r.genre_ids || [])
+          .map((id: number) => GENRE_NAMES[id])
+          .filter(Boolean)
+          .slice(0, 2)
+          .join(' · '),
       }));
 
     return NextResponse.json(

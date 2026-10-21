@@ -1,15 +1,14 @@
 /* eslint-disable no-console */
 'use client';
-
-import { AlertTriangle, ChevronRight } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { AlertTriangle, ChevronRight, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import type { PlayRecord } from '@/lib/db.client';
 import {
   clearAllPlayRecords,
-  getCachedPlayRecordsSnapshot,
   getAllPlayRecords,
+  getCachedPlayRecordsSnapshot,
   subscribeToDataUpdates,
 } from '@/lib/db.client';
 
@@ -44,6 +43,55 @@ export default function ContinueWatching({ className }: ContinueWatchingProps) {
     setPlayRecords(limit ? sortedRecords.slice(0, limit) : sortedRecords);
   };
 
+  // 脚本源存下来的记录经常没有封面（搜索结果是空的 cover），同一部剧在别的源
+  // 里却有图。同一个标题之间互相借一张，否则一排卡里只有一两张有海报，看着像
+  // 图片加载失败。
+  //
+  // year 不能直接当分组键：脚本源存的是字符串 'unknown'，正片源存的是 '2026'，
+  // 同一部剧会被拆成两组，于是既借不到封面也不标来源。未知年份一律当作空。
+  const recordsWithCover = useMemo(() => {
+    const normalizeYear = (year?: string | number | null) => {
+      const text = String(year ?? '').trim();
+      return !text || /^(unknown|null|undefined|0)$/i.test(text) ? '' : text;
+    };
+    const keyOf = (r: PlayRecordItem) =>
+      `${r.title}__${normalizeYear(r.year)}`;
+
+    const coverByKey = new Map<string, string>();
+    const coverByTitle = new Map<string, string>();
+    for (const record of playRecords) {
+      if (!record.cover) continue;
+      const k = keyOf(record);
+      if (!coverByKey.has(k)) {
+        coverByKey.set(k, record.cover);
+      }
+      if (!coverByTitle.has(record.title)) {
+        coverByTitle.set(record.title, record.cover);
+      }
+    }
+
+    return playRecords.map((record) => {
+      if (record.cover) return record;
+      // 先找同年份的，再退到同名的任意一条
+      const cover =
+        coverByKey.get(keyOf(record)) ?? coverByTitle.get(record.title) ?? '';
+      return { ...record, cover };
+    });
+  }, [playRecords]);
+
+  // 同一部剧命中多个源时，几张小卡片长得一模一样，右上角标出来源。
+  // 按标题计数，不掺年份 —— 年份未知的那条同样需要标。
+  const duplicatedTitles = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const record of playRecords) {
+      counts.set(record.title, (counts.get(record.title) ?? 0) + 1);
+    }
+    return new Set(
+      Array.from(counts.entries())
+        .filter(([, count]) => count > 1)
+        .map(([title]) => title)
+    );
+  }, [playRecords]);
   const applyCachedSnapshot = () => {
     const cachedRecords = getCachedPlayRecordsSnapshot();
     if (Object.keys(cachedRecords).length === 0) {
@@ -109,23 +157,25 @@ export default function ContinueWatching({ className }: ContinueWatchingProps) {
     <>
       <section className={`mb-8 ${className || ''}`}>
         <div className='mb-4 flex items-center justify-between'>
-          <h2 className='text-xl font-bold text-gray-800 dark:text-gray-200'>
-            继续观看
-          </h2>
+          <h2 className='mtv-row-title'>继续观看</h2>
           {!loading && playRecords.length > 0 && (
-            <div className='flex items-center gap-1'>
+            <div className='mtv-cw-actions'>
               <button
-                className='text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                type='button'
+                className='mtv-cw-clear'
                 onClick={() => setShowConfirmDialog(true)}
               >
+                <Trash2 className='h-3.5 w-3.5' />
                 清空
               </button>
+              <span className='mtv-cw-divider' aria-hidden='true' />
               <button
-                className='inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200'
+                type='button'
+                className='mtv-row-more'
                 onClick={() => setShowPlayRecordsPanel(true)}
-                aria-label='查看全部播放记录'
               >
-                <ChevronRight className='h-4 w-4' />
+                查看更多
+                <ChevronRight className='w-4 h-4 ml-1' />
               </button>
             </div>
           )}
@@ -135,27 +185,33 @@ export default function ContinueWatching({ className }: ContinueWatchingProps) {
             {Array.from({ length: 8 }).map((_, index) => (
               <div
                 key={index}
-                className='min-w-[180px] w-48 sm:min-w-[200px] sm:w-52'
+                className='mtv-card-wide'
               >
-                <div className='relative aspect-[3/2] w-full overflow-hidden rounded-lg bg-gray-200 animate-pulse dark:bg-gray-800'>
-                  <div className='absolute inset-0 bg-gray-300 dark:bg-gray-700' />
-                </div>
-                <div className='mt-1 h-1 rounded bg-gray-200 animate-pulse dark:bg-gray-800' />
-                <div className='mt-2 h-4 w-3/4 rounded bg-gray-200 animate-pulse dark:bg-gray-800' />
+                <div className='mtv-skel-poster is-wide' />
+                <div className='mtv-skel-line' />
               </div>
             ))}
           </div>
         ) : (
           <div>
             <VirtualScrollableRow>
-              {playRecords.map((record) => {
+              {recordsWithCover.map((record) => {
                 const { source, id } = parseKey(record.key);
                 return (
                   <div
                     key={record.key}
-                    className='min-w-[180px] w-48 sm:min-w-[200px] sm:w-52'
+                    className='mtv-card-wide'
                     style={{ position: 'relative' }}
                   >
+                    {duplicatedTitles.has(record.title) &&
+                      record.source_name && (
+                        <span className='mtv-cw-src'>
+                          {record.source_name.replace(
+                            /^[^\u4e00-\u9fa5A-Za-z0-9]+/,
+                            ''
+                          )}
+                        </span>
+                      )}
                     <VideoCard
                       id={id}
                       title={record.title}
@@ -178,6 +234,7 @@ export default function ContinueWatching({ className }: ContinueWatchingProps) {
                       orientation='horizontal'
                       playTime={record.play_time}
                       totalTime={record.total_time}
+                      hideSource
                       isAnime={Boolean(record.is_anime)}
                     />
                     {record.new_episodes && record.new_episodes > 0 && (
@@ -245,7 +302,7 @@ export default function ContinueWatching({ className }: ContinueWatchingProps) {
       {showConfirmDialog &&
         createPortal(
           <div
-            className='fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 p-4 transition-opacity duration-300'
+            className='fixed inset-0 z-[var(--ui-z-modal)] flex items-center justify-center bg-black bg-opacity-50 p-4 transition-opacity duration-300'
             onClick={() => setShowConfirmDialog(false)}
           >
             <div

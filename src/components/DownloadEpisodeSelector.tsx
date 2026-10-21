@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import React, { useMemo,useState } from 'react';
+import { createPortal } from 'react-dom';
 
 interface DownloadEpisodeSelectorProps {
   /** 是否显示弹窗 */
@@ -112,6 +113,10 @@ const DownloadEpisodeSelector: React.FC<DownloadEpisodeSelectorProps> = ({
     setSelectedEpisodes(new Set());
   };
 
+  // 下载前再确认一次：选集面板里点「下载」就直接把任务排进队列，误触的代价
+  // 是一次实打实的下载。
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
   const handleDownload = () => {
     const episodeIndexes = Array.from(selectedEpisodes).sort((a, b) => a - b);
     onDownload(episodeIndexes, offlineMode);
@@ -121,40 +126,45 @@ const DownloadEpisodeSelector: React.FC<DownloadEpisodeSelectorProps> = ({
   const currentStart = currentPage * episodesPerPage;
   const currentEnd = Math.min(currentStart + episodesPerPage - 1, totalEpisodes - 1);
 
-  if (!isOpen) return null;
+  // document 守卫：SSR 首帧没有 body，先不渲染
+  if (!isOpen || typeof document === 'undefined') return null;
 
-  return (
-    <div className='fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm'>
-      <div className='bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-[90vw] max-w-4xl max-h-[80vh] flex flex-col overflow-hidden border border-gray-200 dark:border-gray-700'>
+  // 用 createPortal 挂到 body。弹窗是写在 PageLayout 里的，会被祖先的 stacking
+  // context 关住 —— z-index 写得再大也只在这个上下文内比较，而底部导航是 fixed
+  // 挂在 body 上的 z-index 100，手机上弹窗贴底就会被它盖住，按钮点不到。
+  return createPortal(
+    <>
+      <div className='mtv-dialog-scrim'>
+      <div className='mtv-dialog mtv-dl-ep'>
         {/* 标题栏 */}
-        <div className='flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700'>
-          <div className='flex-1'>
-            <h2 className='text-xl font-bold text-gray-900 dark:text-gray-100'>
-              选择要下载的集数
-            </h2>
-            <p className='text-sm text-gray-500 dark:text-gray-400 mt-1'>
-              {videoTitle}
-            </p>
+        <div className='mtv-dialog-head'>
+          <div className='min-w-0'>
+            <h3 className='mtv-dialog-title'>选择要下载的集数</h3>
+            <p className='mtv-dl-ep-sub'>{videoTitle}</p>
           </div>
-          <div className='flex items-center gap-2'>
+          <div className='mtv-dl-ep-actions'>
             <button
+              type='button'
               onClick={handleSelectAll}
-              className='px-3 py-1.5 text-xs font-medium text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-900/20 rounded-md transition-colors'
+              className='mtv-dl-ep-act'
             >
               全选
             </button>
             <button
+              type='button'
               onClick={handleClearAll}
-              className='px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-700 rounded-md transition-colors'
+              className='mtv-dl-ep-act'
             >
               清空
             </button>
             <button
+              type='button'
               onClick={onClose}
-              className='flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700 transition-colors'
+              className='mtv-dialog-close'
+              aria-label='关闭'
             >
               <svg
-                className='w-5 h-5'
+                className='h-4 w-4'
                 fill='none'
                 stroke='currentColor'
                 viewBox='0 0 24 24'
@@ -162,7 +172,7 @@ const DownloadEpisodeSelector: React.FC<DownloadEpisodeSelectorProps> = ({
                 <path
                   strokeLinecap='round'
                   strokeLinejoin='round'
-                  strokeWidth='2'
+                  strokeWidth={2}
                   d='M6 18L18 6M6 6l12 12'
                 />
               </svg>
@@ -172,80 +182,10 @@ const DownloadEpisodeSelector: React.FC<DownloadEpisodeSelectorProps> = ({
 
         {/* 离线下载开关 - 仅管理员和站长可见 */}
         {enableOfflineDownload && hasOfflinePermission && (
-          <div className='flex items-center justify-between px-6 py-3 bg-blue-50 dark:bg-blue-900/10 border-b border-blue-100 dark:border-blue-900/30'>
-            <div className='flex items-center gap-3'>
-              {/* 服务器图标 */}
-              <div className='flex-shrink-0 w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center'>
-                <svg className='w-5 h-5 text-blue-600 dark:text-blue-400' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                  <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01' />
-                </svg>
-              </div>
-              <div className='flex-1'>
-                <div className='flex items-center gap-2'>
-                  <h3 className='text-sm font-semibold text-gray-900 dark:text-gray-100'>
-                    服务器离线下载
-                  </h3>
-                  {offlineMode && (
-                    <span className='px-2 py-0.5 text-xs font-medium bg-blue-500 text-white rounded'>
-                      已启用
-                    </span>
-                  )}
-                </div>
-                <p className='text-xs text-gray-600 dark:text-gray-400 mt-0.5'>
-                  开启后将在服务器端下载视频文件，支持断点续传和后台下载
-                </p>
-              </div>
-            </div>
-            {/* 开关 */}
-            <button
-              onClick={() => setOfflineMode(!offlineMode)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                offlineMode
-                  ? 'bg-blue-600'
-                  : 'bg-gray-300 dark:bg-gray-600'
-              }`}
-            >
-              <span
-                className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform ${
-                  offlineMode ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-          </div>
-        )}
-
-        {/* 分页标签 */}
-        {pageCount > 1 && (
-          <div className='flex items-center gap-4 px-6 py-3 border-b border-gray-200 dark:border-gray-700'>
-            <div className='flex-1 overflow-x-auto'>
-              <div className='flex gap-2 min-w-max'>
-                {categories.map((label, idx) => {
-                  const isActive = idx === displayPage;
-                  return (
-                    <button
-                      key={label}
-                      onClick={() => handleCategoryClick(idx)}
-                      className={`px-4 py-2 text-sm font-medium rounded-md transition-all whitespace-nowrap
-                        ${
-                          isActive
-                            ? 'bg-green-500 text-white shadow-md'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-                        }
-                      `.trim()}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            {/* 向上/向下按钮 */}
-            <button
-              className='flex-shrink-0 w-8 h-8 rounded-md flex items-center justify-center text-gray-700 hover:text-green-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-green-400 dark:hover:bg-gray-700 transition-colors'
-              onClick={() => setDescending((prev) => !prev)}
-            >
+          <div className='mtv-dl-ep-offline'>
+            <span className='mtv-dl-ep-offline-icon'>
               <svg
-                className='w-4 h-4'
+                className='h-4 w-4'
                 fill='none'
                 stroke='currentColor'
                 viewBox='0 0 24 24'
@@ -253,7 +193,65 @@ const DownloadEpisodeSelector: React.FC<DownloadEpisodeSelectorProps> = ({
                 <path
                   strokeLinecap='round'
                   strokeLinejoin='round'
-                  strokeWidth='2'
+                  strokeWidth={2}
+                  d='M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01'
+                />
+              </svg>
+            </span>
+            <div className='mtv-dl-ep-offline-body'>
+              <div className='mtv-dl-ep-offline-title'>
+                服务器离线下载
+                {offlineMode && <span className='mtv-dl-ep-badge'>已启用</span>}
+              </div>
+              <p className='mtv-dl-ep-offline-desc'>
+                开启后将在服务器端下载视频文件，支持断点续传和后台下载
+              </p>
+            </div>
+            <button
+              type='button'
+              onClick={() => setOfflineMode(!offlineMode)}
+              className={`mtv-dl-ep-switch${offlineMode ? ' is-on' : ''}`}
+              aria-pressed={offlineMode}
+              aria-label='服务器离线下载'
+            />
+          </div>
+        )}
+
+        {/* 分页标签 */}
+        {pageCount > 1 && (
+          <div className='mtv-dl-ep-pages'>
+            <div className='mtv-dl-ep-pagescroll'>
+              <div className='mtv-dl-ep-pagelist'>
+                {categories.map((label, idx) => (
+                  <button
+                    key={label}
+                    type='button'
+                    onClick={() => handleCategoryClick(idx)}
+                    className={`mtv-dl-ep-page${
+                      idx === displayPage ? ' is-on' : ''
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <button
+              type='button'
+              className='mtv-dl-ep-sort'
+              aria-label='切换排序方向'
+              onClick={() => setDescending((prev) => !prev)}
+            >
+              <svg
+                className='h-4 w-4'
+                fill='none'
+                stroke='currentColor'
+                viewBox='0 0 24 24'
+              >
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth={2}
                   d='M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4'
                 />
               </svg>
@@ -262,96 +260,118 @@ const DownloadEpisodeSelector: React.FC<DownloadEpisodeSelectorProps> = ({
         )}
 
         {/* 集数网格 */}
-        <div className='flex-1 overflow-y-auto px-6 py-4'>
-          <div className='flex flex-wrap gap-3'>
-            {(() => {
-              const len = currentEnd - currentStart + 1;
-              const episodes = Array.from({ length: len }, (_, i) =>
-                descending ? currentEnd - i : currentStart + i
-              );
-              return episodes;
-            })().map((episodeIndex) => {
-              const isSelected = selectedEpisodes.has(episodeIndex);
-              const isCurrent = episodeIndex === currentEpisodeIndex;
-              const episodeNumber = episodeIndex + 1;
-              return (
-                <button
-                  key={episodeIndex}
-                  onClick={() => handleEpisodeClick(episodeIndex)}
-                  className={`h-10 min-w-10 px-3 py-2 flex items-center justify-center text-sm font-medium rounded-md transition-all duration-200 whitespace-nowrap font-mono relative
-                    ${
-                      isSelected
-                        ? 'bg-green-500 text-white shadow-lg shadow-green-500/25 dark:bg-green-600'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300 hover:scale-105 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-                    }
-                  `.trim()}
-                >
-                  {(() => {
-                    const title = episodesTitles?.[episodeIndex];
-                    if (!title) {
-                      return episodeNumber;
-                    }
-                    // 如果是 OVA 格式，直接返回完整标题
-                    if (title.match(/^OVA\s+\d+/i)) {
-                      return title;
-                    }
-                    // 如果匹配"第X集"、"第X话"、"X集"、"X话"格式，提取中间的数字
-                    const match = title.match(/(?:第)?(\d+)(?:集|话)/);
-                    if (match) {
-                      return match[1];
-                    }
+        <div className='mtv-dl-ep-grid'>
+          {(() => {
+            const len = currentEnd - currentStart + 1;
+            const episodes = Array.from({ length: len }, (_, i) =>
+              descending ? currentEnd - i : currentStart + i
+            );
+            return episodes;
+          })().map((episodeIndex) => {
+            const isSelected = selectedEpisodes.has(episodeIndex);
+            const isCurrent = episodeIndex === currentEpisodeIndex;
+            const episodeNumber = episodeIndex + 1;
+            return (
+              <button
+                key={episodeIndex}
+                type='button'
+                onClick={() => handleEpisodeClick(episodeIndex)}
+                className={`mtv-dl-ep-cell${isSelected ? ' is-on' : ''}${
+                  isCurrent ? ' is-current' : ''
+                }`}
+              >
+                {(() => {
+                  const title = episodesTitles?.[episodeIndex];
+                  if (!title) {
+                    return episodeNumber;
+                  }
+                  // 如果是 OVA 格式，直接返回完整标题
+                  if (title.match(/^OVA\s+\d+/i)) {
                     return title;
-                  })()}
-                  {isCurrent && (
-                    <span className='absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full'></span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+                  }
+                  // 如果匹配"第X集"、"第X话"、"X集"、"X话"格式，提取中间的数字
+                  const match = title.match(/(?:第)?(\d+)(?:集|话)/);
+                  if (match) {
+                    return match[1];
+                  }
+                  return title;
+                })()}
+              </button>
+            );
+          })}
         </div>
 
         {/* 底部操作栏 */}
-        <div className='flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900'>
-          <div className='text-sm text-gray-600 dark:text-gray-400'>
+        <div className='mtv-dl-ep-foot'>
+          <div className='mtv-dl-ep-sum'>
             已选择：
             {selectedEpisodes.size === 0 ? (
-              <span className='text-red-500 dark:text-red-400'>未选择任何集数</span>
+              <span className='is-warn'>未选择任何集数</span>
             ) : selectedEpisodes.size === 1 ? (
               <>
                 第 {Array.from(selectedEpisodes)[0] + 1} 集
                 {Array.from(selectedEpisodes)[0] === currentEpisodeIndex && (
-                  <span className='ml-2 text-blue-500 dark:text-blue-400'>(当前播放)</span>
+                  <span className='mtv-dl-ep-note'>（当前播放）</span>
                 )}
               </>
             ) : (
-              <span className='font-medium text-green-600 dark:text-green-400'>
-                {selectedEpisodes.size} 集
-              </span>
+              <strong>{selectedEpisodes.size} 集</strong>
             )}
           </div>
-          <div className='flex gap-3'>
-            <button
-              onClick={onClose}
-              className='px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 rounded-md transition-colors'
-            >
+          <div className='mtv-dl-ep-btns'>
+            <button type='button' onClick={onClose} className='mtv-dl-ep-btn'>
               取消
             </button>
             <button
-              onClick={handleDownload}
+              type='button'
+              onClick={() => setConfirmOpen(true)}
               disabled={selectedEpisodes.size === 0}
-              className={`px-4 py-2 text-sm font-medium text-white rounded-md transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed ${
-                offlineMode && enableOfflineDownload && hasOfflinePermission
-                  ? 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800'
-                  : 'bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700 disabled:hover:bg-green-500'
-              }`}
+              className='mtv-dl-ep-btn is-primary'
             >
-              {offlineMode && enableOfflineDownload && hasOfflinePermission ? '离线' : ''}下载 {selectedEpisodes.size > 0 && `(${selectedEpisodes.size})`}
+              {offlineMode && enableOfflineDownload && hasOfflinePermission
+                ? '离线'
+                : ''}
+              下载{selectedEpisodes.size > 0 ? ` (${selectedEpisodes.size})` : ''}
             </button>
           </div>
         </div>
       </div>
+      {confirmOpen && (
+        <div className='fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 px-6 backdrop-blur-sm'>
+          <div className='w-full max-w-sm rounded-2xl border border-white/10 bg-[#141416] p-5 text-white shadow-2xl'>
+            <h3 className='text-base font-bold'>确认下载</h3>
+            <p className='mt-2 text-sm text-white/60'>{videoTitle}</p>
+            <p className='mt-1 text-sm text-white/60'>
+              共 {selectedEpisodes.size} 集
+              {offlineMode && enableOfflineDownload && hasOfflinePermission
+                ? '，保存到本地离线目录'
+                : ''}
+            </p>
+            <div className='mt-5 flex justify-end gap-2'>
+              <button
+                type='button'
+                onClick={() => setConfirmOpen(false)}
+                className='rounded-lg border border-white/20 px-4 py-2 text-sm font-semibold text-white/60 transition-colors hover:border-white/40 hover:text-white'
+              >
+                取消
+              </button>
+              <button
+                type='button'
+                onClick={() => {
+                  setConfirmOpen(false);
+                  handleDownload();
+                }}
+                className='rounded-lg bg-ui-accent px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110'
+              >
+                开始下载
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+    </>,
+    document.body
   );
 };
 

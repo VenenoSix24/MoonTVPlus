@@ -215,7 +215,7 @@ export default function ChatFloatingWindow() {
         {/* 聊天按钮 */}
         <button
           onClick={() => setIsOpen(true)}
-          className="relative flex h-14 w-14 items-center justify-center rounded-full bg-green-500 text-white shadow-2xl transition-all hover:scale-110 hover:bg-green-600"
+          className="relative flex h-14 w-14 items-center justify-center rounded-full bg-ui-accent text-white shadow-2xl transition-all hover:scale-110 hover:bg-ui-accent"
           aria-label="打开聊天"
         >
           <MessageCircle className="h-6 w-6" />
@@ -489,7 +489,7 @@ export default function ChatFloatingWindow() {
       {/* 聊天窗口 */}
       <div className="fixed bottom-20 right-4 z-[700] flex w-80 flex-col rounded-2xl bg-gray-800 shadow-2xl md:bottom-4 md:w-96">
       {/* 头部 */}
-      <div className="rounded-t-2xl bg-green-500">
+      <div className="rounded-t-2xl bg-ui-accent">
         {/* 第一行: 标题和窗口控制 */}
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
@@ -526,7 +526,7 @@ export default function ChatFloatingWindow() {
               disabled={voiceChat.isConnecting}
               className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
                 isMicEnabled
-                  ? 'bg-white text-green-600 hover:bg-white/90'
+                  ? 'bg-white text-ui-accent hover:bg-white/90'
                   : 'bg-white/10 text-white/80 hover:bg-white/20'
               } disabled:opacity-50 disabled:cursor-not-allowed`}
               aria-label={isMicEnabled ? '关闭麦克风' : '开启麦克风'}
@@ -544,7 +544,7 @@ export default function ChatFloatingWindow() {
               onClick={() => setIsSpeakerEnabled(!isSpeakerEnabled)}
               className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
                 isSpeakerEnabled
-                  ? 'bg-white text-green-600 hover:bg-white/90'
+                  ? 'bg-white text-ui-accent hover:bg-white/90'
                   : 'bg-white/10 text-white/80 hover:bg-white/20'
               }`}
               aria-label={isSpeakerEnabled ? '关闭喇叭' : '开启喇叭'}
@@ -588,7 +588,7 @@ export default function ChatFloatingWindow() {
             {chatMessages.map((msg) => (
               <div key={msg.id} className="flex flex-col gap-1">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-xs font-medium text-green-400">{msg.userName}</span>
+                  <span className="text-xs font-medium text-ui-accent">{msg.userName}</span>
                   <span className="text-xs text-gray-500">{formatTime(msg.timestamp)}</span>
                 </div>
                 <div
@@ -638,13 +638,13 @@ export default function ChatFloatingWindow() {
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="输入消息..."
-            className="flex-1 rounded-lg bg-gray-700 px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="flex-1 rounded-lg bg-gray-700 px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-ui-accent"
             maxLength={200}
           />
           <button
             onClick={handleSendMessage}
             disabled={!message.trim()}
-            className="rounded-lg bg-green-500 p-2 text-white transition-colors hover:bg-green-600 disabled:opacity-50"
+            className="rounded-lg bg-ui-accent p-2 text-white transition-colors hover:bg-ui-accent disabled:opacity-50"
             aria-label="发送"
           >
             <Send className="h-5 w-5" />

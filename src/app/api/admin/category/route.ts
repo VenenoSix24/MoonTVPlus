@@ -48,7 +48,11 @@ export async function POST(request: NextRequest) {
     // 权限与身份校验 - 使用v2用户系统
     if (username !== process.env.USERNAME) {
       const userInfo = await db.getUserInfoV2(username);
-      if (!userInfo || userInfo.role !== 'admin' || userInfo.banned) {
+      if (
+        !userInfo ||
+        (userInfo.role !== 'admin' && userInfo.role !== 'owner') ||
+        userInfo.banned
+      ) {
         return NextResponse.json({ error: '权限不足' }, { status: 401 });
       }
     }

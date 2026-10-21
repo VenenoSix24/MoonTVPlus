@@ -3,6 +3,12 @@ import defaultTheme from 'tailwindcss/defaultTheme';
 
 const config: Config = {
   darkMode: 'class',
+  // 触屏没有 hover：:hover 会退化成「点完卡住」的粘滞 hover——卡片标题会一直发绿、
+  // 悬浮遮罩会一直亮着。打开这个开关后，所有 hover:/group-hover: 变体只在真正
+  // 有指针的设备上生效，全站一次性修掉，不用逐个加 sm: 前缀。
+  future: {
+    hoverOnlyWhenSupported: true,
+  },
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -128,6 +134,46 @@ const config: Config = {
           900: '#0c4a6e',
         },
         dark: '#222222',
+        // 语义令牌，定义见 src/app/globals.css。命名避开 bg-white / bg-gray-* /
+        // border-gray / text-gray-* 子串，避免撞上管理端主题层的 !important 覆盖。
+        ui: {
+          bg: 'var(--ui-bg)',
+          surface: 'var(--ui-surface)',
+          'surface-2': 'var(--ui-surface-2)',
+          'surface-3': 'var(--ui-surface-3)',
+          'surface-hover': 'var(--ui-surface-hover)',
+          ink: 'var(--ui-ink)',
+          'ink-2': 'var(--ui-ink-2)',
+          'ink-3': 'var(--ui-ink-3)',
+          hair: 'var(--ui-hair)',
+          'hair-strong': 'var(--ui-hair-strong)',
+          accent: 'var(--ui-accent)',
+          'accent-ink': 'var(--ui-accent-ink)',
+          'accent-soft': 'var(--ui-accent-soft)',
+          success: 'var(--ui-success)',
+          'success-soft': 'var(--ui-success-soft)',
+          danger: 'var(--ui-danger)',
+          'danger-soft': 'var(--ui-danger-soft)',
+        },
+      },
+      borderRadius: {
+        'ui-sm': 'var(--ui-r-sm)',
+        'ui-md': 'var(--ui-r-md)',
+        'ui-lg': 'var(--ui-r-lg)',
+      },
+      boxShadow: {
+        'ui-1': 'var(--ui-elev-1)',
+        'ui-2': 'var(--ui-elev-2)',
+        'ui-3': 'var(--ui-elev-3)',
+      },
+      transitionDuration: {
+        'ui-1': 'var(--ui-dur-1)',
+        'ui-2': 'var(--ui-dur-2)',
+        'ui-3': 'var(--ui-dur-3)',
+      },
+      transitionTimingFunction: {
+        ui: 'var(--ui-ease)',
+        'ui-out': 'var(--ui-ease-out)',
       },
       keyframes: {
         flicker: {

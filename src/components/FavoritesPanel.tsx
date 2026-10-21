@@ -2,18 +2,17 @@
 
 'use client';
 
-import { AlertTriangle,Star, X } from 'lucide-react';
+import { AlertTriangle, Star, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
+import VideoCard from '@/components/VideoCard';
 import {
   clearAllFavorites,
   getAllFavorites,
   getAllPlayRecords,
   subscribeToDataUpdates,
 } from '@/lib/db.client';
-
-import VideoCard from '@/components/VideoCard';
 
 interface FavoriteItem {
   id: string;
@@ -101,20 +100,23 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({
 
   // 监听收藏变化,实时移除已取消收藏的项目
   useEffect(() => {
-    const unsubscribe = subscribeToDataUpdates('favoritesUpdated', async (newFavorites: Record<string, any>) => {
-      if (isOpen) {
-        // 获取最新的收藏列表的键
-        const currentKeys = Object.keys(newFavorites);
+    const unsubscribe = subscribeToDataUpdates(
+      'favoritesUpdated',
+      async (newFavorites: Record<string, any>) => {
+        if (isOpen) {
+          // 获取最新的收藏列表的键
+          const currentKeys = Object.keys(newFavorites);
 
-        // 过滤掉已经不在收藏中的项目
-        setFavoriteItems((prevItems) =>
-          prevItems.filter((item) => {
-            const key = `${item.source}+${item.id}`;
-            return currentKeys.includes(key);
-          })
-        );
+          // 过滤掉已经不在收藏中的项目
+          setFavoriteItems((prevItems) =>
+            prevItems.filter((item) => {
+              const key = `${item.source}+${item.id}`;
+              return currentKeys.includes(key);
+            })
+          );
+        }
       }
-    });
+    );
 
     return () => {
       unsubscribe();
@@ -129,34 +131,33 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({
         onClick={onClose}
       />
 
-      {/* 收藏面板 */}
-      <div className='fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl max-h-[85vh] bg-white dark:bg-gray-900 rounded-xl shadow-xl z-[1001] flex flex-col overflow-hidden'>
+      {/* 收藏面板：手机端铺满整屏，桌面端居中弹窗 —— 一屏能看到的卡片数差太多，
+          在手机上留一圈留白只会把列表挤成三行。 */}
+      <div className='fixed z-[1001] flex flex-col overflow-hidden bg-ui-surface shadow-ui-3 inset-0 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-4xl sm:max-h-[85vh] sm:rounded-ui-lg'>
         {/* 标题栏 */}
-        <div className='flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700'>
-          <div className='flex items-center gap-2'>
-            <Star className='w-5 h-5 text-yellow-500' />
-            <h3 className='text-lg font-bold text-gray-800 dark:text-gray-200'>
-              我的收藏
-            </h3>
+        <div className='flex items-center justify-between px-4 py-3.5 border-b border-ui-hair shrink-0 sm:px-6 sm:py-4 pt-[calc(0.875rem+env(safe-area-inset-top))] sm:pt-4'>
+          <div className='flex items-center gap-2 min-w-0'>
+            <Star className='w-5 h-5 shrink-0 text-amber-500 dark:text-amber-400' />
+            <h3 className='text-lg font-bold text-ui-ink truncate'>我的收藏</h3>
             {favoriteItems.length > 0 && (
-              <span className='px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 rounded-full'>
+              <span className='shrink-0 px-2 py-0.5 text-xs font-medium bg-ui-accent-soft text-ui-accent rounded-full'>
                 {favoriteItems.length} 项
               </span>
             )}
           </div>
-          <div className='flex items-center gap-2'>
+          <div className='flex items-center gap-2 shrink-0'>
             {favoriteItems.length > 0 && (
               <button
                 onClick={() => setShowConfirmDialog(true)}
-                className='text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors'
+                className='text-xs text-ui-danger hover:opacity-80 transition-opacity'
               >
                 清空全部
               </button>
             )}
             <button
               onClick={onClose}
-              className='w-8 h-8 p-1 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors'
-              aria-label='Close'
+              className='w-8 h-8 p-1 rounded-full flex items-center justify-center text-ui-ink-2 hover:bg-ui-surface-hover active:bg-ui-surface-3 transition-colors'
+              aria-label='关闭'
             >
               <X className='w-full h-full' />
             </button>
@@ -164,13 +165,13 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({
         </div>
 
         {/* 收藏列表 */}
-        <div className='flex-1 overflow-y-auto p-6'>
+        <div className='flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:pb-6'>
           {loading ? (
             <div className='flex items-center justify-center py-12'>
-              <div className='w-8 h-8 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin'></div>
+              <div className='w-8 h-8 border-4 border-ui-accent border-t-transparent rounded-full animate-spin'></div>
             </div>
           ) : favoriteItems.length === 0 ? (
-            <div className='flex flex-col items-center justify-center py-12 text-gray-500 dark:text-gray-400'>
+            <div className='flex flex-col items-center justify-center py-12 text-ui-ink-3'>
               <Star className='w-12 h-12 mb-3 opacity-30' />
               <p className='text-sm'>暂无收藏内容</p>
             </div>
@@ -192,51 +193,52 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({
       </div>
 
       {/* 确认对话框 */}
-      {showConfirmDialog && createPortal(
-        <div
-          className='fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center p-4 transition-opacity duration-300'
-          onClick={() => setShowConfirmDialog(false)}
-        >
+      {showConfirmDialog &&
+        createPortal(
           <div
-            className='bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full border border-red-200 dark:border-red-800 transition-all duration-300'
-            onClick={(e) => e.stopPropagation()}
+            className='fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4 transition-opacity duration-300'
+            onClick={() => setShowConfirmDialog(false)}
           >
-            <div className="p-6">
-              {/* 图标和标题 */}
-              <div className="flex items-start gap-4 mb-4">
-                <div className="flex-shrink-0">
-                  <AlertTriangle className="w-8 h-8 text-red-500" />
+            <div
+              className='bg-ui-surface rounded-ui-lg shadow-ui-3 max-w-md w-full border border-ui-hair transition-all duration-300'
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className='p-6'>
+                {/* 图标和标题 */}
+                <div className='flex items-start gap-4 mb-4'>
+                  <div className='flex-shrink-0'>
+                    <AlertTriangle className='w-8 h-8 text-ui-danger' />
+                  </div>
+                  <div className='flex-1'>
+                    <h3 className='text-lg font-semibold text-ui-ink mb-2'>
+                      清空收藏
+                    </h3>
+                    <p className='text-sm text-ui-ink-2'>
+                      确定要清空所有收藏吗？此操作不可恢复。
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                    清空收藏
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    确定要清空所有收藏吗？此操作不可恢复。
-                  </p>
-                </div>
-              </div>
 
-              {/* 按钮组 */}
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={() => setShowConfirmDialog(false)}
-                  className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
-                >
-                  取消
-                </button>
-                <button
-                  onClick={handleClearAll}
-                  className="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
-                >
-                  确定清空
-                </button>
+                {/* 按钮组 */}
+                <div className='flex gap-3 mt-6'>
+                  <button
+                    onClick={() => setShowConfirmDialog(false)}
+                    className='flex-1 px-4 py-2 text-sm font-medium text-ui-ink-2 bg-ui-surface-2 hover:bg-ui-surface-hover active:bg-ui-surface-3 rounded-ui-md transition-colors'
+                  >
+                    取消
+                  </button>
+                  <button
+                    onClick={handleClearAll}
+                    className='flex-1 px-4 py-2 text-sm font-medium text-white bg-ui-danger hover:opacity-90 active:opacity-80 rounded-ui-md transition-opacity'
+                  >
+                    确定清空
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        </div>,
-        document.body
-      )}
+          </div>,
+          document.body
+        )}
     </>
   );
 };

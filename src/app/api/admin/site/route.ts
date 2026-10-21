@@ -49,6 +49,8 @@ export async function POST(request: NextRequest) {
       TMDBProxy,
       TMDBReverseProxy,
       TMDBImageBaseUrl,
+      OMDbApiKey,
+      TraktClientId,
       BangumiDataSource,
       BangumiApiBaseUrl,
       BangumiImageBaseUrl,
@@ -112,6 +114,8 @@ export async function POST(request: NextRequest) {
       TMDBProxy?: string;
       TMDBReverseProxy?: string;
       TMDBImageBaseUrl?: string;
+      OMDbApiKey?: string;
+      TraktClientId?: string;
       BangumiDataSource?:
         | 'direct'
         | 'server-proxy'
@@ -189,6 +193,8 @@ export async function POST(request: NextRequest) {
         typeof TMDBReverseProxy !== 'string') ||
       (TMDBImageBaseUrl !== undefined &&
         typeof TMDBImageBaseUrl !== 'string') ||
+      (OMDbApiKey !== undefined && typeof OMDbApiKey !== 'string') ||
+      (TraktClientId !== undefined && typeof TraktClientId !== 'string') ||
       (BangumiDataSource !== undefined &&
         BangumiDataSource !== 'direct' &&
         BangumiDataSource !== 'server-proxy' &&
@@ -272,7 +278,11 @@ export async function POST(request: NextRequest) {
     // 权限校验 - 使用v2用户系统
     if (username !== process.env.USERNAME) {
       const userInfo = await db.getUserInfoV2(username);
-      if (!userInfo || userInfo.role !== 'admin' || userInfo.banned) {
+      if (
+        !userInfo ||
+        (userInfo.role !== 'admin' && userInfo.role !== 'owner') ||
+        userInfo.banned
+      ) {
         return NextResponse.json({ error: '权限不足' }, { status: 401 });
       }
     }
@@ -299,6 +309,10 @@ export async function POST(request: NextRequest) {
       TMDBProxy: normalizeApiBaseUrl(TMDBProxy),
       TMDBReverseProxy: normalizeApiBaseUrl(TMDBReverseProxy),
       TMDBImageBaseUrl: normalizeApiBaseUrl(TMDBImageBaseUrl),
+      // 不是 URL，别过 normalizeApiBaseUrl；去空格是为了防止粘贴时带上空白导致 OMDb 返回 401
+      OMDbApiKey: OMDbApiKey?.trim() || undefined,
+      // Trakt 的 Client ID 是 40 位左右的十六进制串，和 OMDb 一样不是 URL
+      TraktClientId: TraktClientId?.trim() || undefined,
       BangumiDataSource,
       BangumiApiBaseUrl: normalizeApiBaseUrl(BangumiApiBaseUrl),
       BangumiImageBaseUrl: normalizeApiBaseUrl(BangumiImageBaseUrl),

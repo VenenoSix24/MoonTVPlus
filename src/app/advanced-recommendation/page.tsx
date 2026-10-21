@@ -140,7 +140,7 @@ export default function AdvancedRecommendationPage() {
       <div className='px-4 sm:px-10 py-4 sm:py-8 mb-10'>
         <div className='mb-6'>
           <h1 className='text-2xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2'>
-            <Blend className='w-6 h-6 text-green-500' />
+            <Blend className='w-6 h-6 text-ui-accent' />
             高级推荐
           </h1>
           <p className='text-sm text-gray-500 dark:text-gray-400 mt-1'>

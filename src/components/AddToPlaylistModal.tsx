@@ -72,7 +72,7 @@ function MusicLoadingIndicator({
           {[0, 1, 2].map((index) => (
             <svg
               key={index}
-              className={`${iconSize} text-green-400`}
+              className={`${iconSize} text-ui-accent`}
               fill="currentColor"
               viewBox="0 0 24 24"
               style={{ animation: `music-note-bounce 0.9s ease-in-out ${index * 0.14}s infinite` }}
@@ -231,7 +231,7 @@ export default function AddToPlaylistModal({
           {!showCreateForm && (
             <button
               onClick={() => setShowCreateForm(true)}
-              className="w-full mb-4 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+              className="w-full mb-4 px-4 py-3 bg-ui-accent hover:brightness-110 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -248,20 +248,20 @@ export default function AddToPlaylistModal({
                 placeholder="歌单名称"
                 value={newPlaylistName}
                 onChange={(e) => setNewPlaylistName(e.target.value)}
-                className="w-full px-3 py-2 bg-zinc-800 text-white rounded-lg border border-white/10 focus:border-green-500 focus:outline-none mb-2"
+                className="w-full px-3 py-2 bg-zinc-800 text-white rounded-lg border border-white/10 focus:border-ui-accent focus:outline-none mb-2"
               />
               <textarea
                 placeholder="歌单描述（可选）"
                 value={newPlaylistDescription}
                 onChange={(e) => setNewPlaylistDescription(e.target.value)}
-                className="w-full px-3 py-2 bg-zinc-800 text-white rounded-lg border border-white/10 focus:border-green-500 focus:outline-none resize-none"
+                className="w-full px-3 py-2 bg-zinc-800 text-white rounded-lg border border-white/10 focus:border-ui-accent focus:outline-none resize-none"
                 rows={2}
               />
               <div className="flex gap-2 mt-2">
                 <button
                   onClick={handleCreatePlaylist}
                   disabled={creating}
-                  className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-zinc-700 text-white rounded-lg transition-colors flex items-center justify-center"
+                  className="flex-1 px-4 py-2 bg-ui-accent hover:brightness-110 disabled:bg-zinc-700 text-white rounded-lg transition-colors flex items-center justify-center"
                 >
                   {creating ? <MusicLoadingIndicator size="sm" className="gap-2 text-white" /> : '确定'}
                 </button>

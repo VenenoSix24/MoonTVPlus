@@ -27,6 +27,10 @@ export interface AdminConfig {
     TMDBApiKey?: string;
     TMDBProxy?: string;
     TMDBReverseProxy?: string;
+    // OMDb 评分接口 Key（可选）：配了才显示 IMDb / 烂番茄 / Metacritic 评分
+    OMDbApiKey?: string;
+    // Trakt.tv API 的 Client ID（可选）：配了才显示 Trakt 用户评分
+    TraktClientId?: string;
     // TMDB 图片默认地址：用户未在本地数据源设置中配置时，图片默认使用该地址
     TMDBImageBaseUrl?: string;
     // 动漫/Bangumi配置
@@ -158,9 +162,17 @@ export interface AdminConfig {
     progressThumbPresetId?: string; // 预制图标ID
     progressThumbCustomUrl?: string; // 自定义图标URL
     // 初始化加载样式：播放页/直播页首屏加载动画的款式
-    loadingStyle?: 'classic' | 'grid' | 'talisman';
+    loadingStyle?: 'classic' | 'grid' | 'talisman' | 'silver-screen';
     // 评分星标样式：视频卡片右上角评分徽章的款式
     rateBadgeStyle?: 'default' | 'flag' | 'medal';
+    // 站点默认配色（新访客的首屏主题）。用户在本机右上角切过之后以本机为准，
+    // 这里只决定「没选过的人第一次看到什么」。
+    defaultTheme?: 'light' | 'dark' | 'system';
+    // 站点默认的首页模块顺序与显隐。用户在设置里改过之后以本机为准，这里只决定
+    // 「没改过的人第一次看到什么」；代码后加的新模块会自动补进老用户的那份。
+    homeModules?: { id: string; enabled: boolean; order: number }[];
+    // 首页「继续观看」区块的默认显隐，同样是用户改过就以用户为准
+    homeContinueWatching?: boolean;
   };
   OpenListConfig?: {
     Enabled: boolean; // 是否启用私人影库功能

@@ -111,7 +111,7 @@ export function DeviceManagementPanel({
                                 {device.deviceInfo}
                               </span>
                               {device.isCurrent && (
-                                <span className='px-2 py-0.5 text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 rounded-full'>
+                                <span className='px-2 py-0.5 text-xs font-medium bg-ui-accent-soft text-ui-accent   rounded-full'>
                                   当前设备
                                 </span>
                               )}
