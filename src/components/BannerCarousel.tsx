@@ -625,7 +625,7 @@ export default function BannerCarousel({
      */
     const warmTone = (item: BannerItem, src: string) => {
       const { key } = logoRequest(item);
-      if (logoDarkCache.has(key)) return;
+      if (logoMetaCache.has(key)) return;
 
       // 豆瓣条目反查过 TMDB 的，必须用真实的 TMDB id —— item.id 是豆瓣的数字串，
       // 拿去查 TMDB 只会返回空，整条 logo 的深浅判定和换图就都不会发生。
@@ -644,7 +644,7 @@ export default function BannerCarousel({
           if (data?.noLogo) {
             heroLogoCache.set(key, null);
             setLogoMap((prev) => ({ ...prev, [key]: null }));
-            logoDarkCache.set(key, false);
+            logoMetaCache.set(key, { dark: false, ratio: 0, density: 0 });
             return;
           }
 
@@ -663,7 +663,7 @@ export default function BannerCarousel({
             }
           }
 
-          logoDarkCache.set(key, dark);
+          logoMetaCache.set(key, { dark, ratio, density });
           setLogoMetaMap((prev) => ({
             ...prev,
             [key]: { dark, ratio, density },
@@ -843,7 +843,9 @@ export default function BannerCarousel({
     logoMap[logoKey] ?? heroLogoCache.get(logoKey) ?? null;
 
   // 深色、宽高比、墨迹密度都在预取阶段算好，这里同步读，不会出现「先黑一下再闪成白」
-  const logoMeta = logoMetaMap[logoKey];
+  // 预取结果先读 state（请求回来会触发重渲染），再兜一次模块缓存 ——
+  // 从播放页返回首页时组件是重新挂载的，state 是空的，而缓存里已经有值。
+  const logoMeta = logoMetaMap[logoKey] ?? logoMetaCache.get(logoKey);
   const logoDark = logoMeta?.dark === true;
   const ratio = logoMeta?.ratio ?? 0;
   const density = logoMeta?.density ?? 0;
@@ -1152,8 +1154,15 @@ const warmLogo = (src: string) => {
 
 /** 标题字按「类型:id:语言」缓存。轮播每 5 秒切一次，来回切不该反复打接口。 */
 const heroLogoCache = new Map<string, string | null>();
-/* 标题字深浅的预判结果：键同 logoRequest，true 表示需要反色 */
-const logoDarkCache = new Map<string, boolean>();
+/* 标题字深浅 / 宽高比 / 墨迹密度的预判结果：键同 logoRequest。
+   必须连 ratio 和 density 一起存 —— 只记 dark 是不够的：重新挂载时 warmTone 会
+   因为「已判过」提前返回，state 补不回来，--logo-r 落回默认 3，盒子比例和图形
+   对不上，contain 留白又被 object-position: center left 推到右边，看上去就是
+   logo 偏左不居中；同一份缺失还会让 is-dark 类不生效，深色标题字不再反色。 */
+const logoMetaCache = new Map<
+  string,
+  { dark: boolean; ratio: number; density: number }
+>();
 
 /** 官方标题字的请求参数。key 同时用作缓存键；语言按片名内容判定。 */
 const logoRequest = (item: BannerItem) => {
