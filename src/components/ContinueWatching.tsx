@@ -243,7 +243,9 @@ export default function ContinueWatching({ className }: ContinueWatchingProps) {
                           position: 'absolute',
                           top: '-6px',
                           right: '-6px',
-                          zIndex: 100,
+                          // 卡片 hover 会把 z-index 抬到 --ui-z-panel，角标必须比它更高，
+                          // 否则放大后的封面会从角标上面盖过去
+                          zIndex: 'calc(var(--ui-z-panel) + 1)',
                           pointerEvents: 'none',
                           width: '28px',
                           height: '28px',
