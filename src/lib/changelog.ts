@@ -11,6 +11,20 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "227.0.1",
+    date: "2026-10-21",
+    added: [
+      // 无新增内容
+    ],
+    changed: [
+      // 无变更内容
+    ],
+    fixed: [
+    "未登录时 /sw.js、/push-sw.js 与 Workbox 运行时被重定向到登录页，Service Worker 拿不到脚本内容，离线缓存更新不了",
+    "apple-touch-icon、截图、播放器图标等静态资源同样被鉴权挡住，一并放行"
+    ]
+  },
+  {
     version: "227.0.0",
     date: "2026-10-21",
     added: [

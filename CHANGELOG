@@ -1,3 +1,8 @@
+## [227.0.1] - 2026-10-21
+### Fixed
+- 未登录时 /sw.js、/push-sw.js 与 Workbox 运行时被重定向到登录页，Service Worker 拿不到脚本内容，离线缓存更新不了
+- apple-touch-icon、截图、播放器图标等静态资源同样被鉴权挡住，一并放行
+
 ## [227.0.0] - 2026-10-21
 ### Added
 - 多源评分支持：IMDb / TMDB / Trakt / 豆瓣 / 烂番茄 / Metacritic
