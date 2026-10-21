@@ -1057,14 +1057,18 @@ export async function searchTMDBByTitle(
 
     const data: any = await response.json();
     const results: any[] = Array.isArray(data?.results) ? data.results : [];
-    const scored = results
-      .filter((item) => item && item.id)
-      .map((item) => {
-        const date: string = item.release_date || item.first_air_date || '';
-        const yearHit = year && date.startsWith(String(year)) ? 2 : 0;
-        const hasPoster = item.poster_path ? 1 : 0;
-        return { item, score: yearHit + hasPoster };
-      })
+    // 年份必须完全一致。反查命中的条目会把片名/简介/类型整套搬到 Hero 上，
+    // 搜成同名不同年的另一部片就是整屏内容全错，所以这里不放宽成加分项。
+    const matched = results.filter((item) => {
+      if (!item || !item.id) return false;
+      if (!year) return true;
+      const date: string = item.release_date || item.first_air_date || '';
+      return date.startsWith(String(year));
+    });
+
+    // 同一年里优先有海报的：豆瓣热门都是院线片，没海报的多半是条目占位
+    const scored = matched
+      .map((item) => ({ item, score: item.poster_path ? 1 : 0 }))
       .sort((a, b) => b.score - a.score);
 
     const best = scored[0]?.item;
@@ -1133,5 +1137,78 @@ export async function getTMDBImagesWithLang(
   } catch (error) {
     console.error('获取 TMDB 图片与原语言失败:', error);
     return { code: 500, images: null, originalLanguage: '' };
+  }
+}
+
+export interface TMDBDetails {
+  id: number;
+  title: string;
+  originalTitle: string;
+  overview: string;
+  releaseDate: string;
+  runtime: number | null;
+  genres: string[];
+  voteAverage: number;
+  voteCount: number;
+  originalLanguage: string;
+  /** YouTube 预告片 key，按 TMDB 的官方排序 */
+  videoKeys: string[];
+}
+
+/**
+ * 取影片的完整文字信息（含预告片）。
+ *
+ * 数据源选豆瓣时这一条是替代豆瓣详情的关键：豆瓣的 intro/genres 时好时坏 ——
+ * 同一部片实测有时返回 77 个字段、有时只剩 16 个，简介直接空掉。而片名、简介、
+ * 类型、时长、预告片在 TMDB 上是同一套口径，和站内详情页也能对得上。
+ *
+ * videos 用 append_to_response 一次带回，不用单独再请求一次。
+ */
+export async function getTMDBDetails(
+  apiKey: string,
+  mediaId: number,
+  mediaType: 'movie' | 'tv',
+  proxy?: string,
+  reverseProxyBaseUrl?: string
+): Promise<TMDBDetails | null> {
+  try {
+    const actualKey = getNextApiKey(apiKey);
+    if (!actualKey) return null;
+
+    const baseUrl = reverseProxyBaseUrl || DEFAULT_TMDB_BASE_URL;
+    const response = await universalFetch(
+      // videos 必须跨语言：只挂 zh-CN 时绝大多数片子一个视频都取不到，
+      // 预告片会整批消失。include_video_language 是 append_to_response 的配套参数。
+      `${baseUrl}/3/${mediaType}/${mediaId}?language=zh-CN&append_to_response=videos&include_video_language=zh,en,null&api_key=${actualKey}`,
+      proxy
+    );
+    if (!response.ok) return null;
+
+    const data: any = await response.json();
+
+    return {
+      id: data.id,
+      // 剧集是 name / first_air_date，电影是 title / release_date
+      title: data.title || data.name || '',
+      originalTitle: data.original_title || data.original_name || '',
+      overview: data.overview || '',
+      releaseDate: data.release_date || data.first_air_date || '',
+      runtime: data.runtime || data.episode_run_time?.[0] || null,
+      genres: (data.genres || []).map((g: any) => g.name).filter(Boolean),
+      voteAverage: typeof data.vote_average === 'number' ? data.vote_average : 0,
+      voteCount: typeof data.vote_count === 'number' ? data.vote_count : 0,
+      originalLanguage: data.original_language || '',
+      videoKeys: (data.videos?.results || [])
+        .filter((v: any) => v?.site === 'YouTube' && v?.key)
+        // Trailer 排在 Teaser / Clip 前面
+        .sort(
+          (a: any, b: any) =>
+            (b.type === 'Trailer' ? 1 : 0) - (a.type === 'Trailer' ? 1 : 0)
+        )
+        .map((v: any) => v.key),
+    };
+  } catch (error) {
+    console.error('获取 TMDB 详情失败:', error);
+    return null;
   }
 }

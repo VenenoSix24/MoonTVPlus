@@ -5,9 +5,9 @@ import { NextResponse } from 'next/server';
 import { getConfig } from '@/lib/config';
 import { fetchDoubanData } from '@/lib/douban';
 import {
+  getTMDBDetails,
   getTMDBImages,
   getTMDBTrendingContent,
-  getTMDBVideos,
   searchTMDBByTitle,
 } from '@/lib/tmdb.client';
 import { pickLogo, pickTextlessPoster } from '@/lib/tmdb.logo';
@@ -344,14 +344,18 @@ async function getDoubanBannerContent(
           return {
             id: movie.id,
             title: detail.title,
+            original_title: detail.original_title || '',
             backdrop_path: backdropPath,
             poster_path: backdropPath,
             release_date: year,
             overview: detail.intro || '',
             vote_average: detail.rating?.value || movie.rating?.value || 0,
-            media_type: 'movie',
+            // 豆瓣的 is_tv 能直接判类型。原来写死 movie，热门里混着剧集时会
+            // 拿错类型去反查，白白多搜一次还查不到。
+            media_type: detail.is_tv ? 'tv' : 'movie',
             genre_ids: [],
-            genres: tags, // 使用从card_subtitle提取的标签
+            // 详情接口的 genres 是干净的类型名，退回 card_subtitle 抠出来的那份
+            genres: detail.genres?.length ? detail.genres : tags,
             video_key: null, // 豆瓣不使用YouTube key
           };
         } catch (error) {
@@ -375,6 +379,7 @@ async function getDoubanBannerContent(
           return {
             id: movie.id,
             title: movie.title,
+            original_title: '',
             backdrop_path: movie.pic?.large || movie.pic?.normal || '',
             poster_path: movie.pic?.large || movie.pic?.normal || '',
             release_date: movie.card_subtitle?.match(/(\d{4})/)?.[1] || '',
@@ -434,8 +439,8 @@ async function getTMDBBannerContent(config: any): Promise<any> {
     const itemsWithAssets = await Promise.all(
       result.list.map(async (item: any) => {
         const kind: 'movie' | 'tv' = item.media_type === 'tv' ? 'tv' : 'movie';
-        const [videoKey, imagesRes] = await Promise.all([
-          getTMDBVideos(apiKey, item.media_type, item.id, proxy, reverseProxy),
+        const [details, imagesRes] = await Promise.all([
+          getTMDBDetails(apiKey, item.id, kind, proxy, reverseProxy),
           withBudget(
             getTMDBImages(apiKey, item.id, kind, proxy, reverseProxy),
             ASSET_BUDGET_MS
@@ -447,7 +452,10 @@ async function getTMDBBannerContent(config: any): Promise<any> {
             ? imagesRes.images
             : null;
         const logo = images
-          ? pickLogo(images.logos || [], item.original_language)
+          ? pickLogo(
+              images.logos || [],
+              details?.originalLanguage || item.original_language
+            )
           : null;
         const textless = images
           ? pickTextlessPoster(images.posters || [])
@@ -455,7 +463,14 @@ async function getTMDBBannerContent(config: any): Promise<any> {
 
         return {
           ...item,
-          video_key: videoKey,
+          // 和豆瓣那条链路保持同一套字段。详情接口的 videos 已经随
+          // append_to_response 一起下来了，所以用不着再单独请求一次视频。
+          // 没有这一步，Hero 上会有的片子带类型标签、有的不带，一眼看出是两套数据。
+          overview: details?.overview || item.overview,
+          genres: details?.genres?.length ? details.genres : item.genres ?? [],
+          runtime: details?.runtime ?? item.runtime ?? null,
+          original_language: details?.originalLanguage || item.original_language,
+          video_key: details?.videoKeys?.[0] ?? null,
           title_logo_path: logo ? logo.file_path : null,
           textless_poster_path: textless ? textless.file_path : null,
         };
@@ -614,14 +629,18 @@ async function getMixedBannerContent(
 }
 
 /**
- * 把一条豆瓣条目补上 TMDB 的资产。
+ * 把一条豆瓣条目换成 TMDB 的资产和文字信息。
  *
- * 豆瓣给的封面是 s_ratio_poster（实测 540×771）这种压缩图，而且完全没有发行方
- * 的官方标题字。同一部片在 TMDB 上有 original 尺寸的剧照和 key art logo ——
- * 这批物料和 IMDb 是同一套。所以即使数据源选豆瓣，出图也走 TMDB 的标准。
+ * 豆瓣在这一层只负责两件事：告诉我们「哪几部片现在热」（选片），以及豆瓣自己的
+ * 评分。其余全部走 TMDB —— 豆瓣详情接口时好时坏（实测同一部片有时返回 77 个
+ * 字段、有时只剩 16 个，简介直接空掉），它给的封面也只是 540×771 的压缩图，
+ * 更没有发行方做的官方标题字。TMDB 那边是 original 尺寸的剧照加 key art，
+ * 和 IMDb 同一批物料，跟站内详情页也同源。
  *
- * 反查分两次：先按电影搜，没命中再按剧集搜一次（豆瓣的「热门电影」里也常混着剧）。
- * 两边都没有就原样返回，让豆瓣的图兜底，不至于因为查不到就没图。
+ * 反查按豆瓣自己的类型判定搜（is_tv 已经算进 media_type），先用中文片名、不行
+ * 再试外语原名，最后换另一边类型兜一次。年份必须完全一致才算命中，这条约束在
+ * searchTMDBByTitle 里。全都没命中就原样返回让豆瓣兜底 —— 宁可这一屏差点，
+ * 也不要少一屏。
  */
 async function enrichWithTmdbAssets(config: any, item: any): Promise<any> {
   const apiKey = config?.SiteConfig?.TMDBApiKey;
@@ -630,37 +649,57 @@ async function enrichWithTmdbAssets(config: any, item: any): Promise<any> {
   const proxy = config?.SiteConfig?.TMDBProxy;
   const reverseProxy = config?.SiteConfig?.TMDBReverseProxy;
   const year = String(item.release_date || '').match(/\d{4}/)?.[0];
+  const kind: 'movie' | 'tv' = item.media_type === 'tv' ? 'tv' : 'movie';
 
   let hit = await searchTMDBByTitle(
     apiKey,
     item.title,
     year,
-    'movie',
+    kind,
     proxy,
     reverseProxy
   );
+  // 中文译名在 TMDB 上对不上时，外语原名的命中率高得多
+  if (!hit && item.original_title && item.original_title !== item.title) {
+    hit = await searchTMDBByTitle(
+      apiKey,
+      item.original_title,
+      year,
+      kind,
+      proxy,
+      reverseProxy
+    );
+  }
+  // 豆瓣判成电影、TMDB 那边其实是剧集的也有，换一边再试一次
   if (!hit) {
     hit = await searchTMDBByTitle(
       apiKey,
       item.title,
       year,
-      'tv',
+      kind === 'movie' ? 'tv' : 'movie',
       proxy,
       reverseProxy
     );
   }
   if (!hit) return item;
 
-  const imagesRes = await withBudget(
-    getTMDBImages(apiKey, hit.id, hit.media_type, proxy, reverseProxy),
-    ASSET_BUDGET_MS
-  );
+  const [imagesRes, details] = await Promise.all([
+    withBudget(
+      getTMDBImages(apiKey, hit.id, hit.media_type, proxy, reverseProxy),
+      ASSET_BUDGET_MS
+    ),
+    getTMDBDetails(apiKey, hit.id, hit.media_type, proxy, reverseProxy),
+  ]);
+
   const images =
     imagesRes && imagesRes.code === 200 && imagesRes.images
       ? imagesRes.images
       : null;
   const logo = images
-    ? pickLogo(images.logos || [], hit.original_language)
+    ? pickLogo(
+        images.logos || [],
+        details?.originalLanguage || hit.original_language
+      )
     : null;
   const textless = images
     ? pickTextlessPoster(images.posters || [])
@@ -668,12 +707,22 @@ async function enrichWithTmdbAssets(config: any, item: any): Promise<any> {
 
   return {
     ...item,
+    // 文字信息整套换成 TMDB 的：片名、简介、类型、时长、预告片同一口径，跟详情页
+    // 也对得上。vote_average 保持豆瓣分不动，TMDB 自己的分单独放 tmdb_vote。
+    title: details?.title || item.title,
+    overview: details?.overview || item.overview,
+    genres: details?.genres?.length ? details.genres : item.genres,
+    release_date: details?.releaseDate || item.release_date,
+    runtime: details?.runtime || item.runtime,
+    original_language: details?.originalLanguage || hit.original_language,
+    video_key: details?.videoKeys?.[0] || item.video_key || null,
     // 换成 TMDB 的路径形式，前端 getImageUrl 会按 original 尺寸拼
     backdrop_path: hit.backdrop_path || hit.poster_path || item.backdrop_path,
     poster_path: hit.poster_path || item.poster_path,
     media_type: hit.media_type,
     tmdb_id: hit.id,
     tmdb_vote: hit.vote_average,
+    vote_count: details?.voteCount || 0,
     title_logo_path: logo ? logo.file_path : null,
     textless_poster_path: textless ? textless.file_path : null,
   };
