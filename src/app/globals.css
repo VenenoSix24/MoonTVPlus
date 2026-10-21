@@ -5157,6 +5157,71 @@ html[data-loading-style='grid'] .mtv-err-box {
   padding: 8px;
 }
 
+/* 「更多」面板：桌面也走纵向列表。
+   原来桌面上是 flex-wrap 横排，一溜自带底色的小方块（紫 / 琥珀 / 白）挤在深色
+   面板里，三套色系互相抢；手机端又切成纵向，两档形态不一致。这里统一成
+   「图标 + 名称」一行一项，颜色只留给图标本身。 */
+.mtv-play-pop.mtv-play-morepanel {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 2px;
+  min-width: 190px;
+  padding: 6px;
+  border-radius: 16px;
+}
+
+.mtv-play-pop.mtv-play-morepanel > button {
+  display: flex;
+  width: 100%;
+  height: auto;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 9px 11px;
+  border: none;
+  border-radius: 10px;
+  background-color: transparent;
+  background-image: none;
+  box-shadow: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.82);
+  text-align: left;
+}
+
+.mtv-play-pop.mtv-play-morepanel > button:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  background-image: none;
+  box-shadow: none;
+  color: #fff;
+  transform: none;
+}
+
+/* 标签常显：桌面上原来要 hover 才展开宽度 */
+.mtv-play-pop.mtv-play-morepanel > button > span {
+  display: inline;
+  max-width: none;
+  margin-left: 0;
+  overflow: visible;
+  white-space: nowrap;
+  color: inherit;
+}
+
+/* 图标统一尺寸，不再各自带彩色底座 */
+.mtv-play-pop.mtv-play-morepanel > button > img,
+.mtv-play-pop.mtv-play-morepanel > button > svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+
+/* 开关类按钮（HLS.js / 原生 HLS）的开启态 */
+.mtv-play-pop.mtv-play-morepanel > button[aria-pressed='true'] {
+  background-color: rgba(255, 255, 255, 0.1);
+  background-image: none;
+  color: #fff;
+}
 @media (max-width: 1023px) {
   .mtv-play-morepanel {
     left: 0 !important;
@@ -6369,6 +6434,26 @@ html[data-loading-style='silver-screen'] .mtv-load-silver {
   color: var(--ui-metric-bitrate);
 }
 
+/* 当前排序依据的那一列加一道下划线 —— 换源列表按什么排的，一眼能看出来。
+   用 ::after 而不是 border-bottom：指标行是三列 grid，加边框会把这行撑高，
+   和其他卡片对不齐。currentColor 让线自动跟着各列自己的语义色走。 */
+.mtv-play-src-speed.is-sort-key,
+.mtv-play-src-bitrate.is-sort-key {
+  position: relative;
+}
+
+.mtv-play-src-speed.is-sort-key::after,
+.mtv-play-src-bitrate.is-sort-key::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 2px;
+  border-radius: 2px;
+  background-color: currentColor;
+  opacity: 0.5;
+}
 .mtv-play-src-fail {
   grid-column: 1 / -1;
   color: var(--ui-danger);

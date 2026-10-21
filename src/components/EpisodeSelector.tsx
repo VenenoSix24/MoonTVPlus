@@ -1930,7 +1930,13 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                                 </span>
                               ) : (
                                 <>
-                                  <span className='mtv-play-src-speed'>
+                                  <span
+                                    className={`mtv-play-src-speed${
+                                      sourceSortMode === 'speed'
+                                        ? ' is-sort-key'
+                                        : ''
+                                    }`}
+                                  >
                                     {videoInfo.loadSpeed}
                                   </span>
                                   <span className='mtv-play-src-ping'>
@@ -1938,7 +1944,13 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                                   </span>
                                   {videoInfo.bitrate &&
                                     videoInfo.bitrate !== '未知' && (
-                                      <span className='mtv-play-src-bitrate'>
+                                      <span
+                                        className={`mtv-play-src-bitrate${
+                                          sourceSortMode === 'quality'
+                                            ? ' is-sort-key'
+                                            : ''
+                                        }`}
+                                      >
                                         {videoInfo.bitrate}
                                       </span>
                                     )}
