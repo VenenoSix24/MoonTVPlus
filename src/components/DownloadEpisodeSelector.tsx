@@ -112,6 +112,10 @@ const DownloadEpisodeSelector: React.FC<DownloadEpisodeSelectorProps> = ({
     setSelectedEpisodes(new Set());
   };
 
+  // 下载前再确认一次：选集面板里点「下载」就直接把任务排进队列，误触的代价
+  // 是一次实打实的下载。
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
   const handleDownload = () => {
     const episodeIndexes = Array.from(selectedEpisodes).sort((a, b) => a - b);
     onDownload(episodeIndexes, offlineMode);
@@ -338,7 +342,7 @@ const DownloadEpisodeSelector: React.FC<DownloadEpisodeSelectorProps> = ({
               取消
             </button>
             <button
-              onClick={handleDownload}
+              onClick={() => setConfirmOpen(true)}
               disabled={selectedEpisodes.size === 0}
               className={`px-4 py-2 text-sm font-medium text-white rounded-md transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed ${
                 offlineMode && enableOfflineDownload && hasOfflinePermission
@@ -351,6 +355,39 @@ const DownloadEpisodeSelector: React.FC<DownloadEpisodeSelectorProps> = ({
           </div>
         </div>
       </div>
+      {confirmOpen && (
+        <div className='fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 px-6 backdrop-blur-sm'>
+          <div className='w-full max-w-sm rounded-2xl border border-white/10 bg-[#141416] p-5 text-white shadow-2xl'>
+            <h3 className='text-base font-bold'>确认下载</h3>
+            <p className='mt-2 text-sm text-white/60'>{videoTitle}</p>
+            <p className='mt-1 text-sm text-white/60'>
+              共 {selectedEpisodes.size} 集
+              {offlineMode && enableOfflineDownload && hasOfflinePermission
+                ? '，保存到本地离线目录'
+                : ''}
+            </p>
+            <div className='mt-5 flex justify-end gap-2'>
+              <button
+                type='button'
+                onClick={() => setConfirmOpen(false)}
+                className='rounded-lg border border-white/20 px-4 py-2 text-sm font-semibold text-white/60 transition-colors hover:border-white/40 hover:text-white'
+              >
+                取消
+              </button>
+              <button
+                type='button'
+                onClick={() => {
+                  setConfirmOpen(false);
+                  handleDownload();
+                }}
+                className='rounded-lg bg-ui-accent px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110'
+              >
+                开始下载
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
