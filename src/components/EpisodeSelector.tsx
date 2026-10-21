@@ -40,6 +40,18 @@ import EpisodeFilterSettings from '@/components/EpisodeFilterSettings';
 import EpisodeTitleCorrectDialog from '@/components/EpisodeTitleCorrectDialog';
 import ProxyImage from '@/components/ProxyImage';
 
+/**
+ * 源备注 / 置顶是按「源 key」存的，但脚本源的搜索结果带一层
+ * `script:<脚本 key>:<内部源 id>` 前缀，拿原字符串去查永远查不到。
+ */
+function resolveSourceMetaKey(rawSource?: string): string {
+  const value = String(rawSource || '');
+  if (!value.startsWith('script:')) return value;
+  const rest = value.slice('script:'.length);
+  const index = rest.indexOf(':');
+  return index === -1 ? rest : rest.slice(0, index);
+}
+
 /** 选集按钮上显示的短标签（数字等）；全名仍保留在 originalTitle 供长按查看 */
 function getEpisodeDisplayLabel(
   title: string | undefined,
@@ -1279,7 +1291,10 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
     Record<string, { remark?: string; pinned?: boolean }>
   >({});
 
+  // 每次切到换源页签都重拉一次：参数是在管理面板改的，这边只挂着旧结果的话，
+  // 改完备注回到播放页会看不到变化。
   useEffect(() => {
+    if (activeTab !== 'sources') return;
     let alive = true;
     fetch('/api/source-meta', { cache: 'no-store' })
       .then((resp) => (resp.ok ? resp.json() : null))
@@ -1297,20 +1312,80 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
     return () => {
       alive = false;
     };
-  }, []);
+  }, [activeTab]);
 
   // ---- 测速重排不打断滑动 ----
   // 测速是分批并发跑的，每回来一批 sortedSources 就重算一次，整个列表顺序跟着
-  // 换。用户正往下滑的时候手底下的卡片被抽走，滑到一半就断了。这里在滚动期间
-  // 锁住顺序（只有速度数字在变），停下 180ms 后再放行；放行时用 FLIP 让卡片
-  // 平移到新位置，而不是瞬间对调。
+  // 换。用户正往下滑的时候手底下的卡片被抽走，滑到一半就断了。两层处理：
+  //   1. 滚动期间冻结顺序（只有速度数字在变），停手 180ms 后再放行；
+  //   2. 放行时按「视口顶部那张卡片」做滚动锚定 —— 重排前后让它停在原地，别的
+  //      卡片在它上下换位。之前用 FLIP 平移，卡片是从原位滑走的，用户看着还是
+  //      被拖动；锚定是反过来补 scrollTop，视线落点完全不动。
   const sourcesListRef = useRef<HTMLDivElement | null>(null);
   const scrollIdleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollBusyRef = useRef(false);
   const frozenOrderRef = useRef<string[] | null>(null);
   const lastOrderRef = useRef<string[]>([]);
-  const prevCardTopsRef = useRef<Map<string, number>>(new Map());
+  const anchorRef = useRef<{ key: string; top: number } | null>(null);
+  const anchorLoopRef = useRef<number | null>(null);
+  const anchorLoopUntilRef = useRef(0);
   const [scrollBusy, setScrollBusy] = useState(false);
+
+  // 真正在滚的元素不一定是列表自己 —— 手机上的换源是底部抽屉，内层可能没有
+  // 滚动空间，滚的是外面那层。从列表往上找第一个「装不下且有滚动条」的祖先。
+  const resolveScrollHost = useCallback((): HTMLElement | null => {
+    const base = sourcesListRef.current;
+    if (!base) return null;
+    let node: HTMLElement | null = base;
+    while (node) {
+      const style = getComputedStyle(node);
+      if (
+        /(auto|scroll)/.test(style.overflowY) &&
+        node.scrollHeight > node.clientHeight + 4
+      ) {
+        return node;
+      }
+      node = node.parentElement;
+    }
+    return base;
+  }, []);
+
+  // 记下视口顶部第一张卡片，以及它离滚动容器顶边的距离。重排后拿同一个 key
+  // 再量一次，差值补进 scrollTop 就够了。
+  const captureAnchor = useCallback(() => {
+    const host = sourcesListRef.current;
+    if (!host) return;
+    const cards = Array.from(
+      host.querySelectorAll<HTMLElement>('[data-src-key]')
+    );
+    if (cards.length === 0) return;
+    const frame = resolveScrollHost();
+    const frameTop = frame ? frame.getBoundingClientRect().top : 0;
+    for (const card of cards) {
+      const rect = card.getBoundingClientRect();
+      if (rect.bottom - frameTop <= 0) continue;
+      const key = card.dataset.srcKey;
+      if (key) anchorRef.current = { key, top: rect.top - frameTop };
+      return;
+    }
+  }, [resolveScrollHost]);
+
+  // 交互期间逐帧刷新锚点。只靠 scroll 事件不够 —— 列表在手机上是触摸滑动、
+  // 桌面是滚轮，两种都可能不触发容器自身的 scroll（滚的是外层或整页），锚点
+  // 一旦过期，重排后就会按老位置补偿，人就被拽回去了。
+  const kickAnchorLoop = useCallback(() => {
+    anchorLoopUntilRef.current = performance.now() + 400;
+    if (anchorLoopRef.current != null) return;
+    const tick = () => {
+      captureAnchor();
+      if (performance.now() < anchorLoopUntilRef.current) {
+        anchorLoopRef.current = requestAnimationFrame(tick);
+      } else {
+        anchorLoopRef.current = null;
+      }
+    };
+    anchorLoopRef.current = requestAnimationFrame(tick);
+  }, [captureAnchor]);
 
   // 换源列表的排序结果：
   //   1. 被置顶的源恒在最前，测速排名不参与，成功失败都不动位置
@@ -1320,8 +1395,8 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
     const keyOf = (source: SearchResult) => `${source.source}-${source.id}`;
     return [...availableSources].sort((a, b) => {
       const pinnedDiff =
-        (sourceMetaMap[b.source]?.pinned ? 1 : 0) -
-        (sourceMetaMap[a.source]?.pinned ? 1 : 0);
+        (sourceMetaMap[resolveSourceMetaKey(b.source)]?.pinned ? 1 : 0) -
+        (sourceMetaMap[resolveSourceMetaKey(a.source)]?.pinned ? 1 : 0);
       if (pinnedDiff !== 0) return pinnedDiff;
 
       // 不设「等全部测完再排」的闸门：那个标志位一旦没翻上来，排序就整段失效，
@@ -1370,7 +1445,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
     );
   }, [sortedSources]);
 
-  const handleSourcesScroll = useCallback(() => {
+  const markListBusy = useCallback(() => {
     if (!scrollBusyRef.current) {
       scrollBusyRef.current = true;
       frozenOrderRef.current = lastOrderRef.current;
@@ -1382,56 +1457,44 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
       frozenOrderRef.current = null;
       setScrollBusy(false);
     }, 180);
-  }, []);
+    kickAnchorLoop();
+  }, [kickAnchorLoop]);
 
   useEffect(
     () => () => {
       if (scrollIdleTimerRef.current) clearTimeout(scrollIdleTimerRef.current);
+      if (anchorLoopRef.current != null) cancelAnimationFrame(anchorLoopRef.current);
     },
     []
   );
 
-  // FLIP：重排后先把卡片摆回原位，再过渡到新位置。用 offsetTop 而不是
-  // getBoundingClientRect —— 后者随滚动变化，比较出来的差值会掺进滚动量。
+  // 重排后把锚点拉回原位：scrollTop 直接补差值，卡片本身不带任何动画，视线
+  // 落点会像没动过一样。
+  //
+  // 补完越界的就不补 —— 越界意味着锚点那张卡自己飞到视口外了（常见于它测出来
+  // 最快、被判到列表第一位）。这时候硬跟就会把用户拽回顶部，宁可让滚动位置
+  // 原地不动。
   useLayoutEffect(() => {
-    const host = sourcesListRef.current;
-    if (!host) return;
-    const cards = Array.from(
-      host.querySelectorAll<HTMLElement>('[data-src-key]')
-    );
-    const nextTops = new Map<string, number>();
-    cards.forEach((card) => {
-      const key = card.dataset.srcKey;
-      if (key) nextTops.set(key, card.offsetTop);
-    });
-
-    const prevTops = prevCardTopsRef.current;
-    if (prevTops.size > 0) {
-      cards.forEach((card) => {
-        const key = card.dataset.srcKey;
-        if (!key) return;
-        const before = prevTops.get(key);
-        const after = nextTops.get(key);
-        if (before == null || after == null) return;
-        const delta = before - after;
-        if (Math.abs(delta) < 2) return;
-        card.style.transition = 'none';
-        card.style.transform = `translateY(${delta}px)`;
-        requestAnimationFrame(() => {
-          card.style.transition =
-            'transform 260ms cubic-bezier(0.22, 0.61, 0.36, 1)';
-          card.style.transform = '';
-          const settle = () => {
-            card.style.transition = '';
-            card.style.transform = '';
-            card.removeEventListener('transitionend', settle);
-          };
-          card.addEventListener('transitionend', settle);
-        });
-      });
+    const list = sourcesListRef.current;
+    if (!list) return;
+    const frame = resolveScrollHost();
+    const anchor = anchorRef.current;
+    if (frame && anchor) {
+      const target = Array.from(
+        list.querySelectorAll<HTMLElement>('[data-src-key]')
+      ).find((card) => card.dataset.srcKey === anchor.key);
+      if (target) {
+        const frameTop = frame.getBoundingClientRect().top;
+        const delta = target.getBoundingClientRect().top - frameTop - anchor.top;
+        const next = frame.scrollTop + delta;
+        const maxScroll = frame.scrollHeight - frame.clientHeight;
+        if (Math.abs(delta) > 1 && next >= 0 && next <= maxScroll) {
+          frame.scrollTop = next;
+        }
+      }
     }
-    prevCardTopsRef.current = nextTops;
-  }, [sortedSources]);
+    captureAnchor();
+  }, [sortedSources, captureAnchor, resolveScrollHost]);
 
   // 重新测试单个源
   const handleRetestSource = useCallback(
@@ -1962,7 +2025,9 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
             availableSources.length > 0 && (
               <div
                 ref={sourcesListRef}
-                onScroll={handleSourcesScroll}
+                onScroll={markListBusy}
+                onTouchMove={markListBusy}
+                onWheel={markListBusy}
                 className='flex-1 overflow-y-auto space-y-2 pb-2'
               >
                 <div
@@ -1977,6 +2042,8 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                       source.id?.toString() === currentId?.toString();
                     const sourceKey = `${source.source}-${source.id}`;
                     const videoInfo = videoInfoMap.get(sourceKey);
+                    const sourceMeta =
+                      sourceMetaMap[resolveSourceMetaKey(source.source)];
                     return (
                       <div
                         key={sourceKey}
@@ -2021,7 +2088,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                               <span className='mtv-play-src-now'>当前</span>
                             )}
                             {/* 置顶标记：管理员钉住的线路，永远排在列表最前 */}
-                            {sourceMetaMap[source.source]?.pinned && (
+                            {sourceMeta?.pinned && (
                               <span className='mtv-play-src-pin'>置顶</span>
                             )}
                             {videoInfo && videoInfo.quality !== '未知' && (
@@ -2056,12 +2123,12 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                               </span>
                             )}
                           </div>
-                          {sourceMetaMap[source.source]?.remark && (
+                          {sourceMeta?.remark && (
                             <div
                               className='mtv-play-src-remark'
-                              title={sourceMetaMap[source.source]?.remark}
+                              title={sourceMeta.remark}
                             >
-                              {sourceMetaMap[source.source]?.remark}
+                              {sourceMeta.remark}
                             </div>
                           )}
                           {videoInfo && (
