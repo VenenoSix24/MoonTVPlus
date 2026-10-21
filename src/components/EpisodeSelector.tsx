@@ -687,9 +687,13 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
   }, [currentSource, currentId, episodeProgressContentKey, totalEpisodes, value]);
 
   // 主要的 tab 状态：'danmaku' | 'episodes' | 'sources'
-  // 默认显示选集选项卡，但如果是房员则显示弹幕
+  //
+  // 电影没有选集可挑，默认落到「换源」—— 那里至少还有源列表和测速。落到
+  // episodes 会渲染出一张选不动的「第 1 集」卡片，而 tab 条上根本没有「选集」
+  // 按钮（它按 totalEpisodes > 1 隐藏），看着就像面板卡死了。
+  const noEpisodePicker = totalEpisodes <= 1;
   const [activeTab, setActiveTab] = useState<'danmaku' | 'episodes' | 'sources'>(
-    isRoomMember ? 'danmaku' : 'episodes'
+    isRoomMember ? 'danmaku' : noEpisodePicker ? 'sources' : 'episodes'
   );
 
   // 当房员状态变化时，自动切换到弹幕选项卡
@@ -698,6 +702,14 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
       setActiveTab('danmaku');
     }
   }, [isRoomMember, activeTab]);
+
+  // totalEpisodes 是异步到位的：首帧往往还是占位值，等它确认「这是电影」之后
+  // 再把 tab 从 episodes 挪走。
+  useEffect(() => {
+    if (!isRoomMember && noEpisodePicker && activeTab === 'episodes') {
+      setActiveTab('sources');
+    }
+  }, [isRoomMember, noEpisodePicker, activeTab]);
 
   // 当前分组索引（0 开始）
   const initialPage = Math.max(
@@ -1427,7 +1439,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
       )}
 
       {/* 选集 Tab 内容 */}
-      {activeTab === 'episodes' && (
+      {activeTab === 'episodes' && totalEpisodes > 1 && (
         <div className='mtv-play-rail-body flex min-h-0 flex-1 flex-col'>
           {/* 工具条：范围选择器吃掉剩余宽度，倒序 / 更多两个方按钮与它同高。
               原来是一条定宽 w-20 的横向 tab 条 + 两个靠 translate-y-[-4px] 硬
