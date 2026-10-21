@@ -11396,7 +11396,7 @@ function PlayPageClient() {
         typeof document !== 'undefined' &&
         createPortal(
         <div
-          className='mtv-dialog-scrim is-sheet'
+          className='mtv-dialog-scrim'
           onClick={() => {
             setShowDanmakuSourceSelector(false);
             setDanmakuMatches([]);

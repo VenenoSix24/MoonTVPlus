@@ -134,7 +134,7 @@ const DownloadEpisodeSelector: React.FC<DownloadEpisodeSelectorProps> = ({
   // 挂在 body 上的 z-index 100，手机上弹窗贴底就会被它盖住，按钮点不到。
   return createPortal(
     <>
-      <div className='mtv-dialog-scrim is-sheet'>
+      <div className='mtv-dialog-scrim'>
       <div className='mtv-dialog mtv-dl-ep'>
         {/* 标题栏 */}
         <div className='mtv-dialog-head'>

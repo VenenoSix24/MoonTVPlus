@@ -4706,19 +4706,14 @@ html[data-loading-style='grid'] .mtv-err-box {
   color: #fff;
 }
 
-/* 手机：从底部整宽浮起。八成的源列表在这一屏都要滚，居中留白只是把可选
-   内容压得更小；贴底还能避开底部指示条。 */
 @media (max-width: 767px) {
-  .mtv-dialog-scrim.is-sheet {
-    align-items: flex-end;
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-
+  /* 手机上同样居中。贴底一是会压在悬浮底栏上，二是把上方整片屏幕浪费掉，
+     而这类弹窗本身就是「扫一眼、点一个」的短操作，居中才是预期位置。 */
   .mtv-dlgsrc {
     max-width: none;
-    max-height: 88vh;
-    margin: 0;
-    border-radius: 18px 18px 0 0;
+    max-height: 86vh;
+    margin: 0 14px;
+    border-radius: 18px;
   }
 
   .mtv-dlgsrc-body {
@@ -5084,9 +5079,9 @@ html[data-loading-style='grid'] .mtv-err-box {
 @media (max-width: 767px) {
   .mtv-dl-ep {
     max-width: none;
-    max-height: 92vh;
-    margin: 0;
-    border-radius: 18px 18px 0 0;
+    max-height: 86vh;
+    margin: 0 14px;
+    border-radius: 18px;
   }
 
   .mtv-dl-ep .mtv-dialog-head {
@@ -5131,8 +5126,7 @@ html[data-loading-style='grid'] .mtv-err-box {
   .mtv-dl-ep-foot {
     flex-direction: column;
     align-items: stretch;
-    gap: 10px;
-    padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+    padding: 10px 14px;
   }
 
   .mtv-dl-ep-btns {
