@@ -238,60 +238,14 @@ export default function ContinueWatching({ className }: ContinueWatchingProps) {
                       isAnime={Boolean(record.is_anime)}
                     />
                     {record.new_episodes && record.new_episodes > 0 && (
-                      <div
-                        style={{
-                          position: 'absolute',
-                          top: '-6px',
-                          right: '-6px',
-                          // 卡片 hover 会把 z-index 抬到 --ui-z-panel，角标必须比它更高，
-                          // 否则放大后的封面会从角标上面盖过去
-                          zIndex: 'calc(var(--ui-z-panel) + 1)',
-                          pointerEvents: 'none',
-                          width: '28px',
-                          height: '28px',
-                        }}
+                      <span
+                        className='mtv-cw-new'
+                        aria-label={`新增 ${record.new_episodes} 集`}
                       >
-                        <div
-                          style={{
-                            position: 'absolute',
-                            inset: '0',
-                            borderRadius: '9999px',
-                            backgroundColor: 'rgb(14 165 233)',
-                            animation:
-                              'ping-scale 1.5s cubic-bezier(0, 0, 0.2, 1) infinite',
-                          }}
-                        />
-                        <div
-                          style={{
-                            position: 'absolute',
-                            inset: '0',
-                            borderRadius: '9999px',
-                            backgroundColor: 'rgb(14 165 233)',
-                            animation:
-                              'pulse-scale 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                          }}
-                        />
-                        <div
-                          style={{
-                            position: 'absolute',
-                            inset: '0',
-                            borderRadius: '9999px',
-                            background:
-                              'linear-gradient(to bottom right, rgb(14 165 233), rgb(2 132 199))',
-                            color: 'white',
-                            fontSize: '11px',
-                            fontWeight: 'bold',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            boxShadow:
-                              '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
-                            animation: 'badge-scale 2s ease-in-out infinite',
-                          }}
-                        >
-                          +{record.new_episodes}
-                        </div>
-                      </div>
+                        <span />
+                        <span />
+                        <span>+{record.new_episodes}</span>
+                      </span>
                     )}
                   </div>
                 );
