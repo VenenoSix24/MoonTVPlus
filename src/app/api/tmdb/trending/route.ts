@@ -417,20 +417,64 @@ async function getDoubanBannerContent(
 }
 
 /**
+ * 在豆瓣搜索结果里挑一条评分。
+ *
+ * 豆瓣上同名不同年的片子太多（《时光代理人》有 5 部），年份仍是主要判据：
+ * 精确命中直接收下；没有再放宽到 ±1 年 —— 跨年上映、电影节首映这类两边数据
+ * 的年份经常差一岁，卡死会白丢本来对得上的分。窗口内的候选取年份最接近的，
+ * 距离相同取分高的。
+ */
+const DOUBAN_VOTE_YEAR_WINDOW = 1;
+
+function pickDoubanVote(items: any[], year: string): number | null {
+  const want = Number(year);
+  if (!Number.isFinite(want)) return null;
+
+  let best: { diff: number; vote: number } | null = null;
+
+  for (const item of items) {
+    const target = item?.target;
+    if (!target) continue;
+
+    const value = target.rating?.value;
+    if (typeof value !== 'number' || value <= 0) continue;
+
+    const got = Number(target.year);
+    if (!Number.isFinite(got)) continue;
+
+    const diff = Math.abs(got - want);
+    if (diff === 0) return value;
+    if (diff > DOUBAN_VOTE_YEAR_WINDOW) continue;
+
+    if (!best || diff < best.diff || (diff === best.diff && value > best.vote)) {
+      best = { diff, vote: value };
+    }
+  }
+
+  return best ? best.vote : null;
+}
+
+/**
  * 按片名 + 年份查一条豆瓣评分。
  *
  * `/rexxar/api/v2/search/movie` 一次请求就同时给 id、year 和 rating，比先
- * subject_suggest 再拉一次详情省一半。年份必须完全对上 —— 豆瓣上同名不同年的
- * 片子太多（《时光代理人》有 5 部），挂错一部比没有评分更糟。
+ * subject_suggest 再拉一次详情省一半。
+ *
+ * `titles` 按优先级给：中文名在前、原名在后。豆瓣条目基本都用中文名，但 TMDB
+ * 的中文标题偶尔是港台译名或带副标题，这时换原名再搜一次能捞回来。只有请求
+ * 本身失败才重试 —— 搜到了但没对上就不再试，那说明豆瓣确实没收录。
  *
  * 走的是配置里的豆瓣 CDN 反代，不是直连源站。
  */
 async function fetchDoubanVote(
-  title: string,
+  titles: string[],
   year: string,
   config: any
 ): Promise<number | null> {
-  if (!title || !year) return null;
+  const candidates = Array.from(
+    new Set(titles.map((title) => String(title || '').trim()).filter(Boolean))
+  );
+  if (!candidates.length || !year) return null;
 
   const proxyType =
     config?.SiteConfig?.DoubanProxyType || 'cmliussss-cdn-tencent';
@@ -446,22 +490,26 @@ async function fetchDoubanVote(
           ? custom
           : 'https://m.douban.com';
 
-  try {
-    const data = await fetchDoubanData<any>(
-      `${base}/rexxar/api/v2/search/movie?q=${encodeURIComponent(title)}&start=0&count=10`
-    );
-    const items: any[] = Array.isArray(data?.items) ? data.items : [];
-    for (const item of items) {
-      const target = item?.target;
-      if (!target) continue;
-      if (String(target.year || '') !== String(year)) continue;
-      const value = target.rating?.value;
-      if (typeof value === 'number' && value > 0) return value;
+  for (const title of candidates) {
+    let data: any = null;
+    // 第一次失败多半是反代抖动，再试一次；豆瓣正常响应就只打一次
+    for (let attempt = 0; attempt < 2 && !data; attempt++) {
+      try {
+        data = await fetchDoubanData<any>(
+          `${base}/rexxar/api/v2/search/movie?q=${encodeURIComponent(title)}&start=0&count=10`
+        );
+      } catch {
+        data = null;
+      }
     }
-    return null;
-  } catch {
-    return null;
+    if (!data) continue;
+
+    const items: any[] = Array.isArray(data?.items) ? data.items : [];
+    const vote = pickDoubanVote(items, year);
+    if (vote !== null) return vote;
   }
+
+  return null;
 }
 
 /**
@@ -603,14 +651,14 @@ async function getMixedBannerContent(
   }
 
   // 上面那张表只覆盖「两边都收录」的片，剩下的 TMDB 条目得自己查一次。
-  // `/rexxar/api/v2/search/movie` 一次请求就带 id、year 和 rating，走的是
-  // 配置里的豆瓣 CDN 反代。查不到就空着 —— 评分行少一格，不拖整屏。
+  // 中文名对不上时用原名再搜一次，见 fetchDoubanVote。查不到就空着 ——
+  // 评分行少一格，不拖整屏。
   await Promise.all(
     tmdbList.map(async (item, index) => {
       if (doubanScores.has(item.id)) return;
       const year = String(item.release_date || '').match(/\d{4}/)?.[0] || '';
       const vote = await withBudget(
-        fetchDoubanVote(item.title, year, config),
+        fetchDoubanVote([item.title, item.original_title], year, config),
         ASSET_BUDGET_MS
       );
       if (typeof vote === 'number' && vote > 0) {

@@ -86,6 +86,7 @@ export interface TMDBItem {
   media_type: 'movie' | 'tv';
   genre_ids?: number[]; // 类型ID列表
   video_key?: string; // YouTube视频key
+  original_title?: string; // 原产国语言标题，豆瓣反查时的第二候选
 }
 
 interface TMDBUpcomingResponse {
@@ -450,6 +451,7 @@ export async function getTMDBTrendingContent(
         vote_average: item.vote_average,
         media_type: item.media_type as 'movie' | 'tv',
         genre_ids: item.genre_ids || [], // 保存类型ID
+        original_title: item.original_title || item.original_name || '',
       }));
 
     return {
