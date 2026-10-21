@@ -3262,6 +3262,29 @@ html[data-loading-style='grid'] .mtv-err-box {
   width: var(--ui-card-wide);
 }
 
+/* 继续观看：同一部剧命中多个源时右上角标一下来源。
+   播放记录以「源 + 源内 id」为主键，三个源就是三条记录，卡片本身长得一模一样，
+   不标来源会被当成重复项。默认不给 VideoCard 传源名（hideSource），它那个徽章
+   落在右下角，会和底部的播放进度条打架。 */
+.mtv-cw-src {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 20;
+  max-width: 62%;
+  overflow: hidden;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background-color: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  font-size: var(--ui-fs-nano);
+  font-weight: 600;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.92);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+}
 /* ==========================================================================
    手机端 Hero
    --------------------------------------------------------------------------

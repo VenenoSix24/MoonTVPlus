@@ -1,8 +1,7 @@
 /* eslint-disable no-console */
 'use client';
-
 import { AlertTriangle, ChevronRight, Trash2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import type { PlayRecord } from '@/lib/db.client';
@@ -44,6 +43,55 @@ export default function ContinueWatching({ className }: ContinueWatchingProps) {
     setPlayRecords(limit ? sortedRecords.slice(0, limit) : sortedRecords);
   };
 
+  // 脚本源存下来的记录经常没有封面（搜索结果是空的 cover），同一部剧在别的源
+  // 里却有图。同一个标题之间互相借一张，否则一排卡里只有一两张有海报，看着像
+  // 图片加载失败。
+  //
+  // year 不能直接当分组键：脚本源存的是字符串 'unknown'，正片源存的是 '2026'，
+  // 同一部剧会被拆成两组，于是既借不到封面也不标来源。未知年份一律当作空。
+  const recordsWithCover = useMemo(() => {
+    const normalizeYear = (year?: string | number | null) => {
+      const text = String(year ?? '').trim();
+      return !text || /^(unknown|null|undefined|0)$/i.test(text) ? '' : text;
+    };
+    const keyOf = (r: PlayRecordItem) =>
+      `${r.title}__${normalizeYear(r.year)}`;
+
+    const coverByKey = new Map<string, string>();
+    const coverByTitle = new Map<string, string>();
+    for (const record of playRecords) {
+      if (!record.cover) continue;
+      const k = keyOf(record);
+      if (!coverByKey.has(k)) {
+        coverByKey.set(k, record.cover);
+      }
+      if (!coverByTitle.has(record.title)) {
+        coverByTitle.set(record.title, record.cover);
+      }
+    }
+
+    return playRecords.map((record) => {
+      if (record.cover) return record;
+      // 先找同年份的，再退到同名的任意一条
+      const cover =
+        coverByKey.get(keyOf(record)) ?? coverByTitle.get(record.title) ?? '';
+      return { ...record, cover };
+    });
+  }, [playRecords]);
+
+  // 同一部剧命中多个源时，几张小卡片长得一模一样，右上角标出来源。
+  // 按标题计数，不掺年份 —— 年份未知的那条同样需要标。
+  const duplicatedTitles = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const record of playRecords) {
+      counts.set(record.title, (counts.get(record.title) ?? 0) + 1);
+    }
+    return new Set(
+      Array.from(counts.entries())
+        .filter(([, count]) => count > 1)
+        .map(([title]) => title)
+    );
+  }, [playRecords]);
   const applyCachedSnapshot = () => {
     const cachedRecords = getCachedPlayRecordsSnapshot();
     if (Object.keys(cachedRecords).length === 0) {
@@ -147,7 +195,7 @@ export default function ContinueWatching({ className }: ContinueWatchingProps) {
         ) : (
           <div>
             <VirtualScrollableRow>
-              {playRecords.map((record) => {
+              {recordsWithCover.map((record) => {
                 const { source, id } = parseKey(record.key);
                 return (
                   <div
@@ -155,6 +203,15 @@ export default function ContinueWatching({ className }: ContinueWatchingProps) {
                     className='mtv-card-wide'
                     style={{ position: 'relative' }}
                   >
+                    {duplicatedTitles.has(record.title) &&
+                      record.source_name && (
+                        <span className='mtv-cw-src'>
+                          {record.source_name.replace(
+                            /^[^\u4e00-\u9fa5A-Za-z0-9]+/,
+                            ''
+                          )}
+                        </span>
+                      )}
                     <VideoCard
                       id={id}
                       title={record.title}
