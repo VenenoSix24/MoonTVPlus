@@ -4751,6 +4751,9 @@ html[data-loading-style='grid'] .mtv-err-box {
   max-height: 82vh;
   margin: 0 20px;
   flex-direction: column;
+  /* 弹窗用 createPortal 挂在 body 上，拿不到 .mtv-play-root 里钉死的深色值。
+     失败态的红在这里补一份，免得浅色主题下 #dc2626 压在近黑面板上偏闷。 */
+  --ui-danger: #f87171;
 }
 
 .mtv-dl-ep-sub {

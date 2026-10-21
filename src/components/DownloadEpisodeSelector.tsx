@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import React, { useMemo,useState } from 'react';
+import { createPortal } from 'react-dom';
 
 interface DownloadEpisodeSelectorProps {
   /** 是否显示弹窗 */
@@ -125,10 +126,15 @@ const DownloadEpisodeSelector: React.FC<DownloadEpisodeSelectorProps> = ({
   const currentStart = currentPage * episodesPerPage;
   const currentEnd = Math.min(currentStart + episodesPerPage - 1, totalEpisodes - 1);
 
-  if (!isOpen) return null;
+  // document 守卫：SSR 首帧没有 body，先不渲染
+  if (!isOpen || typeof document === 'undefined') return null;
 
-  return (
-    <div className='mtv-dialog-scrim is-sheet'>
+  // 用 createPortal 挂到 body。弹窗是写在 PageLayout 里的，会被祖先的 stacking
+  // context 关住 —— z-index 写得再大也只在这个上下文内比较，而底部导航是 fixed
+  // 挂在 body 上的 z-index 100，手机上弹窗贴底就会被它盖住，按钮点不到。
+  return createPortal(
+    <>
+      <div className='mtv-dialog-scrim is-sheet'>
       <div className='mtv-dialog mtv-dl-ep'>
         {/* 标题栏 */}
         <div className='mtv-dialog-head'>
@@ -364,6 +370,8 @@ const DownloadEpisodeSelector: React.FC<DownloadEpisodeSelectorProps> = ({
         </div>
       )}
     </div>
+    </>,
+    document.body
   );
 };
 
