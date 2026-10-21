@@ -6877,6 +6877,7 @@ html[data-loading-style='silver-screen'] .mtv-load-silver {
    一个是人工标记，不该长成同一个样子。 */
 .mtv-play-src-pin {
   flex: none;
+  margin-left: auto;
   padding: 1px 7px;
   border-radius: 9999px;
   background-color: var(--ui-warn-soft);
@@ -6886,17 +6887,31 @@ html[data-loading-style='silver-screen'] .mtv-load-silver {
   color: var(--ui-warn);
 }
 
-/* 备注：管理员写在视频源配置里的说明。压到源名下一行，最多两行，长了省
-   略 —— 换源卡片的高度承载不了整段文字。 */
+/* 备注：管理员写在视频源配置里的说明，压到源名下一行，最多两行。它和源名同字号、
+   挤在同一块区域，只换颜色扫一眼还是分不出来 —— 用竖线 + 淡底 + 「备注」小标签
+   三层把它标出来，一眼就能看出这不是源本身的属性。 */
 .mtv-play-src-remark {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow: hidden;
+  margin-top: 4px;
+  padding: 3px 8px 3px 7px;
+  border-left: 2px solid color-mix(in srgb, var(--ui-accent) 50%, transparent);
+  border-radius: 0 5px 5px 0;
+  background-color: color-mix(in srgb, var(--ui-accent) 7%, transparent);
   font-size: 11.5px;
-  line-height: 1.45;
-  color: var(--ui-ink-3);
+  line-height: 1.5;
+  color: var(--ui-ink-2);
   word-break: break-word;
+}
+
+.mtv-play-src-remark::before {
+  content: '备注';
+  margin-right: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ui-ink-3);
 }
 
 .mtv-play-src-retry {

@@ -4,6 +4,14 @@ import * as cheerio from 'cheerio/slim';
 import { nanoid } from 'nanoid';
 
 import { db } from '@/lib/db';
+import { buildScriptSourceValue } from '@/lib/source-key';
+
+// 源标识的编解码只有一处定义，这里原样转出去，老的引用不用改
+export {
+  buildScriptSourceValue,
+  parseScriptSourceValue,
+  resolveSourceKey,
+} from '@/lib/source-key';
 
 const SOURCE_SCRIPT_REGISTRY_KEY = 'source-script:registry';
 const DEFAULT_TIMEOUT_MS = 20000;
@@ -84,8 +92,6 @@ export interface ScriptSourceDescriptor {
   id: string;
   name: string;
 }
-
-const SCRIPT_SOURCE_PREFIX = 'script:';
 
 const DEFAULT_SCRIPT_TEMPLATE = `return {
   meta: {
@@ -734,29 +740,6 @@ export function getDefaultSourceScriptTemplate() {
   return DEFAULT_SCRIPT_TEMPLATE;
 }
 
-export function buildScriptSourceValue(scriptKey: string, sourceId?: string) {
-  return `${SCRIPT_SOURCE_PREFIX}${scriptKey}:${sourceId || 'default'}`;
-}
-
-export function parseScriptSourceValue(source: string) {
-  if (!source.startsWith(SCRIPT_SOURCE_PREFIX)) {
-    return null;
-  }
-
-  const rest = source.slice(SCRIPT_SOURCE_PREFIX.length);
-  const separatorIndex = rest.indexOf(':');
-  if (separatorIndex === -1) {
-    return {
-      scriptKey: rest,
-      sourceId: 'default',
-    };
-  }
-
-  return {
-    scriptKey: rest.slice(0, separatorIndex),
-    sourceId: rest.slice(separatorIndex + 1) || 'default',
-  };
-}
 
 export function normalizeScriptSources(result: any): ScriptSourceDescriptor[] {
   if (!Array.isArray(result)) {

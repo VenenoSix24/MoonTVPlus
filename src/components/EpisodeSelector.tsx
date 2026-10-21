@@ -30,6 +30,7 @@ import { generateStorageKey, getCachedPlayRecordsSnapshot } from '@/lib/db.clien
 import { isEpisodeHiddenByFilter } from '@/lib/episode-filter';
 import { loadAllLocalEpisodeProgressRecords } from '@/lib/episode-progress';
 import { isNetdiskSource } from '@/lib/netdisk/source';
+import { resolveSourceKey } from '@/lib/source-key';
 import { EpisodeFilterConfig,SearchResult } from '@/lib/types';
 import type { SpeedTestErrorType } from '@/lib/utils';
 import { getVideoResolutionFromM3u8, SpeedTestError } from '@/lib/utils';
@@ -39,18 +40,6 @@ import DanmakuPanel from '@/components/DanmakuPanel';
 import EpisodeFilterSettings from '@/components/EpisodeFilterSettings';
 import EpisodeTitleCorrectDialog from '@/components/EpisodeTitleCorrectDialog';
 import ProxyImage from '@/components/ProxyImage';
-
-/**
- * 源备注 / 置顶是按「源 key」存的，但脚本源的搜索结果带一层
- * `script:<脚本 key>:<内部源 id>` 前缀，拿原字符串去查永远查不到。
- */
-function resolveSourceMetaKey(rawSource?: string): string {
-  const value = String(rawSource || '');
-  if (!value.startsWith('script:')) return value;
-  const rest = value.slice('script:'.length);
-  const index = rest.indexOf(':');
-  return index === -1 ? rest : rest.slice(0, index);
-}
 
 /** 选集按钮上显示的短标签（数字等）；全名仍保留在 originalTitle 供长按查看 */
 function getEpisodeDisplayLabel(
@@ -1395,8 +1384,8 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
     const keyOf = (source: SearchResult) => `${source.source}-${source.id}`;
     return [...availableSources].sort((a, b) => {
       const pinnedDiff =
-        (sourceMetaMap[resolveSourceMetaKey(b.source)]?.pinned ? 1 : 0) -
-        (sourceMetaMap[resolveSourceMetaKey(a.source)]?.pinned ? 1 : 0);
+        (sourceMetaMap[resolveSourceKey(b.source)]?.pinned ? 1 : 0) -
+        (sourceMetaMap[resolveSourceKey(a.source)]?.pinned ? 1 : 0);
       if (pinnedDiff !== 0) return pinnedDiff;
 
       // 不设「等全部测完再排」的闸门：那个标志位一旦没翻上来，排序就整段失效，
@@ -2043,7 +2032,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                     const sourceKey = `${source.source}-${source.id}`;
                     const videoInfo = videoInfoMap.get(sourceKey);
                     const sourceMeta =
-                      sourceMetaMap[resolveSourceMetaKey(source.source)];
+                      sourceMetaMap[resolveSourceKey(source.source)];
                     return (
                       <div
                         key={sourceKey}
@@ -2087,10 +2076,8 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                             {isCurrentSource && (
                               <span className='mtv-play-src-now'>当前</span>
                             )}
-                            {/* 置顶标记：管理员钉住的线路，永远排在列表最前 */}
-                            {sourceMeta?.pinned && (
-                              <span className='mtv-play-src-pin'>置顶</span>
-                            )}
+                            {/* 分辨率紧接「当前」放，置顶单独靠到最右 —— 一个是片子
+                                本身的属性，一个是人工标记，不该挤在同一头 */}
                             {videoInfo && videoInfo.quality !== '未知' && (
                               <span
                                 className={`mtv-play-src-badge ${
@@ -2107,6 +2094,9 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                                     : '无法访问'
                                   : videoInfo.quality}
                               </span>
+                            )}
+                            {sourceMeta?.pinned && (
+                              <span className='mtv-play-src-pin'>置顶</span>
                             )}
                           </div>
 
