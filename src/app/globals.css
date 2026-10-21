@@ -38,6 +38,11 @@
   --ui-danger: #dc2626;
   --ui-danger-soft: color-mix(in srgb, var(--ui-danger) 12%, transparent);
 
+  /* 提醒类（HTTP 环境限制、配置缺失）。和 danger 分开：这些不是「出错了」，
+     是需要知道但不阻断的事。 */
+  --ui-warn: #b45309;
+  --ui-warn-soft: color-mix(in srgb, #f59e0b 14%, transparent);
+
   /* 投影 */
   --ui-elev-1: 0 1px 2px rgba(14, 21, 36, 0.07);
   --ui-elev-2: 0 10px 28px -12px rgba(14, 21, 36, 0.2);
@@ -123,6 +128,11 @@
   --ui-success-soft: color-mix(in srgb, var(--ui-success) 14%, transparent);
   --ui-danger: #f87171;
   --ui-danger-soft: color-mix(in srgb, var(--ui-danger) 16%, transparent);
+
+  /* 提醒类（HTTP 环境限制、配置缺失）。和 danger 分开：这些不是「出错了」，
+     是需要知道但不阻断的事。 */
+  --ui-warn: #fbbf24;
+  --ui-warn-soft: color-mix(in srgb, var(--ui-warn) 18%, transparent);
 
   --ui-elev-1: 0 1px 2px rgba(0, 0, 0, 0.5);
   --ui-elev-2: 0 10px 28px -10px rgba(0, 0, 0, 0.75);
@@ -6057,7 +6067,7 @@ html[data-loading-style='silver-screen'] .mtv-load-silver {
   font-size: 10px;
   font-weight: 600;
   line-height: 1.6;
-  color: var(--ui-on-accent, #fff);
+  color: var(--ui-accent-ink);
 }
 
 .mtv-play-src-retry {
@@ -6149,4 +6159,185 @@ html[data-loading-style='silver-screen'] .mtv-load-silver {
 .dark {
   --ui-metric-ping: #fbbf24;
   --ui-metric-bitrate: #a78bfa;
+}
+
+/* ==========================================================================
+   HTTP 环境限制提示
+   --------------------------------------------------------------------------
+   原来是写死的 bg-white / dark:bg-gray-800 加 yellow、blue 两套色，深浅主题各写
+   一遍，和其他弹层完全不是一个语言。现在改成令牌：实底 + 发丝线 + 投影，
+   提醒色走 --ui-warn（和表示「出错了」的 --ui-danger 分开）。
+   ========================================================================== */
+.mtv-httpwarn-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background-color: color-mix(in srgb, #000 55%, transparent);
+  opacity: 0;
+  transition: opacity var(--ui-dur-2) var(--ui-ease);
+}
+
+.mtv-httpwarn-scrim.is-open {
+  opacity: 1;
+}
+
+.mtv-httpwarn-card {
+  width: 100%;
+  max-width: 420px;
+  border: 1px solid var(--ui-hair);
+  border-radius: 16px;
+  background-color: var(--ui-surface);
+  box-shadow: var(--ui-elev-3);
+  transform: scale(0.96);
+  transition: transform var(--ui-dur-2) var(--ui-ease);
+}
+
+.mtv-httpwarn-scrim.is-open .mtv-httpwarn-card {
+  transform: scale(1);
+}
+
+.mtv-httpwarn-body {
+  padding: 20px;
+}
+
+.mtv-httpwarn-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mtv-httpwarn-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background-color: var(--ui-warn-soft);
+  color: var(--ui-warn);
+}
+
+.mtv-httpwarn-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--ui-ink);
+}
+
+.mtv-httpwarn-close {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--ui-ink-3);
+  cursor: pointer;
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-httpwarn-close:hover {
+  background-color: color-mix(in srgb, var(--ui-ink) 7%, transparent);
+  color: var(--ui-ink);
+}
+
+.mtv-httpwarn-text {
+  margin: 14px 0 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--ui-ink-2);
+}
+
+.mtv-httpwarn-list {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  list-style: disc;
+  font-size: 13px;
+  line-height: 1.9;
+  color: var(--ui-ink-2);
+}
+
+.mtv-httpwarn-tip {
+  margin: 12px 0 0;
+  padding: 8px 11px;
+  border-radius: 9px;
+  background-color: var(--ui-warn-soft);
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.6;
+  color: var(--ui-warn);
+}
+
+.mtv-httpwarn-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.mtv-httpwarn-btn {
+  flex: 1;
+  height: 38px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color var(--ui-dur-1) var(--ui-ease),
+    border-color var(--ui-dur-1) var(--ui-ease),
+    color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-httpwarn-btn.is-ghost {
+  border-color: var(--ui-hair);
+  background: none;
+  color: var(--ui-ink-2);
+}
+
+.mtv-httpwarn-btn.is-ghost:hover {
+  background-color: color-mix(in srgb, var(--ui-ink) 7%, transparent);
+  color: var(--ui-ink);
+}
+
+.mtv-httpwarn-btn.is-primary {
+  background-color: var(--ui-accent);
+  color: var(--ui-accent-ink);
+}
+
+.mtv-httpwarn-btn.is-primary:hover {
+  filter: brightness(1.08);
+}
+
+/* 手机：从底部浮上来比居中更好按，同时避开底部指示条 */
+@media (max-width: 767px) {
+  .mtv-httpwarn-scrim {
+    align-items: flex-end;
+    padding: 12px;
+  }
+
+  .mtv-httpwarn-card {
+    max-width: none;
+    border-radius: 18px;
+    transform: translateY(16px);
+  }
+
+  .mtv-httpwarn-scrim.is-open .mtv-httpwarn-card {
+    transform: translateY(0);
+  }
+
+  .mtv-httpwarn-body {
+    padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+  }
 }
