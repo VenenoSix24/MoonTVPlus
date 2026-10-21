@@ -2959,15 +2959,21 @@ html[data-loading-style='grid'] .mtv-err-box {
 .mtv-rating.is-douban .mtv-rating-badge {
   background-color: #2e963d;
   color: #fff;
+  /* 「豆瓣」两个字按 9px 撑开是 26px，比旁边 17/22px 的方块图标宽出一截。
+     内边距收到 2px、字距再压一点，落回 21px —— 桌面正好和图标高度齐平。 */
+  padding: 0 2px;
+  letter-spacing: -0.02em;
 }
 
-/* 烂番茄与 Metacritic 保留 emoji：图形 logo 缩到 17px 认不出 */
+/* 烂番茄与 Metacritic 保留 emoji：图形 logo 缩到 17px 认不出。
+   emoji 的视觉重心比字母小一圈，13px 塞进 17px 的格子里明显偏小，
+   抬到 15px 才和旁边的方块图标是一个量级。 */
 .mtv-rating.is-rt .mtv-rating-badge,
 .mtv-rating.is-metacritic .mtv-rating-badge {
   min-width: 0;
   padding: 0;
   background: none;
-  font-size: 13px;
+  font-size: 15px;
 }
 
 .mtv-rating-val,
@@ -3054,6 +3060,12 @@ html[data-loading-style='grid'] .mtv-err-box {
     width: 17px;
     height: 17px;
   }
+
+  /* 手机格子只有 17px，emoji 收到 16px 才不出框 */
+  .mtv-hero-ratings .mtv-rating.is-rt .mtv-rating-badge,
+  .mtv-hero-ratings .mtv-rating.is-metacritic .mtv-rating-badge {
+    font-size: 16px;
+  }
 }
 
 @media (min-width: 768px) {
@@ -3081,6 +3093,12 @@ html[data-loading-style='grid'] .mtv-err-box {
   .mtv-hero-ratings .mtv-rating-badge img {
     width: 22px;
     height: 22px;
+  }
+
+  /* emoji 跟着 Hero 的图标格一起放大：22px 的格子里 15px 的果子明显偏小 */
+  .mtv-hero-ratings .mtv-rating.is-rt .mtv-rating-badge,
+  .mtv-hero-ratings .mtv-rating.is-metacritic .mtv-rating-badge {
+    font-size: 18px;
   }
 }
 
