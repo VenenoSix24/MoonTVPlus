@@ -3883,6 +3883,9 @@ html[data-loading-style='grid'] .mtv-err-box {
   --ui-ink-3: #777777;
   --ui-hair: rgba(255, 255, 255, 0.1);
   --ui-hair-strong: rgba(255, 255, 255, 0.18);
+  /* 失败态的红也得钉死：浅色主题给的是 #dc2626，压在近黑底上偏闷 */
+  --ui-danger: #f87171;
+  --ui-danger-soft: rgba(248, 113, 113, 0.14);
 }
 
 /* 标题行徽章：年份 / 类型是描边胶囊，完结状态另有一套强调色；评分排在最后 */
@@ -4062,7 +4065,110 @@ html[data-loading-style='grid'] .mtv-err-box {
   border-radius: 16px;
   padding: 20px 22px;
 }
+/* 播放页失败态：标题 / 错误块 / 操作按钮 / 底部推荐。
+   这一屏原来是一套 gray-*、red-* 加渐变按钮的老写法，和播放页其他面板
+   不是一个语言。底色跟着 --mtv-card 走，语义色统一用 --ui-danger。 */
+.mtv-play-errtitle {
+  margin-bottom: 14px;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--mtv-ink);
+}
 
+.mtv-play-errbox {
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--ui-danger) 28%, transparent);
+  border-radius: 12px;
+  background-color: var(--ui-danger-soft);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--ui-danger);
+}
+
+.mtv-play-errhint {
+  margin-top: 10px;
+  font-size: 12.5px;
+  color: var(--mtv-ink-3);
+}
+
+.mtv-play-erractions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.mtv-play-erraction {
+  display: flex;
+  width: 100%;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 20px;
+  border: 1px solid var(--mtv-hair);
+  border-radius: 12px;
+  background-color: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mtv-ink);
+  cursor: pointer;
+  transition:
+    background-color var(--ui-dur-1) var(--ui-ease),
+    border-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-play-erraction:hover {
+  border-color: var(--ui-hair-strong);
+  background-color: color-mix(in srgb, var(--mtv-ink) 7%, transparent);
+}
+
+.mtv-play-erraction.is-primary {
+  border-color: transparent;
+  background-color: var(--ui-accent);
+  color: var(--ui-accent-ink);
+}
+
+.mtv-play-erraction.is-primary:hover {
+  background-color: color-mix(in srgb, var(--ui-accent) 88%, #000);
+}
+
+/* 也许你想看：失败态底部那排兜底推荐 */
+.mtv-play-recs {
+  width: 100%;
+  max-width: 60rem;
+  margin-top: 18px;
+  padding: 16px 18px;
+  border: 1px solid var(--mtv-hair);
+  border-radius: 16px;
+  background-color: var(--mtv-card);
+}
+
+.mtv-play-recs-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mtv-play-recs-row {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 4px;
+  cursor: grab;
+}
+
+.mtv-play-recs-row:active {
+  cursor: grabbing;
+}
+
+/* 播放页主栏底部的横排推荐 */
+.mtv-play-reclist {
+  margin-top: 22px;
+}
 .mtv-play-sec {
   font-size: 12px;
   font-weight: 700;

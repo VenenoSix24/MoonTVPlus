@@ -11290,29 +11290,21 @@ function PlayPageClient() {
               </div>
 
               {/* 错误信息 */}
-              <div className='mb-8 space-y-4'>
-                <h2 className='text-2xl font-bold text-gray-800 dark:text-gray-200'>
-                  哎呀，出现了一些问题
-                </h2>
-                <div className='mtv-err-box rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20'>
-                  <p className='font-medium text-red-600 dark:text-red-400'>
-                    {error}
-                  </p>
-                </div>
-                <p className='text-sm text-gray-500 dark:text-gray-400'>
-                  请检查网络连接或尝试刷新页面
-                </p>
+              <div className='mb-8'>
+                <h2 className='mtv-play-errtitle'>哎呀，出现了一些问题</h2>
+                <div className='mtv-err-box mtv-play-errbox'>{error}</div>
+                <p className='mtv-play-errhint'>请检查网络连接或尝试刷新页面</p>
               </div>
 
               {/* 操作按钮 */}
-              <div className='space-y-3'>
+              <div className='mtv-play-erractions'>
                 <button
                   onClick={() =>
                     videoTitle
                       ? router.push(`/search?q=${encodeURIComponent(videoTitle)}`)
                       : router.back()
                   }
-                  className='flex w-full items-center justify-center gap-2 rounded-xl mtv-play-grad px-6 py-3 font-medium text-white shadow-lg transition-all duration-200 hover:scale-105 hover:brightness-110 hover:shadow-xl'
+                  className='mtv-play-erraction is-primary'
                 >
                   {videoTitle ? (
                     <>
@@ -11329,7 +11321,7 @@ function PlayPageClient() {
 
                 <button
                   onClick={() => window.location.reload()}
-                  className='flex w-full items-center justify-center gap-2 rounded-xl bg-gray-100 px-6 py-3 font-medium text-gray-700 transition-colors duration-200 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                  className='mtv-play-erraction'
                 >
                   <RefreshCw className='h-4 w-4 flex-shrink-0' />
                   重新尝试
@@ -11338,16 +11330,14 @@ function PlayPageClient() {
             </div>
 
             {hasCompletedSearchRequest && fallbackRecommendations.length > 0 && (
-              <div className='mt-4 w-full max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-gray-200 bg-white/70 p-3 text-left dark:border-gray-700 dark:bg-gray-800/70 sm:max-w-3xl lg:max-w-5xl'>
-                <div className='mb-3 flex items-center gap-2'>
-                  <Sparkles className='h-4 w-4 flex-shrink-0 text-amber-500' />
-                  <h3 className='text-sm font-semibold text-gray-800 dark:text-gray-200'>
-                    也许你想看
-                  </h3>
+              <div className='mtv-play-recs'>
+                <div className='mtv-play-sec mtv-play-recs-head'>
+                  <Sparkles className='h-3.5 w-3.5 flex-shrink-0' />
+                  也许你想看
                 </div>
                 <div
                   ref={fallbackRecommendationsRowRef}
-                  className='w-full overflow-x-auto overflow-y-hidden pb-1 cursor-grab active:cursor-grabbing'
+                  className='mtv-play-recs-row'
                   onWheel={handleFallbackRecommendationsWheel}
                   onMouseDown={handleFallbackRecommendationsMouseDown}
                   onMouseMove={handleFallbackRecommendationsMouseMove}
