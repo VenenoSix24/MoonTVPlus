@@ -2956,24 +2956,24 @@ html[data-loading-style='grid'] .mtv-err-box {
   background: none;
 }
 
+/* 豆瓣是文字块而不是方形图标：宽度由「豆瓣」两个字自然撑开（约 26px），
+   要的是横向长方形，所以压矮的是高度而不是宽度 —— 和旁边 17/22px 的方块图标
+   拉开比例，一眼能认出这是另一个站点的标记。 */
 .mtv-rating.is-douban .mtv-rating-badge {
   background-color: #2e963d;
   color: #fff;
-  /* 「豆瓣」两个字按 9px 撑开是 26px，比旁边 17/22px 的方块图标宽出一截。
-     内边距收到 2px、字距再压一点，落回 21px —— 桌面正好和图标高度齐平。 */
-  padding: 0 2px;
-  letter-spacing: -0.02em;
+  height: 14px;
+  padding: 0 4px;
 }
 
 /* 烂番茄与 Metacritic 保留 emoji：图形 logo 缩到 17px 认不出。
-   emoji 的视觉重心比字母小一圈，13px 塞进 17px 的格子里明显偏小，
-   抬到 15px 才和旁边的方块图标是一个量级。 */
+   emoji 的视觉重心比字母小一圈，字号要压满格子才和旁边的方块图标一个量级。 */
 .mtv-rating.is-rt .mtv-rating-badge,
 .mtv-rating.is-metacritic .mtv-rating-badge {
   min-width: 0;
   padding: 0;
   background: none;
-  font-size: 15px;
+  font-size: 17px;
 }
 
 .mtv-rating-val,
@@ -3061,10 +3061,10 @@ html[data-loading-style='grid'] .mtv-err-box {
     height: 17px;
   }
 
-  /* 手机格子只有 17px，emoji 收到 16px 才不出框 */
+  /* 手机格子只有 17px，emoji 稍大一点就出框，收一档 */
   .mtv-hero-ratings .mtv-rating.is-rt .mtv-rating-badge,
   .mtv-hero-ratings .mtv-rating.is-metacritic .mtv-rating-badge {
-    font-size: 16px;
+    font-size: 18px;
   }
 }
 
@@ -3095,10 +3095,15 @@ html[data-loading-style='grid'] .mtv-err-box {
     height: 22px;
   }
 
-  /* emoji 跟着 Hero 的图标格一起放大：22px 的格子里 15px 的果子明显偏小 */
+  /* emoji 跟着 Hero 的图标格一起放大：22px 的格子里字号要压满才够大 */
   .mtv-hero-ratings .mtv-rating.is-rt .mtv-rating-badge,
   .mtv-hero-ratings .mtv-rating.is-metacritic .mtv-rating-badge {
-    font-size: 18px;
+    font-size: 21px;
+  }
+
+  /* 豆瓣的高度跟着 Hero 走一档，但始终比同排的方块图标矮，保持横向长方形 */
+  .mtv-hero-ratings .mtv-rating.is-douban .mtv-rating-badge {
+    height: 18px;
   }
 }
 
