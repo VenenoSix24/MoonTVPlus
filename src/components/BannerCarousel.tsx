@@ -270,9 +270,15 @@ export default function BannerCarousel({
     return `banner_trending_cache_${source}`;
   };
 
-  // 跳转到播放页面
-  const handlePlay = (title: string) => {
-    router.push(`/play?title=${encodeURIComponent(title)}`);
+  // 跳转到播放页面。
+  // 必须连年份一起带过去：只给片名时播放页会按标题反查，撞上同名不同年的片子
+  // 就整部都错（《希望》有 2020 和 2026 两部，结果点 2026 的进了 2020 那部）。
+  // 播放页本来就支持 year 参数，/api/tmdb-details 也接受它。
+  const handlePlay = (item: BannerItem) => {
+    const params = new URLSearchParams({ title: item.title });
+    const year = String(item.release_date || '').match(/\d{4}/)?.[0];
+    if (year) params.set('year', year);
+    router.push(`/play?${params.toString()}`);
   };
 
   // 切换音量
@@ -867,7 +873,7 @@ export default function BannerCarousel({
       onClick={() => {
         // 移动端点击整个轮播图跳转
         if (window.innerWidth < 768) {
-          handlePlay(currentItem.title);
+          handlePlay(currentItem);
         }
       }}
     >
@@ -1017,7 +1023,7 @@ export default function BannerCarousel({
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                handlePlay(currentItem.title);
+                handlePlay(currentItem);
               }}
               className='mtv-hero-play flex items-center gap-2'
             >

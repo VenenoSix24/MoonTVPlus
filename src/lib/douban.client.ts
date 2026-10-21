@@ -729,3 +729,86 @@ export async function getDoubanDetail(
     throw error;
   }
 }
+
+/** subject_suggest 的一条候选。type 不可靠（剧集也标成 movie），只信 id 和 year。 */
+export interface DoubanSuggestItem {
+  id: string;
+  title: string;
+  year?: string;
+  sub_title?: string;
+  type?: string;
+}
+
+/**
+ * 按片名拿豆瓣条目候选。
+ *
+ * 走 TMDB 进来的片子手里没有豆瓣 id，豆瓣评分就挂不上。`/j/subject_suggest`
+ * 能按片名给候选，每条都带 year —— 实测「时光代理人」有 5 部同名，只有靠年份
+ * 才挑得对。注意它挂在 movie.douban.com 域下，和 rexxar 那套（m.douban.com）
+ * 不是同一个子域，CDN 反代也得换成 movie 前缀。
+ */
+export async function fetchDoubanSuggest(
+  title: string,
+  proxyUrl: string,
+  useTencentCDN = false,
+  useAliCDN = false
+): Promise<DoubanSuggestItem[]> {
+  if (!title) return [];
+
+  const query = encodeURIComponent(title);
+  const target = useTencentCDN
+    ? `https://movie.douban.cmliussss.net/j/subject_suggest?q=${query}`
+    : useAliCDN
+      ? `https://movie.douban.cmliussss.com/j/subject_suggest?q=${query}`
+      : `https://movie.douban.com/j/subject_suggest?q=${query}`;
+
+  const response = await fetchWithTimeout(
+    target,
+    useTencentCDN || useAliCDN ? '' : proxyUrl
+  );
+  if (!response.ok) {
+    throw new Error(`HTTP error! Status: ${response.status}`);
+  }
+
+  const list = await response.json();
+  return Array.isArray(list) ? list : [];
+}
+
+/**
+ * 按片名 + 年份反查豆瓣条目。
+ *
+ * 年份必须完全对上，否则宁可返回 null —— 同名不同年的片子太多，挂错一部比没有
+ * 评分更糟。年份缺失时也直接放弃：单靠片名挑，5 部同名的《时光代理人》没法选。
+ */
+export async function lookupDoubanSubject(
+  title: string,
+  year: string
+): Promise<DoubanSuggestItem | null> {
+  if (!title || !year) return null;
+
+  const { proxyType, proxyUrl, backupProxyType, backupProxyUrl } =
+    getDoubanProxyConfig();
+
+  try {
+    return await requestDoubanWithFallback(
+      { proxyType, proxyUrl },
+      { proxyType: backupProxyType, proxyUrl: backupProxyUrl },
+      async ({ requestProxyUrl, useTencentCDN, useAliCDN }) => {
+        const list = await fetchDoubanSuggest(
+          title,
+          requestProxyUrl,
+          useTencentCDN,
+          useAliCDN
+        );
+
+        const matched = list.filter((item) => item.year === year);
+        if (!matched.length) throw new Error('没有年份对上的豆瓣候选');
+
+        // 豆瓣会给出「XX 第二季」这类长尾候选，优先完全同名的那条
+        return matched.find((item) => item.title === title) || matched[0];
+      }
+    );
+  } catch {
+    return null;
+  }
+}

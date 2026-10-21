@@ -168,6 +168,9 @@ export async function GET(request: NextRequest) {
         ? getTMDBImageUrl(details.poster_path, 'w500')
         : null,
       overview: details.overview || '',
+      // 上映日期。播放页拿它当年份兜底：入口没带 year 时用它过滤下载源，
+      // 否则同名不同年的片子会混进结果列表（《希望》2020 / 2026 就是这种情况）。
+      releaseDate: details.release_date || details.first_air_date || '',
       rating: details.vote_average ? details.vote_average.toFixed(1) : '',
       // OMDb 只能按 imdb_id 查，这里把详情附带的 external_ids 一并透给前端，
       // 免掉前端再打一次 TMDB 请求

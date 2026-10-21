@@ -60,7 +60,7 @@ import {
   saveSkipConfig,
   subscribeToDataUpdates,
 } from '@/lib/db.client';
-import { getDoubanDetail } from '@/lib/douban.client';
+import { getDoubanDetail, lookupDoubanSubject } from '@/lib/douban.client';
 import { isEpisodeHiddenByFilter, normalizeEpisodeFilterConfig } from '@/lib/episode-filter';
 import {
   buildEpisodeProgressContentKey,
@@ -1837,8 +1837,29 @@ function PlayPageClient() {
         return;
       }
 
-      if (!videoDoubanId || videoDoubanId === 0) {
-        // 没有豆瓣 ID：评分交给 TMDB 兜底，这里只清豆瓣自己的槽位
+      // 走 TMDB 进来的条目手里没有豆瓣 id，先按片名 + 年份反查一次。
+      // 没有年份就不查：同名不同年的片子太多（《时光代理人》有 5 部），
+      // 单靠片名挑必然挂错，宁可没有评分也不要挂错。
+      let doubanId = videoDoubanId;
+      if (!doubanId) {
+        const yearForLookup =
+          videoYearRef.current || detailRef.current?.year || '';
+        if (!yearForLookup) {
+          setDoubanRatingData(null);
+          setDoubanCardSubtitle('');
+          setDoubanAka([]);
+          setDoubanYear('');
+          return;
+        }
+        const found = await lookupDoubanSubject(
+          videoTitleRef.current || '',
+          yearForLookup
+        );
+        doubanId = found ? Number(found.id) : 0;
+      }
+
+      if (!doubanId) {
+        // 反查没命中：评分交给 TMDB 兜底，这里只清豆瓣自己的槽位
         setDoubanRatingData(null);
         setDoubanCardSubtitle('');
         setDoubanAka([]);
@@ -1847,7 +1868,7 @@ function PlayPageClient() {
       }
 
       try {
-        const doubanData = await getDoubanDetail(videoDoubanId.toString());
+        const doubanData = await getDoubanDetail(doubanId.toString());
 
         // 设置评分。豆瓣条目还没有评分时 value 就是 0，这种「0 分」不能写进去 ——
         // 写进去之后标题行按 value > 0 的门槛会直接不渲染，看着就像评分没了
@@ -1891,7 +1912,7 @@ function PlayPageClient() {
     };
 
     fetchDoubanRating();
-  }, [videoDoubanId, isDirectPlay]);
+  }, [videoDoubanId, isDirectPlay, videoYear, videoTitle]);
 
   // 获取TMDB背景图
   useEffect(() => {
