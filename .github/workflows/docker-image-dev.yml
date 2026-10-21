@@ -49,13 +49,13 @@ jobs:
       - name: Set image name based on branch
         id: set_image_name
         run: |
+          owner="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
           if [[ "${{ github.ref_name }}" == "main" ]]; then
-            echo "IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/moontvplus" >> $GITHUB_ENV
+            echo "IMAGE_NAME=ghcr.io/${owner}/moontvplus" >> $GITHUB_ENV
           elif [[ "${{ github.ref_name }}" == "dev" ]]; then
-            echo "IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/moontvplus-dev2" >> $GITHUB_ENV
+            echo "IMAGE_NAME=ghcr.io/${owner}/moontvplus-dev2" >> $GITHUB_ENV
           else
-            # 为其他分支或手动触发设置一个默认值（可以根据需要调整）
-            echo "IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/moontvplus-dev2" >> $GITHUB_ENV
+            echo "IMAGE_NAME=ghcr.io/${owner}/moontvplus-dev2" >> $GITHUB_ENV
           fi
 
       - name: Set up Docker Buildx
@@ -68,8 +68,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       
-      # 这个步骤不再需要，因为我们直接用 github.repository_owner
-      # - name: Set lowercase repository owner ...
+      # 镜像名里的 owner 已在「Set image name based on branch」中转成小写，
+      # GHCR 不接受大写仓库名，这里不用再单开一个 lowercase 步骤
       
       # 更改：使用动态镜像名和更强大的标签逻辑
       - name: Extract metadata
@@ -137,12 +137,13 @@ jobs:
       - name: Set image name based on branch
         id: set_image_name
         run: |
+          owner="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
           if [[ "${{ github.ref_name }}" == "main" ]]; then
-            echo "IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/moontvplus" >> $GITHUB_ENV
+            echo "IMAGE_NAME=ghcr.io/${owner}/moontvplus" >> $GITHUB_ENV
           elif [[ "${{ github.ref_name }}" == "dev" ]]; then
-            echo "IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/moontvplus-dev2" >> $GITHUB_ENV
+            echo "IMAGE_NAME=ghcr.io/${owner}/moontvplus-dev2" >> $GITHUB_ENV
           else
-            echo "IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/moontvplus-dev2" >> $GITHUB_ENV
+            echo "IMAGE_NAME=ghcr.io/${owner}/moontvplus-dev2" >> $GITHUB_ENV
           fi
 
       # 新增步骤：在 merge 任务中也需要生成同样的标签列表

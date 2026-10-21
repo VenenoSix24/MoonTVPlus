@@ -167,6 +167,11 @@ function handleAuthFailure(
 
 // 判断是否需要跳过认证的路径
 function shouldSkipAuth(pathname: string): boolean {
+  // 根目录的 Service Worker 和 Workbox 运行时。浏览器要重新拉到 /sw.js 的内容才
+  // 能发现离线缓存有更新，被重定向到登录页就会拿到一页 HTML，按脚本解析直接报错，
+  // 更新从此卡住。这几个文件本来就对所有人可见，不该挡在鉴权后面。
+  if (/^\/(?:sw|push-sw|workbox-[^/]+)\.js$/.test(pathname)) return true;
+
   const skipPaths = [
     '/_next',
     '/favicon.ico',
@@ -174,7 +179,13 @@ function shouldSkipAuth(pathname: string): boolean {
     '/manifest.json',
     '/icons/',
     '/logo.png',
-    '/screenshot.png',
+    '/screenshot',
+    '/apple-touch-icon.png',
+    // 以下目录里只有静态资源，没有同名页面路由
+    '/assets/',
+    '/libbitsub/',
+    '/players/',
+    '/scripts/',
   ];
 
   return skipPaths.some((path) => pathname.startsWith(path));
