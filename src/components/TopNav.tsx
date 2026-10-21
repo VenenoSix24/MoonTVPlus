@@ -17,7 +17,7 @@ import {
   Users,
 } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 import { SPECIAL_SOURCE_PATH } from '@/lib/special-source.client';
@@ -45,7 +45,6 @@ interface NavItem {
 const TopNav = () => {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const router = useRouter();
   const watchRoomContext = useWatchRoomContextSafe();
   const { siteName } = useSite();
 
@@ -68,35 +67,9 @@ const TopNav = () => {
   const { overHero, scrollTop } = useNavScrollState(headerRef);
   const scrolled = !overHero && scrollTop > 40;
 
-  // 搜索：收起时是个圆形图标，点开在原位长成胶囊
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchValue, setSearchValue] = useState('');
-  const searchInputRef = useRef<HTMLInputElement | null>(null);
-  // 用来判断失焦后焦点是不是还在搜索框内部 —— 点到提交图标/取消按钮时
-  // 不能把框收起来，否则点图标的瞬间整个搜索就没了
-  const searchFormRef = useRef<HTMLFormElement | null>(null);
-
-  // 展开后直接把焦点交给输入框，不用再点一次
-  useEffect(() => {
-    if (searchOpen) searchInputRef.current?.focus();
-  }, [searchOpen]);
-
-  const closeSearch = () => {
-    setSearchValue('');
-    setSearchOpen(false);
-  };
-
-  const submitSearch = () => {
-    const keyword = searchValue.trim();
-    // 没输入内容时不做跳转：点图标只是「打开搜索」，跳到空的 /search 会让人
-    // 以为搜索框被点没了。
-    if (!keyword) {
-      searchInputRef.current?.focus();
-      return;
-    }
-    router.push(`${searchHref}?q=${encodeURIComponent(keyword)}`);
-    closeSearch();
-  };
+  // 搜索：顶栏只留一个入口按钮，点它直接进搜索页。
+  // 不在这里展开输入框 —— 顶栏是导航区，弹出的输入框会盖住导航，
+  // 而且搜完还是要落在 /search 上，中间多一层没有任何收益。
 
   const [menuItems, setMenuItems] = useState<NavItem[]>([
     { icon: Film, label: '电影', href: '/douban?type=movie' },
@@ -208,57 +181,14 @@ const TopNav = () => {
       </nav>
 
       <div className='mtv-topnav-right'>
-        <form
-          ref={searchFormRef}
-          className={searchOpen ? 'mtv-search is-open' : 'mtv-search'}
-          onSubmit={(event) => {
-            event.preventDefault();
-            submitSearch();
-          }}
-          onKeyDown={(event) => {
-            if (event.key === 'Escape') closeSearch();
-          }}
+        <Link
+          href={searchHref}
+          prefetch={false}
+          className='mtv-topnav-icon'
+          aria-label='搜索'
         >
-          <button
-            type={searchOpen ? 'submit' : 'button'}
-            className='mtv-topnav-icon'
-            aria-label='搜索'
-            aria-expanded={searchOpen}
-            onClick={() => {
-              if (!searchOpen) setSearchOpen(true);
-            }}
-          >
-            <Search />
-          </button>
-          <input
-            ref={searchInputRef}
-            type='search'
-            className='mtv-search-input'
-            value={searchValue}
-            onChange={(event) => setSearchValue(event.target.value)}
-            onBlur={(event) => {
-              // 焦点还在搜索框内部（点到提交图标或取消按钮）时不收起 ——
-              // 否则点图标的瞬间整个搜索框就没了
-              if (
-                searchFormRef.current?.contains(event.relatedTarget as Node)
-              ) {
-                return;
-              }
-              if (!searchValue.trim()) setSearchOpen(false);
-            }}
-            placeholder='搜索影片、剧集'
-            aria-label='搜索关键词'
-            tabIndex={searchOpen ? 0 : -1}
-          />
-          <button
-            type='button'
-            className='mtv-search-cancel'
-            onClick={closeSearch}
-            tabIndex={searchOpen ? 0 : -1}
-          >
-            取消
-          </button>
-        </form>
+          <Search />
+        </Link>
         <MoreMenuTrigger variant='desktop' />
         <UpdateNotification />
         <UserMenu className='mtv-topnav-icon' />

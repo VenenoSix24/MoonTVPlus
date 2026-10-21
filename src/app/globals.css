@@ -1620,74 +1620,9 @@ html[data-loading-style='grid'] .mtv-err-box {
   outline: 2px solid var(--ui-accent);
   outline-offset: 2px;
 }
-/* ---------- 顶栏搜索：点开展成输入框 ---------- */
-/* 收起时就是一个圆形图标按钮（和右侧其它图标同尺寸），点开在原位长成 270px 的胶囊，
-   Esc 或清空后收起。提交仍跳 /search?q=，和原来那个链接的落点一致。 */
-
-.mtv-search {
-  display: flex;
-  flex: none;
-  align-items: center;
-  width: 40px;
-  height: 40px;
-  overflow: hidden;
-  border-radius: var(--ui-r-full);
-  transition:
-    width var(--ui-dur-2) var(--ui-ease),
-    background-color var(--ui-dur-1) var(--ui-ease);
-}
-
-.mtv-search.is-open {
-  width: 270px;
-  padding-right: 4px;
-  background-color: var(--ui-surface-3);
-}
-
-.mtv-search-input {
-  flex: 1;
-  min-width: 0;
-  height: 100%;
-  border: 0;
-  background: none;
-  font: inherit;
-  font-size: 13.5px;
-  color: var(--ui-ink);
-  outline: none;
-  opacity: 0;
-  transition: opacity var(--ui-dur-1) var(--ui-ease);
-}
-
-.mtv-search.is-open .mtv-search-input {
-  padding-left: 2px;
-  opacity: 1;
-}
-
-.mtv-search-input::placeholder {
-  color: var(--ui-ink-3);
-}
-
-.mtv-search-cancel {
-  flex: none;
-  padding: 0 8px;
-  border: 0;
-  background: none;
-  font: inherit;
-  font-size: 12.5px;
-  color: var(--ui-ink-3);
-  cursor: pointer;
-  opacity: 0;
-  transition:
-    color var(--ui-dur-1) var(--ui-ease),
-    opacity var(--ui-dur-1) var(--ui-ease);
-}
-
-.mtv-search-cancel:hover {
-  color: var(--ui-ink);
-}
-
-.mtv-search.is-open .mtv-search-cancel {
-  opacity: 1;
-}
+/* ---------- 顶栏搜索入口 ---------- */
+/* 就是一个 mtv-topnav-icon 尺寸的图标按钮，点了直接进搜索页。不在这展开输入框：
+   顶栏是导航区，弹出的输入框会盖住导航，而搜完仍然要落在 /search 上。 */
 
 
 /* ---------- 「更多」入口 ---------- */
