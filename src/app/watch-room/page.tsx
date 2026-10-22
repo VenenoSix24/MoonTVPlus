@@ -366,26 +366,26 @@ function WatchRoomPageContent() {
 
   return (
     <PageLayout activePath="/watch-room">
-      <div className="flex flex-col gap-4 py-4 px-5 lg:px-[3rem] 2xl:px-20">
+      <div className="mtv-wr">
         {/* 房员等待提示 */}
         {currentRoom && !isOwner && (
-          <div className="mb-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-6 shadow-lg">
-            <div className="flex items-center justify-between gap-4 text-white">
+          <div className="mtv-wr-wait">
+            <div className="mtv-wr-wait-row">
               <div className="flex items-center gap-4 flex-1">
                 <div className="relative">
-                  <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+                  <div className="mtv-wr-wait-spin" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-bold mb-1">
+                  <h3 className="mtv-wr-wait-t">
                     {currentRoom.roomType === 'screen'
                       ? currentRoom.currentState?.type === 'screen' ? '房主正在共享屏幕' : '等待房主开始共享'
                       : currentRoom.currentState ? '房主正在播放' : '等待房主开始播放'}
                   </h3>
-                  <p className="text-sm text-white/80">
+                  <p className="mtv-wr-wait-s">
                     房间: {currentRoom.name} | 房主: {currentRoom.ownerName}
                   </p>
                   {currentRoom.currentState && (
-                    <p className="text-xs text-white/90 mt-1">
+                    <p className="mtv-wr-wait-s">
                       {currentRoom.currentState.type === 'play'
                         ? `${currentRoom.currentState.videoName || '未知视频'}`
                         : currentRoom.currentState.type === 'live'
@@ -394,7 +394,7 @@ function WatchRoomPageContent() {
                     </p>
                   )}
                   {!currentRoom.currentState && (
-                    <p className="text-xs text-white/70 mt-1">
+                    <p className="mtv-wr-wait-s">
                       {currentRoom.roomType === 'screen' ? '当房主开始共享时，您将自动进入共享页' : '当房主开始播放时，您将自动跟随'}
                     </p>
                   )}
@@ -428,7 +428,7 @@ function WatchRoomPageContent() {
                       router.push('/watch-room/screen');
                     }
                   }}
-                  className="px-6 py-2 bg-white text-blue-600 font-medium rounded-lg hover:bg-white/90 transition-colors whitespace-nowrap"
+                  className="mtv-wr-wait-btn"
                 >
                   立即加入
                 </button>
@@ -438,42 +438,33 @@ function WatchRoomPageContent() {
         )}
 
         {/* 页面标题 */}
-        <div className="py-1">
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <Users className="w-6 h-6 text-blue-500" />
+        <div className="mtv-wr-head">
+          <h1 className="mtv-wr-h1">
+            <Users className="mtv-wr-h1-ic" />
             观影室
             {currentRoom && (
-              <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
+              <span className="mtv-wr-h1-tag">
                 ({isOwner ? '房主' : '房员'})
               </span>
             )}
           </h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          <p className="mtv-wr-sub">
             与好友一起看视频，支持进度同步或屏幕共享
           </p>
         </div>
 
         {/* 选项卡 */}
-        <div className="flex border-b border-gray-200 dark:border-gray-700">
+        <div className="mtv-wr-tabs">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-6 py-3 text-sm font-medium transition-colors relative
-                  ${
-                    activeTab === tab.id
-                      ? 'text-blue-600 dark:text-blue-400'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                  }
-                `}
+                className={`mtv-wr-tab${activeTab === tab.id ? ' is-active' : ''}`}
               >
                 <Icon className="w-4 h-4" />
                 {tab.label}
-                {activeTab === tab.id && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400" />
-                )}
               </button>
             );
           })}
@@ -483,9 +474,9 @@ function WatchRoomPageContent() {
         <div className="flex-1">
           {/* 创建房间 */}
           {activeTab === 'create' && (
-            <div className="max-w-2xl mx-auto py-8">
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">
+            <div className="mtv-wr-panel">
+              <div className="mtv-wr-card">
+                <h2 className="mtv-wr-h2">
                   创建新房间
                 </h2>
 
@@ -493,54 +484,54 @@ function WatchRoomPageContent() {
                 {currentRoom ? (
                   <div className="space-y-4">
                     {/* 房间信息卡片 */}
-                    <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-6 text-white">
-                      <div className="flex items-start justify-between mb-4">
+                    <div className="mtv-wr-hero">
+                      <div className="mtv-wr-hero-head">
                         <div>
                           <h3 className="text-2xl font-bold mb-1">{currentRoom.name}</h3>
-                          <p className="text-blue-100 text-sm">{currentRoom.description || '暂无描述'}</p>
+                          <p className="mtv-wr-hero-sub">{currentRoom.description || '暂无描述'}</p>
                         </div>
                         {isOwner && (
-                          <span className="bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-xs font-bold">
+                          <span className="mtv-wr-owner">
                             房主
                           </span>
                         )}
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
-                        <div className="bg-white/10 backdrop-blur rounded-lg p-3">
-                          <p className="text-blue-100 text-xs mb-1">房间号</p>
-                          <p className="text-xl font-mono font-bold">{currentRoom.id}</p>
+                      <div className="mtv-wr-stats">
+                        <div className="mtv-wr-stat">
+                          <p className="mtv-wr-stat-k">房间号</p>
+                          <p className="mtv-wr-stat-v is-mono">{currentRoom.id}</p>
                         </div>
-                        <div className="bg-white/10 backdrop-blur rounded-lg p-3">
-                          <p className="text-blue-100 text-xs mb-1">成员数</p>
-                          <p className="text-xl font-bold">{members.length} 人</p>
+                        <div className="mtv-wr-stat">
+                          <p className="mtv-wr-stat-k">成员数</p>
+                          <p className="mtv-wr-stat-v">{members.length} 人</p>
                         </div>
-                        <div className="bg-white/10 backdrop-blur rounded-lg p-3">
-                          <p className="text-blue-100 text-xs mb-1">房间类型</p>
-                          <p className="text-base font-bold">{currentRoom.roomType === 'screen' ? '屏幕共享' : currentRoom.roomType === 'music' ? '一起听' : '进度同步'}</p>
+                        <div className="mtv-wr-stat">
+                          <p className="mtv-wr-stat-k">房间类型</p>
+                          <p className="mtv-wr-stat-v">{currentRoom.roomType === 'screen' ? '屏幕共享' : currentRoom.roomType === 'music' ? '一起听' : '进度同步'}</p>
                         </div>
                       </div>
                     </div>
 
                     {/* 成员列表 */}
-                    <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">
-                      <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">房间成员</h4>
+                    <div className="mtv-wr-members">
+                      <h4 className="mtv-wr-members-h">房间成员</h4>
                       <div className="space-y-2">
                         {members.map((member) => (
                           <div
                             key={member.id}
-                            className="flex items-center justify-between bg-white dark:bg-gray-800 rounded-lg p-3"
+                            className="mtv-wr-member"
                           >
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
+                              <div className="mtv-wr-avatar">
                                 {getAvatarText(member.name)}
                               </div>
-                              <span className="font-medium text-gray-900 dark:text-gray-100">
+                              <span className="mtv-wr-strong">
                                 {member.name}
                               </span>
                             </div>
                             {member.isOwner && (
-                              <span className="text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 px-2 py-1 rounded">
+                              <span className="mtv-wr-member-owner">
                                 房主
                               </span>
                             )}
@@ -550,8 +541,8 @@ function WatchRoomPageContent() {
                     </div>
 
                     {/* 提示信息 */}
-                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
-                      <p className="text-sm text-blue-800 dark:text-blue-200">
+                    <div className="mtv-wr-note">
+                      <p className="mtv-wr-note-t">
                         💡 {currentRoom.roomType === 'screen'
                           ? '这是屏幕共享房间，创建后将进入共享页，由房主发起屏幕共享'
                           : currentRoom.roomType === 'music'
@@ -563,23 +554,23 @@ function WatchRoomPageContent() {
                       <button
                         type="button"
                         onClick={() => router.push('/music?watchRoom=music')}
-                        className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-3 rounded-lg transition-colors"
+                        className="mtv-wr-btn is-primary is-block"
                       >
                         进入音乐页面
                       </button>
                     )}
                   </div>
                 ) : (
-                  <form onSubmit={handleCreateRoom} className="space-y-4">
+                  <form onSubmit={handleCreateRoom} className="mtv-wr-form">
                   {/* 显示当前用户 */}
-                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
-                    <p className="text-sm text-blue-800 dark:text-blue-200">
+                  <div className="mtv-wr-note">
+                    <p className="mtv-wr-note-t">
                       <strong>当前用户：</strong>{currentUsername}
                     </p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label className="mtv-wr-label">
                       房间名称 <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -587,28 +578,28 @@ function WatchRoomPageContent() {
                       value={createForm.roomName}
                       onChange={(e) => setCreateForm({ ...createForm, roomName: e.target.value })}
                       placeholder="请输入房间名称"
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="mtv-wr-input"
                       maxLength={50}
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label className="mtv-wr-label">
                       房间描述
                     </label>
                     <textarea
                       value={createForm.description}
                       onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
                       placeholder="请输入房间描述（可选）"
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      className="mtv-wr-input"
                       rows={3}
                       maxLength={200}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label className="mtv-wr-label">
                       房间密码
                     </label>
                     <input
@@ -616,7 +607,7 @@ function WatchRoomPageContent() {
                       value={createForm.password}
                       onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
                       placeholder="留空表示无需密码"
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="mtv-wr-input"
                       maxLength={20}
                     />
                   </div>
@@ -627,54 +618,42 @@ function WatchRoomPageContent() {
                       id="isPublic"
                       checked={createForm.isPublic}
                       onChange={(e) => setCreateForm({ ...createForm, isPublic: e.target.checked })}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      className="mtv-wr-check"
                     />
-                    <label htmlFor="isPublic" className="text-sm text-gray-700 dark:text-gray-300">
+                    <label htmlFor="isPublic" className="mtv-wr-check-t">
                       在房间列表中公开显示
                     </label>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label className="mtv-wr-label">
                       房间类型
                     </label>
-                    <div className={`grid grid-cols-1 ${musicEnabled ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-3`}>
+                    <div className={`mtv-wr-opts${musicEnabled ? ' is-three' : ''}`}>
                       <button
                         type="button"
                         onClick={() => setCreateForm({ ...createForm, roomType: 'sync' })}
-                        className={`rounded-lg border p-4 text-left transition-colors ${
-                          createForm.roomType === 'sync'
-                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                            : 'border-gray-300 dark:border-gray-600'
-                        }`}
+                        className={`mtv-wr-opt${createForm.roomType === 'sync' ? ' is-on' : ''}`}
                       >
-                        <div className="font-medium text-gray-900 dark:text-gray-100">进度同步</div>
-                        <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">统一播放进度（适合双方网络稳定的情况）</div>
+                        <div className="mtv-wr-opt-t">进度同步</div>
+                        <div className="mtv-wr-opt-d">统一播放进度（适合双方网络稳定的情况）</div>
                       </button>
                       <button
                         type="button"
                         onClick={() => setCreateForm({ ...createForm, roomType: 'screen' })}
-                        className={`rounded-lg border p-4 text-left transition-colors ${
-                          createForm.roomType === 'screen'
-                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                            : 'border-gray-300 dark:border-gray-600'
-                        }`}
+                        className={`mtv-wr-opt${createForm.roomType === 'screen' ? ' is-on' : ''}`}
                       >
-                        <div className="font-medium text-gray-900 dark:text-gray-100">屏幕共享</div>
-                        <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">房员直接观看房主共享的浏览器画面（适合完全实时同步的情况）</div>
+                        <div className="mtv-wr-opt-t">屏幕共享</div>
+                        <div className="mtv-wr-opt-d">房员直接观看房主共享的浏览器画面（适合完全实时同步的情况）</div>
                       </button>
                       {musicEnabled && (
                         <button
                           type="button"
                           onClick={() => setCreateForm({ ...createForm, roomType: 'music' })}
-                          className={`rounded-lg border p-4 text-left transition-colors ${
-                            createForm.roomType === 'music'
-                              ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
-                              : 'border-gray-300 dark:border-gray-600'
-                          }`}
+                          className={`mtv-wr-opt${createForm.roomType === 'music' ? ' is-on' : ''}`}
                         >
-                          <div className="font-medium text-gray-900 dark:text-gray-100">一起听</div>
-                          <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">房主控制音乐播放，房员同步收听播放列表</div>
+                          <div className="mtv-wr-opt-t">一起听</div>
+                          <div className="mtv-wr-opt-d">房主控制音乐播放，房员同步收听播放列表</div>
                         </button>
                       )}
                     </div>
@@ -683,7 +662,7 @@ function WatchRoomPageContent() {
                   <button
                     type="submit"
                     disabled={createLoading || !createForm.roomName.trim()}
-                    className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white font-medium py-3 rounded-lg transition-colors"
+                    className="mtv-wr-btn is-primary is-block"
                   >
                     {createLoading ? '创建中...' : '创建房间'}
                   </button>
@@ -693,8 +672,8 @@ function WatchRoomPageContent() {
 
               {/* 使用说明 - 仅在未在房间内时显示 */}
               {!currentRoom && (
-                <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
-                  <p className="text-sm text-blue-800 dark:text-blue-200">
+                <div className="mtv-wr-note">
+                  <p className="mtv-wr-note-t">
                     <strong>提示：</strong>创建房间后，您将成为房主。进度同步房会跟随播放状态，屏幕共享房会进入独立共享页。
                   </p>
                 </div>
@@ -704,9 +683,9 @@ function WatchRoomPageContent() {
 
           {/* 加入房间 */}
           {activeTab === 'join' && (
-            <div className="max-w-2xl mx-auto py-8">
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">
+            <div className="mtv-wr-panel">
+              <div className="mtv-wr-card">
+                <h2 className="mtv-wr-h2">
                   加入房间
                 </h2>
 
@@ -714,54 +693,54 @@ function WatchRoomPageContent() {
                 {currentRoom ? (
                   <div className="space-y-4">
                     {/* 房间信息卡片 */}
-                    <div className="bg-ui-accent rounded-xl p-6 text-white">
-                      <div className="flex items-start justify-between mb-4">
+                    <div className="mtv-wr-hero">
+                      <div className="mtv-wr-hero-head">
                         <div>
                           <h3 className="text-2xl font-bold mb-1">{currentRoom.name}</h3>
-                          <p className="text-white text-sm">{currentRoom.description || '暂无描述'}</p>
+                          <p className="mtv-wr-hero-sub">{currentRoom.description || '暂无描述'}</p>
                         </div>
                         {isOwner && (
-                          <span className="bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-xs font-bold">
+                          <span className="mtv-wr-owner">
                             房主
                           </span>
                         )}
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
-                        <div className="bg-white/10 backdrop-blur rounded-lg p-3">
-                          <p className="text-white text-xs mb-1">房间号</p>
-                          <p className="text-xl font-mono font-bold">{currentRoom.id}</p>
+                      <div className="mtv-wr-stats">
+                        <div className="mtv-wr-stat">
+                          <p className="mtv-wr-stat-k">房间号</p>
+                          <p className="mtv-wr-stat-v is-mono">{currentRoom.id}</p>
                         </div>
-                        <div className="bg-white/10 backdrop-blur rounded-lg p-3">
-                          <p className="text-white text-xs mb-1">成员数</p>
-                          <p className="text-xl font-bold">{members.length} 人</p>
+                        <div className="mtv-wr-stat">
+                          <p className="mtv-wr-stat-k">成员数</p>
+                          <p className="mtv-wr-stat-v">{members.length} 人</p>
                         </div>
-                        <div className="bg-white/10 backdrop-blur rounded-lg p-3">
-                          <p className="text-white text-xs mb-1">房间类型</p>
-                          <p className="text-base font-bold">{currentRoom.roomType === 'screen' ? '屏幕共享' : '进度同步'}</p>
+                        <div className="mtv-wr-stat">
+                          <p className="mtv-wr-stat-k">房间类型</p>
+                          <p className="mtv-wr-stat-v">{currentRoom.roomType === 'screen' ? '屏幕共享' : '进度同步'}</p>
                         </div>
                       </div>
                     </div>
 
                     {/* 成员列表 */}
-                    <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">
-                      <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">房间成员</h4>
+                    <div className="mtv-wr-members">
+                      <h4 className="mtv-wr-members-h">房间成员</h4>
                       <div className="space-y-2">
                         {members.map((member) => (
                           <div
                             key={member.id}
-                            className="flex items-center justify-between bg-white dark:bg-gray-800 rounded-lg p-3"
+                            className="mtv-wr-member"
                           >
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
+                              <div className="mtv-wr-avatar">
                                 {getAvatarText(member.name)}
                               </div>
-                              <span className="font-medium text-gray-900 dark:text-gray-100">
+                              <span className="mtv-wr-strong">
                                 {member.name}
                               </span>
                             </div>
                             {member.isOwner && (
-                              <span className="text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 px-2 py-1 rounded">
+                              <span className="mtv-wr-member-owner">
                                 房主
                               </span>
                             )}
@@ -771,8 +750,8 @@ function WatchRoomPageContent() {
                     </div>
 
                     {/* 提示信息 */}
-                    <div className="bg-ui-accent-soft  rounded-lg p-4 border border-ui-accent ">
-                      <p className="text-sm text-ui-accent ">
+                    <div className="mtv-wr-note">
+                      <p className="mtv-wr-note-t">
                         💡 {currentRoom.roomType === 'screen'
                           ? '这是屏幕共享房间，进入后即可观看房主共享画面'
                           : isOwner ? '前往播放页面或直播页面开始观影，房间成员将自动同步您的操作' : '等待房主开始播放，您的播放进度将自动跟随房主'}
@@ -780,16 +759,16 @@ function WatchRoomPageContent() {
                     </div>
                   </div>
                 ) : (
-                  <form onSubmit={handleJoinRoom} className="space-y-4">
+                  <form onSubmit={handleJoinRoom} className="mtv-wr-form">
                   {/* 显示当前用户 */}
-                  <div className="bg-ui-accent-soft  rounded-lg p-3 border border-ui-accent ">
-                    <p className="text-sm text-ui-accent ">
+                  <div className="mtv-wr-note">
+                    <p className="mtv-wr-note-t">
                       <strong>当前用户：</strong>{currentUsername}
                     </p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label className="mtv-wr-label">
                       房间号 <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -797,14 +776,14 @@ function WatchRoomPageContent() {
                       value={joinForm.roomId}
                       onChange={(e) => setJoinForm({ ...joinForm, roomId: e.target.value.toUpperCase() })}
                       placeholder="请输入6位房间号"
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono text-lg tracking-wider focus:outline-none focus:ring-2 focus:ring-ui-accent"
+                      className="mtv-wr-input is-mono"
                       maxLength={6}
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label className="mtv-wr-label">
                       房间密码
                     </label>
                     <input
@@ -812,7 +791,7 @@ function WatchRoomPageContent() {
                       value={joinForm.password}
                       onChange={(e) => setJoinForm({ ...joinForm, password: e.target.value })}
                       placeholder="如果房间有密码，请输入"
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-ui-accent"
+                      className="mtv-wr-input"
                       maxLength={20}
                     />
                   </div>
@@ -820,7 +799,7 @@ function WatchRoomPageContent() {
                   <button
                     type="submit"
                     disabled={joinLoading || !joinForm.roomId.trim()}
-                    className="w-full bg-ui-accent hover:bg-ui-accent disabled:bg-gray-400 text-white font-medium py-3 rounded-lg transition-colors"
+                    className="mtv-wr-btn is-primary is-block"
                   >
                     {joinLoading ? '加入中...' : '加入房间'}
                   </button>
@@ -830,8 +809,8 @@ function WatchRoomPageContent() {
 
               {/* 使用说明 - 仅在未在房间内时显示 */}
               {!currentRoom && (
-                <div className="mt-6 bg-ui-accent-soft  rounded-lg p-4 border border-ui-accent ">
-                  <p className="text-sm text-ui-accent ">
+                <div className="mtv-wr-note">
+                  <p className="mtv-wr-note-t">
                     <strong>提示：</strong>加入进度同步房后将跟随播放，加入屏幕共享房后会进入共享页面。
                   </p>
                 </div>
@@ -843,14 +822,14 @@ function WatchRoomPageContent() {
           {activeTab === 'list' && (
             <div className="py-4">
               {/* 顶部操作栏 */}
-              <div className="flex items-center justify-between mb-6">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  找到 <span className="font-medium text-gray-900 dark:text-gray-100">{rooms.length}</span> 个公开房间
+              <div className="mtv-wr-list-bar">
+                <p className="mtv-wr-list-count">
+                  找到 <span className="mtv-wr-strong">{rooms.length}</span> 个公开房间
                 </p>
                 <button
                   onClick={() => loadRooms(true)}
                   disabled={loading}
-                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-gray-700 dark:text-gray-300 transition-colors disabled:opacity-50"
+                  className="mtv-wr-btn is-subtle"
                 >
                   <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                   刷新
@@ -859,21 +838,21 @@ function WatchRoomPageContent() {
 
               {/* 加载中 */}
               {loading && rooms.length === 0 && (
-                <div className="flex items-center justify-center py-20">
+                <div className="mtv-wr-empty">
                   <div className="text-center">
-                    <RefreshCw className="mx-auto mb-4 h-12 w-12 animate-spin text-gray-400" />
-                    <p className="text-gray-500 dark:text-gray-400">加载中...</p>
+                    <RefreshCw className="mtv-wr-empty-ic" />
+                    <p className="mtv-wr-empty-t">加载中...</p>
                   </div>
                 </div>
               )}
 
               {/* 空状态 */}
               {!loading && rooms.length === 0 && (
-                <div className="flex items-center justify-center py-20">
+                <div className="mtv-wr-empty">
                   <div className="text-center">
-                    <Users className="mx-auto mb-4 h-16 w-16 text-gray-400" />
-                    <p className="mb-2 text-xl text-gray-600 dark:text-gray-400">暂无公开房间</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-500">
+                    <Users className="mtv-wr-empty-ic" />
+                    <p className="mtv-wr-empty-t is-strong">暂无公开房间</p>
+                    <p className="mtv-wr-empty-s">
                       创建一个新房间或通过房间号加入私密房间
                     </p>
                   </div>
@@ -882,54 +861,54 @@ function WatchRoomPageContent() {
 
               {/* 房间卡片列表 */}
               {rooms.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="mtv-wr-rooms">
                   {rooms.map((room) => (
                     <div
                       key={room.id}
-                      className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow"
+                      className="mtv-wr-room"
                     >
-                      <div className="flex items-start justify-between mb-3">
+                      <div className="mtv-wr-room-head">
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 truncate">
+                          <h3 className="mtv-wr-room-t">
                             {room.name}
                           </h3>
                           {room.description && (
-                            <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mt-1">
+                            <p className="mtv-wr-room-d">
                               {room.description}
                             </p>
                           )}
                         </div>
                         {room.password && (
-                          <Lock className="w-5 h-5 text-yellow-500 flex-shrink-0 ml-2" />
+                          <Lock className="mtv-wr-room-lock" />
                         )}
                       </div>
 
-                      <div className="space-y-2 text-sm mb-4">
-                        <div className="flex items-center justify-between">
-                          <span className="text-gray-500 dark:text-gray-400">房间号</span>
-                          <span className="font-mono text-lg font-bold text-gray-900 dark:text-gray-100">
+                      <div className="mtv-wr-room-meta">
+                        <div className="mtv-wr-room-row">
+                          <span className="mtv-wr-room-k">房间号</span>
+                          <span className="mtv-wr-room-id">
                             {room.id}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                        <div className="mtv-wr-room-row is-inline">
                           <Users className="w-4 h-4" />
                           <span>{room.memberCount} 人在线</span>
                         </div>
-                        <div className="flex items-center justify-between text-gray-600 dark:text-gray-400">
+                        <div className="mtv-wr-room-row">
                           <span>房主</span>
                           <span className="font-medium">{room.ownerName}</span>
                         </div>
-                        <div className="flex items-center justify-between text-gray-600 dark:text-gray-400">
+                        <div className="mtv-wr-room-row">
                           <span>类型</span>
                           <span>{room.roomType === 'screen' ? '屏幕共享' : room.roomType === 'music' ? '一起听' : '进度同步'}</span>
                         </div>
-                        <div className="flex items-center justify-between text-gray-600 dark:text-gray-400">
+                        <div className="mtv-wr-room-row">
                           <span>创建时间</span>
                           <span>{formatTime(room.createdAt)}</span>
                         </div>
                         {room.currentState && (
-                          <div className="mt-2 rounded-lg bg-blue-50 dark:bg-blue-900/30 px-3 py-2 border border-blue-200 dark:border-blue-800">
-                            <p className="text-xs text-blue-700 dark:text-blue-300 truncate">
+                          <div className="mtv-wr-room-live">
+                            <p className="mtv-wr-room-live-t">
                               {room.currentState.type === 'play'
                                 ? `正在播放: ${room.currentState.videoName}`
                                 : room.currentState.type === 'live'
@@ -944,7 +923,7 @@ function WatchRoomPageContent() {
 
                       <button
                         onClick={() => handleJoinFromList(room)}
-                        className="w-full bg-purple-500 hover:bg-purple-600 text-white font-medium py-2.5 rounded-lg transition-colors"
+                        className="mtv-wr-btn is-primary is-block"
                       >
                         加入房间
                       </button>

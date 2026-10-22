@@ -4,6 +4,7 @@
 import { AlertCircle,Check, Copy,Info, Link, LogOut, Maximize2, MessageCircle, Mic, MicOff, Minimize2, Send, Smile, Users, Volume2, VolumeX, X, XCircle } from 'lucide-react';
 import { useEffect, useRef,useState } from 'react';
 
+import { lockBodyScroll, unlockBodyScroll } from '@/lib/scroll-lock';
 import { useVoiceChat } from '@/hooks/useVoiceChat';
 
 import { useWatchRoomContextSafe } from '@/components/WatchRoomProvider';
@@ -29,6 +30,39 @@ export default function ChatFloatingWindow() {
   const [isMicEnabled, setIsMicEnabled] = useState(false);
   const [isSpeakerEnabled, setIsSpeakerEnabled] = useState(true);
   const [isReconnecting, setIsReconnecting] = useState(false);
+
+  // 手机端键盘适配：iOS 的 position:fixed 相对「布局视口」定位，键盘弹出后
+  // fixed 元素留在原地、被键盘盖住。把「布局视口 - 可视视口」的差值写成
+  // --mtv-kb-inset，抽屉就能顶到键盘上沿（见 .mtv-chat 的媒体查询）。
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const syncInset = () => {
+      const inset = Math.max(0, window.innerHeight - (vv.offsetTop + vv.height));
+      document.documentElement.style.setProperty(
+        '--mtv-kb-inset',
+        `${Math.round(inset)}px`
+      );
+    };
+    syncInset();
+    vv.addEventListener('resize', syncInset);
+    vv.addEventListener('scroll', syncInset);
+    return () => {
+      vv.removeEventListener('resize', syncInset);
+      vv.removeEventListener('scroll', syncInset);
+      document.documentElement.style.removeProperty('--mtv-kb-inset');
+    };
+  }, []);
+
+  // 手机端抽屉打开时锁住背景滚动。不锁的话键盘一弹，浏览器会把文档往下滚去
+  // 露出输入框 —— 页面顶部的标题就被推出屏幕，而且文档高度同时收缩，滚不回来。
+  useEffect(() => {
+    if (!isOpen || isMinimized) return;
+    if (typeof window === 'undefined') return;
+    if (!window.matchMedia('(max-width: 767px)').matches) return;
+    lockBodyScroll();
+    return () => unlockBodyScroll();
+  }, [isOpen, isMinimized]);
 
   // 使用语音聊天hook
   const voiceChat = useVoiceChat({
@@ -118,11 +152,11 @@ export default function ChatFloatingWindow() {
     // 重连失败时显示重连按钮
     if (watchRoom?.reconnectFailed) {
       return (
-        <div className="fixed bottom-20 right-4 z-[700] flex flex-col gap-3 md:bottom-4">
+        <div className="mtv-chat-dock">
           <button
             onClick={handleReconnect}
             disabled={isReconnecting}
-            className="group relative flex h-14 w-14 items-center justify-center rounded-full bg-red-500 text-white shadow-2xl transition-all hover:scale-110 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed animate-pulse"
+            className="mtv-fab is-danger is-pulse"
             aria-label="连接失败，点击重连"
             title="连接失败，点击重连"
           >
@@ -140,6 +174,8 @@ export default function ChatFloatingWindow() {
   }
 
   const { chatMessages, sendChatMessage, members, isOwner, currentRoom, leaveRoom } = watchRoom;
+  // 自己的 socket id：用来把「我发出的」消息靠右对齐
+  const selfId = watchRoom?.socket?.id;
 
   // 邀请链接：打开即自动加入当前房间
   const inviteUrl = typeof window !== 'undefined' && currentRoom
@@ -184,13 +220,13 @@ export default function ChatFloatingWindow() {
   // 悬浮按钮组
   if (!isOpen && !showRoomInfo) {
     return (
-      <div className="fixed bottom-20 right-4 z-[700] flex flex-col gap-3 md:bottom-4">
+      <div className="mtv-chat-dock">
         {/* 重连失败提示气泡 */}
         {watchRoom?.reconnectFailed && (
           <button
             onClick={handleReconnect}
             disabled={isReconnecting}
-            className="group relative flex h-14 w-14 items-center justify-center rounded-full bg-red-500 text-white shadow-2xl transition-all hover:scale-110 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed animate-pulse"
+            className="mtv-fab is-danger is-pulse"
             aria-label="连接失败，点击重连"
             title="连接失败，点击重连"
           >
@@ -206,7 +242,7 @@ export default function ChatFloatingWindow() {
         {/* 房间信息按钮 */}
         <button
           onClick={() => setShowRoomInfo(true)}
-          className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-500 text-white shadow-2xl transition-all hover:scale-110 hover:bg-blue-600"
+          className="mtv-fab is-surface"
           aria-label="房间信息"
         >
           <Info className="h-6 w-6" />
@@ -215,12 +251,12 @@ export default function ChatFloatingWindow() {
         {/* 聊天按钮 */}
         <button
           onClick={() => setIsOpen(true)}
-          className="relative flex h-14 w-14 items-center justify-center rounded-full bg-ui-accent text-white shadow-2xl transition-all hover:scale-110 hover:bg-ui-accent"
+          className="mtv-fab is-accent"
           aria-label="打开聊天"
         >
           <MessageCircle className="h-6 w-6" />
           {unreadCount > 0 && (
-            <span className="absolute right-0 top-0 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold">
+            <span className="mtv-fab-badge">
               {unreadCount > 99 ? '99+' : unreadCount}
             </span>
           )}
@@ -235,7 +271,7 @@ export default function ChatFloatingWindow() {
       <>
         {/* 背景遮罩 */}
         <div
-          className='fixed inset-0 bg-black/50 backdrop-blur-sm z-[1000]'
+          className='mtv-chat-scrim'
           onClick={() => setShowRoomInfo(false)}
           onTouchMove={(e) => {
             e.preventDefault();
@@ -249,9 +285,9 @@ export default function ChatFloatingWindow() {
         />
 
         {/* 房间信息面板 */}
-        <div className='fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white dark:bg-gray-900 rounded-xl shadow-xl z-[1001] overflow-hidden'>
+        <div className='mtv-chat-modal'>
           <div
-            className='h-full p-6'
+            className='mtv-chat-modal-body'
             data-panel-content
             onTouchMove={(e) => {
               e.stopPropagation();
@@ -261,14 +297,14 @@ export default function ChatFloatingWindow() {
             }}
           >
             {/* 标题栏 */}
-            <div className='flex items-center justify-between mb-6'>
+            <div className='mtv-chat-modal-head'>
               <div className='flex items-center gap-3'>
-                <Info className='h-6 w-6 text-blue-500 dark:text-blue-400' />
-                <h3 className='text-xl font-bold text-gray-800 dark:text-gray-200'>房间信息</h3>
+                <Info className='mtv-chat-modal-ic' />
+                <h3 className='mtv-chat-modal-t'>房间信息</h3>
               </div>
               <button
                 onClick={() => setShowRoomInfo(false)}
-                className='rounded-full p-1.5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors'
+                className='mtv-chat-modal-close'
                 aria-label='关闭'
               >
                 <X className='h-5 w-5' />
@@ -276,44 +312,44 @@ export default function ChatFloatingWindow() {
             </div>
 
             {/* 内容 */}
-            <div className='space-y-4'>
+            <div className='mtv-chat-modal-list'>
               {/* 房间基本信息 */}
               <div className='space-y-3'>
-                <div className='flex items-center justify-between rounded-lg bg-gray-50 dark:bg-gray-800 p-4 border border-gray-200 dark:border-gray-700'>
-                  <span className='text-sm font-medium text-gray-600 dark:text-gray-400'>房间名称</span>
-                  <span className='text-sm font-semibold text-gray-900 dark:text-gray-100'>{currentRoom.name}</span>
+                <div className='mtv-chat-row'>
+                  <span className='mtv-chat-row-k'>房间名称</span>
+                  <span className='mtv-chat-row-v'>{currentRoom.name}</span>
                 </div>
 
-                <div className='flex items-center justify-between rounded-lg bg-gray-50 dark:bg-gray-800 p-4 border border-gray-200 dark:border-gray-700'>
-                  <span className='text-sm font-medium text-gray-600 dark:text-gray-400'>房间号</span>
-                  <span className='text-lg font-mono font-bold text-gray-900 dark:text-gray-100'>{currentRoom.id}</span>
+                <div className='mtv-chat-row'>
+                  <span className='mtv-chat-row-k'>房间号</span>
+                  <span className='mtv-chat-row-v is-mono'>{currentRoom.id}</span>
                 </div>
 
                 {currentRoom.description && (
-                  <div className='rounded-lg bg-gray-50 dark:bg-gray-800 p-4 border border-gray-200 dark:border-gray-700'>
-                    <span className='text-sm font-medium text-gray-600 dark:text-gray-400 block mb-2'>房间描述</span>
-                    <p className='text-sm text-gray-700 dark:text-gray-300'>{currentRoom.description}</p>
+                  <div className='mtv-chat-row is-block'>
+                    <span className='mtv-chat-row-k'>房间描述</span>
+                    <p className='mtv-chat-row-p'>{currentRoom.description}</p>
                   </div>
                 )}
 
-                <div className='flex items-center justify-between rounded-lg bg-gray-50 dark:bg-gray-800 p-4 border border-gray-200 dark:border-gray-700'>
-                  <span className='text-sm font-medium text-gray-600 dark:text-gray-400'>房主</span>
-                  <span className='text-sm font-semibold text-gray-900 dark:text-gray-100'>{currentRoom.ownerName}</span>
+                <div className='mtv-chat-row'>
+                  <span className='mtv-chat-row-k'>房主</span>
+                  <span className='mtv-chat-row-v'>{currentRoom.ownerName}</span>
                 </div>
               </div>
 
               {/* 一键加入链接 */}
-              <div className='rounded-lg bg-gray-50 dark:bg-gray-800 p-4 border border-gray-200 dark:border-gray-700'>
+              <div className='mtv-chat-row is-block'>
                 <div className='flex items-center gap-2 mb-2'>
-                  <Link className='h-4 w-4 text-gray-600 dark:text-gray-400' />
-                  <span className='text-sm font-medium text-gray-600 dark:text-gray-400'>一键加入链接</span>
+                  <Link className='mtv-chat-row-ic' />
+                  <span className='mtv-chat-row-k'>一键加入链接</span>
                 </div>
                 <div className='flex items-center gap-2'>
                   <input
                     readOnly
                     value={inviteUrl}
                     onFocus={(e) => e.target.select()}
-                    className='flex-1 min-w-0 rounded-md border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1.5 text-xs text-gray-600 dark:text-gray-300 truncate focus:outline-none'
+                    className='mtv-chat-invite'
                     aria-label='邀请链接'
                   />
                   <button
@@ -326,7 +362,7 @@ export default function ChatFloatingWindow() {
                         // 剪贴板不可用时回退到手动选择输入框
                       }
                     }}
-                    className='flex-shrink-0 flex items-center gap-1 rounded-md bg-blue-500 hover:bg-blue-600 px-3 py-1.5 text-xs font-medium text-white transition-colors'
+                    className='mtv-chat-copy'
                   >
                     {inviteCopied ? (
                       <>
@@ -341,31 +377,31 @@ export default function ChatFloatingWindow() {
                     )}
                   </button>
                 </div>
-                <p className='mt-2 text-xs text-gray-400 dark:text-gray-500'>
+                <p className='mtv-chat-hint'>
                   好友打开链接后即可自动加入房间（密码房仍需输入密码）
                 </p>
               </div>
 
               {/* 成员列表 */}
-              <div className='rounded-lg bg-gray-50 dark:bg-gray-800 p-4 border border-gray-200 dark:border-gray-700'>
+              <div className='mtv-chat-row is-block'>
                 <div className='flex items-center gap-2 mb-3'>
-                  <Users className='h-4 w-4 text-gray-600 dark:text-gray-400' />
-                  <span className='text-sm font-medium text-gray-600 dark:text-gray-400'>成员列表 ({members.length})</span>
+                  <Users className='mtv-chat-row-ic' />
+                  <span className='mtv-chat-row-k'>成员列表 ({members.length})</span>
                 </div>
-                <div className='space-y-2 max-h-40 overflow-y-auto'>
+                <div className='mtv-chat-mlist'>
                   {members.map((member) => (
                     <div
                       key={member.id}
-                      className='flex items-center justify-between bg-white dark:bg-gray-700 rounded-lg p-3 border border-gray-200 dark:border-gray-600'
+                      className='mtv-chat-mrow'
                     >
                       <div className='flex items-center gap-3'>
-                        <div className='w-8 h-8 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold text-sm'>
+                        <div className='mtv-chat-mavatar'>
                           {member.name.charAt(0).toUpperCase()}
                         </div>
-                        <span className='text-sm font-medium text-gray-900 dark:text-gray-100'>{member.name}</span>
+                        <span className='mtv-chat-mname'>{member.name}</span>
                       </div>
                       {member.isOwner && (
-                        <span className='text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 px-2 py-1 rounded-full font-bold'>
+                        <span className='mtv-chat-mowner'>
                           房主
                         </span>
                       )}
@@ -377,11 +413,7 @@ export default function ChatFloatingWindow() {
               {/* 操作按钮 */}
               <button
                 onClick={handleLeaveRoom}
-                className={`w-full flex items-center justify-center gap-2 rounded-lg py-3 font-medium transition-colors ${
-                  isOwner
-                    ? 'bg-red-500 hover:bg-red-600 text-white'
-                    : 'bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 text-white'
-                }`}
+                className={`mtv-wr-btn is-block ${isOwner ? 'is-danger' : 'is-subtle'}`}
               >
                 {isOwner ? (
                   <>
@@ -405,13 +437,13 @@ export default function ChatFloatingWindow() {
   // 最小化状态
   if (isMinimized) {
     return (
-      <>
+      <div className='mtv-chat-dock'>
         {/* 重连失败提示气泡 */}
         {watchRoom?.reconnectFailed && (
           <button
             onClick={handleReconnect}
             disabled={isReconnecting}
-            className="fixed bottom-[13.5rem] right-4 z-[700] group relative flex h-12 w-12 items-center justify-center rounded-full bg-red-500 text-white shadow-2xl transition-all hover:scale-110 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed animate-pulse md:bottom-[11rem]"
+            className="mtv-fab is-danger is-pulse"
             aria-label="连接失败，点击重连"
             title="连接失败，点击重连"
           >
@@ -427,44 +459,44 @@ export default function ChatFloatingWindow() {
         {/* 房间信息按钮 */}
         <button
           onClick={() => setShowRoomInfo(true)}
-          className="fixed bottom-36 right-4 z-[700] flex h-12 w-12 items-center justify-center rounded-full bg-blue-500 text-white shadow-2xl transition-all hover:scale-110 hover:bg-blue-600 md:bottom-20"
+          className="mtv-fab is-surface"
           aria-label="房间信息"
         >
           <Info className="h-5 w-5" />
         </button>
 
         {/* 最小化的聊天窗口 */}
-        <div className="fixed bottom-20 right-4 z-[700] flex items-center gap-2 rounded-lg bg-gray-800 px-4 py-2 shadow-2xl md:bottom-4">
+        <div className="mtv-chat-mini">
           <MessageCircle className="h-5 w-5 text-white" />
-          <span className="text-sm text-white">聊天室</span>
+          <span className="mtv-chat-title">聊天室</span>
           <button
             onClick={() => setIsMinimized(false)}
-            className="ml-2 rounded p-1 text-gray-400 transition-colors hover:bg-gray-700 hover:text-white"
+            className="mtv-chat-mini-btn"
             aria-label="展开"
           >
             <Maximize2 className="h-4 w-4" />
           </button>
           <button
             onClick={() => setIsOpen(false)}
-            className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-700 hover:text-white"
+            className="mtv-chat-mini-btn"
             aria-label="关闭"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
-      </>
+      </div>
     );
   }
 
   // 完整聊天窗口
   return (
-    <>
+    <div className='mtv-chat-dock'>
       {/* 重连失败提示气泡 */}
       {watchRoom?.reconnectFailed && (
         <button
           onClick={handleReconnect}
           disabled={isReconnecting}
-          className="fixed bottom-[32.5rem] right-4 z-[700] group relative flex h-12 w-12 items-center justify-center rounded-full bg-red-500 text-white shadow-2xl transition-all hover:scale-110 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed animate-pulse md:bottom-[30rem]"
+          className="mtv-fab is-danger is-pulse"
           aria-label="连接失败，点击重连"
           title="连接失败，点击重连"
         >
@@ -480,36 +512,43 @@ export default function ChatFloatingWindow() {
       {/* 房间信息按钮 */}
       <button
         onClick={() => setShowRoomInfo(true)}
-        className="fixed bottom-[30rem] right-4 z-[700] flex h-12 w-12 items-center justify-center rounded-full bg-blue-500 text-white shadow-2xl transition-all hover:scale-110 hover:bg-blue-600 md:bottom-[28rem]"
+        className="mtv-fab is-surface"
         aria-label="房间信息"
       >
         <Info className="h-5 w-5" />
       </button>
 
       {/* 聊天窗口 */}
-      <div className="fixed bottom-20 right-4 z-[700] flex w-80 flex-col rounded-2xl bg-gray-800 shadow-2xl md:bottom-4 md:w-96">
+      <div className="mtv-chat">
       {/* 头部 */}
-      <div className="rounded-t-2xl bg-ui-accent">
+      <div className="mtv-chat-head">
         {/* 第一行: 标题和窗口控制 */}
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
-            <MessageCircle className="h-5 w-5 text-white" />
-            <div>
-              <h3 className="text-sm font-bold text-white">聊天室</h3>
-              <p className="text-xs text-white/80">{members.length} 人在线</p>
-            </div>
+        <div className="mtv-chat-head-row">
+          <div className="mtv-chat-head-title">
+            <MessageCircle className="h-4 w-4" />
+            <span className="mtv-chat-title">聊天室</span>
+            <span className="mtv-chat-dot" aria-hidden="true" />
+            <span className="mtv-chat-sub">{members.length} 人在线</span>
           </div>
           <div className="flex gap-1">
             <button
+              onClick={() => setShowRoomInfo(true)}
+              className="mtv-chat-iconbtn"
+              aria-label="房间信息"
+              title="房间信息"
+            >
+              <Info className="h-4 w-4" />
+            </button>
+            <button
               onClick={() => setIsMinimized(true)}
-              className="rounded p-1 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
+              className="mtv-chat-iconbtn"
               aria-label="最小化"
             >
               <Minimize2 className="h-4 w-4" />
             </button>
             <button
               onClick={() => setIsOpen(false)}
-              className="rounded p-1 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
+              className="mtv-chat-iconbtn"
               aria-label="关闭"
             >
               <X className="h-4 w-4" />
@@ -518,17 +557,13 @@ export default function ChatFloatingWindow() {
         </div>
 
         {/* 第二行: 语音控制按钮 */}
-        <div className="border-t border-white/10 px-4 py-2">
-          <div className="flex items-center justify-center gap-3 mb-1">
+        <div className="mtv-chat-tools">
+          <div className="flex items-center justify-start gap-2 mb-1">
             {/* 麦克风按钮 */}
             <button
               onClick={() => setIsMicEnabled(!isMicEnabled)}
               disabled={voiceChat.isConnecting}
-              className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
-                isMicEnabled
-                  ? 'bg-white text-ui-accent hover:bg-white/90'
-                  : 'bg-white/10 text-white/80 hover:bg-white/20'
-              } disabled:opacity-50 disabled:cursor-not-allowed`}
+              className={`mtv-chat-toggle${isMicEnabled ? ' is-on' : ''}`}
               aria-label={isMicEnabled ? '关闭麦克风' : '开启麦克风'}
             >
               {isMicEnabled ? (
@@ -542,11 +577,7 @@ export default function ChatFloatingWindow() {
             {/* 喇叭按钮 */}
             <button
               onClick={() => setIsSpeakerEnabled(!isSpeakerEnabled)}
-              className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
-                isSpeakerEnabled
-                  ? 'bg-white text-ui-accent hover:bg-white/90'
-                  : 'bg-white/10 text-white/80 hover:bg-white/20'
-              }`}
+              className={`mtv-chat-toggle${isSpeakerEnabled ? ' is-on' : ''}`}
               aria-label={isSpeakerEnabled ? '关闭喇叭' : '开启喇叭'}
             >
               {isSpeakerEnabled ? (
@@ -559,10 +590,10 @@ export default function ChatFloatingWindow() {
           </div>
 
           {/* 状态指示 */}
-          <div className="text-center text-xs text-white/60">
+          <div className="mtv-chat-status">
             {voiceChat.isConnecting && '正在连接...'}
             {voiceChat.error && (
-              <span className="text-red-300">{voiceChat.error}</span>
+              <span className="mtv-chat-status-err">{voiceChat.error}</span>
             )}
             {!voiceChat.isConnecting && !voiceChat.error && isMicEnabled && (
               <span>
@@ -574,49 +605,62 @@ export default function ChatFloatingWindow() {
       </div>
 
       {/* 消息列表 */}
-      <div className="flex-1 space-y-3 overflow-y-auto p-4" style={{ maxHeight: '400px' }}>
+      <div className="mtv-chat-msgs" style={{ maxHeight: 'min(400px, 46dvh)' }}>
         {chatMessages.length === 0 ? (
           <div className="flex h-full items-center justify-center text-center">
             <div>
-              <MessageCircle className="mx-auto mb-2 h-12 w-12 text-gray-600" />
-              <p className="text-sm text-gray-400">还没有消息</p>
-              <p className="text-xs text-gray-500">发送第一条消息吧</p>
+              <MessageCircle className="mtv-chat-empty-ic" />
+              <p className="mtv-chat-empty-t">还没有消息</p>
+              <p className="mtv-chat-empty-s">发送第一条消息吧</p>
             </div>
           </div>
         ) : (
           <>
-            {chatMessages.map((msg) => (
-              <div key={msg.id} className="flex flex-col gap-1">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-xs font-medium text-ui-accent">{msg.userName}</span>
-                  <span className="text-xs text-gray-500">{formatTime(msg.timestamp)}</span>
-                </div>
+            {chatMessages.map((msg) => {
+              const isOwn = Boolean(selfId) && msg.userId === selfId;
+              return (
                 <div
-                  className={`max-w-[80%] rounded-lg px-3 py-2 ${
-                    msg.type === 'emoji'
-                      ? 'text-3xl'
-                      : 'bg-gray-700 text-white'
-                  }`}
+                  key={msg.id}
+                  className={`mtv-chat-item${isOwn ? ' is-own' : ''}`}
                 >
-                  {msg.content}
+                  {!isOwn && (
+                    <div className="mtv-chat-item-head">
+                      <span className="mtv-chat-name">{msg.userName}</span>
+                      <span className="mtv-chat-time">
+                        {formatTime(msg.timestamp)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="mtv-chat-item-body">
+                    {!isOwn && (
+                      <span className="mtv-chat-avatar" aria-hidden="true">
+                        {(msg.userName || '?').charAt(0).toUpperCase()}
+                      </span>
+                    )}
+                    <div
+                      className={`mtv-chat-msg${msg.type === 'emoji' ? ' is-emoji' : ''}`}
+                    >
+                      {msg.content}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             <div ref={messagesEndRef} />
           </>
         )}
       </div>
 
       {/* 输入区域 */}
-      <div className="border-t border-gray-700 p-3">
+      <div className="mtv-chat-input">
         {/* 表情选择器 */}
         {showEmojiPicker && (
-          <div className="mb-2 grid grid-cols-6 gap-2 rounded-lg bg-gray-700 p-2">
+          <div className="mtv-chat-emoji">
             {EMOJI_LIST.map((emoji) => (
               <button
                 key={emoji}
                 onClick={() => handleSendEmoji(emoji)}
-                className="rounded p-1 text-2xl transition-colors hover:bg-gray-600"
+                className="mtv-chat-emoji-btn"
               >
                 {emoji}
               </button>
@@ -627,7 +671,7 @@ export default function ChatFloatingWindow() {
         <div className="flex gap-2">
           <button
             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-            className="rounded-lg bg-gray-700 p-2 text-gray-300 transition-colors hover:bg-gray-600 hover:text-white"
+            className="mtv-chat-inputbtn"
             aria-label="表情"
           >
             <Smile className="h-5 w-5" />
@@ -638,13 +682,13 @@ export default function ChatFloatingWindow() {
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="输入消息..."
-            className="flex-1 rounded-lg bg-gray-700 px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-ui-accent"
+            className="mtv-chat-field"
             maxLength={200}
           />
           <button
             onClick={handleSendMessage}
             disabled={!message.trim()}
-            className="rounded-lg bg-ui-accent p-2 text-white transition-colors hover:bg-ui-accent disabled:opacity-50"
+            className="mtv-chat-send"
             aria-label="发送"
           >
             <Send className="h-5 w-5" />
@@ -653,14 +697,14 @@ export default function ChatFloatingWindow() {
       </div>
 
       {/* 房间信息提示 */}
-      <div className="rounded-b-2xl bg-gray-900/50 px-4 py-2 text-center text-xs text-gray-400">
+      <div className="mtv-chat-foot">
         {isOwner ? (
-          <span className="text-yellow-400">👑 您是房主</span>
+          <span className="mtv-chat-foot-owner">👑 您是房主</span>
         ) : (
           <span>房间: {watchRoom.currentRoom.name}</span>
         )}
       </div>
     </div>
-    </>
+    </div>
   );
 }
