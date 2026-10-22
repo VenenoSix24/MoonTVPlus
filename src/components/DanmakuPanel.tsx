@@ -326,11 +326,7 @@ export default function DanmakuPanel({
           <button
             onClick={() => handleSearch(searchKeyword)}
             disabled={isSearching}
-            className='flex flex-shrink-0 items-center justify-center gap-2 rounded-lg bg-ui-accent px-3 py-2
-                     text-sm font-medium text-white transition-colors
-                     hover:brightness-110 disabled:cursor-not-allowed
-                     disabled:opacity-50
-                     lg:px-4 min-w-[44px]'
+            className='flex flex-shrink-0 items-center justify-center gap-2 rounded-lg bg-ui-accent px-3 py-2 text-sm font-medium text-white transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 lg:px-4 min-w-[44px]'
           >
             {isSearching ? (
               <div className='h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent' />
@@ -346,8 +342,7 @@ export default function DanmakuPanel({
         {/* 错误提示 */}
         {searchError && (
           <div
-            className='mt-3 rounded-lg border border-red-500/30 bg-red-500/10
-                        px-3 py-2 text-sm text-red-600 dark:text-red-400'
+            className='mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-400'
           >
             {searchError}
           </div>
@@ -361,8 +356,7 @@ export default function DanmakuPanel({
         {/* 当前选择的弹幕信息 */}
         {currentSelection && (
           <div
-            className='mb-4 rounded-lg border border-ui-accent-soft bg-ui-accent-soft
-                        px-3 py-2 text-sm'
+            className='mb-4 rounded-lg border border-ui-accent-soft bg-ui-accent-soft px-3 py-2 text-sm'
           >
             <p className='font-semibold text-ui-accent'>
               当前弹幕
@@ -404,8 +398,7 @@ export default function DanmakuPanel({
             {isLoadingEpisodes && (
               <div className='flex items-center justify-center py-8'>
                 <div
-                  className='h-8 w-8 animate-spin rounded-full border-4
-                              border-ui-hair-strong border-t-ui-accent'
+                  className='h-8 w-8 animate-spin rounded-full border-4 border-ui-hair-strong border-t-ui-accent'
                 />
               </div>
             )}
@@ -583,8 +576,7 @@ export default function DanmakuPanel({
               <div
                 key={anime.animeId}
                 onClick={() => handleAnimeSelect(anime)}
-                className='flex cursor-pointer items-start gap-3 rounded-lg
-                         bg-ui-surface-3 p-3 transition-colors hover:bg-ui-surface-hover'
+                className='flex cursor-pointer items-start gap-3 rounded-lg bg-ui-surface-3 p-3 transition-colors hover:bg-ui-surface-hover'
               >
                 {/* 封面 */}
                 {anime.imageUrl && (

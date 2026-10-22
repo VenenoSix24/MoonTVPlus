@@ -70,6 +70,7 @@ import {
   saveLocalEpisodeProgress,
 } from '@/lib/episode-progress';
 import type { EpisodeTitleCorrection } from '@/lib/episode-title-correction';
+import { fetchWithRetry } from '@/lib/fetch-retry';
 import {
   EPISODE_TITLE_CORRECTION_EVENT,
   getEpisodeTitleCorrection,
@@ -1859,6 +1860,15 @@ function PlayPageClient() {
           yearForLookup
         );
         doubanId = found ? Number(found.id) : 0;
+        // 反查命中的 id 必须回写到状态里。
+        // 只放在局部变量里的话，评分是有了，但「豆瓣评论」「相关推荐」「豆瓣外链」
+        // 都还在读 videoDoubanId === 0 —— 数据源切到 TMDB 之后源里不带
+        // douban_id，这几块就整块不渲染了（评论消失就是这么来的）。
+        // 回写后本 effect 会因依赖变化再跑一次，那一次 doubanId 非 0、不再反查，
+        // 不会成环。
+        if (doubanId !== videoDoubanId) {
+          setVideoDoubanId(doubanId);
+        }
       }
 
       if (!doubanId) {
@@ -1986,7 +1996,7 @@ function PlayPageClient() {
           ? `/api/tmdb-details?cachedId=${encodeURIComponent(cachedId)}`
           : `/api/tmdb-details?title=${encodeURIComponent(videoTitle)}&year=${encodeURIComponent(matchYear)}`;
 
-        const response = await fetch(url);
+        const response = await fetchWithRetry(url);
 
         if (!response.ok) {
           setTmdbBackdrop(null);
@@ -2143,7 +2153,7 @@ function PlayPageClient() {
         // 一个超时就把整块（剧照 / 演职员 / 元信息）一起拖没了。
         const loadJson = async (url: string) => {
           try {
-            const resp = await fetch(url);
+            const resp = await fetchWithRetry(url);
             return resp.ok ? await resp.json() : null;
           } catch {
             return null;
@@ -2267,7 +2277,7 @@ function PlayPageClient() {
       setTmdbEpisodeMetaLoading(true);
 
       try {
-        const resp = await fetch(
+        const resp = await fetchWithRetry(
           `/api/tmdb/episodes?id=${id}&season=${seasonNumber}`
         );
         if (!resp.ok) {
@@ -5394,9 +5404,43 @@ function PlayPageClient() {
       console.warn('Wake Lock 释放失败:', err);
     }
   };
+  // iOS / WebKit 上把正在播放的 <video> 从 DOM 里摘掉并不会停止播放。Artplayer 的
+  // destroy() 只清空容器 HTML，从不 pause（见 artplayer.mjs 的 destroy 实现），桌面
+  // Chrome / Android 会顺手停掉，WebKit 不会 —— 于是点 logo 回首页后声音还在放，
+  // 看起来像「后台播放」。这里显式 pause 并卸载媒体源，让系统释放解码器与音频会话。
+  const hardStopPlayback = () => {
+    const video = (artPlayerRef.current?.video ||
+      artRef.current?.querySelector('video')) as HTMLVideoElement | null;
+    if (!video) return;
+    try {
+      video.pause();
+    } catch {
+      // 忽略：源已卸载时 pause 可能抛错
+    }
+    try {
+      video.muted = true;
+      video.removeAttribute('src');
+      video.querySelectorAll('source').forEach((node) => node.remove());
+      // load() 才会真正让 WebKit 释放解码器和音频会话，只移除元素不够
+      video.load();
+    } catch {
+      // 忽略：部分 WebView 的 load() 会同步抛错
+    }
+    try {
+      if ('mediaSession' in navigator) {
+        (navigator as any).mediaSession.playbackState = 'paused';
+      }
+    } catch {
+      // 忽略：旧版 Safari 没有 mediaSession
+    }
+  };
 
   // 清理播放器资源的统一函数
   const cleanupPlayer = async () => {
+    // 必须在任何 await 之前同步停掉：异步清理期间路由可能已经切走，
+    // 拖到后面就来不及（Safari 切路由后旧节点仍在出声）。
+    hardStopPlayback();
+
     revokeCustomSubtitle();
     // 位图字幕渲染器可能独立于 customSubtitle 存在（源字幕切换路径），兜底销毁
     clearBitsubSubtitle();
@@ -5926,7 +5970,7 @@ function PlayPageClient() {
         if (fileNameParam) {
           url += `&fileName=${encodeURIComponent(fileNameParam)}`;
         }
-        const detailResponse = await fetch(url);
+        const detailResponse = await fetchWithRetry(url);
         if (!detailResponse.ok) {
           throw new Error('获取视频详情失败');
         }
@@ -9254,184 +9298,206 @@ function PlayPageClient() {
                 .ios-portrait-fullscreen {
                   display: inline-flex !important;
                 }
-                /* iOS 全屏选择对话框样式（遵循项目统一风格） */
+                /* iOS 全屏选择对话框。
+                   原来是照 Tailwind 调色板手抄的一套硬编码色（白卡片 / #1f2937 /
+                   #111827 / 灰描边），还留着一条绿色的阴影，跟站内的令牌体系完全
+                   对不上；标题那块还是强调色渐变大色块。这里整块改成
+                   「实底 + 发丝线 + 投影」，并且就地钉一套影院令牌 ——
+                   弹窗挂在 body 上，拿不到播放页容器的深色令牌。 */
                 .ios-fullscreen-dialog {
                   position: fixed;
-                  top: 0;
-                  left: 0;
-                  right: 0;
-                  bottom: 0;
-                  background: rgba(0, 0, 0, 0.6);
-                  backdrop-filter: blur(4px);
+                  inset: 0;
                   z-index: 1000;
                   display: flex;
                   align-items: center;
                   justify-content: center;
-                  padding: 16px;
+                  padding: max(20px, env(safe-area-inset-top)) 16px
+                    max(20px, env(safe-area-inset-bottom));
+                  background: rgba(0, 0, 0, 0.62);
+                  -webkit-backdrop-filter: blur(10px);
+                  backdrop-filter: blur(10px);
+
+                  --ui-surface: #14151a;
+                  --ui-ink: #f5f5f7;
+                  --ui-ink-2: rgba(255, 255, 255, 0.62);
+                  --ui-ink-3: rgba(255, 255, 255, 0.42);
+                  --ui-hair: rgba(255, 255, 255, 0.09);
+                  color: var(--ui-ink);
                 }
                 .ios-fullscreen-dialog-content {
-                  background: white;
-                  border-radius: 16px;
-                  max-width: 480px;
+                  display: flex;
+                  flex-direction: column;
                   width: 100%;
-                  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+                  max-width: 420px;
+                  max-height: calc(
+                    100dvh - 40px - env(safe-area-inset-top) -
+                      env(safe-area-inset-bottom)
+                  );
                   overflow: hidden;
-                }
-                .dark .ios-fullscreen-dialog-content {
-                  background: rgb(31, 41, 55);
+                  border-radius: var(--ui-r-lg);
+                  border: 1px solid var(--ui-hair);
+                  background-color: var(--ui-surface);
+                  box-shadow: 0 30px 80px -24px rgba(0, 0, 0, 0.85);
                 }
 
                 /* 标题栏 */
                 .ios-fullscreen-dialog-header {
-                  background: linear-gradient(135deg, var(--ui-accent) 0%, color-mix(in srgb, var(--ui-accent) 78%, #000) 100%);
-                  padding: 20px 24px;
+                  padding: 20px 20px 16px;
+                  border-bottom: 1px solid var(--ui-hair);
                 }
                 .ios-fullscreen-dialog-title {
-                  font-size: 20px;
-                  font-weight: 700;
-                  color: white;
                   display: flex;
                   align-items: center;
                   gap: 10px;
-                  margin-bottom: 6px;
+                  margin: 0 0 6px;
+                  font-size: 17px;
+                  font-weight: 700;
+                  color: var(--ui-ink);
                 }
                 .ios-fullscreen-dialog-title svg {
-                  stroke: white;
+                  flex: none;
+                  color: var(--ui-accent);
                 }
                 .ios-fullscreen-dialog-subtitle {
-                  font-size: 14px;
-                  color: rgba(255, 255, 255, 0.9);
                   margin: 0;
+                  font-size: 12.5px;
+                  line-height: 1.55;
+                  color: var(--ui-ink-3);
                 }
 
                 /* 选项列表 */
                 .ios-fullscreen-dialog-options {
-                  padding: 16px;
                   display: flex;
                   flex-direction: column;
-                  gap: 12px;
+                  gap: 10px;
+                  padding: 16px;
+                  overflow-y: auto;
                 }
                 .ios-fullscreen-option {
                   display: flex;
                   align-items: center;
-                  gap: 16px;
-                  padding: 16px;
-                  background: rgb(249, 250, 251);
-                  border: 2px solid transparent;
-                  border-radius: 12px;
-                  cursor: pointer;
-                  transition: all 0.2s;
+                  gap: 14px;
+                  padding: 14px;
                   text-align: left;
-                }
-                .dark .ios-fullscreen-option {
-                  background: rgba(55, 65, 81, 0.5);
-                }
-                .ios-fullscreen-option:hover {
-                  background: rgb(243, 244, 246);
-                  border-color: var(--ui-accent);
-                  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.15);
-                }
-                .dark .ios-fullscreen-option:hover {
-                  background: rgb(55, 65, 81);
+                  border-radius: var(--ui-r-md);
+                  border: 1px solid var(--ui-hair);
+                  background-color: color-mix(
+                    in srgb,
+                    var(--ui-ink) 4%,
+                    transparent
+                  );
+                  color: var(--ui-ink);
+                  transition:
+                    background-color var(--ui-dur-1) var(--ui-ease),
+                    border-color var(--ui-dur-1) var(--ui-ease);
                 }
                 .ios-fullscreen-option:active {
-                  transform: scale(0.98);
+                  background-color: color-mix(
+                    in srgb,
+                    var(--ui-ink) 9%,
+                    transparent
+                  );
                 }
-
-                /* 推荐选项 */
                 .ios-fullscreen-option-recommended {
-                  border-color: var(--ui-accent);
+                  border-color: color-mix(
+                    in srgb,
+                    var(--ui-accent) 55%,
+                    transparent
+                  );
                 }
-
-                /* 选项图标 */
                 .ios-fullscreen-option-icon {
-                  flex-shrink: 0;
-                  width: 48px;
-                  height: 48px;
+                  flex: none;
                   display: flex;
                   align-items: center;
                   justify-content: center;
-                  background: white;
+                  width: 40px;
+                  height: 40px;
                   border-radius: 10px;
-                  color: var(--ui-accent);
-                }
-                .dark .ios-fullscreen-option-icon {
-                  background: rgb(31, 41, 55);
+                  background-color: color-mix(
+                    in srgb,
+                    var(--ui-ink) 7%,
+                    transparent
+                  );
+                  color: var(--ui-ink-2);
                 }
                 .ios-fullscreen-option-recommended .ios-fullscreen-option-icon {
-                  background: var(--ui-accent);
-                  color: white;
+                  background-color: color-mix(
+                    in srgb,
+                    var(--ui-accent) 18%,
+                    transparent
+                  );
+                  color: var(--ui-accent);
                 }
 
                 /* 选项内容 */
                 .ios-fullscreen-option-content {
                   flex: 1;
+                  min-width: 0;
                 }
                 .ios-fullscreen-option-title {
-                  font-size: 16px;
-                  font-weight: 600;
-                  color: rgb(17, 24, 39);
-                  margin-bottom: 4px;
                   display: flex;
                   align-items: center;
                   gap: 8px;
-                }
-                .dark .ios-fullscreen-option-title {
-                  color: white;
+                  margin-bottom: 3px;
+                  font-size: 15px;
+                  font-weight: 600;
+                  color: var(--ui-ink);
                 }
                 .ios-fullscreen-option-badge {
                   display: inline-block;
-                  padding: 2px 8px;
-                  background: var(--ui-accent);
-                  color: white;
-                  font-size: 12px;
-                  font-weight: 500;
-                  border-radius: 4px;
+                  padding: 1px 7px;
+                  border-radius: 9999px;
+                  background-color: color-mix(
+                    in srgb,
+                    var(--ui-accent) 20%,
+                    transparent
+                  );
+                  color: var(--ui-accent);
+                  font-size: 11px;
+                  font-weight: 600;
                 }
                 .ios-fullscreen-option-desc {
-                  font-size: 13px;
-                  color: rgb(107, 114, 128);
-                  line-height: 1.4;
-                }
-                .dark .ios-fullscreen-option-desc {
-                  color: rgb(156, 163, 175);
+                  font-size: 12.5px;
+                  line-height: 1.45;
+                  color: var(--ui-ink-3);
                 }
 
                 /* 箭头图标 */
                 .ios-fullscreen-option-arrow {
-                  flex-shrink: 0;
-                  color: rgb(209, 213, 219);
-                  transition: transform 0.2s;
-                }
-                .dark .ios-fullscreen-option-arrow {
-                  color: rgb(75, 85, 99);
-                }
-                .ios-fullscreen-option:hover .ios-fullscreen-option-arrow {
-                  transform: translateX(4px);
-                  color: var(--ui-accent);
+                  flex: none;
+                  color: var(--ui-ink-3);
+                  transition: transform 0.2s var(--ui-ease);
                 }
 
                 /* 底部提示 */
                 .ios-fullscreen-dialog-footer {
-                  padding: 16px 24px;
-                  background: rgb(249, 250, 251);
-                  border-top: 1px solid rgb(229, 231, 235);
                   display: flex;
                   align-items: flex-start;
-                  gap: 10px;
-                  font-size: 12px;
-                  color: rgb(107, 114, 128);
+                  gap: 8px;
+                  padding: 12px 16px;
+                  border-top: 1px solid var(--ui-hair);
+                  font-size: 11.5px;
                   line-height: 1.5;
-                }
-                .dark .ios-fullscreen-dialog-footer {
-                  background: rgba(17, 24, 39, 0.5);
-                  border-top-color: rgb(55, 65, 81);
-                  color: rgb(156, 163, 175);
+                  color: var(--ui-ink-3);
                 }
                 .ios-fullscreen-dialog-footer svg {
-                  flex-shrink: 0;
-                  margin-top: 2px;
+                  flex: none;
+                  margin-top: 1px;
                   stroke: currentColor;
+                }
+
+                @media (hover: hover) and (pointer: fine) {
+                  .ios-fullscreen-option:hover {
+                    background-color: color-mix(
+                      in srgb,
+                      var(--ui-ink) 7%,
+                      transparent
+                    );
+                  }
+                  .ios-fullscreen-option:hover .ios-fullscreen-option-arrow {
+                    transform: translateX(3px);
+                    color: var(--ui-accent);
+                  }
                 }
               `;
                 document.head.appendChild(style);
@@ -11092,6 +11158,14 @@ function PlayPageClient() {
     netdiskHlsPlaybackMode,
   ]);
 
+  // iOS 装成 PWA 后横屏偶发把整页横向顶出去一点：fixed 定位的播放器跟着整体偏移，
+  // 左右两侧会漏出页面内容（左边一片雾、右边是选集栏）。挂载时把横向滚动归零。
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    document.documentElement.scrollLeft = 0;
+    document.body.scrollLeft = 0;
+  }, []);
+
   // 当组件卸载时清理定时器、Wake Lock 和播放器资源
   useEffect(() => {
     return () => {
@@ -11596,70 +11670,74 @@ function PlayPageClient() {
                     <div className='text-center max-w-md mx-auto px-6'>
                       {videoError ? (
                         // 错误显示
-                        <>
-                          {/* 错误图标：跟页面级失败态同款，遮罩是深色底所以钉暗色 */}
-                          <div className='relative mb-4 lg:mb-8'>
-                            {/* 失败态款式（旧版那一套各页自备） */}
-                            <LoadingErrorStyle
-                              steps={VIDEO_LOAD_STEPS}
-                              activeStepIdx={videoLoadStepIdx}
-                              message={videoError}
-                              onDark
-                              legacy={
-                                <>
-                                  <div className='relative mx-auto w-24 h-24 bg-gradient-to-r from-red-500 to-rose-600 rounded-2xl shadow-2xl flex items-center justify-center'>
-                                    <div className='text-white text-4xl'>⚠️</div>
+                          <>
+                            {/* 错误图标：深色遮罩上不摆 emoji 大色块，换成中性圆环 + 危险色描边 */}
+                            <div className='mb-5'>
+                              <LoadingErrorStyle
+                                steps={VIDEO_LOAD_STEPS}
+                                activeStepIdx={videoLoadStepIdx}
+                                message={videoError}
+                                onDark
+                                legacy={
+                                  <div className='mx-auto grid h-16 w-16 place-items-center rounded-full border border-white/15 bg-white/[0.06] text-[color:var(--ui-danger)]'>
+                                    <AlertCircle
+                                      className='h-7 w-7'
+                                      strokeWidth={1.9}
+                                    />
                                   </div>
-                                </>
-                              }
-                            />
-                          </div>
-
-                          {/* 错误消息 */}
-                          <div className='space-y-2 lg:space-y-4'>
-                            <p className='text-xl font-semibold text-white'>
-                              播放失败
-                            </p>
-                            <p className='mtv-err-box text-base text-gray-300'>
-                              {videoError}
-                            </p>
-                            <button
-                              onClick={() => {
-                                setVideoError(null);
-                                setIsVideoLoading(true);
-                                // 重新加载视频
-                                if (artPlayerRef.current) {
-                                  artPlayerRef.current.url = videoUrl;
                                 }
-                              }}
-                              className='mt-4 px-6 py-2 mtv-play-grad text-white rounded-lg hover:brightness-110 transition-all duration-200'
-                            >
-                              重试
-                            </button>
-                            {/* 直链播放 CORS 失败时，显示"使用代理播放"按钮 */}
-                            {!proxyAttemptedRef.current && (corsFailedUrl || (isDirectPlay && videoUrl && !videoUrl.includes('/api/proxy-m3u8'))) && (
-                              <button
-                                onClick={() => {
-                                  const originalUrl = corsFailedUrl || videoUrl;
-                                  // 记忆域名到 localStorage
-                                  addDirectplayProxyDomain(originalUrl);
-                                  // 构建代理 URL
-                                  const tokenParam = proxyToken ? `&token=${encodeURIComponent(proxyToken)}` : '';
-                                  const proxyUrl = `/api/proxy-m3u8?url=${encodeURIComponent(originalUrl)}&source=directplay${tokenParam}`;
-                                  // 清除错误状态并重新播放
-                                  setVideoError(null);
-                                  setCorsFailedUrl(null);
-                                  setIsVideoLoading(true);
-                                  proxyAttemptedRef.current = true;
-                                  setVideoUrl(proxyUrl);
-                                }}
-                                className='mt-4 ml-3 px-6 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-200'
-                              >
-                                使用代理播放
-                              </button>
-                            )}
-                          </div>
-                        </>
+                              />
+                            </div>
+
+                            {/* 错误消息 */}
+                            <div className='space-y-3'>
+                              <p className='m-0 text-[17px] font-semibold leading-snug text-white'>
+                                播放失败
+                              </p>
+                              <p className='mtv-err-box m-0 text-[13.5px] leading-relaxed text-white/60'>
+                                {videoError}
+                              </p>
+                              <div className='flex flex-wrap items-center justify-center gap-2 pt-1'>
+                                <button
+                                  onClick={() => {
+                                    setVideoError(null);
+                                    setIsVideoLoading(true);
+                                    // 重新加载视频
+                                    if (artPlayerRef.current) {
+                                      artPlayerRef.current.url = videoUrl;
+                                    }
+                                  }}
+                                  className='inline-flex h-9 items-center gap-1.5 rounded-full bg-ui-accent px-5 text-[13px] font-semibold text-white transition-[filter] hover:brightness-110'
+                                >
+                                  <RefreshCw className='h-3.5 w-3.5' />
+                                  重试
+                                </button>
+                                {/* 直链播放 CORS 失败时，显示"使用代理播放"按钮 */}
+                                {!proxyAttemptedRef.current && (corsFailedUrl || (isDirectPlay && videoUrl && !videoUrl.includes('/api/proxy-m3u8'))) && (
+                                  <button
+                                    onClick={() => {
+                                      const originalUrl = corsFailedUrl || videoUrl;
+                                      // 记忆域名到 localStorage
+                                      addDirectplayProxyDomain(originalUrl);
+                                      // 构建代理 URL
+                                      const tokenParam = proxyToken ? `&token=${encodeURIComponent(proxyToken)}` : '';
+                                      const proxyUrl = `/api/proxy-m3u8?url=${encodeURIComponent(originalUrl)}&source=directplay${tokenParam}`;
+                                      // 清除错误状态并重新播放
+                                      setVideoError(null);
+                                      setCorsFailedUrl(null);
+                                      setIsVideoLoading(true);
+                                      proxyAttemptedRef.current = true;
+                                      setVideoUrl(proxyUrl);
+                                    }}
+                                    className='inline-flex h-9 items-center gap-1.5 rounded-full border border-white/20 bg-white/[0.06] px-4 text-[13px] font-medium text-white/85 transition-colors hover:border-white/35 hover:text-white'
+                                  >
+                                    <Cloud className='h-3.5 w-3.5' />
+                                    使用代理播放
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </>
                       ) : (
                         // 加载显示（三种款式见 components/LoadingStyle）
                         <LoadingStyle

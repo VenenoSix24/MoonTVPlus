@@ -18,7 +18,6 @@ import { useRouter } from 'next/navigation';
 import React, {
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -369,9 +368,10 @@ const EpisodeCard: React.FC<EpisodeCardProps> = ({
             {String(episodeNumber).padStart(2, '0')}
           </span>
         )}
-        <span className='mtv-play-epcard-tag'>
-          {isActive ? '正在播放' : `第 ${episodeNumber} 集`}
-        </span>
+        {/* 徽章分三处：左上「正在播放」、左下「第 N 集」、右上「已看过」。
+            原来正在播放那一刻把左下角的集数胶囊顶掉，等于有信息丢失。 */}
+        {isActive && <span className='mtv-play-epcard-now'>正在播放</span>}
+        <span className='mtv-play-epcard-tag'>第 {episodeNumber} 集</span>
         {isWatched && !isActive && (
           <span className='mtv-play-epcard-watched'>已看过</span>
         )}
@@ -1332,77 +1332,18 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
   }, [activeTab]);
 
   // ---- 测速重排不打断滑动 ----
-  // 测速是分批并发跑的，每回来一批 sortedSources 就重算一次，整个列表顺序跟着
-  // 换。用户正往下滑的时候手底下的卡片被抽走，滑到一半就断了。两层处理：
-  //   1. 滚动期间冻结顺序（只有速度数字在变），停手 180ms 后再放行；
-  //   2. 放行时按「视口顶部那张卡片」做滚动锚定 —— 重排前后让它停在原地，别的
-  //      卡片在它上下换位。之前用 FLIP 平移，卡片是从原位滑走的，用户看着还是
-  //      被拖动；锚定是反过来补 scrollTop，视线落点完全不动。
+  // 测速是分批并发跑的，每回来一批 sortedSources 就重算一次，整个列表顺序跟着换。
+  // 用户正往下滑的时候手底下的卡片被抽走，滑到一半就断了；比这更糟的是以前还会
+  // 按锚点补 scrollTop —— 一张卡从十几位飞到第一位就要补几百像素，人被拽回上方，
+  // 反复几批就是「页面自己在往上跑」。
+  // 现在只做一件事：交互期间冻结顺序（只有速度数字在变），停手 700ms 后放行。
+  // 放行时不动滚动位置 —— 宁可让内容自己换位，也绝不替用户滚。
   const sourcesListRef = useRef<HTMLDivElement | null>(null);
   const scrollIdleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollBusyRef = useRef(false);
   const frozenOrderRef = useRef<string[] | null>(null);
   const lastOrderRef = useRef<string[]>([]);
-  const anchorRef = useRef<{ key: string; top: number } | null>(null);
-  const anchorLoopRef = useRef<number | null>(null);
-  const anchorLoopUntilRef = useRef(0);
   const [scrollBusy, setScrollBusy] = useState(false);
-
-  // 真正在滚的元素不一定是列表自己 —— 手机上的换源是底部抽屉，内层可能没有
-  // 滚动空间，滚的是外面那层。从列表往上找第一个「装不下且有滚动条」的祖先。
-  const resolveScrollHost = useCallback((): HTMLElement | null => {
-    const base = sourcesListRef.current;
-    if (!base) return null;
-    let node: HTMLElement | null = base;
-    while (node) {
-      const style = getComputedStyle(node);
-      if (
-        /(auto|scroll)/.test(style.overflowY) &&
-        node.scrollHeight > node.clientHeight + 4
-      ) {
-        return node;
-      }
-      node = node.parentElement;
-    }
-    return base;
-  }, []);
-
-  // 记下视口顶部第一张卡片，以及它离滚动容器顶边的距离。重排后拿同一个 key
-  // 再量一次，差值补进 scrollTop 就够了。
-  const captureAnchor = useCallback(() => {
-    const host = sourcesListRef.current;
-    if (!host) return;
-    const cards = Array.from(
-      host.querySelectorAll<HTMLElement>('[data-src-key]')
-    );
-    if (cards.length === 0) return;
-    const frame = resolveScrollHost();
-    const frameTop = frame ? frame.getBoundingClientRect().top : 0;
-    for (const card of cards) {
-      const rect = card.getBoundingClientRect();
-      if (rect.bottom - frameTop <= 0) continue;
-      const key = card.dataset.srcKey;
-      if (key) anchorRef.current = { key, top: rect.top - frameTop };
-      return;
-    }
-  }, [resolveScrollHost]);
-
-  // 交互期间逐帧刷新锚点。只靠 scroll 事件不够 —— 列表在手机上是触摸滑动、
-  // 桌面是滚轮，两种都可能不触发容器自身的 scroll（滚的是外层或整页），锚点
-  // 一旦过期，重排后就会按老位置补偿，人就被拽回去了。
-  const kickAnchorLoop = useCallback(() => {
-    anchorLoopUntilRef.current = performance.now() + 400;
-    if (anchorLoopRef.current != null) return;
-    const tick = () => {
-      captureAnchor();
-      if (performance.now() < anchorLoopUntilRef.current) {
-        anchorLoopRef.current = requestAnimationFrame(tick);
-      } else {
-        anchorLoopRef.current = null;
-      }
-    };
-    anchorLoopRef.current = requestAnimationFrame(tick);
-  }, [captureAnchor]);
 
   // 换源列表的排序结果：
   //   1. 被置顶的源恒在最前，测速排名不参与，成功失败都不动位置
@@ -1473,45 +1414,15 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
       scrollBusyRef.current = false;
       frozenOrderRef.current = null;
       setScrollBusy(false);
-    }, 180);
-    kickAnchorLoop();
-  }, [kickAnchorLoop]);
+    }, 700);
+  }, []);
 
   useEffect(
     () => () => {
       if (scrollIdleTimerRef.current) clearTimeout(scrollIdleTimerRef.current);
-      if (anchorLoopRef.current != null) cancelAnimationFrame(anchorLoopRef.current);
     },
     []
   );
-
-  // 重排后把锚点拉回原位：scrollTop 直接补差值，卡片本身不带任何动画，视线
-  // 落点会像没动过一样。
-  //
-  // 补完越界的就不补 —— 越界意味着锚点那张卡自己飞到视口外了（常见于它测出来
-  // 最快、被判到列表第一位）。这时候硬跟就会把用户拽回顶部，宁可让滚动位置
-  // 原地不动。
-  useLayoutEffect(() => {
-    const list = sourcesListRef.current;
-    if (!list) return;
-    const frame = resolveScrollHost();
-    const anchor = anchorRef.current;
-    if (frame && anchor) {
-      const target = Array.from(
-        list.querySelectorAll<HTMLElement>('[data-src-key]')
-      ).find((card) => card.dataset.srcKey === anchor.key);
-      if (target) {
-        const frameTop = frame.getBoundingClientRect().top;
-        const delta = target.getBoundingClientRect().top - frameTop - anchor.top;
-        const next = frame.scrollTop + delta;
-        const maxScroll = frame.scrollHeight - frame.clientHeight;
-        if (Math.abs(delta) > 1 && next >= 0 && next <= maxScroll) {
-          frame.scrollTop = next;
-        }
-      }
-    }
-    captureAnchor();
-  }, [sortedSources, captureAnchor, resolveScrollHost]);
 
   // 重新测试单个源
   const handleRetestSource = useCallback(
@@ -2105,8 +2016,11 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                               <span className='mtv-play-src-now'>当前</span>
                             )}
                             {/* 分辨率紧接「当前」放，置顶单独靠到最右 —— 一个是片子
-                                本身的属性，一个是人工标记，不该挤在同一头 */}
-                            {videoInfo && videoInfo.quality !== '未知' && (
+                                本身的属性，一个是人工标记，不该挤在同一头。
+                                拿不到分辨率时也要占位：iOS 上没有 MSE，hls.js 起不来，
+                                videoWidth 恒为 0，quality 就是「未知」。以前这里直接
+                                不渲染，于是整行右侧空一大块，看着像内容都挤在左边。 */}
+                            {videoInfo && (
                               <span
                                 className={`mtv-play-src-badge ${
                                   videoInfo.hasError
@@ -2115,12 +2029,20 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                                       ? 'is-ultra'
                                       : ''
                                 }`}
+                                title={
+                                  !videoInfo.hasError &&
+                                  videoInfo.quality === '未知'
+                                    ? '这个浏览器拿不到分辨率信息'
+                                    : undefined
+                                }
                               >
                                 {videoInfo.hasError
                                   ? videoInfo.errorType === 'timeout'
                                     ? '超时'
                                     : '无法访问'
-                                  : videoInfo.quality}
+                                  : videoInfo.quality === '未知'
+                                    ? '—'
+                                    : videoInfo.quality}
                               </span>
                             )}
                             {sourceMeta?.pinned && (

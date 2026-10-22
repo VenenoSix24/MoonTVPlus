@@ -3,6 +3,7 @@
 import { Cat, Film, Home, LayoutGrid, Tv } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 interface MobileBottomNavProps {
   /**
@@ -30,9 +31,18 @@ const MobileBottomNav = ({ activePath }: MobileBottomNavProps) => {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  if (pathname === '/watch-room/screen') {
-    return null;
-  }
+  // 播放页整片都是深色影院画布（.mtv-play-bg 是 fixed 的深色底层），浅色主题下
+  // 底栏还是白玻璃就会跳出来。判定不能只看 pathname：从点卡片到真正进播放页之间
+  // 有一段浅色的开幕过渡动画，那时底栏就变黑会很突兀。等深色画布挂上来再切。
+  const [onDarkCanvas, setOnDarkCanvas] = useState(false);
+  useEffect(() => {
+    const measure = () =>
+      setOnDarkCanvas(Boolean(document.querySelector('.mtv-play-bg')));
+    measure();
+    const observer = new MutationObserver(measure);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [pathname]);
 
   const queryString = searchParams.toString();
   const currentActive =
@@ -54,8 +64,16 @@ const MobileBottomNav = ({ activePath }: MobileBottomNavProps) => {
 
   const activeIndex = NAV_ITEMS.findIndex((item) => isActive(item.href));
 
+  // 云观影投屏页不需要底栏（hooks 必须全部在前，所以这个判断放在最后）
+  if (pathname === '/watch-room/screen') {
+    return null;
+  }
+
   return (
-    <nav className='mtv-bnav md:hidden' aria-label='底部导航'>
+    <nav
+      className={`mtv-bnav md:hidden${onDarkCanvas ? ' is-cinema' : ''}`}
+      aria-label='底部导航'
+    >
       <div className='mtv-bnav-list'>
         {activeIndex >= 0 && (
           <span

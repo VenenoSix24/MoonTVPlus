@@ -131,9 +131,9 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({
         onClick={onClose}
       />
 
-      {/* 收藏面板：手机端铺满整屏，桌面端居中弹窗 —— 一屏能看到的卡片数差太多，
-          在手机上留一圈留白只会把列表挤成三行。 */}
-      <div className='fixed z-[1001] flex flex-col overflow-hidden bg-ui-surface shadow-ui-3 inset-0 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-4xl sm:max-h-[85vh] sm:rounded-ui-lg'>
+      {/* 收藏面板：手机端留一圈边（不再铺满整屏），桌面端居中弹窗 —— 一屏能看到的
+          卡片数差太多；但铺满整屏时关闭按钮正好顶在状态栏下面，手指够不到。 */}
+      <div className='fixed z-[1001] flex flex-col overflow-hidden bg-ui-surface shadow-ui-3 inset-x-3 top-[max(12px,env(safe-area-inset-top))] bottom-[max(12px,env(safe-area-inset-bottom))] rounded-ui-lg sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-4xl sm:max-h-[85vh]'>
         {/* 标题栏 */}
         <div className='flex items-center justify-between px-4 py-3.5 border-b border-ui-hair shrink-0 sm:px-6 sm:py-4 pt-[calc(0.875rem+env(safe-area-inset-top))] sm:pt-4'>
           <div className='flex items-center gap-2 min-w-0'>

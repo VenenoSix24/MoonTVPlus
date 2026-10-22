@@ -34,8 +34,13 @@ const ProxyImage: React.FC<ProxyImageProps> = ({
   );
   const [currentSrc, setCurrentSrc] = useState(initialSrc);
   const imgRef = useRef<HTMLImageElement | null>(null);
+  // 重试次数：浏览器会把这次失败短暂记在缓存里，同一个 URL 重设 src 不会真的
+  // 再发一次请求（React 也不会因为 setState 同值而重新渲染）。所以重试要带
+  // 一个变化的参数，最多两次。
+  const retryCountRef = useRef(0);
 
   useEffect(() => {
+    retryCountRef.current = 0;
     setCurrentSrc(initialSrc);
   }, [initialSrc]);
 
@@ -71,11 +76,14 @@ const ProxyImage: React.FC<ProxyImageProps> = ({
       return;
     }
 
-    if (retryOnError && !img.dataset.retried) {
-      img.dataset.retried = 'true';
+    if (retryOnError && retryCountRef.current < 2) {
+      retryCountRef.current += 1;
+      const attempt = retryCountRef.current;
       window.setTimeout(() => {
-        setCurrentSrc(initialSrc);
-      }, retryDelay);
+        // 必须换一个 URL 才会真的重新发起请求
+        const glue = initialSrc.includes('?') ? '&' : '?';
+        setCurrentSrc(`${initialSrc}${glue}imgretry=${attempt}`);
+      }, retryDelay * attempt);
     }
 
     onError?.(e);

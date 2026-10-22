@@ -21,6 +21,7 @@ import {
 } from 'react';
 
 import { getDoubanDetail } from '@/lib/douban.client';
+import { fetchWithRetry } from '@/lib/fetch-retry';
 import {
   type TMDBItem,
   getGenreNames,
@@ -252,7 +253,7 @@ export default function BannerCarousel({
   const [bannerHeightScale, setBannerHeightScale] =
     useState<HomeBannerHeightScale>('1'); // 轮播图高度倍率
   const [isMobileView, setIsMobileView] = useState(false);
-  const [mobileTitleFontSize, setMobileTitleFontSize] = useState(30);
+  const [mobileTitleFontSize, setMobileTitleFontSize] = useState(34);
   const videoRef = useRef<HTMLVideoElement>(null); // 视频元素引用
   const videoRefs = useRef<Map<number, HTMLVideoElement>>(new Map()); // 所有视频元素的引用
   const titleRef = useRef<HTMLHeadingElement>(null);
@@ -345,11 +346,11 @@ export default function BannerCarousel({
 
     if (bannerHeightScale !== '1' || !isMobileView) {
       titleElement.style.fontSize = '';
-      setMobileTitleFontSize(30);
+      setMobileTitleFontSize(34);
       return;
     }
 
-    const maxFontSize = 30;
+    const maxFontSize = 34;
     const minFontSize = 12;
     let nextFontSize = maxFontSize;
 
@@ -472,7 +473,7 @@ export default function BannerCarousel({
 
         // 如果缓存过期或没有缓存，后台更新数据
         if (!cachedData || cacheExpired) {
-          const response = await fetch('/api/tmdb/trending');
+          const response = await fetchWithRetry('/api/tmdb/trending');
           const result = await response.json();
 
           if (result.code === 200 && result.list.length > 0) {
@@ -948,6 +949,7 @@ export default function BannerCarousel({
             )}
             {/* 渐变遮罩 */}
             <div className='mtv-hero-scrim absolute inset-0'></div>
+            {/* 底边硬切：画面铺到最底，不再做渐隐/落色 */}
           </div>
         ))}
       </div>
@@ -958,7 +960,7 @@ export default function BannerCarousel({
           <h2
             ref={titleRef}
             lang={titleIsCJK ? 'zh-Hans' : 'en'}
-            className='mtv-hero-title'
+            className={`mtv-hero-title${titleLogo ? '' : ' is-text'}`}
             style={
               isMobileView && bannerHeightScale === '1'
                 ? { fontSize: `${mobileTitleFontSize}px` }
