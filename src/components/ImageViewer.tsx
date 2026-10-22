@@ -3,8 +3,8 @@
 import { X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-
 import ProxyImage from '@/components/ProxyImage';
+import { lockBodyScroll, unlockBodyScroll } from '@/lib/scroll-lock';
 
 interface ImageViewerProps {
   isOpen: boolean;
@@ -57,48 +57,11 @@ const ImageViewer: React.FC<ImageViewerProps> = ({
     };
   }, [isOpen]);
 
-  // 阻止背景滚动
+  // 锁背景滚动（不用 body fixed 那套，PWA 下会让整页上移，见 scroll-lock.ts）
   useEffect(() => {
-    if (isVisible) {
-      const scrollY = window.scrollY;
-      const scrollX = window.scrollX;
-      const body = document.body;
-      const html = document.documentElement;
-
-      const scrollBarWidth = window.innerWidth - html.clientWidth;
-
-      const originalBodyStyle = {
-        position: body.style.position,
-        top: body.style.top,
-        left: body.style.left,
-        right: body.style.right,
-        width: body.style.width,
-        paddingRight: body.style.paddingRight,
-        overflow: body.style.overflow,
-      };
-
-      body.style.position = 'fixed';
-      body.style.top = `-${scrollY}px`;
-      body.style.left = `-${scrollX}px`;
-      body.style.right = '0';
-      body.style.width = '100%';
-      body.style.overflow = 'hidden';
-      body.style.paddingRight = `${scrollBarWidth}px`;
-
-      return () => {
-        body.style.position = originalBodyStyle.position;
-        body.style.top = originalBodyStyle.top;
-        body.style.left = originalBodyStyle.left;
-        body.style.right = originalBodyStyle.right;
-        body.style.width = originalBodyStyle.width;
-        body.style.paddingRight = originalBodyStyle.paddingRight;
-        body.style.overflow = originalBodyStyle.overflow;
-
-        requestAnimationFrame(() => {
-          window.scrollTo(scrollX, scrollY);
-        });
-      };
-    }
+    if (!isVisible) return;
+    lockBodyScroll();
+    return () => unlockBodyScroll();
   }, [isVisible]);
 
   // ESC键关闭

@@ -22,19 +22,13 @@ const VERSION_CHECK_URLS = [
  */
 export async function checkForUpdates(): Promise<UpdateStatus> {
   try {
-    // 尝试从主要URL获取版本信息
-    const primaryVersion = await fetchVersionFromUrl(VERSION_CHECK_URLS[0]);
-    if (primaryVersion) {
-      return compareVersions(primaryVersion);
+    // 逐个试：现在只有一个源，将来再加也不会像以前那样把 undefined 当 URL 传进去
+    for (const url of VERSION_CHECK_URLS) {
+      const version = await fetchVersionFromUrl(url);
+      if (version) {
+        return compareVersions(version);
+      }
     }
-
-    // 如果主要URL失败，尝试备用URL
-    const backupVersion = await fetchVersionFromUrl(VERSION_CHECK_URLS[1]);
-    if (backupVersion) {
-      return compareVersions(backupVersion);
-    }
-
-    // 如果两个URL都失败，返回获取失败状态
     return UpdateStatus.FETCH_FAILED;
   } catch (error) {
     console.error('版本检查失败:', error);
@@ -73,8 +67,14 @@ async function fetchVersionFromUrl(url: string): Promise<string | null> {
     }
 
     const version = await response.text();
-    return version.trim();
+    const trimmed = version.trim();
+    // 空文件 / 挂了 CDN 错误页时不要往下传：compareVersions('') 会解析失败
+    return trimmed || null;
   } catch (error) {
+    // AbortError 是主动超时（或组件卸载），不是故障，别在控制台喊
+    if (error instanceof Error && error.name === 'AbortError') {
+      return null;
+    }
     console.warn(`从 ${url} 获取版本信息失败:`, error);
     return null;
   }

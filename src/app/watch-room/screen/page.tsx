@@ -156,19 +156,21 @@ export default function WatchRoomScreenPage() {
     : '未开始';
 
   return (
-    <div className='min-h-screen bg-white text-gray-900 dark:bg-black dark:text-gray-200'>
-      <div className='mx-auto flex min-h-screen max-w-7xl flex-col gap-4 px-4 py-4 lg:px-8'>
-        <div className='flex items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-white/90 px-5 py-4 shadow-sm dark:border-gray-800 dark:bg-gray-900/80'>
+    <div className='mtv-scr'>
+      {/* 底部留白 + dvh 全在 .mtv-scr-wrap 里：iOS 的 100vh 是「工具栏收起后」
+          的高度，按它排版，最后一张卡会永远停在地址栏后面。 */}
+      <div className='mtv-scr-wrap'>
+        <div className='mtv-scr-bar'>
           <div>
-            <h1 className='flex items-center gap-2 text-2xl font-semibold'>
-              <Monitor className='h-6 w-6 text-blue-500' />
+            <h1 className='mtv-scr-h1'>
+              <Monitor className='mtv-scr-h1-ic' />
               屏幕共享观影室
             </h1>
-            <p className='mt-1 text-sm text-gray-600 dark:text-gray-400'>
+            <p className='mtv-scr-sub'>
               房间：{screenRoom.name} · 房主：{screenRoom.ownerName}
             </p>
           </div>
-          <div className='flex items-center gap-2'>
+          <div className='mtv-scr-actions'>
             {isOwner && (
               <Link
                 href='/'
@@ -178,29 +180,27 @@ export default function WatchRoomScreenPage() {
                   event.preventDefault();
                   openDetachedPage();
                 }}
-                className='rounded-lg bg-blue-500 px-4 py-2 text-white'
+                className='mtv-scr-btn is-primary'
               >
                 新开主页
               </Link>
             )}
-            <button
-              onClick={handleLeave}
-              className='rounded-lg bg-gray-200 px-4 py-2 text-gray-900 dark:bg-gray-700 dark:text-gray-100'
-            >
+            <button onClick={handleLeave} className='mtv-scr-btn'>
               离开房间
             </button>
           </div>
         </div>
 
-        <div className='grid flex-1 grid-cols-1 gap-4 xl:grid-cols-[1fr_320px]'>
-          <div className='relative flex min-h-[420px] items-center justify-center overflow-hidden rounded-2xl border border-gray-200 bg-black dark:border-gray-800'>
+        <div className='mtv-scr-grid'>
+          {/* 画面舞台：高度与 object-fit 都在 .mtv-scr-stage / .mtv-scr-video 里 */}
+          <div className='mtv-scr-stage'>
             {isOwner ? (
               <video
                 ref={localVideoRef}
                 autoPlay
                 muted
                 playsInline
-                className='h-full w-full bg-black object-contain'
+                className='mtv-scr-video'
               />
             ) : (
               <video
@@ -208,18 +208,18 @@ export default function WatchRoomScreenPage() {
                 autoPlay
                 playsInline
                 controls
-                className='h-full w-full bg-black object-contain'
+                className='mtv-scr-video'
               />
             )}
 
             {!isSharing && (
-              <div className='absolute px-6 text-center text-white'>
-                <MonitorPlay className='mx-auto mb-3 h-12 w-12 text-white/70' />
-                <p className='text-lg font-medium'>
+              <div className='mtv-scr-overlay'>
+                <MonitorPlay className='mtv-scr-overlay-ic' />
+                <p className='mtv-scr-overlay-t'>
                   {isOwner ? '点击开始共享，向房员推送浏览器画面' : '等待房主开始共享屏幕'}
                 </p>
                 {isOwner && (
-                  <p className='mt-2 text-sm text-white/70'>
+                  <p className='mtv-scr-overlay-s'>
                     本页不要关闭；已尝试为你新开一个主页标签页方便继续浏览。
                   </p>
                 )}
@@ -227,37 +227,31 @@ export default function WatchRoomScreenPage() {
             )}
           </div>
 
-          <div className='space-y-4'>
-            <div className='rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900'>
-              <h2 className='mb-3 font-semibold'>共享状态</h2>
-              <div className='space-y-2 text-sm text-gray-600 dark:text-gray-400'>
+          <div className='mtv-scr-side'>
+            <div className='mtv-scr-card'>
+              <h2 className='mtv-scr-h2'>共享状态</h2>
+              <div className='mtv-scr-kv'>
                 <p>类型：屏幕共享</p>
                 <p>状态：{isSharing ? '共享中' : '未开始'}</p>
                 <p>成员：{members.length} 人</p>
               </div>
 
               {isOwner && (
-                <div className='mt-2 text-sm text-gray-600 dark:text-gray-400'>
-                  实际采集：{captureSettingsText}
+                <div className='mtv-scr-kv mt-2'>
+                  <p>实际采集：{captureSettingsText}</p>
                 </div>
               )}
 
-              {error && (
-                <div className='mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300'>
-                  {error}
-                </div>
-              )}
+              {error && <div className='mtv-scr-alert'>{error}</div>}
 
               {isOwner && (
                 <div className='mt-4'>
-                  <label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-                    共享画质
-                  </label>
+                  <label className='mtv-scr-label'>共享画质</label>
                   <select
                     value={qualityPreset}
                     onChange={(event) => setQualityPreset(event.target.value as ScreenShareQualityPreset)}
                     disabled={isStarting || isSharing}
-                    className='w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 disabled:cursor-not-allowed disabled:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:disabled:bg-gray-900'
+                    className='mtv-scr-select'
                   >
                     {screenShareQualityOptions.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -265,61 +259,56 @@ export default function WatchRoomScreenPage() {
                       </option>
                     ))}
                   </select>
-                  <p className='mt-2 text-xs text-gray-500 dark:text-gray-400'>
+                  <p className='mtv-scr-hint'>
                     画质越高越清晰，但更依赖网络和设备性能。共享开始后不可切换。
                   </p>
                 </div>
               )}
 
-              <div className='mt-4 flex gap-3'>
+              <div className='mtv-scr-vrow'>
                 {isOwner ? (
                   <>
                     <button
                       onClick={() => startSharing()}
                       disabled={isStarting || isSharing}
-                      className='flex-1 rounded-lg bg-blue-500 px-4 py-2 text-white disabled:bg-gray-400'
+                      className='mtv-scr-btn is-primary is-block'
                     >
                       {isStarting ? '启动中...' : isSharing ? '共享中' : '开始共享'}
                     </button>
                     <button
                       onClick={() => stopSharing(true)}
                       disabled={!isSharing}
-                      className='rounded-lg bg-red-500 px-4 py-2 text-white disabled:bg-gray-400'
+                      className='mtv-scr-btn is-danger'
                     >
                       停止
                     </button>
                   </>
                 ) : (
-                  <div className='rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'>
+                  <div className='mtv-scr-note'>
                     房员无需操作，房主开始共享后会自动显示画面。
                   </div>
                 )}
               </div>
             </div>
 
-            <div className='rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900'>
-              <h2 className='mb-3 flex items-center gap-2 font-semibold'>
-                <Users className='h-4 w-4' />
+            <div className='mtv-scr-card'>
+              <h2 className='mtv-scr-h2'>
+                <Users className='mtv-scr-h2-ic' />
                 房间成员
               </h2>
-              <div className='space-y-2'>
+              <div className='mtv-scr-members'>
                 {members.map((member) => (
-                  <div
-                    key={member.id}
-                    className='flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-800/70'
-                  >
-                    <span className='text-sm'>{member.name}</span>
+                  <div key={member.id} className='mtv-scr-member'>
+                    <span>{member.name}</span>
                     {member.isOwner && (
-                      <span className='rounded bg-yellow-100 px-2 py-1 text-xs text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300'>
-                        房主
-                      </span>
+                      <span className='mtv-scr-owner'>房主</span>
                     )}
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className='rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-200'>
+            <div className='mtv-scr-note'>
               建议使用桌面版 Chrome / Edge，并优先共享标签页。
             </div>
           </div>

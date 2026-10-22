@@ -79,6 +79,9 @@ interface UserMenuProps {
   className?: string;
 }
 
+/** 生态应用入口暂时下线：面板代码和状态都留着，需要时把这个开关打开即可。 */
+const ECO_APPS_ENTRY_VISIBLE = false;
+
 export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
   const router = useRouter();
   const { updateStatus, isChecking } = useVersionCheck();
@@ -1167,13 +1170,18 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
       throw new Error('当前浏览器不支持 Service Worker');
     }
 
-    // 开启系统通知时明确使用带 push 事件处理器的 Service Worker。
-    // 如果浏览器里已有旧 /sw.js 注册，重新注册同一 scope 的 /push-sw.js 会更新该注册；
-    // push-sw.js 内部会 skipWaiting + clients.claim，激活后再订阅，确保 Push 到达能展示通知。
-    const registration = await navigator.serviceWorker.register('/push-sw.js', {
-      scope: '/',
-      updateViaCache: 'none',
-    });
+    // 复用 scope `/` 上已有的注册。生产环境里 next-pwa 注册的 /sw.js 就占着这个
+    // scope，而 sw.js 启动时会 importScripts('/push-sw.js')，push 处理器和
+    // IndexedDB 视频缓存路由都已经加载进去了。
+    // 以前这里直接 register('/push-sw.js', { scope: '/' })：同一个 scope 只能有一个
+    // SW 生效，后注册的会把 Workbox 那颗顶掉 —— 用户一开通知，离线缓存就整体失效。
+    const existing = await navigator.serviceWorker.getRegistration('/');
+    const registration =
+      existing ??
+      (await navigator.serviceWorker.register('/push-sw.js', {
+        scope: '/',
+        updateViaCache: 'none',
+      }));
 
     return waitForServiceWorkerActivation(registration);
   };
@@ -3139,18 +3147,20 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
           <span>电视访问</span>
         </button>
 
-        {/* 生态应用按钮 */}
-        <button
-          type='button'
-          onClick={() => {
-            setIsOpen(false);
-            setIsEcoAppsOpen(true);
-          }}
-          className='mtv-umenu-item'
-        >
-          <Package />
-          <span>生态应用</span>
-        </button>
+        {/* 生态应用入口暂时隐藏，见 ECO_APPS_ENTRY_VISIBLE */}
+        {ECO_APPS_ENTRY_VISIBLE && (
+          <button
+            type='button'
+            onClick={() => {
+              setIsOpen(false);
+              setIsEcoAppsOpen(true);
+            }}
+            className='mtv-umenu-item'
+          >
+            <Package />
+            <span>生态应用</span>
+          </button>
+        )}
 
         <div className='mtv-umenu-div' />
 
@@ -3215,7 +3225,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
       />
 
       {/* 设置面板 */}
-      <div className='fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-xl max-h-[90vh] bg-white dark:bg-gray-900 rounded-xl shadow-xl z-[1001] flex flex-col'>
+      <div className='fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-xl max-h-[90vh] bg-ui-surface rounded-xl shadow-xl z-[1001] flex flex-col'>
         {/* 内容容器 - 独立的滚动区域 */}
         <div
           className='flex-1 px-4 py-6 md:p-6 overflow-y-auto'
@@ -3228,7 +3238,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
           {/* 标题栏 */}
           <div className='flex items-center justify-between mb-6'>
             <div className='flex items-center gap-3'>
-              <h3 className='text-xl font-bold text-gray-800 dark:text-gray-200'>
+              <h3 className='text-xl font-bold text-ui-ink'>
                 本地设置
               </h3>
               <button
@@ -3257,7 +3267,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                     )}
                   </button>
                   {isCloudBackupDropdownOpen && (
-                    <div className='absolute z-50 right-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden min-w-[150px]'>
+                    <div className='absolute z-50 right-0 top-full mt-1 bg-ui-surface border border-ui-hair-strong rounded-lg shadow-lg overflow-hidden min-w-[150px]'>
                       <button
                         onClick={() => {
                           setIsCloudBackupDropdownOpen(false);
@@ -3285,7 +3295,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
             </div>
             <button
               onClick={handleCloseSettings}
-              className='w-8 h-8 p-1 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors'
+              className='w-8 h-8 p-1 rounded-full flex items-center justify-center text-ui-ink-3 hover:bg-ui-surface-hover transition-colors'
               aria-label='Close'
             >
               <X className='w-full h-full' />
@@ -3295,21 +3305,21 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
           {/* 设置项 */}
           <div className='space-y-3 md:space-y-4'>
             {/* 豆瓣设置 */}
-            <div className='border border-gray-200 dark:border-gray-700 rounded-lg overflow-visible'>
+            <div className='border border-ui-hair rounded-lg overflow-visible'>
               <button
                 onClick={() => setIsDoubanSectionOpen(!isDoubanSectionOpen)}
-                className='w-full px-3 py-2.5 md:px-4 md:py-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors flex items-center justify-between'
+                className='w-full px-3 py-2.5 md:px-4 md:py-3 bg-ui-surface-2 hover:bg-ui-surface-hover transition-colors flex items-center justify-between'
               >
                 <div className='flex items-center gap-2'>
-                  <Globe className='w-5 h-5 text-gray-600 dark:text-gray-400' />
-                  <h3 className='text-base font-semibold text-gray-800 dark:text-gray-200'>
+                  <Globe className='w-5 h-5 text-ui-ink-2' />
+                  <h3 className='text-base font-semibold text-ui-ink'>
                     数据源设置
                   </h3>
                 </div>
                 {isDoubanSectionOpen ? (
-                  <ChevronUp className='w-5 h-5 text-gray-600 dark:text-gray-400' />
+                  <ChevronUp className='w-5 h-5 text-ui-ink-2' />
                 ) : (
-                  <ChevronDown className='w-5 h-5 text-gray-600 dark:text-gray-400' />
+                  <ChevronDown className='w-5 h-5 text-ui-ink-2' />
                 )}
               </button>
               {isDoubanSectionOpen && (
@@ -3317,10 +3327,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   {/* 豆瓣数据源选择 */}
                   <div className='space-y-3'>
                     <div>
-                      <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                      <h4 className='text-sm font-medium text-ui-ink'>
                         豆瓣数据代理
                       </h4>
-                      <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                      <p className='text-xs text-ui-ink-3 mt-1'>
                         选择获取豆瓣数据的方式
                       </p>
                     </div>
@@ -3331,7 +3341,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         onClick={() =>
                           setIsDoubanDropdownOpen(!isDoubanDropdownOpen)
                         }
-                        className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
+                        className='w-full px-3 py-2.5 pr-10 border border-ui-hair-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-ui-surface text-ui-ink shadow-sm hover:border-ui-hair-strong text-left'
                       >
                         {
                           doubanDataSourceOptions.find(
@@ -3343,7 +3353,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                       {/* 下拉箭头 */}
                       <div className='absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none'>
                         <ChevronDown
-                          className={`w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform duration-200 ${
+                          className={`w-4 h-4 text-ui-ink-3 text-ui-ink-3 transition-transform duration-200 ${
                             isDoubanDropdownOpen ? 'rotate-180' : ''
                           }`}
                         />
@@ -3351,7 +3361,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
 
                       {/* 下拉选项列表 */}
                       {isDoubanDropdownOpen && (
-                        <div className='absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-auto'>
+                        <div className='absolute z-50 w-full mt-1 bg-ui-surface border border-ui-hair-strong rounded-lg shadow-lg max-h-60 overflow-auto'>
                           {doubanDataSourceOptions.map((option) => (
                             <button
                               key={option.value}
@@ -3360,10 +3370,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                                 handleDoubanDataSourceChange(option.value);
                                 setIsDoubanDropdownOpen(false);
                               }}
-                              className={`w-full px-3 py-2.5 text-left text-sm transition-colors duration-150 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                              className={`w-full px-3 py-2.5 text-left text-sm transition-colors duration-150 flex items-center justify-between hover:bg-ui-surface-hover hover:bg-ui-surface-hover ${
                                 doubanDataSource === option.value
                                   ? 'bg-ui-accent-soft text-ui-accent'
-                                  : 'text-gray-900 dark:text-gray-100'
+                                  : 'text-ui-ink text-ui-ink'
                               }`}
                             >
                               <span className='truncate'>{option.label}</span>
@@ -3387,7 +3397,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                               '_blank'
                             )
                           }
-                          className='flex items-center justify-center gap-1.5 w-full px-3 text-xs text-gray-500 dark:text-gray-400 cursor-pointer'
+                          className='flex items-center justify-center gap-1.5 w-full px-3 text-xs text-ui-ink-3 cursor-pointer'
                         >
                           <span className='font-medium'>
                             {getThanksInfo(doubanDataSource)!.text}
@@ -3402,16 +3412,16 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   {doubanDataSource === 'custom' && (
                     <div className='space-y-3'>
                       <div>
-                        <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                        <h4 className='text-sm font-medium text-ui-ink'>
                           豆瓣代理地址
                         </h4>
-                        <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                        <p className='text-xs text-ui-ink-3 mt-1'>
                           自定义代理服务器地址
                         </p>
                       </div>
                       <input
                         type='text'
-                        className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
+                        className='w-full px-3 py-2.5 border border-ui-hair-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-ui-surface text-ui-ink placeholder-ui-ink-3 shadow-sm hover:border-ui-hair-strong'
                         placeholder='例如: https://proxy.example.com/fetch?url='
                         value={doubanProxyUrl}
                         onChange={(e) =>
@@ -3428,10 +3438,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
 
                   <div className='space-y-3'>
                     <div>
-                      <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                      <h4 className='text-sm font-medium text-ui-ink'>
                         豆瓣数据备用渠道
                       </h4>
-                      <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                      <p className='text-xs text-ui-ink-3 mt-1'>
                         主渠道失败后自动切换，默认直连
                       </p>
                     </div>
@@ -3446,7 +3456,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             !isDoubanBackupDropdownOpen
                           )
                         }
-                        className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
+                        className='w-full px-3 py-2.5 pr-10 border border-ui-hair-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-ui-surface text-ui-ink shadow-sm hover:border-ui-hair-strong text-left'
                       >
                         {
                           doubanDataSourceOptions.find(
@@ -3456,13 +3466,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                       </button>
                       <div className='absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none'>
                         <ChevronDown
-                          className={`w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform duration-200 ${
+                          className={`w-4 h-4 text-ui-ink-3 text-ui-ink-3 transition-transform duration-200 ${
                             isDoubanBackupDropdownOpen ? 'rotate-180' : ''
                           }`}
                         />
                       </div>
                       {isDoubanBackupDropdownOpen && (
-                        <div className='absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-auto'>
+                        <div className='absolute z-50 w-full mt-1 bg-ui-surface border border-ui-hair-strong rounded-lg shadow-lg max-h-60 overflow-auto'>
                           {doubanDataSourceOptions.map((option) => (
                             <button
                               key={option.value}
@@ -3473,10 +3483,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                                 );
                                 setIsDoubanBackupDropdownOpen(false);
                               }}
-                              className={`w-full px-3 py-2.5 text-left text-sm transition-colors duration-150 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                              className={`w-full px-3 py-2.5 text-left text-sm transition-colors duration-150 flex items-center justify-between hover:bg-ui-surface-hover hover:bg-ui-surface-hover ${
                                 doubanDataSourceBackup === option.value
                                   ? 'bg-ui-accent-soft text-ui-accent'
-                                  : 'text-gray-900 dark:text-gray-100'
+                                  : 'text-ui-ink text-ui-ink'
                               }`}
                             >
                               <span className='truncate'>{option.label}</span>
@@ -3493,16 +3503,16 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   {doubanDataSourceBackup === 'custom' && (
                     <div className='space-y-3'>
                       <div>
-                        <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                        <h4 className='text-sm font-medium text-ui-ink'>
                           豆瓣备用代理地址
                         </h4>
-                        <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                        <p className='text-xs text-ui-ink-3 mt-1'>
                           备用渠道为自定义代理时生效
                         </p>
                       </div>
                       <input
                         type='text'
-                        className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
+                        className='w-full px-3 py-2.5 border border-ui-hair-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-ui-surface text-ui-ink placeholder-ui-ink-3 shadow-sm hover:border-ui-hair-strong'
                         placeholder='例如: https://proxy.example.com/fetch?url='
                         value={doubanProxyUrlBackup}
                         onChange={(e) =>
@@ -3518,18 +3528,18 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   )}
 
                   {/* 分割线 */}
-                  <div className='border-t border-gray-200 dark:border-gray-700'></div>
+                  <div className='border-t border-ui-hair'></div>
 
                   {/* 分割线 */}
-                  <div className='border-t border-gray-200 dark:border-gray-700'></div>
+                  <div className='border-t border-ui-hair'></div>
 
                   {/* 豆瓣图片代理设置 */}
                   <div className='space-y-3'>
                     <div>
-                      <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                      <h4 className='text-sm font-medium text-ui-ink'>
                         豆瓣图片代理
                       </h4>
-                      <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                      <p className='text-xs text-ui-ink-3 mt-1'>
                         选择获取豆瓣图片的方式
                       </p>
                     </div>
@@ -3545,7 +3555,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             !isDoubanImageProxyDropdownOpen
                           )
                         }
-                        className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
+                        className='w-full px-3 py-2.5 pr-10 border border-ui-hair-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-ui-surface text-ui-ink shadow-sm hover:border-ui-hair-strong text-left'
                       >
                         {
                           doubanImageProxyTypeOptions.find(
@@ -3557,7 +3567,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                       {/* 下拉箭头 */}
                       <div className='absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none'>
                         <ChevronDown
-                          className={`w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform duration-200 ${
+                          className={`w-4 h-4 text-ui-ink-3 text-ui-ink-3 transition-transform duration-200 ${
                             isDoubanDropdownOpen ? 'rotate-180' : ''
                           }`}
                         />
@@ -3565,7 +3575,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
 
                       {/* 下拉选项列表 */}
                       {isDoubanImageProxyDropdownOpen && (
-                        <div className='absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-auto'>
+                        <div className='absolute z-50 w-full mt-1 bg-ui-surface border border-ui-hair-strong rounded-lg shadow-lg max-h-60 overflow-auto'>
                           {doubanImageProxyTypeOptions.map((option) => (
                             <button
                               key={option.value}
@@ -3574,10 +3584,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                                 handleDoubanImageProxyTypeChange(option.value);
                                 setIsDoubanImageProxyDropdownOpen(false);
                               }}
-                              className={`w-full px-3 py-2.5 text-left text-sm transition-colors duration-150 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                              className={`w-full px-3 py-2.5 text-left text-sm transition-colors duration-150 flex items-center justify-between hover:bg-ui-surface-hover hover:bg-ui-surface-hover ${
                                 doubanImageProxyType === option.value
                                   ? 'bg-ui-accent-soft text-ui-accent'
-                                  : 'text-gray-900 dark:text-gray-100'
+                                  : 'text-ui-ink text-ui-ink'
                               }`}
                             >
                               <span className='truncate'>{option.label}</span>
@@ -3601,7 +3611,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                               '_blank'
                             )
                           }
-                          className='flex items-center justify-center gap-1.5 w-full px-3 text-xs text-gray-500 dark:text-gray-400 cursor-pointer'
+                          className='flex items-center justify-center gap-1.5 w-full px-3 text-xs text-ui-ink-3 cursor-pointer'
                         >
                           <span className='font-medium'>
                             {getThanksInfo(doubanImageProxyType)!.text}
@@ -3616,16 +3626,16 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   {doubanImageProxyType === 'custom' && (
                     <div className='space-y-3'>
                       <div>
-                        <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                        <h4 className='text-sm font-medium text-ui-ink'>
                           豆瓣图片代理地址
                         </h4>
-                        <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                        <p className='text-xs text-ui-ink-3 mt-1'>
                           自定义图片代理服务器地址
                         </p>
                       </div>
                       <input
                         type='text'
-                        className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
+                        className='w-full px-3 py-2.5 border border-ui-hair-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-ui-surface text-ui-ink placeholder-ui-ink-3 shadow-sm hover:border-ui-hair-strong'
                         placeholder='例如: https://proxy.example.com/fetch?url='
                         value={doubanImageProxyUrl}
                         onChange={(e) =>
@@ -3642,10 +3652,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
 
                   <div className='space-y-3'>
                     <div>
-                      <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                      <h4 className='text-sm font-medium text-ui-ink'>
                         豆瓣图片备用渠道
                       </h4>
-                      <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                      <p className='text-xs text-ui-ink-3 mt-1'>
                         主图片渠道失败后自动切换，默认服务器代理
                       </p>
                     </div>
@@ -3660,7 +3670,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             !isDoubanImageProxyBackupDropdownOpen
                           )
                         }
-                        className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
+                        className='w-full px-3 py-2.5 pr-10 border border-ui-hair-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-ui-surface text-ui-ink shadow-sm hover:border-ui-hair-strong text-left'
                       >
                         {
                           doubanImageProxyTypeOptions.find(
@@ -3671,7 +3681,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                       </button>
                       <div className='absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none'>
                         <ChevronDown
-                          className={`w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform duration-200 ${
+                          className={`w-4 h-4 text-ui-ink-3 text-ui-ink-3 transition-transform duration-200 ${
                             isDoubanImageProxyBackupDropdownOpen
                               ? 'rotate-180'
                               : ''
@@ -3679,7 +3689,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         />
                       </div>
                       {isDoubanImageProxyBackupDropdownOpen && (
-                        <div className='absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-auto'>
+                        <div className='absolute z-50 w-full mt-1 bg-ui-surface border border-ui-hair-strong rounded-lg shadow-lg max-h-60 overflow-auto'>
                           {doubanImageProxyTypeOptions.map((option) => (
                             <button
                               key={option.value}
@@ -3690,10 +3700,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                                 );
                                 setIsDoubanImageProxyBackupDropdownOpen(false);
                               }}
-                              className={`w-full px-3 py-2.5 text-left text-sm transition-colors duration-150 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                              className={`w-full px-3 py-2.5 text-left text-sm transition-colors duration-150 flex items-center justify-between hover:bg-ui-surface-hover hover:bg-ui-surface-hover ${
                                 doubanImageProxyTypeBackup === option.value
                                   ? 'bg-ui-accent-soft text-ui-accent'
-                                  : 'text-gray-900 dark:text-gray-100'
+                                  : 'text-ui-ink text-ui-ink'
                               }`}
                             >
                               <span className='truncate'>{option.label}</span>
@@ -3710,16 +3720,16 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   {doubanImageProxyTypeBackup === 'custom' && (
                     <div className='space-y-3'>
                       <div>
-                        <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                        <h4 className='text-sm font-medium text-ui-ink'>
                           豆瓣图片备用代理地址
                         </h4>
-                        <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                        <p className='text-xs text-ui-ink-3 mt-1'>
                           备用图片渠道为自定义代理时生效
                         </p>
                       </div>
                       <input
                         type='text'
-                        className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
+                        className='w-full px-3 py-2.5 border border-ui-hair-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-ui-surface text-ui-ink placeholder-ui-ink-3 shadow-sm hover:border-ui-hair-strong'
                         placeholder='例如: https://proxy.example.com/fetch?url='
                         value={doubanImageProxyUrlBackup}
                         onChange={(e) =>
@@ -3735,21 +3745,21 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   )}
 
                   {/* 分割线 */}
-                  <div className='border-t border-gray-200 dark:border-gray-700'></div>
+                  <div className='border-t border-ui-hair'></div>
 
                   {/* TMDB 图片网络请求地址设置 */}
                   <div className='space-y-3'>
                     <div>
-                      <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                      <h4 className='text-sm font-medium text-ui-ink'>
                         TMDB 图片网络请求地址
                       </h4>
-                      <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                      <p className='text-xs text-ui-ink-3 mt-1'>
                         TMDB 图片的 Base URL（默认: https://image.tmdb.org）
                       </p>
                     </div>
                     <input
                       type='text'
-                      className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
+                      className='w-full px-3 py-2.5 border border-ui-hair-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-ui-surface text-ui-ink placeholder-ui-ink-3 shadow-sm hover:border-ui-hair-strong'
                       placeholder='例如: https://image.tmdb.org'
                       value={tmdbImageBaseUrl}
                       onChange={(e) =>
@@ -3759,15 +3769,15 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   </div>
 
                   {/* 分割线 */}
-                  <div className='border-t border-gray-200 dark:border-gray-700'></div>
+                  <div className='border-t border-ui-hair'></div>
 
                   {/* 动漫数据源设置 */}
                   <div className='space-y-4'>
                     <div>
-                      <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                      <h4 className='text-sm font-medium text-ui-ink'>
                         动漫数据源
                       </h4>
-                      <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                      <p className='text-xs text-ui-ink-3 mt-1'>
                         用于 Bangumi
                         新番放送和番剧详情；默认主源直连，备用源服务器代理。
                       </p>
@@ -3775,7 +3785,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
 
                     <div className='grid gap-3 md:grid-cols-2'>
                       <div className='space-y-2'>
-                        <label className='text-xs font-medium text-gray-600 dark:text-gray-400'>
+                        <label className='text-xs font-medium text-ui-ink-2'>
                           主数据源
                         </label>
                         <div
@@ -3787,7 +3797,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             onClick={() =>
                               setIsAnimeDropdownOpen(!isAnimeDropdownOpen)
                             }
-                            className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
+                            className='w-full px-3 py-2.5 pr-10 border border-ui-hair-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-ui-surface text-ui-ink shadow-sm hover:border-ui-hair-strong text-left'
                           >
                             {
                               animeDataSourceOptions.find(
@@ -3797,13 +3807,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                           </button>
                           <div className='absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none'>
                             <ChevronDown
-                              className={`w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform duration-200 ${
+                              className={`w-4 h-4 text-ui-ink-3 text-ui-ink-3 transition-transform duration-200 ${
                                 isAnimeDropdownOpen ? 'rotate-180' : ''
                               }`}
                             />
                           </div>
                           {isAnimeDropdownOpen && (
-                            <div className='absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-auto'>
+                            <div className='absolute z-50 w-full mt-1 bg-ui-surface border border-ui-hair-strong rounded-lg shadow-lg max-h-60 overflow-auto'>
                               {animeDataSourceOptions.map((option) => (
                                 <button
                                   key={option.value}
@@ -3812,10 +3822,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                                     handleAnimeDataSourceChange(option.value);
                                     setIsAnimeDropdownOpen(false);
                                   }}
-                                  className={`w-full px-3 py-2.5 text-left text-sm transition-colors duration-150 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                                  className={`w-full px-3 py-2.5 text-left text-sm transition-colors duration-150 flex items-center justify-between hover:bg-ui-surface-hover hover:bg-ui-surface-hover ${
                                     animeDataSource === option.value
                                       ? 'bg-ui-accent-soft text-ui-accent'
-                                      : 'text-gray-900 dark:text-gray-100'
+                                      : 'text-ui-ink text-ui-ink'
                                   }`}
                                 >
                                   <span className='truncate'>
@@ -3832,7 +3842,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                       </div>
 
                       <div className='space-y-2'>
-                        <label className='text-xs font-medium text-gray-600 dark:text-gray-400'>
+                        <label className='text-xs font-medium text-ui-ink-2'>
                           备用数据源
                         </label>
                         <div
@@ -3846,7 +3856,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                                 !isAnimeBackupDropdownOpen
                               )
                             }
-                            className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
+                            className='w-full px-3 py-2.5 pr-10 border border-ui-hair-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-ui-surface text-ui-ink shadow-sm hover:border-ui-hair-strong text-left'
                           >
                             {
                               animeDataSourceOptions.find(
@@ -3857,13 +3867,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                           </button>
                           <div className='absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none'>
                             <ChevronDown
-                              className={`w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform duration-200 ${
+                              className={`w-4 h-4 text-ui-ink-3 text-ui-ink-3 transition-transform duration-200 ${
                                 isAnimeBackupDropdownOpen ? 'rotate-180' : ''
                               }`}
                             />
                           </div>
                           {isAnimeBackupDropdownOpen && (
-                            <div className='absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-auto'>
+                            <div className='absolute z-50 w-full mt-1 bg-ui-surface border border-ui-hair-strong rounded-lg shadow-lg max-h-60 overflow-auto'>
                               {animeDataSourceOptions.map((option) => (
                                 <button
                                   key={option.value}
@@ -3874,10 +3884,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                                     );
                                     setIsAnimeBackupDropdownOpen(false);
                                   }}
-                                  className={`w-full px-3 py-2.5 text-left text-sm transition-colors duration-150 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                                  className={`w-full px-3 py-2.5 text-left text-sm transition-colors duration-150 flex items-center justify-between hover:bg-ui-surface-hover hover:bg-ui-surface-hover ${
                                     animeDataSourceBackup === option.value
                                       ? 'bg-ui-accent-soft text-ui-accent'
-                                      : 'text-gray-900 dark:text-gray-100'
+                                      : 'text-ui-ink text-ui-ink'
                                   }`}
                                 >
                                   <span className='truncate'>
@@ -3897,12 +3907,12 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                     {(animeDataSource === 'custom-baseurl' ||
                       animeDataSourceBackup === 'custom-baseurl') && (
                       <div className='space-y-2'>
-                        <label className='text-xs font-medium text-gray-600 dark:text-gray-400'>
+                        <label className='text-xs font-medium text-ui-ink-2'>
                           动漫自定义 Base URL
                         </label>
                         <input
                           type='text'
-                          className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
+                          className='w-full px-3 py-2.5 border border-ui-hair-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-ui-surface text-ui-ink placeholder-ui-ink-3 shadow-sm hover:border-ui-hair-strong'
                           placeholder='例如: https://api.bgm.tv 或 https://bangumi-proxy.example.com'
                           value={animeCustomBaseUrl}
                           onChange={(e) =>
@@ -3918,19 +3928,19 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                       </div>
                     )}
                     <div className='space-y-2'>
-                      <label className='text-xs font-medium text-gray-600 dark:text-gray-400'>
+                      <label className='text-xs font-medium text-ui-ink-2'>
                         动漫图片 Base URL
                       </label>
                       <input
                         type='text'
-                        className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
+                        className='w-full px-3 py-2.5 border border-ui-hair-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-ui-accent transition-all duration-200 bg-ui-surface text-ui-ink placeholder-ui-ink-3 shadow-sm hover:border-ui-hair-strong'
                         placeholder='例如: https://proxy.example.com'
                         value={animeImageBaseUrl}
                         onChange={(e) =>
                           handleAnimeImageBaseUrlChange(e.target.value)
                         }
                       />
-                      <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                      <p className='text-xs text-ui-ink-3 mt-1'>
                         用于替换 Bangumi
                         图片域名。只需填写基础部分，不需要填写完整图片路径。
                       </p>
@@ -3939,10 +3949,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                     <details className='group rounded-lg border border-ui-accent bg-ui-accent-soft p-3'>
                       <summary className='flex cursor-pointer list-none items-center justify-between gap-2'>
                         <div className='min-w-0'>
-                          <label className='text-xs font-medium text-gray-700 dark:text-gray-300'>
+                          <label className='text-xs font-medium text-ui-ink'>
                             Bangumi Cloudflare Workers 代理脚本
                           </label>
-                          <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
+                          <p className='mt-1 text-xs text-ui-ink-3'>
                             复制后粘贴到 Cloudflare Workers，部署地址可填入上方
                             Base URL。
                           </p>
@@ -3964,7 +3974,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                           <ChevronDown className='h-4 w-4 text-ui-accent transition-transform group-open:rotate-180' />
                         </div>
                       </summary>
-                      <pre className='mt-3 max-h-40 overflow-auto rounded-lg border border-gray-200 bg-white p-3 text-xs text-gray-700 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-300'>
+                      <pre className='mt-3 max-h-40 overflow-auto rounded-lg border border-ui-hair bg-ui-surface p-3 text-xs text-ui-ink'>
                         <code>
                           {bangumiProxyScript || '正在加载 /scripts/bangumi-proxy.worker.js ...'}
                         </code>
@@ -3975,21 +3985,21 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
               )}
             </div>
 
-            <div className='border border-gray-200 dark:border-gray-700 rounded-lg overflow-visible'>
+            <div className='border border-ui-hair rounded-lg overflow-visible'>
               <button
                 onClick={() => setIsUsageSectionOpen(!isUsageSectionOpen)}
-                className='w-full px-3 py-2.5 md:px-4 md:py-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors flex items-center justify-between'
+                className='w-full px-3 py-2.5 md:px-4 md:py-3 bg-ui-surface-2 hover:bg-ui-surface-hover transition-colors flex items-center justify-between'
               >
                 <div className='flex items-center gap-2'>
-                  <Sliders className='w-5 h-5 text-gray-600 dark:text-gray-400' />
-                  <h3 className='text-base font-semibold text-gray-800 dark:text-gray-200'>
+                  <Sliders className='w-5 h-5 text-ui-ink-2' />
+                  <h3 className='text-base font-semibold text-ui-ink'>
                     通用设置
                   </h3>
                 </div>
                 {isUsageSectionOpen ? (
-                  <ChevronUp className='w-5 h-5 text-gray-600 dark:text-gray-400' />
+                  <ChevronUp className='w-5 h-5 text-ui-ink-2' />
                 ) : (
-                  <ChevronDown className='w-5 h-5 text-gray-600 dark:text-gray-400' />
+                  <ChevronDown className='w-5 h-5 text-ui-ink-2' />
                 )}
               </button>
               {isUsageSectionOpen && (
@@ -3997,10 +4007,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   {/* 默认聚合搜索结果 */}
                   <div className='flex items-center justify-between'>
                     <div>
-                      <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                      <h4 className='text-sm font-medium text-ui-ink'>
                         默认聚合搜索结果
                       </h4>
-                      <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                      <p className='text-xs text-ui-ink-3 mt-1'>
                         搜索时默认按标题和年份聚合显示结果
                       </p>
                     </div>
@@ -4014,8 +4024,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             handleAggregateToggle(e.target.checked)
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
-                        <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
+                        <div className='w-11 h-6 bg-ui-surface-3 rounded-full peer-checked:bg-ui-accent transition-colors'></div>
+                        <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-ui-surface rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
                   </div>
@@ -4023,10 +4033,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   {/* 优选和测速 */}
                   <div className='flex items-center justify-between'>
                     <div>
-                      <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                      <h4 className='text-sm font-medium text-ui-ink'>
                         优选和测速
                       </h4>
-                      <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                      <p className='text-xs text-ui-ink-3 mt-1'>
                         如出现播放器劫持问题可关闭
                       </p>
                     </div>
@@ -4040,8 +4050,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             handleOptimizationToggle(e.target.checked)
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
-                        <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
+                        <div className='w-11 h-6 bg-ui-surface-3 rounded-full peer-checked:bg-ui-accent transition-colors'></div>
+                        <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-ui-surface rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
                   </div>
@@ -4051,29 +4061,29 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                     <div className='ml-4 mt-2 space-y-2'>
                       <div className='space-y-2'>
                         <div className='flex items-center justify-between gap-3'>
-                          <span className='flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400'>
+                          <span className='flex items-center gap-1 text-xs text-ui-ink-2'>
                             优选策略
                             <button
                               type='button'
-                              className='group relative inline-flex h-4 w-4 items-center justify-center rounded-full text-gray-400 transition-colors hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-ui-accent dark:text-gray-500 dark:hover:text-gray-300'
+                              className='group relative inline-flex h-4 w-4 items-center justify-center rounded-full text-ui-ink-3 transition-colors hover:text-ui-ink focus:outline-none focus:ring-2 focus:ring-ui-accent'
                               aria-label='优选策略说明'
                             >
                               <CircleHelp className='h-3.5 w-3.5' />
-                              <span className='pointer-events-none absolute left-1/2 top-full z-50 mt-2 hidden w-56 -translate-x-1/2 rounded-lg bg-gray-900 px-3 py-2 text-left text-xs leading-relaxed text-white shadow-lg group-hover:block group-focus:block dark:bg-gray-700'>
+                              <span className='pointer-events-none absolute left-1/2 top-full z-50 mt-2 hidden w-56 -translate-x-1/2 rounded-lg bg-gray-900 px-3 py-2 text-left text-xs leading-relaxed text-white shadow-lg group-hover:block group-focus:block bg-ui-surface-3'>
                                 快速策略：快速优选高权重播放源
                                 <br />
                                 全量策略：全量优选全部源
                               </span>
                             </button>
                           </span>
-                          <div className='inline-flex rounded-lg border border-gray-200 bg-gray-100 p-1 dark:border-gray-700 dark:bg-gray-800'>
+                          <div className='inline-flex rounded-lg border border-ui-hair bg-ui-surface-3 p-1'>
                             <button
                               type='button'
                               onClick={() => handlePreferStrategyChange('fast')}
                               className={`rounded-md px-4 py-1.5 text-xs font-medium transition-all ${
                                 preferStrategy === 'fast'
-                                  ? 'bg-white text-ui-accent shadow-sm dark:bg-gray-700'
-                                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                                  ? 'bg-ui-surface text-ui-accent shadow-sm bg-ui-surface-3'
+                                  : 'text-ui-ink-3 hover:text-ui-ink text-ui-ink-3 hover:text-ui-ink'
                               }`}
                             >
                               快速优选
@@ -4083,8 +4093,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                               onClick={() => handlePreferStrategyChange('full')}
                               className={`rounded-md px-4 py-1.5 text-xs font-medium transition-all ${
                                 preferStrategy === 'full'
-                                  ? 'bg-white text-ui-accent shadow-sm dark:bg-gray-700'
-                                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                                  ? 'bg-ui-surface text-ui-accent shadow-sm bg-ui-surface-3'
+                                  : 'text-ui-ink-3 hover:text-ui-ink text-ui-ink-3 hover:text-ui-ink'
                               }`}
                             >
                               全量优选
@@ -4095,15 +4105,15 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
 
                       <div className='space-y-2'>
                         <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3'>
-                          <span className='flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400'>
+                          <span className='flex items-center gap-1 text-xs text-ui-ink-2'>
                             优选偏好
                             <button
                               type='button'
-                              className='group relative inline-flex h-4 w-4 items-center justify-center rounded-full text-gray-400 transition-colors hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-ui-accent dark:text-gray-500 dark:hover:text-gray-300'
+                              className='group relative inline-flex h-4 w-4 items-center justify-center rounded-full text-ui-ink-3 transition-colors hover:text-ui-ink focus:outline-none focus:ring-2 focus:ring-ui-accent'
                               aria-label='优选偏好说明'
                             >
                               <CircleHelp className='h-3.5 w-3.5' />
-                              <span className='pointer-events-none absolute left-1/2 top-full z-50 mt-2 hidden w-56 -translate-x-1/2 rounded-lg bg-gray-900 px-3 py-2 text-left text-xs leading-relaxed text-white shadow-lg group-hover:block group-focus:block dark:bg-gray-700'>
+                              <span className='pointer-events-none absolute left-1/2 top-full z-50 mt-2 hidden w-56 -translate-x-1/2 rounded-lg bg-gray-900 px-3 py-2 text-left text-xs leading-relaxed text-white shadow-lg group-hover:block group-focus:block bg-ui-surface-3'>
                                 综合判定：分辨率与网速均衡评分
                                 <br />
                                 分辨率优先：优选时给分辨率加权重
@@ -4112,14 +4122,14 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                               </span>
                             </button>
                           </span>
-                          <div className='flex w-full rounded-lg border border-gray-200 bg-gray-100 p-1 dark:border-gray-700 dark:bg-gray-800 sm:inline-flex sm:w-auto'>
+                          <div className='flex w-full rounded-lg border border-ui-hair bg-ui-surface-3 p-1 sm:inline-flex sm:w-auto'>
                             <button
                               type='button'
                               onClick={() => handlePreferModeChange('balanced')}
                               className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-all sm:flex-none ${
                                 preferMode === 'balanced'
-                                  ? 'bg-white text-ui-accent shadow-sm dark:bg-gray-700'
-                                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                                  ? 'bg-ui-surface text-ui-accent shadow-sm bg-ui-surface-3'
+                                  : 'text-ui-ink-3 hover:text-ui-ink text-ui-ink-3 hover:text-ui-ink'
                               }`}
                             >
                               综合判定
@@ -4131,8 +4141,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                               }
                               className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-all sm:flex-none ${
                                 preferMode === 'resolution'
-                                  ? 'bg-white text-ui-accent shadow-sm dark:bg-gray-700'
-                                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                                  ? 'bg-ui-surface text-ui-accent shadow-sm bg-ui-surface-3'
+                                  : 'text-ui-ink-3 hover:text-ui-ink text-ui-ink-3 hover:text-ui-ink'
                               }`}
                             >
                               分辨率优先
@@ -4142,8 +4152,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                               onClick={() => handlePreferModeChange('speed')}
                               className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-all sm:flex-none ${
                                 preferMode === 'speed'
-                                  ? 'bg-white text-ui-accent shadow-sm dark:bg-gray-700'
-                                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                                  ? 'bg-ui-surface text-ui-accent shadow-sm bg-ui-surface-3'
+                                  : 'text-ui-ink-3 hover:text-ui-ink text-ui-ink-3 hover:text-ui-ink'
                               }`}
                             >
                               网速优先
@@ -4153,10 +4163,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                       </div>
 
                       <div className='flex items-center justify-between'>
-                        <span className='text-xs text-gray-600 dark:text-gray-400'>
+                        <span className='text-xs text-ui-ink-2'>
                           换源面板测速超时
                         </span>
-                        <span className='text-xs font-medium text-gray-700 dark:text-gray-300'>
+                        <span className='text-xs font-medium text-ui-ink'>
                           {speedTestTimeout / 1000}秒
                         </span>
                       </div>
@@ -4180,13 +4190,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                           }}
                         />
                       </div>
-                      <div className='flex justify-between text-xs text-gray-500 dark:text-gray-400'>
+                      <div className='flex justify-between text-xs text-ui-ink-3'>
                         <button
                           onClick={() => handleSpeedTestTimeoutChange(4000)}
                           className={`px-2 py-0.5 rounded ${
                             speedTestTimeout === 4000
                               ? 'bg-ui-accent text-white'
-                              : 'hover:bg-gray-200 dark:hover:bg-gray-700'
+                              : 'hover:bg-ui-surface-hover hover:bg-ui-surface-hover'
                           }`}
                         >
                           4秒
@@ -4196,7 +4206,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                           className={`px-2 py-0.5 rounded ${
                             speedTestTimeout === 10000
                               ? 'bg-ui-accent text-white'
-                              : 'hover:bg-gray-200 dark:hover:bg-gray-700'
+                              : 'hover:bg-ui-surface-hover hover:bg-ui-surface-hover'
                           }`}
                         >
                           10秒
@@ -4206,7 +4216,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                           className={`px-2 py-0.5 rounded ${
                             speedTestTimeout === 20000
                               ? 'bg-ui-accent text-white'
-                              : 'hover:bg-gray-200 dark:hover:bg-gray-700'
+                              : 'hover:bg-ui-surface-hover hover:bg-ui-surface-hover'
                           }`}
                         >
                           20秒
@@ -4216,13 +4226,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                           className={`px-2 py-0.5 rounded ${
                             speedTestTimeout === 30000
                               ? 'bg-ui-accent text-white'
-                              : 'hover:bg-gray-200 dark:hover:bg-gray-700'
+                              : 'hover:bg-ui-surface-hover hover:bg-ui-surface-hover'
                           }`}
                         >
                           30秒
                         </button>
                       </div>
-                      <p className='text-xs text-gray-500 dark:text-gray-400 italic'>
+                      <p className='text-xs text-ui-ink-3 italic'>
                         注：此设置仅对换源面板测速生效，优选播放源时仍使用4秒超时
                       </p>
                     </div>
@@ -4231,10 +4241,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   {/* 流式搜索 */}
                   <div className='flex items-center justify-between'>
                     <div>
-                      <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                      <h4 className='text-sm font-medium text-ui-ink'>
                         流式搜索输出
                       </h4>
-                      <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                      <p className='text-xs text-ui-ink-3 mt-1'>
                         启用搜索结果实时流式输出，关闭后使用传统一次性搜索
                       </p>
                     </div>
@@ -4248,8 +4258,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             handleFluidSearchToggle(e.target.checked)
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
-                        <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
+                        <div className='w-11 h-6 bg-ui-surface-3 rounded-full peer-checked:bg-ui-accent transition-colors'></div>
+                        <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-ui-surface rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
                   </div>
@@ -4257,10 +4267,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   {/* 禁用背景图渲染 */}
                   <div className='flex items-center justify-between'>
                     <div>
-                      <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                      <h4 className='text-sm font-medium text-ui-ink'>
                         禁用背景图渲染
                       </h4>
-                      <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                      <p className='text-xs text-ui-ink-3 mt-1'>
                         关闭播放页面的TMDB背景图显示（需手动刷新页面生效）
                       </p>
                     </div>
@@ -4274,8 +4284,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             handleTmdbBackdropDisabledToggle(e.target.checked)
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
-                        <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
+                        <div className='w-11 h-6 bg-ui-surface-3 rounded-full peer-checked:bg-ui-accent transition-colors'></div>
+                        <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-ui-surface rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
                   </div>
@@ -4283,10 +4293,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   {/* 启用预告片 */}
                   <div className='flex items-center justify-between'>
                     <div>
-                      <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                      <h4 className='text-sm font-medium text-ui-ink'>
                         首页预告片
                       </h4>
-                      <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                      <p className='text-xs text-ui-ink-3 mt-1'>
                         在首页轮播图中显示视频预告片（需刷新页面生效）
                       </p>
                     </div>
@@ -4300,8 +4310,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             handleEnableTrailersToggle(e.target.checked)
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
-                        <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
+                        <div className='w-11 h-6 bg-ui-surface-3 rounded-full peer-checked:bg-ui-accent transition-colors'></div>
+                        <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-ui-surface rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
                   </div>
@@ -4309,10 +4319,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   {/* 搜索繁体转简体 */}
                   <div className='flex items-center justify-between'>
                     <div>
-                      <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                      <h4 className='text-sm font-medium text-ui-ink'>
                         搜索繁体转简体
                       </h4>
-                      <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                      <p className='text-xs text-ui-ink-3 mt-1'>
                         搜索时自动将繁体中文转换为简体中文
                       </p>
                     </div>
@@ -4328,8 +4338,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             )
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
-                        <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
+                        <div className='w-11 h-6 bg-ui-surface-3 rounded-full peer-checked:bg-ui-accent transition-colors'></div>
+                        <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-ui-surface rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
                   </div>
@@ -4337,10 +4347,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   {/* 精确搜索 */}
                   <div className='flex items-center justify-between'>
                     <div>
-                      <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                      <h4 className='text-sm font-medium text-ui-ink'>
                         精确搜索
                       </h4>
-                      <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                      <p className='text-xs text-ui-ink-3 mt-1'>
                         开启后，搜索结果将过滤掉不包含搜索词的内容
                       </p>
                     </div>
@@ -4354,8 +4364,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             handleExactSearchToggle(e.target.checked)
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
-                        <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
+                        <div className='w-11 h-6 bg-ui-surface-3 rounded-full peer-checked:bg-ui-accent transition-colors'></div>
+                        <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-ui-surface rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
                   </div>
@@ -4363,10 +4373,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   {/* 直播播放记录 */}
                   <div className='flex items-center justify-between'>
                     <div>
-                      <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                      <h4 className='text-sm font-medium text-ui-ink'>
                         保存直播的播放记录
                       </h4>
-                      <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                      <p className='text-xs text-ui-ink-3 mt-1'>
                         开启后将保存直播频道观看记录
                       </p>
                     </div>
@@ -4380,8 +4390,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             handleSaveLivePlayRecordsToggle(e.target.checked)
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
-                        <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
+                        <div className='w-11 h-6 bg-ui-surface-3 rounded-full peer-checked:bg-ui-accent transition-colors'></div>
+                        <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-ui-surface rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
                   </div>
@@ -4391,21 +4401,21 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
             </div>
 
             {/* 下载设置 */}
-            <div className='border border-gray-200 dark:border-gray-700 rounded-lg overflow-visible'>
+            <div className='border border-ui-hair rounded-lg overflow-visible'>
               <button
                 onClick={() => setIsDownloadSectionOpen(!isDownloadSectionOpen)}
-                className='w-full px-3 py-2.5 md:px-4 md:py-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors flex items-center justify-between'
+                className='w-full px-3 py-2.5 md:px-4 md:py-3 bg-ui-surface-2 hover:bg-ui-surface-hover transition-colors flex items-center justify-between'
               >
                 <div className='flex items-center gap-2'>
-                  <Download className='w-5 h-5 text-gray-600 dark:text-gray-400' />
-                  <h3 className='text-base font-semibold text-gray-800 dark:text-gray-200'>
+                  <Download className='w-5 h-5 text-ui-ink-2' />
+                  <h3 className='text-base font-semibold text-ui-ink'>
                     下载设置
                   </h3>
                 </div>
                 {isDownloadSectionOpen ? (
-                  <ChevronUp className='w-5 h-5 text-gray-600 dark:text-gray-400' />
+                  <ChevronUp className='w-5 h-5 text-ui-ink-2' />
                 ) : (
-                  <ChevronDown className='w-5 h-5 text-gray-600 dark:text-gray-400' />
+                  <ChevronDown className='w-5 h-5 text-ui-ink-2' />
                 )}
               </button>
               {isDownloadSectionOpen && (
@@ -4413,18 +4423,18 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   {/* 最大同时下载限制 */}
                   <div className='space-y-2'>
                     <div>
-                      <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                      <h4 className='text-sm font-medium text-ui-ink'>
                         最大同时下载限制
                       </h4>
-                      <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                      <p className='text-xs text-ui-ink-3 mt-1'>
                         控制播放页面下载时的同时下载数量
                       </p>
                     </div>
                     <div className='flex items-center justify-between'>
-                      <span className='text-xs text-gray-600 dark:text-gray-400'>
+                      <span className='text-xs text-ui-ink-2'>
                         同时下载数量
                       </span>
-                      <span className='text-xs font-medium text-gray-700 dark:text-gray-300'>
+                      <span className='text-xs font-medium text-ui-ink'>
                         {maxConcurrentDownloads}个
                       </span>
                     </div>
@@ -4450,13 +4460,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         }}
                       />
                     </div>
-                    <div className='flex justify-between text-xs text-gray-500 dark:text-gray-400'>
+                    <div className='flex justify-between text-xs text-ui-ink-3'>
                       <button
                         onClick={() => handleMaxConcurrentDownloadsChange(1)}
                         className={`px-2 py-0.5 rounded ${
                           maxConcurrentDownloads === 1
                             ? 'bg-ui-accent text-white'
-                            : 'hover:bg-gray-200 dark:hover:bg-gray-700'
+                            : 'hover:bg-ui-surface-hover hover:bg-ui-surface-hover'
                         }`}
                       >
                         1个
@@ -4466,7 +4476,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         className={`px-2 py-0.5 rounded ${
                           maxConcurrentDownloads === 10
                             ? 'bg-ui-accent text-white'
-                            : 'hover:bg-gray-200 dark:hover:bg-gray-700'
+                            : 'hover:bg-ui-surface-hover hover:bg-ui-surface-hover'
                         }`}
                       >
                         10个
@@ -4477,18 +4487,18 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   {/* 单任务线程数 */}
                   <div className='space-y-2'>
                     <div>
-                      <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                      <h4 className='text-sm font-medium text-ui-ink'>
                         单任务线程数
                       </h4>
-                      <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                      <p className='text-xs text-ui-ink-3 mt-1'>
                         控制每个下载任务使用的线程数量，线程越多下载越快但占用资源越多
                       </p>
                     </div>
                     <div className='flex items-center justify-between'>
-                      <span className='text-xs text-gray-600 dark:text-gray-400'>
+                      <span className='text-xs text-ui-ink-2'>
                         线程数量
                       </span>
-                      <span className='text-xs font-medium text-gray-700 dark:text-gray-300'>
+                      <span className='text-xs font-medium text-ui-ink'>
                         {downloadThreadsPerTask}个
                       </span>
                     </div>
@@ -4514,13 +4524,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         }}
                       />
                     </div>
-                    <div className='flex justify-between text-xs text-gray-500 dark:text-gray-400'>
+                    <div className='flex justify-between text-xs text-ui-ink-3'>
                       <button
                         onClick={() => handleDownloadThreadsPerTaskChange(1)}
                         className={`px-2 py-0.5 rounded ${
                           downloadThreadsPerTask === 1
                             ? 'bg-ui-accent text-white'
-                            : 'hover:bg-gray-200 dark:hover:bg-gray-700'
+                            : 'hover:bg-ui-surface-hover hover:bg-ui-surface-hover'
                         }`}
                       >
                         1个
@@ -4530,7 +4540,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         className={`px-2 py-0.5 rounded ${
                           downloadThreadsPerTask === 32
                             ? 'bg-ui-accent text-white'
-                            : 'hover:bg-gray-200 dark:hover:bg-gray-700'
+                            : 'hover:bg-ui-surface-hover hover:bg-ui-surface-hover'
                         }`}
                       >
                         32个
@@ -4541,18 +4551,18 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   {/* 分片下载超时 */}
                   <div className='space-y-2'>
                     <div>
-                      <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                      <h4 className='text-sm font-medium text-ui-ink'>
                         分片下载超时
                       </h4>
-                      <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                      <p className='text-xs text-ui-ink-3 mt-1'>
                         单个分片超过该时间仍未完成时会自动判定超时并按原分片重试
                       </p>
                     </div>
                     <div className='flex items-center justify-between'>
-                      <span className='text-xs text-gray-600 dark:text-gray-400'>
+                      <span className='text-xs text-ui-ink-2'>
                         超时时间
                       </span>
-                      <span className='text-xs font-medium text-gray-700 dark:text-gray-300'>
+                      <span className='text-xs font-medium text-ui-ink'>
                         {formatDownloadSegmentTimeout(downloadSegmentTimeout)}
                       </span>
                     </div>
@@ -4578,13 +4588,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         }}
                       />
                     </div>
-                    <div className='flex justify-between text-xs text-gray-500 dark:text-gray-400'>
+                    <div className='flex justify-between text-xs text-ui-ink-3'>
                       <button
                         onClick={() => handleDownloadSegmentTimeoutChange(30000)}
                         className={`px-2 py-0.5 rounded cursor-pointer ${
                           downloadSegmentTimeout === 30000
                             ? 'bg-ui-accent text-white'
-                            : 'hover:bg-gray-200 dark:hover:bg-gray-700'
+                            : 'hover:bg-ui-surface-hover hover:bg-ui-surface-hover'
                         }`}
                       >
                         30秒
@@ -4594,7 +4604,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         className={`px-2 py-0.5 rounded cursor-pointer ${
                           downloadSegmentTimeout === 120000
                             ? 'bg-ui-accent text-white'
-                            : 'hover:bg-gray-200 dark:hover:bg-gray-700'
+                            : 'hover:bg-ui-surface-hover hover:bg-ui-surface-hover'
                         }`}
                       >
                         2分钟
@@ -4604,7 +4614,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         className={`px-2 py-0.5 rounded cursor-pointer ${
                           downloadSegmentTimeout === 300000
                             ? 'bg-ui-accent text-white'
-                            : 'hover:bg-gray-200 dark:hover:bg-gray-700'
+                            : 'hover:bg-ui-surface-hover hover:bg-ui-surface-hover'
                         }`}
                       >
                         5分钟
@@ -4615,7 +4625,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   {/* 下载模式 */}
                   <div className='space-y-2'>
                     <div>
-                      <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                      <h4 className='text-sm font-medium text-ui-ink'>
                         下载模式
                       </h4>
                     </div>
@@ -4629,7 +4639,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                           onChange={() => handleDownloadModeChange('browser')}
                           className='w-4 h-4 text-ui-accent'
                         />
-                        <span className='text-sm text-gray-700 dark:text-gray-300'>
+                        <span className='text-sm text-ui-ink'>
                           浏览器下载（合并为单文件）
                         </span>
                       </label>
@@ -4644,7 +4654,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                           }
                           className='w-4 h-4 text-ui-accent'
                         />
-                        <span className='text-sm text-gray-700 dark:text-gray-300'>
+                        <span className='text-sm text-ui-ink'>
                           File System API（保存分片到本地目录）
                         </span>
                       </label>
@@ -4659,7 +4669,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                           }
                           className='mt-0.5 w-4 h-4 text-ui-accent'
                         />
-                        <span className='text-sm text-gray-700 dark:text-gray-300'>
+                        <span className='text-sm text-ui-ink'>
                           IndexedDB 缓存（应用内离线播放）
                         </span>
                       </label>
@@ -4667,8 +4677,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
 
                     {/* 保存路径选择（仅在 filesystem 模式显示） */}
                     {downloadMode === 'filesystem' && (
-                      <div className='mt-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg space-y-2'>
-                        <label className='block text-xs font-medium text-gray-700 dark:text-gray-300'>
+                      <div className='mt-3 p-3 bg-ui-surface-2 rounded-lg space-y-2'>
+                        <label className='block text-xs font-medium text-ui-ink'>
                           保存路径
                         </label>
                         <div className='flex gap-2'>
@@ -4677,7 +4687,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             value={filesystemSavePath}
                             readOnly
                             placeholder='点击选择保存目录'
-                            className='flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                            className='flex-1 px-3 py-2 text-sm border border-ui-hair-strong rounded bg-ui-surface text-ui-ink'
                           />
                           <button
                             onClick={handleSelectSavePath}
@@ -4686,7 +4696,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             选择目录
                           </button>
                         </div>
-                        <p className='text-xs text-gray-500 dark:text-gray-400'>
+                        <p className='text-xs text-ui-ink-3'>
                           需要 Chrome 86+ 或 Edge 86+ 浏览器支持
                         </p>
                       </div>
@@ -4708,27 +4718,27 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
             </div>
 
             {/* 播放设置 */}
-            <div className='border border-gray-200 dark:border-gray-700 rounded-lg overflow-visible'>
+            <div className='border border-ui-hair rounded-lg overflow-visible'>
               <button
                 onClick={() => setIsBufferSectionOpen(!isBufferSectionOpen)}
-                className='w-full px-3 py-2.5 md:px-4 md:py-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors flex items-center justify-between'
+                className='w-full px-3 py-2.5 md:px-4 md:py-3 bg-ui-surface-2 hover:bg-ui-surface-hover transition-colors flex items-center justify-between'
               >
                 <div className='flex items-center gap-2'>
-                  <Gauge className='w-5 h-5 text-gray-600 dark:text-gray-400' />
-                  <h3 className='text-base font-semibold text-gray-800 dark:text-gray-200'>
+                  <Gauge className='w-5 h-5 text-ui-ink-2' />
+                  <h3 className='text-base font-semibold text-ui-ink'>
                     播放设置
                   </h3>
                 </div>
                 {isBufferSectionOpen ? (
-                  <ChevronUp className='w-5 h-5 text-gray-600 dark:text-gray-400' />
+                  <ChevronUp className='w-5 h-5 text-ui-ink-2' />
                 ) : (
-                  <ChevronDown className='w-5 h-5 text-gray-600 dark:text-gray-400' />
+                  <ChevronDown className='w-5 h-5 text-ui-ink-2' />
                 )}
               </button>
               {isBufferSectionOpen && (
                 <div className='p-3 md:p-4 space-y-4 md:space-y-6'>
                   <div>
-                    <p className='text-xs text-gray-500 dark:text-gray-400'>
+                    <p className='text-xs text-ui-ink-3'>
                       调整播放器相关设置（仅在播放页面生效）
                     </p>
                   </div>
@@ -4736,10 +4746,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   {/* 缓冲策略 */}
                   <div className='space-y-3'>
                     <div>
-                      <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                      <h4 className='text-sm font-medium text-ui-ink'>
                         缓冲策略
                       </h4>
-                      <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                      <p className='text-xs text-ui-ink-3 mt-1'>
                         设置视频缓冲块大小，影响播放流畅度和流量消耗
                       </p>
                     </div>
@@ -4758,7 +4768,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             getBufferStrategyFromSlider(sliderValue);
                           handleBufferStrategyChange(strategy);
                         }}
-                        className='w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-ui-accent'
+                        className='w-full h-2 bg-ui-surface-3 rounded-lg appearance-none cursor-pointer accent-ui-accent'
                         style={{
                           background: `linear-gradient(to right, rgb(34 197 94) 0%, rgb(34 197 94) ${
                             (getSliderValueFromStrategy(bufferStrategy) / 3) *
@@ -4771,7 +4781,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                       />
 
                       {/* 标签显示 */}
-                      <div className='flex justify-between text-xs text-gray-500 dark:text-gray-400 px-1'>
+                      <div className='flex justify-between text-xs text-ui-ink-3 px-1'>
                         <span
                           className={
                             bufferStrategy === 'low'
@@ -4811,7 +4821,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                       </div>
 
                       {/* 当前选择的说明 */}
-                      <div className='text-center text-sm font-medium text-gray-700 dark:text-gray-300 mt-2'>
+                      <div className='text-center text-sm font-medium text-ui-ink mt-2'>
                         {
                           bufferStrategyOptions.find(
                             (option) => option.value === bufferStrategy
@@ -4824,10 +4834,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   {/* 下集预缓冲 */}
                   <div className='flex items-center justify-between'>
                     <div>
-                      <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                      <h4 className='text-sm font-medium text-ui-ink'>
                         下集预缓冲
                       </h4>
-                      <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                      <p className='text-xs text-ui-ink-3 mt-1'>
                         播放进度达到90%时，自动预缓冲下一集内容
                       </p>
                     </div>
@@ -4841,8 +4851,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             handleNextEpisodePreCacheToggle(e.target.checked)
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
-                        <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
+                        <div className='w-11 h-6 bg-ui-surface-3 rounded-full peer-checked:bg-ui-accent transition-colors'></div>
+                        <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-ui-surface rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
                   </div>
@@ -4850,10 +4860,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   {/* 禁用播放预览图 */}
                   <div className='flex items-center justify-between'>
                     <div>
-                      <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                      <h4 className='text-sm font-medium text-ui-ink'>
                         禁用播放预览图
                       </h4>
-                      <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                      <p className='text-xs text-ui-ink-3 mt-1'>
                         关闭后不再生成进度条悬停预览图。生成预览图需完整抽帧整个视频，流量开销较大，修改后重新进入播放页生效
                       </p>
                     </div>
@@ -4869,8 +4879,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             )
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
-                        <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
+                        <div className='w-11 h-6 bg-ui-surface-3 rounded-full peer-checked:bg-ui-accent transition-colors'></div>
+                        <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-ui-surface rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
                   </div>
@@ -4878,10 +4888,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   {/* 禁用集数标题获取并切换 */}
                   <div className='flex items-center justify-between'>
                     <div>
-                      <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                      <h4 className='text-sm font-medium text-ui-ink'>
                         禁用集数标题获取并切换
                       </h4>
-                      <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                      <p className='text-xs text-ui-ink-3 mt-1'>
                         开启后不再获取分集标题，选集面板保持数字网格视图，不自动切换为列表视图
                       </p>
                     </div>
@@ -4897,8 +4907,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             )
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
-                        <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
+                        <div className='w-11 h-6 bg-ui-surface-3 rounded-full peer-checked:bg-ui-accent transition-colors'></div>
+                        <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-ui-surface rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
                   </div>
@@ -4907,21 +4917,21 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
             </div>
 
             {/* 弹幕设置 */}
-            <div className='border border-gray-200 dark:border-gray-700 rounded-lg overflow-visible'>
+            <div className='border border-ui-hair rounded-lg overflow-visible'>
               <button
                 onClick={() => setIsDanmakuSectionOpen(!isDanmakuSectionOpen)}
-                className='w-full px-3 py-2.5 md:px-4 md:py-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors flex items-center justify-between'
+                className='w-full px-3 py-2.5 md:px-4 md:py-3 bg-ui-surface-2 hover:bg-ui-surface-hover transition-colors flex items-center justify-between'
               >
                 <div className='flex items-center gap-2'>
-                  <MessageSquare className='w-5 h-5 text-gray-600 dark:text-gray-400' />
-                  <h3 className='text-base font-semibold text-gray-800 dark:text-gray-200'>
+                  <MessageSquare className='w-5 h-5 text-ui-ink-2' />
+                  <h3 className='text-base font-semibold text-ui-ink'>
                     弹幕设置
                   </h3>
                 </div>
                 {isDanmakuSectionOpen ? (
-                  <ChevronUp className='w-5 h-5 text-gray-600 dark:text-gray-400' />
+                  <ChevronUp className='w-5 h-5 text-ui-ink-2' />
                 ) : (
-                  <ChevronDown className='w-5 h-5 text-gray-600 dark:text-gray-400' />
+                  <ChevronDown className='w-5 h-5 text-ui-ink-2' />
                 )}
               </button>
               {isDanmakuSectionOpen && (
@@ -4929,10 +4939,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   {/* 禁用自动装填弹幕 */}
                   <div className='flex items-center justify-between'>
                     <div>
-                      <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                      <h4 className='text-sm font-medium text-ui-ink'>
                         禁用自动装填弹幕
                       </h4>
-                      <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                      <p className='text-xs text-ui-ink-3 mt-1'>
                         开启后，播放页面不会自动匹配弹幕，只能手动匹配
                       </p>
                     </div>
@@ -4946,8 +4956,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             handleDisableAutoLoadDanmakuToggle(e.target.checked)
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
-                        <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
+                        <div className='w-11 h-6 bg-ui-surface-3 rounded-full peer-checked:bg-ui-accent transition-colors'></div>
+                        <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-ui-surface rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
                   </div>
@@ -4955,10 +4965,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   {/* 下集弹幕预加载 */}
                   <div className='flex items-center justify-between'>
                     <div>
-                      <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                      <h4 className='text-sm font-medium text-ui-ink'>
                         下集弹幕预加载
                       </h4>
-                      <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                      <p className='text-xs text-ui-ink-3 mt-1'>
                         播放进度达到90%时，自动预加载下一集弹幕
                       </p>
                     </div>
@@ -4974,8 +4984,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             )
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
-                        <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
+                        <div className='w-11 h-6 bg-ui-surface-3 rounded-full peer-checked:bg-ui-accent transition-colors'></div>
+                        <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-ui-surface rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
                   </div>
@@ -4983,10 +4993,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   {/* 禁用弹幕热力图 */}
                   <div className='flex items-center justify-between'>
                     <div>
-                      <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                      <h4 className='text-sm font-medium text-ui-ink'>
                         禁用弹幕热力图
                       </h4>
-                      <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                      <p className='text-xs text-ui-ink-3 mt-1'>
                         开启后不显示弹幕热力图和热力图开关
                       </p>
                     </div>
@@ -5000,8 +5010,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             handleDanmakuHeatmapDisabledToggle(e.target.checked)
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
-                        <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
+                        <div className='w-11 h-6 bg-ui-surface-3 rounded-full peer-checked:bg-ui-accent transition-colors'></div>
+                        <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-ui-surface rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
                   </div>
@@ -5009,10 +5019,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   {/* 弹幕繁简转换 */}
                   <div className='flex items-center justify-between'>
                     <div>
-                      <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                      <h4 className='text-sm font-medium text-ui-ink'>
                         弹幕繁简转换
                       </h4>
-                      <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                      <p className='text-xs text-ui-ink-3 mt-1'>
                         开启后，拉取弹幕时自动将繁体中文转换为简体中文
                       </p>
                     </div>
@@ -5028,8 +5038,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             )
                           }
                         />
-                        <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-ui-accent transition-colors dark:bg-gray-600'></div>
-                        <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
+                        <div className='w-11 h-6 bg-ui-surface-3 rounded-full peer-checked:bg-ui-accent transition-colors'></div>
+                        <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-ui-surface rounded-full transition-transform peer-checked:translate-x-5'></div>
                       </div>
                     </label>
                   </div>
@@ -5037,10 +5047,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   {/* 弹幕加载上限 */}
                   <div className='space-y-2'>
                     <div className='flex items-center justify-between'>
-                      <span className='text-xs text-gray-600 dark:text-gray-400'>
+                      <span className='text-xs text-ui-ink-2'>
                         弹幕加载上限
                       </span>
-                      <span className='text-xs font-medium text-gray-700 dark:text-gray-300'>
+                      <span className='text-xs font-medium text-ui-ink'>
                         {danmakuMaxCount === 0
                           ? '无上限'
                           : `${danmakuMaxCount} 条`}
@@ -5067,7 +5077,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                       />
                     </div>
                     <div
-                      className='relative text-xs text-gray-500 dark:text-gray-400'
+                      className='relative text-xs text-ui-ink-3'
                       style={{ height: '24px' }}
                     >
                       <button
@@ -5075,7 +5085,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         className={`absolute px-2 py-0.5 rounded ${
                           danmakuMaxCount === 0
                             ? 'bg-ui-accent text-white'
-                            : 'hover:bg-gray-200 dark:hover:bg-gray-700'
+                            : 'hover:bg-ui-surface-hover hover:bg-ui-surface-hover'
                         }`}
                         style={{ left: '0%', transform: 'translateX(0%)' }}
                       >
@@ -5086,7 +5096,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         className={`absolute px-2 py-0.5 rounded ${
                           danmakuMaxCount === 3000
                             ? 'bg-ui-accent text-white'
-                            : 'hover:bg-gray-200 dark:hover:bg-gray-700'
+                            : 'hover:bg-ui-surface-hover hover:bg-ui-surface-hover'
                         }`}
                         style={{ left: '30%', transform: 'translateX(-50%)' }}
                       >
@@ -5097,7 +5107,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         className={`absolute px-2 py-0.5 rounded ${
                           danmakuMaxCount === 5000
                             ? 'bg-ui-accent text-white'
-                            : 'hover:bg-gray-200 dark:hover:bg-gray-700'
+                            : 'hover:bg-ui-surface-hover hover:bg-ui-surface-hover'
                         }`}
                         style={{ left: '50%', transform: 'translateX(-50%)' }}
                       >
@@ -5108,14 +5118,14 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         className={`absolute px-2 py-0.5 rounded ${
                           danmakuMaxCount === 10000
                             ? 'bg-ui-accent text-white'
-                            : 'hover:bg-gray-200 dark:hover:bg-gray-700'
+                            : 'hover:bg-ui-surface-hover hover:bg-ui-surface-hover'
                         }`}
                         style={{ left: '100%', transform: 'translateX(-100%)' }}
                       >
                         10000
                       </button>
                     </div>
-                    <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                    <p className='text-xs text-ui-ink-3 mt-1'>
                       限制加载的弹幕数量，减少性能消耗
                     </p>
                   </div>
@@ -5123,13 +5133,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   {/* 清除弹幕缓存 */}
                   <div className='space-y-3'>
                     <div>
-                      <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                      <h4 className='text-sm font-medium text-ui-ink'>
                         弹幕缓存管理
                       </h4>
-                      <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                      <p className='text-xs text-ui-ink-3 mt-1'>
                         弹幕缓存空间占用：{danmakuCacheUsage}
                       </p>
-                      <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                      <p className='text-xs text-ui-ink-3 mt-1'>
                         清除所有已缓存的弹幕数据
                       </p>
                     </div>
@@ -5181,27 +5191,27 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
             </div>
 
             {/* 首页设置 */}
-            <div className='border border-gray-200 dark:border-gray-700 rounded-lg overflow-visible'>
+            <div className='border border-ui-hair rounded-lg overflow-visible'>
               <button
                 onClick={() => setIsHomepageSectionOpen(!isHomepageSectionOpen)}
-                className='w-full px-3 py-2.5 md:px-4 md:py-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors flex items-center justify-between'
+                className='w-full px-3 py-2.5 md:px-4 md:py-3 bg-ui-surface-2 hover:bg-ui-surface-hover transition-colors flex items-center justify-between'
               >
                 <div className='flex items-center gap-2'>
-                  <Home className='w-5 h-5 text-gray-600 dark:text-gray-400' />
-                  <h3 className='text-base font-semibold text-gray-800 dark:text-gray-200'>
+                  <Home className='w-5 h-5 text-ui-ink-2' />
+                  <h3 className='text-base font-semibold text-ui-ink'>
                     首页设置
                   </h3>
                 </div>
                 {isHomepageSectionOpen ? (
-                  <ChevronUp className='w-5 h-5 text-gray-600 dark:text-gray-400' />
+                  <ChevronUp className='w-5 h-5 text-ui-ink-2' />
                 ) : (
-                  <ChevronDown className='w-5 h-5 text-gray-600 dark:text-gray-400' />
+                  <ChevronDown className='w-5 h-5 text-ui-ink-2' />
                 )}
               </button>
               {isHomepageSectionOpen && (
                 <div className='p-3 md:p-4 space-y-4 md:space-y-6'>
                   <div>
-                    <p className='text-xs text-gray-500 dark:text-gray-400 mb-3'>
+                    <p className='text-xs text-ui-ink-3 mb-3'>
                       配置首页轮播图显示效果，以及首页模块布局
                     </p>
                   </div>
@@ -5209,16 +5219,16 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   {/* 轮播图配置 */}
                   <div className='space-y-2'>
                     <div>
-                      <h4 className='text-sm font-semibold text-gray-800 dark:text-gray-200'>
+                      <h4 className='text-sm font-semibold text-ui-ink'>
                         轮播图配置
                       </h4>
                     </div>
-                    <div className='p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 space-y-3'>
+                    <div className='p-3 bg-ui-surface-2 rounded-lg border border-ui-hair space-y-3'>
                       <div>
-                        <div className='text-sm font-medium text-gray-900 dark:text-gray-100'>
+                        <div className='text-sm font-medium text-ui-ink'>
                           轮播图高度
                         </div>
-                        <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                        <p className='text-xs text-ui-ink-3 mt-1'>
                           调整首页轮播图显示高度
                         </p>
                       </div>
@@ -5232,7 +5242,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
                               homeBannerHeightScale === option.value
                                 ? 'bg-blue-500 border-blue-500 text-white shadow-sm'
-                                : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                : 'bg-ui-surface bg-ui-bg border-ui-hair border-ui-hair text-ui-ink text-ui-ink-2 hover:bg-ui-surface-hover hover:bg-ui-surface-hover'
                             }`}
                             title={`${option.label}（${option.description}）`}
                           >
@@ -5241,7 +5251,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                               className={`ml-1 text-xs ${
                                 homeBannerHeightScale === option.value
                                   ? 'text-blue-100'
-                                  : 'text-gray-500 dark:text-gray-400'
+                                  : 'text-ui-ink-3 text-ui-ink-3'
                               }`}
                             >
                               {option.description}
@@ -5253,16 +5263,16 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   </div>
 
                   {/* 模块显示与排序 */}
-                  <div className='space-y-3 rounded-lg border border-gray-200 dark:border-gray-700 p-3'>
+                  <div className='space-y-3 rounded-lg border border-ui-hair p-3'>
                     <div>
-                      <h4 className='text-sm font-semibold text-gray-800 dark:text-gray-200'>
+                      <h4 className='text-sm font-semibold text-ui-ink'>
                         模块显示与排序
                       </h4>
-                      <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                      <p className='text-xs text-ui-ink-3 mt-1'>
                         控制首页组件和内容模块的显示/隐藏与顺序
                       </p>
                     </div>
-                    <div className='flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700'>
+                    <div className='flex items-center gap-2 p-3 bg-ui-surface-2 rounded-lg border border-ui-hair'>
                       <button
                         onClick={() =>
                           handleHomeBannerToggle(!homeBannerEnabled)
@@ -5273,15 +5283,15 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         {homeBannerEnabled ? (
                           <Eye className='w-5 h-5 text-ui-success' />
                         ) : (
-                          <EyeOff className='w-5 h-5 text-gray-400 dark:text-gray-500' />
+                          <EyeOff className='w-5 h-5 text-ui-ink-3' />
                         )}
                       </button>
                       <div className='flex-1'>
                         <span
                           className={`text-sm font-medium ${
                             homeBannerEnabled
-                              ? 'text-gray-900 dark:text-gray-100'
-                              : 'text-gray-400 dark:text-gray-500'
+                              ? 'text-ui-ink text-ui-ink'
+                              : 'text-ui-ink-3 text-ui-ink-3'
                           }`}
                         >
                           首页轮播图
@@ -5289,7 +5299,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                       </div>
                     </div>
 
-                    <div className='flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700'>
+                    <div className='flex items-center gap-2 p-3 bg-ui-surface-2 rounded-lg border border-ui-hair'>
                       <button
                         onClick={() =>
                           handleHomeContinueWatchingToggle(
@@ -5304,15 +5314,15 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         {homeContinueWatchingEnabled ? (
                           <Eye className='w-5 h-5 text-ui-success' />
                         ) : (
-                          <EyeOff className='w-5 h-5 text-gray-400 dark:text-gray-500' />
+                          <EyeOff className='w-5 h-5 text-ui-ink-3' />
                         )}
                       </button>
                       <div className='flex-1'>
                         <span
                           className={`text-sm font-medium ${
                             homeContinueWatchingEnabled
-                              ? 'text-gray-900 dark:text-gray-100'
-                              : 'text-gray-400 dark:text-gray-500'
+                              ? 'text-ui-ink text-ui-ink'
+                              : 'text-ui-ink-3 text-ui-ink-3'
                           }`}
                         >
                           继续观看
@@ -5325,7 +5335,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                       {homeModules.map((module, index) => (
                         <div
                           key={module.id}
-                          className='flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700'
+                          className='flex items-center gap-2 p-3 bg-ui-surface-2 rounded-lg border border-ui-hair'
                         >
                           {/* 左侧：显示/隐藏开关 */}
                           <button
@@ -5338,7 +5348,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             {module.enabled ? (
                               <Eye className='w-5 h-5 text-ui-success' />
                             ) : (
-                              <EyeOff className='w-5 h-5 text-gray-400 dark:text-gray-500' />
+                              <EyeOff className='w-5 h-5 text-ui-ink-3' />
                             )}
                           </button>
 
@@ -5347,8 +5357,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             <span
                               className={`text-sm font-medium ${
                                 module.enabled
-                                  ? 'text-gray-900 dark:text-gray-100'
-                                  : 'text-gray-400 dark:text-gray-500'
+                                  ? 'text-ui-ink text-ui-ink'
+                                  : 'text-ui-ink-3 text-ui-ink-3'
                               }`}
                             >
                               {module.name}
@@ -5360,18 +5370,18 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                             <button
                               onClick={() => handleHomeModuleMoveUp(index)}
                               disabled={index === 0}
-                              className='p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors'
+                              className='p-1.5 rounded hover:bg-ui-surface-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors'
                               title='上移'
                             >
-                              <MoveUp className='w-4 h-4 text-gray-600 dark:text-gray-400' />
+                              <MoveUp className='w-4 h-4 text-ui-ink-2' />
                             </button>
                             <button
                               onClick={() => handleHomeModuleMoveDown(index)}
                               disabled={index === homeModules.length - 1}
-                              className='p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors'
+                              className='p-1.5 rounded hover:bg-ui-surface-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors'
                               title='下移'
                             >
-                              <MoveDown className='w-4 h-4 text-gray-600 dark:text-gray-400' />
+                              <MoveDown className='w-4 h-4 text-ui-ink-2' />
                             </button>
                           </div>
                         </div>
@@ -5399,13 +5409,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                         );
                       }
                     }}
-                    className='w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg transition-colors'
+                    className='w-full px-4 py-2 bg-ui-surface-3 hover:bg-ui-surface-hover text-ui-ink text-sm font-medium rounded-lg transition-colors'
                   >
                     恢复默认配置
                   </button>
 
                   {/* 提示信息 */}
-                  <div className='text-xs text-gray-500 dark:text-gray-400 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg'>
+                  <div className='text-xs text-ui-ink-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg'>
                     <p>
                       💡
                       提示：点击眼睛图标可显示/隐藏模块，使用箭头按钮调整模块顺序
@@ -5417,8 +5427,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
           </div>
 
           {/* 底部说明 */}
-          <div className='mt-6 pt-4 border-t border-gray-200 dark:border-gray-700'>
-            <p className='text-xs text-gray-500 dark:text-gray-400 text-center'>
+          <div className='mt-6 pt-4 border-t border-ui-hair'>
+            <p className='text-xs text-ui-ink-3 text-center'>
               这些设置保存在本地浏览器中
             </p>
           </div>
@@ -5446,7 +5456,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
       />
 
       {/* 电视访问面板 */}
-      <div className='fixed top-1/2 left-1/2 z-[1001] max-h-[92vh] w-full max-w-3xl -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-2xl shadow-black/30 dark:border-white/10 dark:bg-slate-950'>
+      <div className='fixed top-1/2 left-1/2 z-[1001] max-h-[92vh] w-full max-w-3xl -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border border-ui-hair/70 bg-ui-surface shadow-2xl shadow-black/30 dark:border-white/10'>
         <div
           className='max-h-[92vh] overflow-y-auto p-6 sm:p-7'
           data-panel-content
@@ -5508,20 +5518,20 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                 <Monitor className='h-4 w-4' />
                 TV ACCESS
               </div>
-              <h3 className='mt-3 text-2xl font-black text-slate-900 dark:text-slate-50'>
+              <h3 className='mt-3 text-2xl font-black text-ui-ink dark:text-slate-50'>
                 电视访问
               </h3>
             </div>
             <button
               onClick={handleCloseSubscribe}
-              className='flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-accent dark:hover:bg-white/10 dark:hover:text-white'
+              className='flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-ui-ink-3 transition hover:bg-ui-surface-hover hover:text-ui-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-accent dark:hover:bg-white/10 dark:hover:text-white'
               aria-label='Close'
             >
               <X className='h-5 w-5' />
             </button>
           </div>
 
-          <div className='mb-5 grid grid-cols-3 rounded-2xl bg-slate-100 p-1 dark:bg-white/10'>
+          <div className='mb-5 grid grid-cols-3 rounded-2xl bg-ui-surface-3 p-1 dark:bg-white/10'>
             {[
               { key: 'tvbox' as const, label: 'TVBox 订阅', icon: Rss },
               { key: 'orion' as const, label: 'OrionTV', icon: Download },
@@ -5539,8 +5549,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   }}
                   className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm font-black transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-accent ${
                     active
-                      ? 'bg-white text-slate-950 shadow-sm dark:bg-slate-950 dark:text-white'
-                      : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                      ? 'bg-ui-surface text-ui-ink shadow-sm bg-ui-surface dark:text-white'
+                      : 'text-ui-ink-3 hover:text-ui-ink text-ui-ink-3 dark:hover:text-white'
                   }`}
                 >
                   <Icon className='h-4 w-4' />
@@ -5552,17 +5562,17 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
           </div>
 
           {tvAccessTab === 'tvbox' && (
-            <section className='rounded-2xl border border-slate-200 bg-slate-50 p-5 dark:border-white/10 dark:bg-white/[0.04]'>
+            <section className='rounded-2xl border border-ui-hair bg-ui-surface-2 p-5 dark:border-white/10 dark:bg-white/[0.04]'>
               <div className='flex items-center justify-between gap-3'>
                 <div className='flex items-center gap-3'>
                   <div className='flex h-11 w-11 items-center justify-center rounded-2xl bg-ui-accent text-white shadow-lg shadow-ui-accent'>
                     <Rss className='h-5 w-5' />
                   </div>
                   <div>
-                    <h4 className='text-lg font-black text-slate-900 dark:text-slate-100'>
+                    <h4 className='text-lg font-black text-ui-ink'>
                       TVBox 订阅
                     </h4>
-                    <p className='mt-1 text-sm text-slate-600 dark:text-slate-400'>
+                    <p className='mt-1 text-sm text-ui-ink-2'>
                       复制订阅链接到 TVBox 使用
                     </p>
                   </div>
@@ -5571,7 +5581,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   className={`rounded-full px-2.5 py-1 text-xs font-bold ${
                     subscribeEnabled
                       ? 'bg-ui-accent-soft text-ui-accent'
-                      : 'bg-slate-200 text-slate-500 dark:bg-white/10 dark:text-slate-400'
+                      : 'bg-ui-surface-3 text-ui-ink-3 dark:bg-white/10 text-ui-ink-3'
                   }`}
                 >
                   {subscribeEnabled ? '已启用' : '未启用'}
@@ -5579,14 +5589,14 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
               </div>
 
               {!subscribeEnabled ? (
-                <div className='mt-5 rounded-xl border border-dashed border-slate-300 bg-white/70 px-4 py-3 text-sm font-semibold text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-400'>
+                <div className='mt-5 rounded-xl border border-dashed border-ui-hair-strong bg-white/70 px-4 py-3 text-sm font-semibold text-ui-ink-3 dark:border-white/10 dark:bg-white/5'>
                   TVBox 订阅功能未启用
                 </div>
               ) : isLoadingSubscribeUrl ? (
                 <div className='mt-5 space-y-3'>
-                  <div className='h-14 animate-pulse rounded-xl bg-slate-200 dark:bg-white/10' />
-                  <div className='h-14 animate-pulse rounded-xl bg-slate-200 dark:bg-white/10' />
-                  <div className='h-10 animate-pulse rounded-xl bg-slate-200 dark:bg-white/10' />
+                  <div className='h-14 animate-pulse rounded-xl bg-ui-surface-3 dark:bg-white/10' />
+                  <div className='h-14 animate-pulse rounded-xl bg-ui-surface-3 dark:bg-white/10' />
+                  <div className='h-10 animate-pulse rounded-xl bg-ui-surface-3 dark:bg-white/10' />
                 </div>
               ) : (
                 <div className='mt-5 space-y-4'>
@@ -5594,39 +5604,39 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                     <button
                       type='button'
                       onClick={() => setSubscribeAdFilterEnabled((prev) => !prev)}
-                      className='flex w-full cursor-pointer items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-ui-accent dark:border-white/10 dark:bg-slate-900/70'
+                      className='flex w-full cursor-pointer items-center justify-between rounded-xl border border-ui-hair bg-ui-surface px-4 py-3 text-left transition hover:border-ui-accent dark:border-white/10'
                     >
                       <div>
-                        <div className='text-sm font-bold text-slate-800 dark:text-slate-200'>去广告</div>
-                        <div className='mt-1 text-xs text-slate-500 dark:text-slate-400'>开启后通过代理处理播放链接</div>
+                        <div className='text-sm font-bold text-ui-ink'>去广告</div>
+                        <div className='mt-1 text-xs text-ui-ink-3'>开启后通过代理处理播放链接</div>
                       </div>
-                      <span className={`h-5 w-9 rounded-full p-0.5 transition ${subscribeAdFilterEnabled ? 'bg-ui-accent' : 'bg-slate-300 dark:bg-slate-700'}`}>
-                        <span className={`block h-4 w-4 rounded-full bg-white transition ${subscribeAdFilterEnabled ? 'translate-x-4' : ''}`} />
+                      <span className={`h-5 w-9 rounded-full p-0.5 transition ${subscribeAdFilterEnabled ? 'bg-ui-accent' : 'bg-ui-surface-3 dark:bg-slate-700'}`}>
+                        <span className={`block h-4 w-4 rounded-full bg-ui-surface transition ${subscribeAdFilterEnabled ? 'translate-x-4' : ''}`} />
                       </span>
                     </button>
                     <button
                       type='button'
                       onClick={() => setSubscribeYellowFilterEnabled((prev) => !prev)}
-                      className='flex w-full cursor-pointer items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-yellow-400 dark:border-white/10 dark:bg-slate-900/70'
+                      className='flex w-full cursor-pointer items-center justify-between rounded-xl border border-ui-hair bg-ui-surface px-4 py-3 text-left transition hover:border-yellow-400 dark:border-white/10'
                     >
                       <div>
-                        <div className='text-sm font-bold text-slate-800 dark:text-slate-200'>黄色过滤</div>
-                        <div className='mt-1 text-xs text-slate-500 dark:text-slate-400'>过滤代理搜索中的黄色内容</div>
+                        <div className='text-sm font-bold text-ui-ink'>黄色过滤</div>
+                        <div className='mt-1 text-xs text-ui-ink-3'>过滤代理搜索中的黄色内容</div>
                       </div>
-                      <span className={`h-5 w-9 rounded-full p-0.5 transition ${subscribeYellowFilterEnabled ? 'bg-yellow-500' : 'bg-slate-300 dark:bg-slate-700'}`}>
-                        <span className={`block h-4 w-4 rounded-full bg-white transition ${subscribeYellowFilterEnabled ? 'translate-x-4' : ''}`} />
+                      <span className={`h-5 w-9 rounded-full p-0.5 transition ${subscribeYellowFilterEnabled ? 'bg-yellow-500' : 'bg-ui-surface-3 dark:bg-slate-700'}`}>
+                        <span className={`block h-4 w-4 rounded-full bg-ui-surface transition ${subscribeYellowFilterEnabled ? 'translate-x-4' : ''}`} />
                       </span>
                     </button>
                   </div>
 
                   <div>
-                    <h4 className='mb-2 text-sm font-medium text-slate-700 dark:text-slate-300'>
+                    <h4 className='mb-2 text-sm font-medium text-ui-ink'>
                       订阅链接
                     </h4>
                     <div className='flex gap-2'>
                       <input
                         type='text'
-                        className='min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-ui-accent dark:border-white/10 dark:bg-slate-900 dark:text-slate-200'
+                        className='min-w-0 flex-1 rounded-xl border border-ui-hair bg-ui-surface px-3 py-2 text-sm text-ui-ink outline-none focus:ring-2 focus:ring-ui-accent dark:border-white/10'
                         value={subscribeUrl}
                         readOnly
                       />
@@ -5653,7 +5663,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                     >
                       {isResettingToken ? '重置中...' : '重置订阅Token'}
                     </button>
-                    <p className='mt-2 text-center text-xs text-slate-500 dark:text-slate-400'>
+                    <p className='mt-2 text-center text-xs text-ui-ink-3'>
                       ⚠️ 重置后旧链接将失效
                     </p>
                     <p id='tvbox-token-message' className='hidden text-center text-xs'></p>
@@ -5664,7 +5674,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
           )}
 
           {tvAccessTab === 'orion' && (
-            <section className='rounded-2xl border border-slate-200 bg-slate-50 p-5 dark:border-white/10 dark:bg-white/[0.04]'>
+            <section className='rounded-2xl border border-ui-hair bg-ui-surface-2 p-5 dark:border-white/10 dark:bg-white/[0.04]'>
               <div className='flex items-center gap-3'>
                 <img
                   src='/icons/OrionTV.png'
@@ -5672,19 +5682,19 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   className='h-11 w-11 rounded-2xl object-cover shadow-lg shadow-indigo-500/20'
                 />
                 <div>
-                  <h4 className='text-lg font-black text-slate-900 dark:text-slate-100'>
+                  <h4 className='text-lg font-black text-ui-ink'>
                     OrionTV
                   </h4>
-                  <p className='mt-1 text-sm text-slate-600 dark:text-slate-400'>
+                  <p className='mt-1 text-sm text-ui-ink-2'>
                     Android TV 专用客户端
                   </p>
                 </div>
               </div>
-              <p className='mt-5 text-sm leading-6 text-slate-600 dark:text-slate-400'>
+              <p className='mt-5 text-sm leading-6 text-ui-ink-2'>
                 可直接作为 MoonTV Plus 电视端使用，适合安装到 Android TV / 电视盒子。
               </p>
               <div className='mt-5'>
-                <h5 className='mb-2 text-sm font-bold text-slate-700 dark:text-slate-300'>
+                <h5 className='mb-2 text-sm font-bold text-ui-ink'>
                   Base URL
                 </h5>
                 <div className='flex gap-2'>
@@ -5692,7 +5702,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                     type='text'
                     readOnly
                     value={typeof window !== 'undefined' ? window.location.origin : ''}
-                    className='min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none dark:border-white/10 dark:bg-slate-900 dark:text-slate-200'
+                    className='min-w-0 flex-1 rounded-xl border border-ui-hair bg-ui-surface px-3 py-2 text-sm text-ui-ink outline-none dark:border-white/10'
                   />
                   <button
                     type='button'
@@ -5703,7 +5713,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                     {orionBaseUrlCopySuccess ? '已复制' : '复制'}
                   </button>
                 </div>
-                <p className='mt-2 text-xs text-slate-500 dark:text-slate-400'>
+                <p className='mt-2 text-xs text-ui-ink-3'>
                   在 OrionTV 中填写该地址作为后端服务地址。
                 </p>
               </div>
@@ -5720,21 +5730,21 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
           )}
 
           {tvAccessTab === 'web' && (
-            <section className='rounded-2xl border border-slate-200 bg-slate-50 p-5 dark:border-white/10 dark:bg-white/[0.04]'>
+            <section className='rounded-2xl border border-ui-hair bg-ui-surface-2 p-5 dark:border-white/10 dark:bg-white/[0.04]'>
               <div className='flex items-center gap-3'>
                 <div className='flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-500 text-white shadow-lg shadow-rose-500/25'>
                   <Monitor className='h-5 w-5' />
                 </div>
                 <div>
-                  <h4 className='text-lg font-black text-slate-900 dark:text-slate-100'>
+                  <h4 className='text-lg font-black text-ui-ink'>
                     Web 电视
                   </h4>
-                  <p className='mt-1 text-sm text-slate-600 dark:text-slate-400'>
+                  <p className='mt-1 text-sm text-ui-ink-2'>
                     手机扫描电视屏幕二维码并确认登录
                   </p>
                 </div>
               </div>
-                <p className='mt-5 text-sm leading-6 text-slate-600 dark:text-slate-400'>
+                <p className='mt-5 text-sm leading-6 text-ui-ink-2'>
                 {tvModeEnabled
                   ? '电视端打开 /tv 后可扫码登录；在电视端“我的”页也可扫描局域网遥控二维码。'
                   : '当前部署未开启 TV 模式，/tv 页面和 Web 电视遥控不可用。'}
@@ -5749,7 +5759,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   type='button'
                   onClick={startTvQrScanner}
                   disabled={!tvModeEnabled}
-                  className='inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 py-3 text-sm font-black text-white transition hover:bg-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/70 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 dark:disabled:bg-white/10 dark:disabled:text-slate-500'
+                  className='inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 py-3 text-sm font-black text-white transition hover:bg-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/70 disabled:cursor-not-allowed disabled:bg-ui-surface-3 disabled:text-ui-ink-3 dark:disabled:bg-white/10 dark:disabled:text-ui-ink-3'
                 >
                   打开相机扫码
                   <Smartphone className='h-4 w-4' />
@@ -5762,7 +5772,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                     setIsTVRemoteOpen(true);
                   }}
                   disabled={!tvModeEnabled}
-                  className='inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-sm font-black text-white transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500/70 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200 dark:disabled:bg-white/10 dark:disabled:text-slate-500'
+                  className='inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-sm font-black text-white transition hover:bg-ui-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500/70 disabled:cursor-not-allowed disabled:bg-ui-surface-3 disabled:text-ui-ink-3 dark:bg-white dark:text-slate-950 dark:disabled:bg-white/10 dark:disabled:text-ui-ink-3'
                 >
                   <Sliders className='h-4 w-4' />
                   远程电视遥控器
@@ -5799,7 +5809,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
       />
 
       {/* 修改密码面板 */}
-      <div className='fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white dark:bg-gray-900 rounded-xl shadow-xl z-[1001] overflow-hidden'>
+      <div className='fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-ui-surface rounded-xl shadow-xl z-[1001] overflow-hidden'>
         {/* 内容容器 - 独立的滚动区域 */}
         <div
           className='h-full p-6'
@@ -5814,12 +5824,12 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
         >
           {/* 标题栏 */}
           <div className='flex items-center justify-between mb-6'>
-            <h3 className='text-xl font-bold text-gray-800 dark:text-gray-200'>
+            <h3 className='text-xl font-bold text-ui-ink'>
               修改密码
             </h3>
             <button
               onClick={handleCloseChangePassword}
-              className='w-8 h-8 p-1 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors'
+              className='w-8 h-8 p-1 rounded-full flex items-center justify-center text-ui-ink-3 hover:bg-ui-surface-hover transition-colors'
               aria-label='Close'
             >
               <X className='w-full h-full' />
@@ -5830,12 +5840,12 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
           <div className='space-y-4'>
             {/* 新密码输入 */}
             <div>
-              <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2'>
+              <label className='block text-sm font-medium text-ui-ink mb-2'>
                 新密码
               </label>
               <input
                 type='password'
-                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-transparent transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400'
+                className='w-full px-3 py-2 border border-ui-hair-strong rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-transparent transition-colors bg-ui-surface text-ui-ink placeholder-ui-ink-3'
                 placeholder='请输入新密码'
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
@@ -5845,12 +5855,12 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
 
             {/* 确认密码输入 */}
             <div>
-              <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2'>
+              <label className='block text-sm font-medium text-ui-ink mb-2'>
                 确认密码
               </label>
               <input
                 type='password'
-                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-transparent transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400'
+                className='w-full px-3 py-2 border border-ui-hair-strong rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent focus:border-transparent transition-colors bg-ui-surface text-ui-ink placeholder-ui-ink-3'
                 placeholder='请再次输入新密码'
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -5867,10 +5877,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
           </div>
 
           {/* 操作按钮 */}
-          <div className='flex gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700'>
+          <div className='flex gap-3 mt-6 pt-4 border-t border-ui-hair'>
             <button
               onClick={handleCloseChangePassword}
-              className='flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md transition-colors'
+              className='flex-1 px-4 py-2 text-sm font-medium text-ui-ink bg-ui-surface-3 hover:bg-ui-surface-hover rounded-md transition-colors'
               disabled={passwordLoading}
             >
               取消
@@ -5885,8 +5895,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
           </div>
 
           {/* 底部说明 */}
-          <div className='mt-4 pt-4 border-t border-gray-200 dark:border-gray-700'>
-            <p className='text-xs text-gray-500 dark:text-gray-400 text-center'>
+          <div className='mt-4 pt-4 border-t border-ui-hair'>
+            <p className='text-xs text-ui-ink-3 text-center'>
               修改密码后需要重新登录
             </p>
           </div>
@@ -5914,7 +5924,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
       />
 
       {/* 举报信息面板 */}
-      <div className='fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-white dark:bg-gray-900 rounded-xl shadow-xl z-[1003] overflow-hidden'>
+      <div className='fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-ui-surface rounded-xl shadow-xl z-[1003] overflow-hidden'>
         <div
           className='h-full max-h-[70vh] flex flex-col'
           data-panel-content
@@ -5926,13 +5936,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
           }}
         >
           {/* 标题栏 */}
-          <div className='flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700'>
-            <h3 className='text-xl font-bold text-gray-800 dark:text-gray-200'>
+          <div className='flex items-center justify-between p-6 border-b border-ui-hair'>
+            <h3 className='text-xl font-bold text-ui-ink'>
               耻辱柱
             </h3>
             <button
               onClick={() => setIsReportOpen(false)}
-              className='w-8 h-8 p-1 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors'
+              className='w-8 h-8 p-1 rounded-full flex items-center justify-center text-ui-ink-3 hover:bg-ui-surface-hover transition-colors'
               aria-label='Close'
             >
               <X className='w-full h-full' />
@@ -5942,17 +5952,17 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
           {/* 内容区域 */}
           <div className='flex-1 overflow-y-auto p-6'>
             <div className='bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4'>
-              <p className='text-gray-800 dark:text-gray-200 leading-relaxed'>
+              <p className='text-ui-ink leading-relaxed'>
                 抄袭狗
                 <span className='font-bold text-red-600 dark:text-red-400'>
                   SzeMeng76
                 </span>
                 毫无廉耻，盯着本项目的commit区，疯狂抄袭。警告亦全当看不见，实为开源界耻辱。
               </p>
-              <p className='text-gray-800 dark:text-gray-200 leading-relaxed mt-3'>
+              <p className='text-ui-ink leading-relaxed mt-3'>
                 超分，观影室，豆瓣反爬，精确搜索等等等等，直接抄袭，最不要脸的就是，刚更新一版，几小时后直接抄走。
               </p>
-              <p className='text-gray-800 dark:text-gray-200 leading-relaxed mt-3'>
+              <p className='text-ui-ink leading-relaxed mt-3'>
                 <span className='font-semibold text-red-600 dark:text-red-400'>
                   2026-02-25：
                 </span>
@@ -5962,10 +5972,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
           </div>
 
           {/* 底部按钮 */}
-          <div className='p-6 border-t border-gray-200 dark:border-gray-700'>
+          <div className='p-6 border-t border-ui-hair'>
             <button
               onClick={() => setIsReportOpen(false)}
-              className='w-full px-4 py-2.5 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium rounded-lg transition-colors'
+              className='w-full px-4 py-2.5 bg-ui-surface-3 hover:bg-ui-surface-hover text-ui-ink font-medium rounded-lg transition-colors'
             >
               我知道了
             </button>
@@ -5994,7 +6004,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
       />
 
       {/* 生态应用面板 */}
-      <div className='fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl bg-white dark:bg-gray-900 rounded-xl shadow-xl z-[1001] overflow-hidden'>
+      <div className='fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl bg-ui-surface rounded-xl shadow-xl z-[1001] overflow-hidden'>
         <div
           className='h-full max-h-[85vh] flex flex-col'
           data-panel-content
@@ -6006,15 +6016,15 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
           }}
         >
           {/* 标题栏 */}
-          <div className='flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700'>
-            <h3 className='text-xl font-bold text-gray-800 dark:text-gray-200'>
+          <div className='flex items-center justify-between p-6 border-b border-ui-hair'>
+            <h3 className='text-xl font-bold text-ui-ink'>
               生态应用
             </h3>
             <div className='flex items-center gap-2'>
               {/* 举报按钮 */}
               <button
                 onClick={() => setIsReportOpen(true)}
-                className='w-8 h-8 p-1 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-lg'
+                className='w-8 h-8 p-1 rounded-full flex items-center justify-center text-ui-ink-3 hover:bg-ui-surface-hover transition-colors text-lg'
                 aria-label='Report'
                 title='举报抄袭'
               >
@@ -6023,7 +6033,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
               {/* 关闭按钮 */}
               <button
                 onClick={() => setIsEcoAppsOpen(false)}
-                className='w-8 h-8 p-1 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors'
+                className='w-8 h-8 p-1 rounded-full flex items-center justify-center text-ui-ink-3 hover:bg-ui-surface-hover transition-colors'
                 aria-label='Close'
               >
                 <X className='w-full h-full' />
@@ -6035,7 +6045,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
           <div className='flex-1 overflow-y-auto p-6'>
             <div className='grid gap-6 md:grid-cols-1'>
               {/* MoonTVPlus-PC 客户端 */}
-              <div className='bg-gray-50 dark:bg-gray-800 rounded-lg p-5 border border-gray-200 dark:border-gray-700'>
+              <div className='bg-ui-surface-2 rounded-lg p-5 border border-ui-hair'>
                 <div className='flex items-start gap-4'>
                   <div className='flex-shrink-0 relative'>
                     <img
@@ -6048,10 +6058,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                     </div>
                   </div>
                   <div className='flex-1 min-w-0'>
-                    <h4 className='text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2'>
+                    <h4 className='text-lg font-semibold text-ui-ink mb-2'>
                       MoonTVPlus-PC客户端
                     </h4>
-                    <p className='text-sm text-gray-600 dark:text-gray-400 mb-3'>
+                    <p className='text-sm text-ui-ink-2 mb-3'>
                       专为Windows开发的客户端，完美支持私人影库mkv视频
                     </p>
                     <a
@@ -6069,7 +6079,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
               </div>
 
               {/* Selene 跨平台客户端 */}
-              <div className='bg-gray-50 dark:bg-gray-800 rounded-lg p-5 border border-gray-200 dark:border-gray-700'>
+              <div className='bg-ui-surface-2 rounded-lg p-5 border border-ui-hair'>
                 <div className='flex items-start gap-4'>
                   <div className='flex-shrink-0 relative'>
                     <img
@@ -6082,10 +6092,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                     </span>
                   </div>
                   <div className='flex-1 min-w-0'>
-                    <h4 className='text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2'>
+                    <h4 className='text-lg font-semibold text-ui-ink mb-2'>
                       Selene 跨平台客户端
                     </h4>
-                    <p className='text-sm text-gray-600 dark:text-gray-400 mb-3'>
+                    <p className='text-sm text-ui-ink-2 mb-3'>
                       多平台客户端
                     </p>
                     <div className='flex flex-wrap gap-2'>
@@ -6105,7 +6115,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
               </div>
 
               {/* OrionTV TV专用客户端 */}
-              <div className='bg-gray-50 dark:bg-gray-800 rounded-lg p-5 border border-gray-200 dark:border-gray-700'>
+              <div className='bg-ui-surface-2 rounded-lg p-5 border border-ui-hair'>
                 <div className='flex items-start gap-4'>
                   <div className='flex-shrink-0 relative'>
                     <img
@@ -6118,10 +6128,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                     </span>
                   </div>
                   <div className='flex-1 min-w-0'>
-                    <h4 className='text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2'>
+                    <h4 className='text-lg font-semibold text-ui-ink mb-2'>
                       OrionTV TV专用客户端
                     </h4>
-                    <p className='text-sm text-gray-600 dark:text-gray-400 mb-3'>
+                    <p className='text-sm text-ui-ink-2 mb-3'>
                       tv专用
                     </p>
                     <a
@@ -6139,7 +6149,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
               </div>
 
               {/* 私人影库转码器 */}
-              <div className='bg-gray-50 dark:bg-gray-800 rounded-lg p-5 border border-gray-200 dark:border-gray-700'>
+              <div className='bg-ui-surface-2 rounded-lg p-5 border border-ui-hair'>
                 <div className='flex items-start gap-4'>
                   <div className='flex-shrink-0 relative'>
                     <div className='w-16 h-16 rounded-xl bg-amber-500 flex items-center justify-center shadow-sm'>
@@ -6150,10 +6160,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                     </span>
                   </div>
                   <div className='flex-1 min-w-0'>
-                    <h4 className='text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2'>
+                    <h4 className='text-lg font-semibold text-ui-ink mb-2'>
                       私人影库转码器
                     </h4>
-                    <p className='text-sm text-gray-600 dark:text-gray-400 mb-3'>
+                    <p className='text-sm text-ui-ink-2 mb-3'>
                       为私人影库中的 MKV
                       视频提供转码播放能力，可解析内封字幕并解决部分视频无音频问题，但通常需要较高的本机性能配置。
                     </p>
@@ -6172,7 +6182,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
               </div>
 
               {/* MoonTVPlus 插件 */}
-              <div className='bg-gray-50 dark:bg-gray-800 rounded-lg p-5 border border-gray-200 dark:border-gray-700'>
+              <div className='bg-ui-surface-2 rounded-lg p-5 border border-ui-hair'>
                 <div className='flex items-start gap-4'>
                   <div className='flex-shrink-0 relative'>
                     <div className='w-16 h-16 rounded-xl bg-purple-500 flex items-center justify-center shadow-sm'>
@@ -6183,10 +6193,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                     </span>
                   </div>
                   <div className='flex-1 min-w-0'>
-                    <h4 className='text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2'>
+                    <h4 className='text-lg font-semibold text-ui-ink mb-2'>
                       MoonTVPlus 插件
                     </h4>
-                    <p className='text-sm text-gray-600 dark:text-gray-400 mb-3'>
+                    <p className='text-sm text-ui-ink-2 mb-3'>
                       为 MoonTVPlus
                       提供增强性功能，目前拥有解决私人影库超分跨域能力
                     </p>
@@ -6207,8 +6217,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
           </div>
 
           {/* 底部说明 */}
-          <div className='p-6 pt-4 border-t border-gray-200 dark:border-gray-700'>
-            <p className='text-xs text-gray-500 dark:text-gray-400 text-center'>
+          <div className='p-6 pt-4 border-t border-ui-hair'>
+            <p className='text-xs text-ui-ink-3 text-center'>
               选择适合您设备的客户端下载使用
             </p>
           </div>
@@ -6399,17 +6409,17 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
         mounted &&
         createPortal(
           <div className='fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 backdrop-blur-sm'>
-            <div className='bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md m-4'>
+            <div className='bg-ui-surface rounded-lg shadow-xl w-full max-w-md m-4'>
               {/* 标题 */}
-              <div className='p-6 border-b border-gray-200 dark:border-gray-700'>
-                <h3 className='text-lg font-semibold text-gray-900 dark:text-gray-100'>
+              <div className='p-6 border-b border-ui-hair'>
+                <h3 className='text-lg font-semibold text-ui-ink'>
                   {confirmDialog.title}
                 </h3>
               </div>
 
               {/* 内容 */}
               <div className='p-6'>
-                <p className='text-gray-700 dark:text-gray-300'>
+                <p className='text-ui-ink'>
                   {confirmDialog.message}
                 </p>
               </div>
@@ -6420,7 +6430,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                   onClick={() =>
                     setConfirmDialog({ ...confirmDialog, isOpen: false })
                   }
-                  className='px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg transition-colors'
+                  className='px-4 py-2 text-sm font-medium text-ui-ink bg-ui-surface-3 hover:bg-ui-surface-hover rounded-lg transition-colors'
                 >
                   取消
                 </button>

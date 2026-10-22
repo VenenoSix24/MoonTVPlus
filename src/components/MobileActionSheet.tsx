@@ -52,6 +52,7 @@ const MobileActionSheet: React.FC<MobileActionSheetProps> = ({
   const backdropPressStarted = useRef(false);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const actionsListRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   // 操作区可滚动：有可用播放源最多显示 4 项，否则最多 6 项
   const hasPlaySources = Boolean(isAggregate && sources && sources.length > 0);
@@ -97,55 +98,27 @@ const MobileActionSheet: React.FC<MobileActionSheetProps> = ({
     };
   }, [isOpen]);
 
-  // 阻止背景滚动
+  // 弹层打开期间不让背景跟着滚。
+  // 以前是 body position:fixed + top:-scrollY 那套：装成 PWA（standalone）之后
+  // body 会被夹成布局视口高度，整页内容往上顶一截，底部还露出一条画布底色 ——
+  // 就是那个「页面往上移、最下面多出一块纯色」的鬼影。
+  // 现在只在弹层自己身上拦非 passive 的 touchmove：页面一点都不搬，自然没有位移。
+  // React 的 onTouchMove 是 passive 的，preventDefault 拦不住，所以手动挂监听。
   useEffect(() => {
-    if (isVisible) {
-      // 保存当前滚动位置
-      const scrollY = window.scrollY;
-      const scrollX = window.scrollX;
-      const body = document.body;
-      const html = document.documentElement;
+    if (!isVisible || !mounted) return;
+    const root = rootRef.current;
+    if (!root) return;
 
-      // 获取滚动条宽度
-      const scrollBarWidth = window.innerWidth - html.clientWidth;
+    const blockScroll = (e: TouchEvent) => {
+      const target = e.target as Element | null;
+      // 弹层内部自己可滚的区域放行（操作项过多时）
+      if (target && target.closest('[data-mtv-sheet-scroll]')) return;
+      if (e.cancelable) e.preventDefault();
+    };
 
-      // 保存原始样式
-      const originalBodyStyle = {
-        position: body.style.position,
-        top: body.style.top,
-        left: body.style.left,
-        right: body.style.right,
-        width: body.style.width,
-        paddingRight: body.style.paddingRight,
-        overflow: body.style.overflow,
-      };
-
-      // 设置body样式来阻止滚动，但保持原位置
-      body.style.position = 'fixed';
-      body.style.top = `-${scrollY}px`;
-      body.style.left = `-${scrollX}px`;
-      body.style.right = '0';
-      body.style.width = '100%';
-      body.style.overflow = 'hidden';
-      body.style.paddingRight = `${scrollBarWidth}px`;
-
-      return () => {
-        // 恢复所有原始样式
-        body.style.position = originalBodyStyle.position;
-        body.style.top = originalBodyStyle.top;
-        body.style.left = originalBodyStyle.left;
-        body.style.right = originalBodyStyle.right;
-        body.style.width = originalBodyStyle.width;
-        body.style.paddingRight = originalBodyStyle.paddingRight;
-        body.style.overflow = originalBodyStyle.overflow;
-
-        // 使用 requestAnimationFrame 确保样式恢复后再滚动
-        requestAnimationFrame(() => {
-          window.scrollTo(scrollX, scrollY);
-        });
-      };
-    }
-  }, [isVisible]);
+    root.addEventListener('touchmove', blockScroll, { passive: false });
+    return () => root.removeEventListener('touchmove', blockScroll);
+  }, [isVisible, mounted]);
 
   useEffect(() => {
     const element = titleRef.current;
@@ -255,14 +228,11 @@ const MobileActionSheet: React.FC<MobileActionSheetProps> = ({
 
   const content = (
     <div
+      ref={rootRef}
       className='fixed inset-0 z-[9999] flex items-end justify-center'
-      onTouchMove={(e) => {
-        // 阻止最外层容器的触摸移动，防止背景滚动
-        e.preventDefault();
-        e.stopPropagation();
-      }}
       style={{
-        touchAction: 'none', // 禁用所有触摸操作
+        // 根层禁用触摸手势，背景就滚不动；内部可滚区域自己把 touch-action 放回 pan-y
+        touchAction: 'none',
       }}
     >
       {/* 背景遮罩 */}
@@ -378,14 +348,13 @@ const MobileActionSheet: React.FC<MobileActionSheetProps> = ({
         <div className='px-3 py-1.5 min-h-0'>
           <div
             ref={actionsListRef}
+            data-mtv-sheet-scroll
             className='overflow-y-auto overscroll-contain'
             style={{
               maxHeight: actionsMaxHeight,
               WebkitOverflowScrolling: 'touch',
-            }}
-            onTouchMove={(e) => {
-              // 允许操作列表内部滑动，阻止冒泡到外层遮罩
-              e.stopPropagation();
+              // 根层把 touch-action 关了，这里显式放回纵向手势，列表才滚得动
+              touchAction: 'pan-y',
             }}
           >
             {actions.map((action, index) => (
@@ -460,7 +429,11 @@ const MobileActionSheet: React.FC<MobileActionSheetProps> = ({
             </div>
 
             {/* 播放源列表 */}
-            <div className='max-h-32 overflow-y-auto'>
+            <div
+              data-mtv-sheet-scroll
+              className='max-h-32 overflow-y-auto'
+              style={{ touchAction: 'pan-y' }}
+            >
               <div className='grid grid-cols-2 gap-2'>
                 {sources.map((source, index) => (
                   <div

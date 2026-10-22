@@ -1119,6 +1119,20 @@ export function configSelfCheck(adminConfig: AdminConfig): AdminConfig {
     adminConfig.MusicConfig.ProxyEnabled = true;
   }
 
+  // 观影室配置：原来只有环境变量一条路，管理面板里没有开关。这里给一份默认值，
+  // 老部署的配置里没有这一项时自动补上，不影响已经用 WATCH_ROOM_ENABLED 开着的实例
+  // （读配置时会和环境变量做一次 OR，见 app/layout.tsx 与 api/server-config）。
+  if (!adminConfig.WatchRoomConfig) {
+    adminConfig.WatchRoomConfig = {
+      Enabled: false,
+      ServerType: 'internal',
+      ExternalServerUrl: '',
+      ExternalServerAuth: '',
+    };
+  } else if (adminConfig.WatchRoomConfig.ServerType === undefined) {
+    adminConfig.WatchRoomConfig.ServerType = 'internal';
+  }
+
   if (!adminConfig.OPDSConfig) {
     adminConfig.OPDSConfig = {
       Enabled: false,

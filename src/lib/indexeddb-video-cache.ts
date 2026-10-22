@@ -575,10 +575,16 @@ export async function ensureIndexedDBVideoServiceWorker(): Promise<boolean> {
   if (!('serviceWorker' in navigator)) return false;
 
   try {
-    const registration = await navigator.serviceWorker.register('/push-sw.js', {
-      scope: '/',
-      updateViaCache: 'none',
-    });
+    // 同 UserMenu：优先复用已有的 scope `/` 注册（生产环境是 next-pwa 的 /sw.js，
+    // 它启动时 importScripts 了 /push-sw.js，IndexedDB 视频路由就在里面）。
+    // 重复注册会把 Workbox SW 顶掉，离线缓存失效。
+    const existing = await navigator.serviceWorker.getRegistration('/');
+    const registration =
+      existing ??
+      (await navigator.serviceWorker.register('/push-sw.js', {
+        scope: '/',
+        updateViaCache: 'none',
+      }));
 
     await waitForServiceWorkerActivation(registration);
     return waitForServiceWorkerController();

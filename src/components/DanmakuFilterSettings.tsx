@@ -6,6 +6,7 @@ import { useEffect, useRef,useState } from 'react';
 
 import { getDanmakuFilterConfig, saveDanmakuFilterConfig } from '@/lib/db.client';
 import { DanmakuFilterConfig, DanmakuFilterRule } from '@/lib/types';
+import { lockBodyScroll, unlockBodyScroll } from '@/lib/scroll-lock';
 
 interface DanmakuFilterSettingsProps {
   isOpen: boolean;
@@ -61,54 +62,11 @@ export default function DanmakuFilterSettings({
     };
   }, [isOpen]);
 
-  // 阻止背景滚动
+  // 锁背景滚动（不用 body fixed 那套，PWA 下会让整页上移，见 scroll-lock.ts）
   useEffect(() => {
-    if (isVisible) {
-      // 保存当前滚动位置
-      const scrollY = window.scrollY;
-      const scrollX = window.scrollX;
-      const body = document.body;
-      const html = document.documentElement;
-
-      // 获取滚动条宽度
-      const scrollBarWidth = window.innerWidth - html.clientWidth;
-
-      // 保存原始样式
-      const originalBodyStyle = {
-        position: body.style.position,
-        top: body.style.top,
-        left: body.style.left,
-        right: body.style.right,
-        width: body.style.width,
-        paddingRight: body.style.paddingRight,
-        overflow: body.style.overflow,
-      };
-
-      // 设置body样式来阻止滚动，但保持原位置
-      body.style.position = 'fixed';
-      body.style.top = `-${scrollY}px`;
-      body.style.left = `-${scrollX}px`;
-      body.style.right = '0';
-      body.style.width = '100%';
-      body.style.overflow = 'hidden';
-      body.style.paddingRight = `${scrollBarWidth}px`;
-
-      return () => {
-        // 恢复所有原始样式
-        body.style.position = originalBodyStyle.position;
-        body.style.top = originalBodyStyle.top;
-        body.style.left = originalBodyStyle.left;
-        body.style.right = originalBodyStyle.right;
-        body.style.width = originalBodyStyle.width;
-        body.style.paddingRight = originalBodyStyle.paddingRight;
-        body.style.overflow = originalBodyStyle.overflow;
-
-        // 使用 requestAnimationFrame 确保样式恢复后再滚动
-        requestAnimationFrame(() => {
-          window.scrollTo(scrollX, scrollY);
-        });
-      };
-    }
+    if (!isVisible) return;
+    lockBodyScroll();
+    return () => unlockBodyScroll();
   }, [isVisible]);
 
   // 加载配置

@@ -72,6 +72,7 @@ import { createPortal } from 'react-dom';
 
 import { AdminConfig, AdminConfigResult } from '@/lib/admin.types';
 import { getAuthInfoFromBrowserCookie } from '@/lib/auth';
+import { lockBodyScroll, unlockBodyScroll } from '@/lib/scroll-lock';
 import { BookSource } from '@/lib/book.types';
 import {
   ALL_FEATURE_PERMISSION_KEYS,
@@ -655,29 +656,11 @@ const UserConfig = ({
   const currentUsername = getAuthInfoFromBrowserCookie()?.username || null;
 
   // 查看用户设备弹窗打开时锁定背景滚动，避免滚动穿透
+  // （不用 body fixed 那套，PWA 下会让整页上移，见 scroll-lock.ts）
   useEffect(() => {
     if (!showUserDevicesModal) return;
-
-    const scrollY = window.scrollY;
-    const originalStyle = {
-      position: document.body.style.position,
-      top: document.body.style.top,
-      width: document.body.style.width,
-      overflow: document.body.style.overflow,
-    };
-
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.width = '100%';
-    document.body.style.overflow = 'hidden';
-
-    return () => {
-      document.body.style.position = originalStyle.position;
-      document.body.style.top = originalStyle.top;
-      document.body.style.width = originalStyle.width;
-      document.body.style.overflow = originalStyle.overflow;
-      window.scrollTo(0, scrollY);
-    };
+    lockBodyScroll();
+    return () => unlockBodyScroll();
   }, [showUserDevicesModal]);
 
   // 判断是否有旧版用户数据需要迁移
@@ -18975,6 +18958,196 @@ const LiveSourceConfig = ({
 };
 
 // 网络直播配置组件
+// 观影室配置：总开关 + 服务器类型。原来这一项只认环境变量 WATCH_ROOM_ENABLED，
+// 管理面板里没有，Docker 用户只能改 compose 才能开。这里补上开关与服务器设置。
+const WatchRoomConfigComponent = ({
+  config,
+  refreshConfig,
+}: {
+  config: AdminConfig | null;
+  refreshConfig: () => Promise<void>;
+}) => {
+  const [enabled, setEnabled] = useState(false);
+  const [serverType, setServerType] = useState<'internal' | 'external'>(
+    'internal'
+  );
+  const [externalUrl, setExternalUrl] = useState('');
+  const [externalAuth, setExternalAuth] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [feedback, setFeedback] = useState<{
+    type: 'ok' | 'err';
+    text: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (config?.WatchRoomConfig) {
+      setEnabled(config.WatchRoomConfig.Enabled ?? false);
+      setServerType(config.WatchRoomConfig.ServerType || 'internal');
+      setExternalUrl(config.WatchRoomConfig.ExternalServerUrl || '');
+      setExternalAuth(config.WatchRoomConfig.ExternalServerAuth || '');
+    }
+  }, [config]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setFeedback(null);
+    try {
+      const resp = await fetch('/api/admin/watch-room', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          Enabled: enabled,
+          ServerType: serverType,
+          ExternalServerUrl: externalUrl.trim(),
+          ExternalServerAuth: externalAuth.trim(),
+        }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(data.error || '保存失败');
+      setFeedback({ type: 'ok', text: '观影室配置已保存' });
+      await refreshConfig();
+    } catch (error) {
+      setFeedback({
+        type: 'err',
+        text: error instanceof Error ? error.message : '保存失败',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className='space-y-6'>
+      <div className='bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4'>
+        <div className='text-sm text-blue-800 dark:text-blue-300 space-y-1'>
+          <p>• 观影室支持多人同步观看：进度同步、屏幕共享、一起听</p>
+          <p>
+            • 关闭后不显示观影室入口，右下角的房间信息 / 聊天浮层也不会出现
+          </p>
+          <p>
+            • 用环境变量 <code>WATCH_ROOM_ENABLED=true</code>
+            启动的实例会保持开启，此处关闭不会覆盖它
+          </p>
+        </div>
+      </div>
+
+      <div className='flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700'>
+        <div>
+          <h3 className='text-sm font-medium text-gray-900 dark:text-gray-100'>
+            启用观影室
+          </h3>
+          <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+            开启后顶栏「更多」与手机端「更多」页会出现观影室入口
+          </p>
+        </div>
+        <label className='relative inline-flex items-center cursor-pointer'>
+          <input
+            type='checkbox'
+            checked={enabled}
+            onChange={(e) => setEnabled(e.target.checked)}
+            className='sr-only peer'
+          />
+          <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-ui-accent dark:peer-focus:ring-ui-accent rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-ui-accent"></div>
+        </label>
+      </div>
+
+      <div className='p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 space-y-4'>
+        <div>
+          <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2'>
+            服务器类型
+          </label>
+          <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
+            <button
+              type='button'
+              onClick={() => setServerType('internal')}
+              className={`rounded-lg border p-3 text-left transition-colors ${
+                serverType === 'internal'
+                  ? 'border-ui-accent bg-ui-accent-soft'
+                  : 'border-gray-300 dark:border-gray-600'
+              }`}
+            >
+              <div className='text-sm font-medium text-gray-900 dark:text-gray-100'>
+                内置服务
+              </div>
+              <div className='mt-1 text-xs text-gray-600 dark:text-gray-400'>
+                用本机内置的 Socket.IO 服务，无需额外部署
+              </div>
+            </button>
+            <button
+              type='button'
+              onClick={() => setServerType('external')}
+              className={`rounded-lg border p-3 text-left transition-colors ${
+                serverType === 'external'
+                  ? 'border-ui-accent bg-ui-accent-soft'
+                  : 'border-gray-300 dark:border-gray-600'
+              }`}
+            >
+              <div className='text-sm font-medium text-gray-900 dark:text-gray-100'>
+                外部服务
+              </div>
+              <div className='mt-1 text-xs text-gray-600 dark:text-gray-400'>
+                连接独立部署的观影室服务器
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {serverType === 'external' && (
+          <>
+            <div>
+              <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2'>
+                服务器地址 <span className='text-red-500'>*</span>
+              </label>
+              <input
+                type='text'
+                value={externalUrl}
+                onChange={(e) => setExternalUrl(e.target.value)}
+                placeholder='https://watch.example.com'
+                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-ui-accent'
+              />
+            </div>
+            <div>
+              <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2'>
+                鉴权密钥
+              </label>
+              <input
+                type='password'
+                value={externalAuth}
+                onChange={(e) => setExternalAuth(e.target.value)}
+                placeholder='留空表示沿用环境变量中的值'
+                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-ui-accent'
+              />
+              <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
+                该值不会下发到前端
+              </p>
+            </div>
+          </>
+        )}
+      </div>
+
+      {feedback && (
+        <p
+          className={`text-sm ${
+            feedback.type === 'ok'
+              ? 'text-green-600 dark:text-green-400'
+              : 'text-red-600 dark:text-red-400'
+          }`}
+        >
+          {feedback.text}
+        </p>
+      )}
+
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        className={buttonStyles.primary}
+      >
+        {saving ? '保存中...' : '保存观影室配置'}
+      </button>
+    </div>
+  );
+};
+
 const WebLiveConfig = ({
   config,
   refreshConfig,
@@ -19501,6 +19674,7 @@ function AdminPageClient() {
     videoSource: false,
     sourceScriptLab: false,
     musicConfig: false,
+    watchRoom: false,
     mediaLibrary: false,
     openListConfig: false,
     netDiskConfig: false,
@@ -19904,6 +20078,14 @@ function AdminPageClient() {
       icon: <Globe size={20} className={navIconClass} />,
       render: () => (
         <WebLiveConfig config={config} refreshConfig={fetchConfig} />
+      ),
+    },
+    {
+      key: 'watchRoom',
+      title: '观影室配置',
+      icon: <Users size={20} className={navIconClass} />,
+      render: () => (
+        <WatchRoomConfigComponent config={config} refreshConfig={fetchConfig} />
       ),
     },
     {
@@ -20403,6 +20585,21 @@ function AdminPageClient() {
               onToggle={() => toggleTab('webLive')}
             >
               <WebLiveConfig config={config} refreshConfig={fetchConfig} />
+            </CollapsibleTab>
+
+            {/* 观影室配置标签 */}
+            <CollapsibleTab
+              title='观影室配置'
+              icon={
+                <Users size={20} className='text-gray-600 dark:text-gray-400' />
+              }
+              isExpanded={expandedTabs.watchRoom}
+              onToggle={() => toggleTab('watchRoom')}
+            >
+              <WatchRoomConfigComponent
+                config={config}
+                refreshConfig={fetchConfig}
+              />
             </CollapsibleTab>
 
             {/* 私人影库大类 */}

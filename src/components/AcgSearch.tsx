@@ -566,80 +566,69 @@ export default function AcgSearch({
             const health = healthMap[itemId];
             const isHealthChecking = Boolean(healthCheckingIds[itemId]);
             return (
-            <div
-              key={itemId}
-              className='p-4 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-ui-accent dark:hover:border-ui-accent transition-colors'
-            >
+            <div key={itemId} className='mtv-pansou-card'>
               {/* 标题 */}
-              <div className='mb-2 font-medium text-gray-900 dark:text-gray-100'>
+              <h4 className='mtv-pansou-title' title={item.title}>
                 {item.title}
-              </div>
-
-              {/* 发布时间 */}
-              <div className='mb-2 text-xs text-gray-500 dark:text-gray-400'>
-                {item.pubDate
-                  ? new Date(item.pubDate).toLocaleString('zh-CN')
-                  : ''}
-              </div>
+              </h4>
 
               {/* 图片预览 */}
               {item.images && item.images.length > 0 && (
-                <div className='mb-3 flex gap-2 overflow-x-auto'>
+                <div className='mtv-pansou-shots'>
                   {item.images.slice(0, 3).map((img, imgIndex) => (
-                    <img
-                      key={imgIndex}
-                      src={img}
-                      alt=''
-                      className='h-20 w-auto rounded object-cover'
-                      loading='lazy'
-                    />
+                    <img key={imgIndex} src={img} alt='' loading='lazy' />
                   ))}
                 </div>
               )}
 
-              {/* 测活结果 */}
-              {health && (
-                <div className='mb-3 flex flex-wrap items-center gap-2 text-xs'>
-                  <span
-                    className={`inline-flex items-center rounded-full px-2 py-0.5 font-medium ${healthBadgeClass(
-                      health.health
-                    )}`}
-                  >
-                    {healthLabel(health.health)}
-                  </span>
-                  <span className='text-gray-600 dark:text-gray-300'>
-                    Seeder {health.seeders}
-                    {' · '}
-                    Leecher {health.leechers}
-                    {' · '}
-                    Peer {health.peers}
-                  </span>
-                  {typeof health.durationMs === 'number' && (
-                    <span className='text-gray-400 dark:text-gray-500'>
-                      {health.source === 'cache'
-                        ? '缓存'
-                        : `${health.durationMs}ms`}
+              {/* 发布时间 + 测活结果 */}
+              <div className='mtv-pansou-foot'>
+                {item.pubDate && (
+                  <span>{new Date(item.pubDate).toLocaleString('zh-CN')}</span>
+                )}
+                {health && (
+                  <>
+                    <span
+                      className={`inline-flex items-center rounded-full px-2 py-0.5 font-medium ${healthBadgeClass(
+                        health.health
+                      )}`}
+                    >
+                      {healthLabel(health.health)}
                     </span>
-                  )}
-                </div>
-              )}
+                    <span>
+                      Seeder {health.seeders}
+                      {' · '}
+                      Leecher {health.leechers}
+                      {' · '}
+                      Peer {health.peers}
+                    </span>
+                    {typeof health.durationMs === 'number' && (
+                      <span>
+                        {health.source === 'cache'
+                          ? '缓存'
+                          : `${health.durationMs}ms`}
+                      </span>
+                    )}
+                  </>
+                )}
+              </div>
 
               {/* 操作按钮 */}
-              <div className='flex flex-wrap items-center gap-2'>
+              <div className='mtv-pansou-acts'>
                 <button
                   onClick={() => handleOpenDownloadDialog(item, index)}
                   disabled={downloadingId === itemId}
-                  className='flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-ui-accent text-white text-sm hover:bg-ui-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
+                  className='mtv-pansou-btn is-primary'
                   title='存到私人影库'
                 >
                   {downloadingId === itemId ? (
                     <>
-                      <Loader2 className='h-4 w-4 animate-spin' />
+                      <Loader2 className='h-3.5 w-3.5 animate-spin' />
                       <span>下载中...</span>
                     </>
                   ) : (
                     <>
-                      <Download className='h-4 w-4' />
+                      <Download className='h-3.5 w-3.5' />
                       <span>存到私人影库</span>
                     </>
                   )}
@@ -647,17 +636,17 @@ export default function AcgSearch({
                 <button
                   onClick={() => handleCheckHealth(item, index)}
                   disabled={!item.torrentUrl || isHealthChecking}
-                  className='flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-sky-600 text-white text-sm hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
+                  className='mtv-pansou-btn'
                   title='Tracker 测活（全站并发上限可由 MAGNET_HEALTH_MAX_CONCURRENT 配置）'
                 >
                   {isHealthChecking ? (
                     <>
-                      <Loader2 className='h-4 w-4 animate-spin' />
+                      <Loader2 className='h-3.5 w-3.5 animate-spin' />
                       <span>测活中...</span>
                     </>
                   ) : (
                     <>
-                      <Activity className='h-4 w-4' />
+                      <Activity className='h-3.5 w-3.5' />
                       <span>{health ? '重新测活' : '测活'}</span>
                     </>
                   )}
@@ -665,13 +654,13 @@ export default function AcgSearch({
                 <button
                   onClick={() => handleCopyMagnet(item, index)}
                   disabled={(!item.torrentUrl && !item.link) || copyingId === itemId}
-                  className='flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-gray-200 text-gray-700 text-sm hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
+                  className='mtv-pansou-btn'
                   title='复制磁链'
                 >
                   {copyingId === itemId ? (
-                    <Loader2 className='h-4 w-4 animate-spin' />
+                    <Loader2 className='h-3.5 w-3.5 animate-spin' />
                   ) : (
-                    <Copy className='h-4 w-4' />
+                    <Copy className='h-3.5 w-3.5' />
                   )}
                   <span>复制磁链</span>
                 </button>
@@ -679,10 +668,10 @@ export default function AcgSearch({
                   href={item.link || item.torrentUrl || '#'}
                   target='_blank'
                   rel='noopener noreferrer'
-                  className='flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-gray-200 text-gray-700 text-sm hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 transition-colors'
+                  className='mtv-pansou-btn'
                   title='查看详情'
                 >
-                  <ExternalLink className='h-4 w-4' />
+                  <ExternalLink className='h-3.5 w-3.5' />
                   <span>详情</span>
                 </a>
               </div>

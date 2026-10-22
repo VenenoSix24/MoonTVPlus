@@ -55,11 +55,11 @@ function Toggle({
       onClick={onChange}
       disabled={disabled}
       className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50 dark:focus:ring-offset-gray-900 ${
-        checked ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
+        checked ? 'bg-blue-600' : 'bg-ui-surface-3 bg-ui-surface-3'
       }`}
     >
       <span
-        className={`inline-flex h-5 w-5 transform items-center justify-center rounded-full bg-white shadow-sm transition-transform duration-200 ${
+        className={`inline-flex h-5 w-5 transform items-center justify-center rounded-full bg-ui-surface shadow-sm transition-transform duration-200 ${
           checked ? 'translate-x-6' : 'translate-x-1'
         }`}
       >
@@ -124,7 +124,7 @@ export function EmailSettingsPanel({
         style={{ touchAction: 'none' }}
       />
 
-      <div className='fixed left-1/2 top-1/2 z-[1001] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-gray-900'>
+      <div className='fixed left-1/2 top-1/2 z-[1001] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl bg-ui-surface shadow-xl'>
         <div
           className='max-h-[85vh] overflow-y-auto p-6'
           data-panel-content
@@ -136,16 +136,16 @@ export function EmailSettingsPanel({
               <div className='mb-2 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300'>
                 <Bell className='h-5 w-5' />
               </div>
-              <h3 className='text-xl font-bold text-gray-900 dark:text-gray-100'>
+              <h3 className='text-xl font-bold text-ui-ink'>
                 通知设置
               </h3>
-              <p className='mt-1 text-sm text-gray-500 dark:text-gray-400'>
+              <p className='mt-1 text-sm text-ui-ink-3'>
                 管理邮件通知、浏览器系统通知和 Telegram Bot 通知。
               </p>
             </div>
             <button
               onClick={onClose}
-              className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:hover:bg-gray-800'
+              className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ui-ink-3 transition-colors hover:bg-ui-surface-hover focus:outline-none focus:ring-2 focus:ring-blue-500'
               aria-label='关闭通知设置'
             >
               <X className='h-5 w-5' />
@@ -153,7 +153,7 @@ export function EmailSettingsPanel({
           </div>
 
           {/* 三区域切换式导航 — 与电视访问一致 */}
-          <div className='mb-5 grid grid-cols-3 rounded-2xl bg-gray-100 p-1 dark:bg-white/10'>
+          <div className='mb-5 grid grid-cols-3 rounded-2xl bg-ui-surface-3 p-1 dark:bg-white/10'>
             {tabs.map((item) => {
               const Icon = item.icon;
               const active = notificationTab === item.key;
@@ -164,8 +164,8 @@ export function EmailSettingsPanel({
                   onClick={() => setNotificationTab(item.key)}
                   className={`flex cursor-pointer items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/70 ${
                     active
-                      ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-950 dark:text-white'
-                      : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                      ? 'bg-ui-surface text-ui-ink shadow-sm bg-ui-bg dark:text-white'
+                      : 'text-ui-ink-3 hover:text-ui-ink text-ui-ink-3 dark:hover:text-white'
                   }`}
                 >
                   <Icon className='h-4 w-4' />
@@ -178,15 +178,15 @@ export function EmailSettingsPanel({
 
           {emailSettingsLoading ? (
             <div className='space-y-4' aria-live='polite'>
-              <div className='animate-pulse rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800'>
-                <div className='mb-3 h-5 w-28 rounded bg-gray-200 dark:bg-gray-700' />
-                <div className='h-10 rounded bg-gray-200 dark:bg-gray-700' />
+              <div className='animate-pulse rounded-2xl border border-ui-hair bg-ui-surface-2 p-4'>
+                <div className='mb-3 h-5 w-28 rounded bg-ui-surface-3' />
+                <div className='h-10 rounded bg-ui-surface-3' />
               </div>
-              <div className='animate-pulse rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800'>
-                <div className='mb-3 h-5 w-32 rounded bg-gray-200 dark:bg-gray-700' />
-                <div className='h-16 rounded bg-gray-200 dark:bg-gray-700' />
+              <div className='animate-pulse rounded-2xl border border-ui-hair bg-ui-surface-2 p-4'>
+                <div className='mb-3 h-5 w-32 rounded bg-ui-surface-3' />
+                <div className='h-16 rounded bg-ui-surface-3' />
               </div>
-              <p className='text-center text-sm text-gray-500 dark:text-gray-400'>
+              <p className='text-center text-sm text-ui-ink-3'>
                 加载中...
               </p>
             </div>
@@ -194,22 +194,22 @@ export function EmailSettingsPanel({
             <>
               {/* 邮件通知 */}
               {notificationTab === 'email' && (
-                <section className='rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800'>
+                <section className='rounded-2xl border border-ui-hair bg-ui-surface-2 p-4'>
                   <div className='mb-4 flex items-start gap-3'>
                     <div className='flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-300'>
                       <Mail className='h-5 w-5' />
                     </div>
                     <div className='min-w-0 flex-1'>
-                      <h4 className='text-base font-semibold text-gray-900 dark:text-gray-100'>
+                      <h4 className='text-base font-semibold text-ui-ink'>
                         邮件通知
                       </h4>
-                      <p className='mt-1 text-sm text-gray-500 dark:text-gray-400'>
+                      <p className='mt-1 text-sm text-ui-ink-3'>
                         用于接收收藏影视更新等异步提醒，可独立于系统通知关闭。
                       </p>
                     </div>
                   </div>
 
-                  <label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+                  <label className='mb-2 block text-sm font-medium text-ui-ink'>
                     邮箱地址
                   </label>
                   <input
@@ -218,15 +218,15 @@ export function EmailSettingsPanel({
                     onChange={(e) => onUserEmailChange(e.target.value)}
                     placeholder='输入您的邮箱地址'
                     disabled={emailSettingsSaving}
-                    className='mb-4 w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 transition-colors placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-900 dark:text-white'
+                    className='mb-4 w-full rounded-xl border border-ui-hair-strong bg-ui-surface px-3 py-2.5 text-sm text-ui-ink transition-colors placeholder:text-ui-ink-3 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50 dark:text-white'
                   />
 
-                  <div className='flex items-center justify-between gap-4 rounded-xl bg-white p-3 dark:bg-gray-900/70'>
+                  <div className='flex items-center justify-between gap-4 rounded-xl bg-ui-surface p-3'>
                     <div>
-                      <h5 className='text-sm font-medium text-gray-800 dark:text-gray-200'>
+                      <h5 className='text-sm font-medium text-ui-ink'>
                         收藏更新邮件
                       </h5>
-                      <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
+                      <p className='mt-1 text-xs text-ui-ink-3'>
                         当收藏的影片有更新时发送邮件通知。
                       </p>
                     </div>
@@ -242,16 +242,16 @@ export function EmailSettingsPanel({
 
               {/* 浏览器系统通知 */}
               {notificationTab === 'push' && (
-                <section className='rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800'>
+                <section className='rounded-2xl border border-ui-hair bg-ui-surface-2 p-4'>
                   <div className='mb-4 flex items-start gap-3'>
                     <div className='flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-300'>
                       <MonitorSmartphone className='h-5 w-5' />
                     </div>
                     <div className='min-w-0 flex-1'>
-                      <h4 className='text-base font-semibold text-gray-900 dark:text-gray-100'>
+                      <h4 className='text-base font-semibold text-ui-ink'>
                         当前设备浏览器系统通知
                       </h4>
-                      <p className='mt-1 text-sm text-gray-500 dark:text-gray-400'>
+                      <p className='mt-1 text-sm text-ui-ink-3'>
                         当前设备收到站内通知时，通过浏览器推送到系统通知中心。
                       </p>
                     </div>
@@ -264,9 +264,9 @@ export function EmailSettingsPanel({
                     />
                   </div>
 
-                  <div className='space-y-2 rounded-xl bg-white p-3 dark:bg-gray-900/70'>
+                  <div className='space-y-2 rounded-xl bg-ui-surface p-3'>
                     <div className='flex items-center justify-between gap-3 text-sm'>
-                      <span className='text-gray-600 dark:text-gray-400'>当前设备</span>
+                      <span className='text-ui-ink-2'>当前设备</span>
                       <span className={`font-medium ${pushNotificationsSupported ? 'text-ui-accent ' : 'text-amber-600 dark:text-amber-400'}`}>
                         {pushNotificationsSupported ? '可用' : '需支持或授权'}
                       </span>
@@ -289,21 +289,21 @@ export function EmailSettingsPanel({
               {notificationTab === 'telegram' && (
                 <>
                 {telegramNotifyEnabled ? (
-                  <section className='rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800'>
+                  <section className='rounded-2xl border border-ui-hair bg-ui-surface-2 p-4'>
                     <div className='mb-4 flex items-start gap-3'>
                       <div className='flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-300'>
                         <Send className='h-5 w-5' />
                       </div>
                       <div className='min-w-0 flex-1'>
-                        <h4 className='text-base font-semibold text-gray-900 dark:text-gray-100'>Telegram Bot 通知</h4>
-                        <p className='mt-1 text-sm text-gray-500 dark:text-gray-400'>
+                        <h4 className='text-base font-semibold text-ui-ink'>Telegram Bot 通知</h4>
+                        <p className='mt-1 text-sm text-ui-ink-3'>
                           绑定 Telegram 后可接收站内通知，也可在登录页使用 Telegram 确认登录。
                         </p>
                       </div>
                     </div>
-                    <div className='space-y-3 rounded-xl bg-white p-3 dark:bg-gray-900/70'>
+                    <div className='space-y-3 rounded-xl bg-ui-surface p-3'>
                       <div className='flex items-center justify-between gap-3 text-sm'>
-                        <span className='text-gray-600 dark:text-gray-400'>绑定状态</span>
+                        <span className='text-ui-ink-2'>绑定状态</span>
                         <span className={`font-medium ${telegramBound ? 'text-ui-accent ' : 'text-amber-600 dark:text-amber-400'}`}>
                           {telegramBound ? `已绑定${telegramUsername ? ` @${telegramUsername}` : ''}` : '未绑定'}
                         </span>
@@ -340,14 +340,14 @@ export function EmailSettingsPanel({
                     </div>
                   </section>
                 ) : (
-                  <section className='rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800'>
+                  <section className='rounded-2xl border border-ui-hair bg-ui-surface-2 p-4'>
                     <div className='mb-4 flex items-start gap-3'>
-                      <div className='flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'>
+                      <div className='flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-ui-surface-3 text-ui-ink-3'>
                         <Send className='h-5 w-5' />
                       </div>
                       <div className='min-w-0 flex-1'>
-                        <h4 className='text-base font-semibold text-gray-900 dark:text-gray-100'>Telegram Bot 通知</h4>
-                        <p className='mt-1 text-sm text-gray-500 dark:text-gray-400'>
+                        <h4 className='text-base font-semibold text-ui-ink'>Telegram Bot 通知</h4>
+                        <p className='mt-1 text-sm text-ui-ink-3'>
                           当前站点未启用 Telegram Bot 通知功能。
                         </p>
                       </div>

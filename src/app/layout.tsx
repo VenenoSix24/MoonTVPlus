@@ -39,10 +39,17 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: siteName,
     description: '影视聚合',
-    manifest: '/manifest.json',
+    // manifest 的 <link> 挪到下面 <head> 里手写。
+    // 走 metadata.manifest 的话，Next 会自动加上 crossorigin="use-credentials"，
+    // 而 Android Chrome 抓 manifest 时对这个属性很敏感（response 没有
+    // Access-Control-Allow-Credentials 就会被判定抓取失败），
+    // 表现就是「PC 能装、Android 不给装」。手写一条干净的 link 最稳。
     // 供配套浏览器扩展（moontvplus-extension）识别本站部署（勿删）
     other: {
       'moontvplus-site': '1',
+      // Next 只会根据 appleWebApp.capable 生成 apple-mobile-web-app-capable，
+      // 而 Chrome / Android 认的是不带 apple- 前缀的那个；缺了控制台会报弃用警告。
+      'mobile-web-app-capable': 'yes',
     },
     // iOS 添加到主屏幕：沉浸式状态栏（需配合 viewport-fit=cover + 顶部 safe-area）
     appleWebApp: {
@@ -139,6 +146,9 @@ export default async function RootLayout({
     process.env.OPDS_ENABLED === 'true' ||
     process.env.LEGADO_ENABLED === 'true';
   let musicProxyEnabled = true;
+  // 观影室：环境变量与后台配置取 OR —— 老部署靠 WATCH_ROOM_ENABLED=true 启用的实例
+  // 不会因为后台默认值 false 而被关掉。
+  let watchRoomEnabled = process.env.WATCH_ROOM_ENABLED === 'true';
   let advancedRecommendationEnabled = false;
   let localSettingsSyncMode: 'off' | 'manual' | 'auto' = 'off';
   // 站点默认配色。声明在 if 外面：localstorage 模式下不读 config，也要有默认值。
@@ -268,6 +278,9 @@ export default async function RootLayout({
     // 音乐功能配置
     musicFeatureEnabled = config.MusicConfig?.Enabled || false;
     musicProxyEnabled = config.MusicConfig?.ProxyEnabled ?? true;
+    // 观影室：后台开关和环境变量取 OR（见上面的声明）
+    watchRoomEnabled =
+      watchRoomEnabled || config.WatchRoomConfig?.Enabled === true;
     // 漫画功能配置
     suwayomiEnabled = !!(
       config.SuwayomiConfig?.Enabled && config.SuwayomiConfig?.ServerURL
@@ -380,6 +393,9 @@ export default async function RootLayout({
     CUSTOM_AD_FILTER_VERSION: customAdFilterVersion,
     MUSIC_ENABLED: musicFeatureEnabled && userFeatureAccess.music,
     MUSIC_PROXY_ENABLED: musicProxyEnabled,
+    // 观影室总开关（后台开关 OR 环境变量）。前端入口走 server-config 的
+    // WatchRoom.enabled，这里留一份供客户端按需判断。
+    WATCH_ROOM_ENABLED: watchRoomEnabled,
     SUWAYOMI_ENABLED: suwayomiEnabled && userFeatureAccess.manga,
     BOOKS_ENABLED: booksEnabled && userFeatureAccess.books,
     NETDISK_SEARCH_ENABLED: userFeatureAccess.netdisk_search,
@@ -407,7 +423,15 @@ export default async function RootLayout({
           name='viewport'
           content='width=device-width, initial-scale=1.0, viewport-fit=cover'
         />
-        <link rel='apple-touch-icon' href='/icons/icon-192x192.png' />
+        {/* iOS 主屏幕图标走 180×180 的标准路径，不再借用 PWA 的 192。
+            两个文件内容一致，但 180 是 Apple 的规范尺寸，避免系统二次缩放。 */}
+        {/* PWA manifest。手写而不是走 metadata.manifest —— 详见 generateMetadata 里的注释：
+            Next 会自动加 crossorigin="use-credentials"，Android Chrome 抓这个 link 时会失败。 */}
+        <link rel='manifest' href='/manifest.json' />
+        {/* Android 状态栏 / 安装启动画面的底色，和 manifest 的 theme_color 保持一致。
+            只写 manifest 里那份也能生效，但 OEM 浏览器与旧版 Chrome 只认 meta。 */}
+        <meta name='theme-color' content='#000000' />
+        <link rel='apple-touch-icon' sizes='180x180' href='/apple-touch-icon.png' />
         {/* 主题CSS */}
         <link rel='stylesheet' href='/api/theme/css' />
         {/* 将配置序列化后直接写入脚本，浏览器端可通过 window.RUNTIME_CONFIG 获取 */}

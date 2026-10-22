@@ -258,42 +258,40 @@ export default function ContinueWatching({ className }: ContinueWatchingProps) {
       {showConfirmDialog &&
         createPortal(
           <div
-            className='fixed inset-0 z-[var(--ui-z-modal)] flex items-center justify-center bg-black bg-opacity-50 p-4 transition-opacity duration-300'
+            className='fixed inset-0 z-[var(--ui-z-modal)] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm'
             onClick={() => setShowConfirmDialog(false)}
           >
             <div
-              className='max-w-md w-full rounded-lg border border-red-200 bg-white shadow-xl transition-all duration-300 dark:border-red-800 dark:bg-gray-800'
+              className='w-full max-w-sm overflow-hidden rounded-ui-lg border border-ui-hair bg-ui-surface shadow-ui-3'
               onClick={(event) => event.stopPropagation()}
             >
-              <div className='p-6'>
-                <div className='mb-4 flex items-start gap-4'>
-                  <div className='flex-shrink-0'>
-                    <AlertTriangle className='h-8 w-8 text-red-500' />
-                  </div>
-                  <div className='flex-1'>
-                    <h3 className='mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100'>
-                      清空播放记录
-                    </h3>
-                    <p className='text-sm text-gray-600 dark:text-gray-400'>
-                      确定要清空所有播放记录吗？此操作不可恢复。
-                    </p>
-                  </div>
+              <div className='flex items-start gap-3 p-5'>
+                <span className='grid h-9 w-9 flex-none place-items-center rounded-ui-md bg-ui-danger-soft text-ui-danger'>
+                  <AlertTriangle className='h-5 w-5' />
+                </span>
+                <div className='min-w-0 flex-1'>
+                  <h3 className='m-0 text-[15px] font-semibold text-ui-ink'>
+                    清空播放记录
+                  </h3>
+                  <p className='mt-1.5 text-[13px] leading-relaxed text-ui-ink-2'>
+                    确定要清空所有播放记录吗？此操作不可恢复。
+                  </p>
                 </div>
+              </div>
 
-                <div className='mt-6 flex gap-3'>
-                  <button
-                    onClick={() => setShowConfirmDialog(false)}
-                    className='flex-1 rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-                  >
-                    取消
-                  </button>
-                  <button
-                    onClick={handleClearConfirm}
-                    className='flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700'
-                  >
-                    确定清空
-                  </button>
-                </div>
+              <div className='flex gap-2 border-t border-ui-hair p-3'>
+                <button
+                  onClick={() => setShowConfirmDialog(false)}
+                  className='mtv-ui-btn flex-1'
+                >
+                  取消
+                </button>
+                <button
+                  onClick={handleClearConfirm}
+                  className='mtv-ui-btn is-danger flex-1'
+                >
+                  确定清空
+                </button>
               </div>
             </div>
           </div>,

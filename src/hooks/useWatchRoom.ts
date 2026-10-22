@@ -128,7 +128,24 @@ export function useWatchRoom(
       }
 
       return new Promise<Room>((resolve, reject) => {
+        // ack 超时兜底。服务端没挂上观影室命名空间时（比如后台开关刚打开、
+        // 进程还没重启），回包永远不会来，没有超时就会一直转圈 ——
+        // 页面上看到的就是「创建中…」卡死。
+        let settled = false;
+        const timer = setTimeout(() => {
+          if (settled) return;
+          settled = true;
+          reject(
+            new Error(
+              '创建超时：观影室服务没有响应。请确认服务端已启动观影室（重启一次服务后再试）'
+            )
+          );
+        }, 10000);
+
         sock.emit('room:create', data, (response) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
           if (response.success && response.room) {
             setCurrentRoom(response.room);
             setIsOwner(true);
@@ -167,7 +184,22 @@ export function useWatchRoom(
       }
 
       return new Promise<{ room: Room; members: Member[] }>((resolve, reject) => {
+        // 同 createRoom：服务端不可用时 ack 永远不来，必须自己兜底超时
+        let settled = false;
+        const timer = setTimeout(() => {
+          if (settled) return;
+          settled = true;
+          reject(
+            new Error(
+              '加入超时：观影室服务没有响应。请确认服务端已启动观影室（重启一次服务后再试）'
+            )
+          );
+        }, 10000);
+
         sock.emit('room:join', data, (response) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
           if (response.success && response.room && response.members) {
             setCurrentRoom(response.room);
             setMembers(response.members);

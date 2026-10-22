@@ -867,7 +867,7 @@ export default function PansouSearch({
                     <button
                       onClick={() => handleStartCheck(cloudType, links)}
                       disabled={isCheckingThisType}
-                      className='px-3 py-1 rounded-md bg-ui-accent hover:brightness-110 text-white text-xs transition-colors disabled:opacity-60'
+                      className='mtv-pansou-btn is-primary'
                     >
                       {cloudCheckTask
                         ? cloudCheckTask.status === 'running'
@@ -878,7 +878,7 @@ export default function PansouSearch({
                     {isCheckingThisType && (
                       <button
                         onClick={() => handleCancelCheck(cloudType)}
-                        className='px-3 py-1 rounded-md bg-ui-surface-3 hover:bg-ui-surface-hover text-ui-ink text-xs transition-colors'
+                        className='mtv-pansou-btn'
                       >
                         停止检测
                       </button>
@@ -895,35 +895,29 @@ export default function PansouSearch({
               {/* 链接列表 */}
               <div className='space-y-2'>
                 {sortedLinks.map((link: PansouLink, index: number) => (
-                  <div
-                    key={`${cloudType}-${index}`}
-                    className='p-4 rounded-lg bg-ui-surface-3 border border-ui-hair hover:border-ui-accent transition-colors'
-                  >
+                  <div key={`${cloudType}-${index}`} className='mtv-pansou-card'>
                     {/* 资源标题 */}
                     {link.note && (
-                      <div className='mb-2 text-sm font-medium text-ui-ink'>
+                      <h4 className='mtv-pansou-title' title={link.note}>
                         {link.note}
-                      </div>
+                      </h4>
                     )}
 
-                    {/* 链接和密码 */}
-                    <div className='flex items-center gap-2 mb-2'>
-                      <div className='flex-1 min-w-0'>
-                        <div className='text-xs text-ui-ink-2 truncate'>
-                          {link.url}
-                        </div>
-                        {link.password && (
-                          <div className='text-xs text-ui-ink-2 mt-1'>
-                            提取码:{' '}
-                            <span className='font-mono font-semibold'>
-                              {link.password}
-                            </span>
-                          </div>
-                        )}
-                      </div>
+                    {/* 链接和提取码 */}
+                    <div className='mtv-pansou-link'>
+                      <span className='mtv-pansou-url' title={link.url}>
+                        {link.url}
+                      </span>
+                      {link.password && (
+                        <span className='mtv-pansou-pwd'>
+                          提取码
+                          <b>{link.password}</b>
+                        </span>
+                      )}
+                    </div>
 
-                      {/* 操作按钮 */}
-                      <div className='flex items-center gap-1 flex-shrink-0'>
+                    {/* 操作按钮：独占一行并自动换行，不再和链接挤在一起 */}
+                    <div className='mtv-pansou-acts'>
                         {(() => {
                           const checkResult = getCheckResultForUrl(
                             cloudType,
@@ -957,7 +951,7 @@ export default function PansouSearch({
                                 handleNetdiskInstantPlay(cloudType, link)
                               }
                               disabled={playingUrl === link.url}
-                              className='px-2 py-1 rounded-md bg-ui-accent hover:brightness-110 text-white text-xs transition-colors disabled:opacity-60'
+                              className='mtv-pansou-btn is-primary'
                               title='播放'
                             >
                               {playingUrl === link.url ? '处理中...' : '播放'}
@@ -966,7 +960,7 @@ export default function PansouSearch({
                               <button
                                 onClick={() => handleQuarkTransfer(link)}
                                 disabled={transferingUrl === link.url}
-                                className='px-2 py-1 rounded-md bg-ui-accent hover:brightness-110 text-white text-xs transition-colors disabled:opacity-60'
+                                className='mtv-pansou-btn'
                                 title='转存到配置目录'
                               >
                                 {transferingUrl === link.url
@@ -981,20 +975,20 @@ export default function PansouSearch({
                             <button
                               onClick={() => handleOpenDownloadDialog(link)}
                               disabled={downloadingUrl === link.url}
-                              className='flex items-center gap-1.5 px-2 py-1 rounded-md bg-ui-accent hover:brightness-110 text-white text-xs transition-colors disabled:opacity-60'
+                              className='mtv-pansou-btn is-primary'
                               title='存到私人影库'
                             >
                               {downloadingUrl === link.url ? (
                                 <>
                                   <Loader2 className='h-3.5 w-3.5 animate-spin' />
-                                  <span className='hidden sm:inline'>
+                                  <span>
                                     下载中...
                                   </span>
                                 </>
                               ) : (
                                 <>
                                   <Download className='h-3.5 w-3.5' />
-                                  <span className='hidden sm:inline'>
+                                  <span>
                                     存到私人影库
                                   </span>
                                 </>
@@ -1006,20 +1000,20 @@ export default function PansouSearch({
                                 !link.url ||
                                 Boolean(magnetHealthCheckingIds[link.url])
                               }
-                              className='flex items-center gap-1.5 px-2 py-1 rounded-md bg-ui-accent hover:brightness-110 text-white text-xs transition-colors disabled:opacity-60'
+                              className='mtv-pansou-btn'
                               title='Tracker 测活（全站并发上限可由 MAGNET_HEALTH_MAX_CONCURRENT 配置）'
                             >
                               {magnetHealthCheckingIds[link.url] ? (
                                 <>
                                   <Loader2 className='h-3.5 w-3.5 animate-spin' />
-                                  <span className='hidden sm:inline'>
+                                  <span>
                                     测活中...
                                   </span>
                                 </>
                               ) : (
                                 <>
                                   <Activity className='h-3.5 w-3.5' />
-                                  <span className='hidden sm:inline'>
+                                  <span>
                                     {magnetHealthMap[link.url]
                                       ? '重新测活'
                                       : '测活'}
@@ -1038,7 +1032,7 @@ export default function PansouSearch({
                               link.url
                             )
                           }
-                          className='p-2 rounded-md hover:bg-ui-surface-hover transition-colors'
+                          className='mtv-pansou-btn is-icon'
                           title='复制链接'
                         >
                           {copiedUrl === link.url ? (
@@ -1051,17 +1045,16 @@ export default function PansouSearch({
                         </button>
                         <button
                           onClick={() => handleOpenLink(link.url)}
-                          className='p-2 rounded-md hover:bg-ui-surface-hover transition-colors'
+                          className='mtv-pansou-btn is-icon'
                           title='打开链接'
                         >
                           <ExternalLink className='h-4 w-4 text-ui-ink-2' />
                         </button>
                       </div>
-                    </div>
 
                     {/* 来源和时间 */}
-                    <div className='flex items-center gap-3 text-xs text-ui-ink-3 flex-wrap'>
-                      {link.source && <span>来源: {link.source}</span>}
+                    <div className='mtv-pansou-foot'>
+                      {link.source && <span>来源 {link.source}</span>}
                       {link.datetime && (
                         <span>
                           {new Date(link.datetime).toLocaleDateString()}
@@ -1109,15 +1102,9 @@ export default function PansouSearch({
 
                     {/* 图片预览 */}
                     {link.images && link.images.length > 0 && (
-                      <div className='mt-3 flex gap-2 overflow-x-auto'>
+                      <div className='mtv-pansou-shots'>
                         {link.images.map((img, imgIndex) => (
-                          <img
-                            key={imgIndex}
-                            src={img}
-                            alt=''
-                            className='h-20 w-auto rounded object-cover'
-                            loading='lazy'
-                          />
+                          <img key={imgIndex} src={img} alt='' loading='lazy' />
                         ))}
                       </div>
                     )}

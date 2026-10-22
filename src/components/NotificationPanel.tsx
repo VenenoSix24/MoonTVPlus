@@ -172,7 +172,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
 
       {/* 通知面板：手机端铺满整屏。列表项本身是整行可点的，弹窗留白只会
           让每条通知挤成两行字。 */}
-      <div className='fixed z-[1001] flex flex-col overflow-hidden bg-ui-surface shadow-ui-3 inset-0 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-lg sm:min-h-[520px] sm:max-h-[80vh] sm:rounded-ui-lg'>
+      <div className='fixed z-[1001] flex flex-col overflow-hidden bg-ui-surface shadow-ui-3 inset-x-3 top-[max(12px,env(safe-area-inset-top))] bottom-[max(12px,env(safe-area-inset-bottom))] rounded-ui-lg sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-lg sm:min-h-[520px] sm:max-h-[80vh]'>
         {/* 标题栏 */}
         <div className='flex items-center justify-between px-4 py-3.5 border-b border-ui-hair shrink-0 sm:px-6 sm:py-4 pt-[calc(0.875rem+env(safe-area-inset-top))] sm:pt-4'>
           <div className='flex items-center gap-2 min-w-0'>

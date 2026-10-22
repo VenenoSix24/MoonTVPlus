@@ -36,6 +36,9 @@
   /* 危险操作（删除、清空、解绑）。与管理端的红不同：这里只是语义色，
      不参与主题替换，软色给 hover 底。 */
   --ui-danger: #dc2626;
+  /* 实底危险色：填充分块用的红。--ui-danger 在深色主题下是 #f87171（浅红，
+     适合做文字/描边），拿来填按钮会显得发白、像被冲淡了。 */
+  --ui-danger-fill: #dc2626;
   --ui-danger-soft: color-mix(in srgb, var(--ui-danger) 12%, transparent);
 
   /* 提醒类（HTTP 环境限制、配置缺失）。和 danger 分开：这些不是「出错了」，
@@ -127,6 +130,7 @@
   --ui-success: #22c55e;
   --ui-success-soft: color-mix(in srgb, var(--ui-success) 14%, transparent);
   --ui-danger: #f87171;
+  --ui-danger-fill: #d92d20;
   --ui-danger-soft: color-mix(in srgb, var(--ui-danger) 16%, transparent);
 
   /* 提醒类（HTTP 环境限制、配置缺失）。和 danger 分开：这些不是「出错了」，
@@ -202,6 +206,15 @@
   --foreground-rgb: 255, 255, 255;
 }
 
+/* 根容器只该裁掉横向溢出，不该变成滚动容器。
+   以前写的是 overflow-x: hidden —— 按 CSS 的规则，另一个轴是 visible 时会被
+   强制算成 auto，于是 body 变成了一个「高度 100%、内部滚动」的盒子：
+   整站的滚动全发生在 body 里面，文档本身一格都不滚。
+   在 iOS Safari 上这会让「输入框聚焦」的表现彻底失控 —— 浏览器只平移
+   visualViewport，而真正能滚的容器纹丝不动，于是页面顶部被推上去之后
+   再也拖不回来（PWA 里布局视口和可视视口重合，所以看不出来）。
+   overflow-x: clip 只是裁切，不会改另一轴的值，body 回到普通块级盒子，
+   滚动重新落回文档上。老浏览器保底还是 hidden。 */
 html,
 body {
   height: 100%;
@@ -209,6 +222,46 @@ body {
   /* 阻止 iOS Safari 拉动回弹 */
   overscroll-behavior: none;
 }
+
+@supports (overflow: clip) {
+  html,
+  body {
+    overflow-x: clip;
+  }
+}
+
+/* 输入框聚焦时浏览器会把元素滚进视野。固定头部高 48px + 安全区，
+   不留出这段间隙的话，滚进来的输入框正好卡在头部底下，
+   观感就是「页面被抬上去了」。 */
+html {
+  scroll-padding-top: calc(48px + env(safe-area-inset-top) + 12px);
+}
+/* 主内容容器。
+   底部必须留出「悬浮底栏 66px + 离底 12px + 12px 呼吸」，否则最后一张卡
+   永远停在底栏后面 —— 而它又不能靠继续滚动让出来，因为文档已经到底了。
+   额外再加 `100vh - 100dvh`：iOS Safari 浏览器模式下 100vh 是「工具栏收起后」
+   的高度，比当前可见高度高出一个工具栏；position: fixed 的底栏按布局视口定位，
+   于是底栏看上去比 PWA 里高一截，刚好把这 90px 吃掉。这个差值正好补上：
+   PWA / 桌面 / 安卓上 dvh 跟着地址栏走，差值同样等于被遮住的高度。 */
+.mtv-main {
+  padding-bottom: calc(66px + 12px + 12px + env(safe-area-inset-bottom));
+}
+
+@supports (height: 100dvh) {
+  .mtv-main {
+    padding-bottom: calc(
+      66px + 12px + 12px + env(safe-area-inset-bottom) + 100vh - 100dvh
+    );
+  }
+}
+
+/* 桌面没有底栏 */
+@media (min-width: 768px) {
+  .mtv-main {
+    padding-bottom: 0;
+  }
+}
+
 
 body {
   color: rgb(var(--foreground-rgb));
@@ -234,8 +287,10 @@ html:not(.dark) body {
   border-radius: 4px;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(107, 114, 128, 0.5);
+@media (hover: hover) and (pointer: fine) {
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(107, 114, 128, 0.5);
+  }
 }
 
 /* 视频卡片悬停效果 */
@@ -1235,12 +1290,16 @@ html[data-loading-style='grid'] .mtv-err-box {
 .mtv-rate-flag.lo .mtv-rate-stars svg {
   fill: var(--rate-lo-ink);
 }
-.group:hover .mtv-rate-flag {
-  filter: drop-shadow(0 4px 7px rgba(0, 0, 0, 0.4));
+@media (hover: hover) and (pointer: fine) {
+  .group:hover .mtv-rate-flag {
+    filter: drop-shadow(0 4px 7px rgba(0, 0, 0, 0.4));
+  }
 }
-.group:hover .mtv-rate-flag.hi {
-  filter: drop-shadow(0 0 9px rgba(255, 170, 60, 1))
-    drop-shadow(0 4px 7px rgba(0, 0, 0, 0.4));
+@media (hover: hover) and (pointer: fine) {
+  .group:hover .mtv-rate-flag.hi {
+    filter: drop-shadow(0 0 9px rgba(255, 170, 60, 1))
+      drop-shadow(0 4px 7px rgba(0, 0, 0, 0.4));
+  }
 }
 
 /* ---------------- 勋章 medal：圆牌 + 双燕尾垂带，三星金字塔 ---------------- */
@@ -1339,8 +1398,10 @@ html[data-loading-style='grid'] .mtv-err-box {
 .mtv-rate-medal.lo .mtv-rate-stars svg {
   fill: var(--rate-lo-ink);
 }
-.group:hover .mtv-rate-medal {
-  transform: scale(1.06);
+@media (hover: hover) and (pointer: fine) {
+  .group:hover .mtv-rate-medal {
+    transform: scale(1.06);
+  }
 }
 
 /* 移动端：卡片小，整体缩小 20%，并再贴近右边缘一半 */
@@ -1351,9 +1412,11 @@ html[data-loading-style='grid'] .mtv-err-box {
     transform: scale(0.8);
     transform-origin: top center;
   }
+  @media (hover: hover) and (pointer: fine) {
   .group:hover .mtv-rate-medal {
-    transform: scale(0.85);
-  }
+      transform: scale(0.85);
+    }
+}
 }
 
 /* ==========================================================================
@@ -1410,9 +1473,11 @@ html[data-loading-style='grid'] .mtv-err-box {
     background-color var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-row-more:hover {
-  color: var(--ui-ink);
-  background-color: var(--ui-surface-3);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-row-more:hover {
+    color: var(--ui-ink);
+    background-color: var(--ui-surface-3);
+  }
 }
 
 .mtv-row-more:focus-visible {
@@ -1444,9 +1509,11 @@ html[data-loading-style='grid'] .mtv-err-box {
     background-color var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-cw-clear:hover {
-  color: var(--ui-ink);
-  background-color: var(--ui-surface-3);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-cw-clear:hover {
+    color: var(--ui-ink);
+    background-color: var(--ui-surface-3);
+  }
 }
 
 .mtv-cw-divider {
@@ -1543,8 +1610,10 @@ html[data-loading-style='grid'] .mtv-err-box {
   transition: opacity var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-topnav-brand:hover {
-  opacity: 0.8;
+@media (hover: hover) and (pointer: fine) {
+  .mtv-topnav-brand:hover {
+    opacity: 0.8;
+  }
 }
 
 .mtv-topnav-links {
@@ -1581,9 +1650,11 @@ html[data-loading-style='grid'] .mtv-err-box {
   height: 16px;
 }
 
-/* hover 只提亮文字，不加底色 —— 实心色块压在深色栏上很脏 */
-.mtv-topnav-link:hover {
-  color: var(--nav-ink-hover);
+@media (hover: hover) and (pointer: fine) {
+  /* hover 只提亮文字，不加底色 —— 实心色块压在深色栏上很脏 */
+  .mtv-topnav-link:hover {
+    color: var(--nav-ink-hover);
+  }
 }
 
 /* 选中态：纯白 + 700，不加底色。原来是强调色文字 + 强调色底片，一整块红太吵 */
@@ -1621,9 +1692,11 @@ html[data-loading-style='grid'] .mtv-err-box {
   height: 20px;
 }
 
-.mtv-topnav-icon:hover {
-  color: var(--nav-ink-hover);
-  background-color: var(--nav-hover-bg);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-topnav-icon:hover {
+    color: var(--nav-ink-hover);
+    background-color: var(--nav-hover-bg);
+  }
 }
 
 .mtv-topnav-icon:focus-visible {
@@ -1696,9 +1769,11 @@ html[data-loading-style='grid'] .mtv-err-box {
     background-color var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-more-item:hover {
-  color: var(--ui-ink);
-  background-color: var(--ui-surface-3);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-more-item:hover {
+    color: var(--ui-ink);
+    background-color: var(--ui-surface-3);
+  }
 }
 
 .mtv-more-item-ic {
@@ -1713,8 +1788,10 @@ html[data-loading-style='grid'] .mtv-err-box {
   transition: color var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-more-item:hover .mtv-more-item-ic {
-  color: var(--ui-accent);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-more-item:hover .mtv-more-item-ic {
+    color: var(--ui-accent);
+  }
 }
 
 .mtv-more-item-t {
@@ -1792,9 +1869,11 @@ html[data-loading-style='grid'] .mtv-err-box {
     background-color var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-more-sheet-close:hover {
-  color: var(--ui-ink);
-  background-color: var(--ui-surface-3);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-more-sheet-close:hover {
+    color: var(--ui-ink);
+    background-color: var(--ui-surface-3);
+  }
 }
 
 /* ---------- 用户菜单（顶栏头像下拉） ---------- */
@@ -1834,8 +1913,10 @@ html[data-loading-style='grid'] .mtv-err-box {
   transition: background-color var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-umenu-head:hover {
-  background-color: color-mix(in srgb, var(--ui-ink) 6%, transparent);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-umenu-head:hover {
+    background-color: color-mix(in srgb, var(--ui-ink) 6%, transparent);
+  }
 }
 
 .mtv-umenu-avatar {
@@ -1904,13 +1985,17 @@ html[data-loading-style='grid'] .mtv-err-box {
   transition: color var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-umenu-item:hover {
-  color: var(--ui-ink);
-  background-color: color-mix(in srgb, var(--ui-ink) 7%, transparent);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-umenu-item:hover {
+    color: var(--ui-ink);
+    background-color: color-mix(in srgb, var(--ui-ink) 7%, transparent);
+  }
 }
 
-.mtv-umenu-item:hover > svg {
-  color: var(--ui-ink);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-umenu-item:hover > svg {
+    color: var(--ui-ink);
+  }
 }
 
 /* 「外观主题」这一行只是显示当前值，点击由下面的三段式负责 */
@@ -1918,9 +2003,11 @@ html[data-loading-style='grid'] .mtv-err-box {
   cursor: default;
 }
 
-.mtv-umenu-item.is-static:hover {
-  color: var(--ui-ink-2);
-  background: none;
+@media (hover: hover) and (pointer: fine) {
+  .mtv-umenu-item.is-static:hover {
+    color: var(--ui-ink-2);
+    background: none;
+  }
 }
 
 .mtv-umenu-tail {
@@ -1950,9 +2037,11 @@ html[data-loading-style='grid'] .mtv-err-box {
   color: #ef4444;
 }
 
-.mtv-umenu-item.is-danger:hover {
-  color: #ef4444;
-  background-color: color-mix(in srgb, #ef4444 12%, transparent);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-umenu-item.is-danger:hover {
+    color: #ef4444;
+    background-color: color-mix(in srgb, #ef4444 12%, transparent);
+  }
 }
 
 .mtv-umenu-seg {
@@ -1980,8 +2069,10 @@ html[data-loading-style='grid'] .mtv-err-box {
     background-color var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-umenu-seg button:hover {
-  color: var(--ui-ink);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-umenu-seg button:hover {
+    color: var(--ui-ink);
+  }
 }
 
 .mtv-umenu-seg button[aria-pressed='true'] {
@@ -2008,9 +2099,11 @@ html[data-loading-style='grid'] .mtv-err-box {
     background-color var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-umenu-ver:hover {
-  color: var(--ui-ink-2);
-  background-color: color-mix(in srgb, var(--ui-ink) 5%, transparent);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-umenu-ver:hover {
+    color: var(--ui-ink-2);
+    background-color: color-mix(in srgb, var(--ui-ink) 5%, transparent);
+  }
 }
 
 /* ---------- /more 页（手机底栏第 5 格） ---------- */
@@ -2071,8 +2164,10 @@ html[data-loading-style='grid'] .mtv-err-box {
   border-top: 1px solid var(--ui-hair);
 }
 
-.mtv-mp-row:hover {
-  background-color: color-mix(in srgb, var(--ui-ink) 5%, transparent);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-mp-row:hover {
+    background-color: color-mix(in srgb, var(--ui-ink) 5%, transparent);
+  }
 }
 
 /* 「外观主题」这一行只显示当前值，点由下面的三段式负责 */
@@ -2091,16 +2186,19 @@ html[data-loading-style='grid'] .mtv-err-box {
 .mtv-bnav {
   position: fixed;
   left: 50%;
-  bottom: calc(10px + env(safe-area-inset-bottom));
+  bottom: calc(12px + env(safe-area-inset-bottom));
   z-index: var(--ui-z-nav);
   width: calc(100% - 24px);
   max-width: 360px;
-  height: 64px;
+  height: 66px;
   border-radius: var(--ui-r-full);
   border: 1px solid var(--ui-hair);
-  /* 颜色全走令牌：深色是近黑的半透明，浅色自动变成白玻璃 */
-  background-color: color-mix(in srgb, var(--ui-surface) 76%, transparent);
-  backdrop-filter: blur(18px) saturate(140%);
+  /* 颜色全走令牌：深色是近黑的半透明，浅色自动变成白玻璃。
+     浓度上一版给到 58% + blur(26px)，透得过头了 —— 底下滚过去的封面把
+     图标区搅成一团杂色，反而要费劲去认。回调到 68% + blur(20px)：
+     仍然能透出一层颜色，但文字和图标重新落在干净底上。 */
+  background-color: color-mix(in srgb, var(--ui-surface) 68%, transparent);
+  backdrop-filter: blur(20px) saturate(150%);
   box-shadow: var(--ui-elev-2);
   transform: translateX(-50%);
 }
@@ -2135,7 +2233,9 @@ html[data-loading-style='grid'] .mtv-err-box {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  color: var(--ui-ink-2);
+  /* 未选中项用页面主墨色（浅色=近黑，深色=白），不用 --ui-ink-2：
+     那个灰压在底栏的磨砂底上，浅色主题下经常糊成一片看不清。 */
+  color: var(--ui-ink);
   transition: color var(--ui-dur-1) var(--ui-ease);
 }
 
@@ -2169,6 +2269,17 @@ html[data-loading-style='grid'] .mtv-err-box {
   font-weight: 650;
 }
 
+/* 播放页（深色影院）里的底栏：把用到的令牌就地改写成影院配色。
+   只影响这个元素及其后代，不动全局浅色主题。 */
+.mtv-bnav.is-cinema {
+  --ui-surface: #131820;
+  --ui-ink: #ffffff;
+  --ui-ink-2: rgba(255, 255, 255, 0.66);
+  --ui-hair: rgba(255, 255, 255, 0.12);
+
+  background-color: color-mix(in srgb, #131820 70%, transparent);
+}
+
 /* ---------- 手机顶栏 ---------- */
 /* 只留 搜索 / 站名 / 头像 三件东西，其余（更多、主题、更新通知）都搬走了：
    更多进底栏第 5 格，主题进用户菜单，更新通知手机端本来就没有。
@@ -2180,8 +2291,13 @@ html[data-loading-style='grid'] .mtv-err-box {
   inset: 0 0 auto 0;
   z-index: var(--ui-z-nav);
   width: 100%;
-  background-color: color-mix(in srgb, var(--ui-surface) 80%, transparent);
-  backdrop-filter: blur(20px) saturate(150%);
+  /* 底色用页面底而不是 --ui-surface：浅色主题下 surface 是纯白，盖在任何画面上
+     都是一条白带（深色下同理是一条黑带）。
+     两头都要躲：浓度高了是「一块板」，模糊给少了是「一层雾」。这里 46% + 26px
+     模糊 + 180% 饱和 —— 底下的封面会透出一层被糊开的颜色，才像玻璃。 */
+  background-color: color-mix(in srgb, var(--ui-bg) 46%, transparent);
+  backdrop-filter: blur(26px) saturate(180%);
+  -webkit-backdrop-filter: blur(26px) saturate(180%);
   box-shadow: inset 0 -1px 0 var(--ui-hair);
   transition:
     background-color var(--ui-dur-2) var(--ui-ease),
@@ -2206,8 +2322,35 @@ html[data-loading-style='grid'] .mtv-err-box {
   box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08);
 }
 
-.mtv-mp-row.is-static:hover {
-  background: none;
+/* 顶栏里的返回按钮。原来是 text-gray-600 / dark:text-gray-300 两条写死的灰：
+   播放页恒为深色画布，浅色主题下 text-gray-600 就是深灰压在深色顶栏上，
+   直接看不见。这里跟顶栏其余图标一样读 --nav-ink —— 压在 Hero / 深色画布上
+   自动变成白色，落在浅色实底上才是深色。 */
+.mtv-mheader-back {
+  width: 40px;
+  height: 40px;
+  padding: 8px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--nav-ink);
+  transition:
+    color var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mtv-mheader-back:hover {
+    color: var(--nav-ink-hover);
+    background-color: color-mix(in srgb, var(--nav-ink) 12%, transparent);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mtv-mp-row.is-static:hover {
+    background: none;
+  }
 }
 
 .mtv-mp-ic {
@@ -2268,8 +2411,10 @@ html[data-loading-style='grid'] .mtv-err-box {
     background-color var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-mp-seg button:hover {
-    background-color: var(--ui-surface);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-mp-seg button:hover {
+      background-color: var(--ui-surface);
+  }
 }
 
 .mtv-mp-seg button[aria-pressed='true'] {
@@ -2334,9 +2479,11 @@ html[data-loading-style='grid'] .mtv-err-box {
     background-color var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-ui-dialog-close:hover {
-  color: var(--ui-ink);
-  background-color: var(--ui-surface-3);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-ui-dialog-close:hover {
+    color: var(--ui-ink);
+    background-color: var(--ui-surface-3);
+  }
 }
 
 .mtv-ui-dialog-body {
@@ -2398,9 +2545,11 @@ html[data-loading-style='grid'] .mtv-err-box {
     background-color var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-ui-btn:hover {
-  color: var(--ui-ink);
-  background-color: var(--ui-surface-3);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-ui-btn:hover {
+    color: var(--ui-ink);
+    background-color: var(--ui-surface-3);
+  }
 }
 
 .mtv-ui-btn.is-primary {
@@ -2409,9 +2558,25 @@ html[data-loading-style='grid'] .mtv-err-box {
   color: #fff;
 }
 
-.mtv-ui-btn.is-primary:hover {
-  background-color: var(--ui-accent);
-  filter: brightness(1.08);
+/* 破坏性操作（清空记录、解绑、删除）：红到底，和普通确认拉开距离 */
+.mtv-ui-btn.is-danger {
+  border-color: transparent;
+  background-color: var(--ui-danger);
+  color: #fff;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mtv-ui-btn.is-danger:hover {
+    background-color: var(--ui-danger);
+    filter: brightness(1.08);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mtv-ui-btn.is-primary:hover {
+    background-color: var(--ui-accent);
+    filter: brightness(1.08);
+  }
 }
 
 .mtv-ui-btn:disabled {
@@ -2461,20 +2626,23 @@ html[data-loading-style='grid'] .mtv-err-box {
 }
 
 .dark {
+  /* 深色下的黑色遮罩整体收了一档：这几层是纯黑，叠在本来就是暗色的剧照上
+     很容易把画面压成一块死黑（尤其手机端 90deg 那层在窄屏上几乎盖满全屏）。
+     左侧仍保留 0.86 保证白字对比度，只是不再一路压到底。 */
   --hero-scrim: linear-gradient(
       90deg,
-      rgba(0, 0, 0, 0.92) 0%,
-      rgba(0, 0, 0, 0.72) 28%,
-      rgba(0, 0, 0, 0.28) 55%,
+      rgba(0, 0, 0, 0.86) 0%,
+      rgba(0, 0, 0, 0.58) 28%,
+      rgba(0, 0, 0, 0.18) 55%,
       transparent 78%
     ),
     linear-gradient(
       0deg,
       var(--ui-bg) 0%,
-      rgba(0, 0, 0, 0.55) 14%,
+      rgba(0, 0, 0, 0.44) 14%,
       transparent 38%
     ),
-    linear-gradient(180deg, rgba(0, 0, 0, 0.6) 0%, transparent 28%);
+    linear-gradient(180deg, rgba(0, 0, 0, 0.48) 0%, transparent 28%);
   --hero-ink: #ffffff;
   --hero-ink-2: rgba(255, 255, 255, 0.78);
   --hero-art-filter: none;
@@ -2498,24 +2666,17 @@ html[data-loading-style='grid'] .mtv-err-box {
   --hero-panel-shadow: none;
   --hero-panel-pad: 0;
 }
-
-/* Hero 底部收边：让画面自己溶解进页面底色，而不是在上面刷一层页面色。
-   原来底部是一条「--ui-bg → 黑」的短渐变，深色下 --ui-bg 就是黑，看不出来；
-   浅色下等于把 #f5f6f9 直接涂在海报底部和分页点上，就是那条白雾。
-   改成给画面层加纵向 mask：最后 24px 渐隐到透明，露出页面本身。
-   mask 只能给 24px —— 分页点离底边只有 16px，再长就把点泡进浅色里了。
-   遮罩层也在这个 wrapper 内，所以会被一起溶解，底部不会留下一条硬黑边。 */
+/* Hero 底边：硬切。
+   --------------------------------------------------------------------------
+   试过「短渐变」（7%，像涂了一笔）、「长渐变」（150–260px，白色会爬上封面）、
+   「底部失焦」（把封面糊成两半）—— 浅色主题下「深画面 → 白页面」这条 100 级
+   落差，怎么渐变都留得下痕迹：渐变越长，白色吃掉的画面越多；越短，越像涂抹。
+   所以不渐变了：画面铺到最底，一条干净的直线收口，落差交给页面自己去承担 ——
+   这也正是 Apple / Letterboxd 在浅色页上放深色 Hero 的做法。
+   scrim 里只保留压在画面上的暗部（左右黑遮罩、上下暗角），不留任何 --ui-bg 渐变；
+   画面层的 24px 渐隐也一并去掉，否则底部会漏出一条页面底色的白边。 */
 .mtv-hero-art {
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    #000 calc(100% - 24px),
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to bottom,
-    #000 calc(100% - 24px),
-    transparent 100%
-  );
+  /* 底边不做渐隐，硬切 */
 }
 
 /* 只给画面本身提亮/压灰。遮罩和画面在同一个 wrapper 里，
@@ -2590,7 +2751,6 @@ html[data-loading-style='grid'] .mtv-err-box {
     var(--ui-bg) 92%
   );
 }
-
 /* 右侧退开一个翻页按钮身位，免得悬停时按钮压在立起来的海报上 */
 .mtv-hero-art img.mtv-hero-art-subject {
   position: absolute;
@@ -2678,23 +2838,24 @@ html[data-loading-style='grid'] .mtv-err-box {
   display: none;
 }
 
-/* 深色下页面本身就是黑的，底部可以铺得更长，画面过渡更自然 */
+/* 深色下页面本身就是黑的，底部可以铺得更长，画面过渡更自然。
+   黑色浓度和上面 :root 那组对齐（整体轻一档，见那段注释）。 */
 .dark .mtv-hero:has(.mtv-hero-art-cover),
 .dark .mtv-hero:has(.mtv-hero-logo) {
   --hero-scrim: linear-gradient(
       90deg,
-      rgba(0, 0, 0, 0.92) 0%,
-      rgba(0, 0, 0, 0.72) 28%,
-      rgba(0, 0, 0, 0.28) 55%,
+      rgba(0, 0, 0, 0.86) 0%,
+      rgba(0, 0, 0, 0.58) 28%,
+      rgba(0, 0, 0, 0.18) 55%,
       transparent 78%
     ),
     linear-gradient(
       0deg,
       var(--ui-bg) 0%,
-      rgba(0, 0, 0, 0.55) 14%,
+      rgba(0, 0, 0, 0.44) 14%,
       transparent 38%
     ),
-    linear-gradient(180deg, rgba(0, 0, 0, 0.6) 0%, transparent 28%);
+    linear-gradient(180deg, rgba(0, 0, 0, 0.48) 0%, transparent 28%);
 }
 
 /* 手机端的两处覆盖。 */
@@ -2724,19 +2885,21 @@ html[data-loading-style='grid'] .mtv-err-box {
       );
   }
 
-  /* 深色下页面本身就是黑的，底部可以铺得更长，过渡更自然 */
+  /* 深色下页面本身就是黑的，底部可以铺得更长，过渡更自然。
+     黑色浓度同样收一档：0.55 → 0.40、0.70 → 0.54，底部渐隐点也从 64% 收到 60%，
+     避免整幅画面被压成一块死黑。 */
   .dark .mtv-hero:has(.mtv-hero-art-cover),
   .dark .mtv-hero:has(.mtv-hero-logo) {
     --hero-scrim: linear-gradient(
         180deg,
-        rgba(0, 0, 0, 0.55) 0%,
-        transparent 24%
+        rgba(0, 0, 0, 0.4) 0%,
+        transparent 28%
       ),
       linear-gradient(
         0deg,
         var(--ui-bg) 0%,
-        rgba(0, 0, 0, 0.7) 10%,
-        transparent 64%
+        rgba(0, 0, 0, 0.54) 10%,
+        transparent 60%
       );
   }
 }
@@ -2796,6 +2959,12 @@ html[data-loading-style='grid'] .mtv-err-box {
 
 .mtv-hero-title:lang(zh) {
   letter-spacing: 0;
+}
+
+/* 没有官方标题字时回退成文字标题。文字的视觉面积天然比同字号 logo 小 ——
+   logo 是加粗、带外扩的品牌资产，纯文字排在旁边一比就显小，所以放大一档。 */
+.mtv-hero-title.is-text {
+  font-size: clamp(2.4rem, 5.4vw, 5.2rem);
 }
 
 /* 官方标题字（TMDB logos）。Netflix / Apple TV+ 的 Hero 片名走的就是这条：
@@ -3084,10 +3253,12 @@ html[data-loading-style='grid'] .mtv-err-box {
     box-shadow var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-hero-play:hover {
-  background-color: var(--hero-btn-bg-hover);
-  transform: translateY(-1px);
-  box-shadow: var(--hero-btn-shadow-hover);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-hero-play:hover {
+    background-color: var(--hero-btn-bg-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--hero-btn-shadow-hover);
+  }
 }
 
 .mtv-hero-play:active {
@@ -3126,10 +3297,12 @@ html[data-loading-style='grid'] .mtv-err-box {
     transform var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-hero-more:hover {
-  background-color: var(--hero-ghost-bg-hover);
-  border-color: var(--hero-ghost-hair-hover);
-  transform: translateY(-1px);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-hero-more:hover {
+    background-color: var(--hero-ghost-bg-hover);
+    border-color: var(--hero-ghost-hair-hover);
+    transform: translateY(-1px);
+  }
 }
 
 .mtv-hero-more:active {
@@ -3550,8 +3723,10 @@ html[data-loading-style='grid'] .mtv-err-box {
   color: #fff;
 }
 
-.mtv-card-panel-btn-ghost:hover {
-  border-color: #fff;
+@media (hover: hover) and (pointer: fine) {
+  .mtv-card-panel-btn-ghost:hover {
+    border-color: #fff;
+  }
 }
 
 .mtv-card-panel-meta {
@@ -3631,8 +3806,10 @@ html[data-loading-style='grid'] .mtv-err-box {
     background-color var(--ui-dur-2) var(--ui-ease);
 }
 
-.mtv-cap:hover {
-  color: var(--ui-ink);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-cap:hover {
+    color: var(--ui-ink);
+  }
 }
 
 .mtv-cap.is-on {
@@ -3692,9 +3869,11 @@ html[data-loading-style='grid'] .mtv-err-box {
     color var(--ui-dur-2) var(--ui-ease);
 }
 
-.mtv-filter-opt:hover {
-  background: color-mix(in srgb, var(--ui-ink) 8%, transparent);
-  color: var(--ui-ink);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-filter-opt:hover {
+    background: color-mix(in srgb, var(--ui-ink) 8%, transparent);
+    color: var(--ui-ink);
+  }
 }
 
 .mtv-filter-opt.is-on {
@@ -3823,6 +4002,11 @@ html[data-loading-style='grid'] .mtv-err-box {
   mask-image: linear-gradient(180deg, #000 0%, #000 30%, transparent 100%);
 }
 
+/* 沉降渐变：把剧照环境光压在近黑底上。
+   顶部原来是全透明（transparent 0% → 14%），于是屏幕最上面那 100 多 px 是
+   完全没被压过的环境光 —— 浅色主题下就是一整条发亮的灰带，看起来像「白雾」。
+   现在从 0% 起就给足压暗量，整条曲线单调向下，顶部和正文区之间不再有色阶跳变。
+   环境光的色相还在（这里不做全不透明），只是不再占据顶部最亮的位置。 */
 .mtv-play-settle {
   position: fixed;
   inset: 0;
@@ -3830,11 +4014,12 @@ html[data-loading-style='grid'] .mtv-err-box {
   pointer-events: none;
   background: linear-gradient(
     180deg,
-    transparent 0%,
-    transparent 14%,
-    rgba(10, 10, 11, 0.78) 33%,
-    rgba(10, 10, 11, 0.95) 48%,
-    #0a0a0b 62%
+    rgba(10, 10, 11, 0.86) 0%,
+    rgba(10, 10, 11, 0.8) 12%,
+    rgba(10, 10, 11, 0.76) 26%,
+    rgba(10, 10, 11, 0.9) 42%,
+    rgba(10, 10, 11, 0.97) 56%,
+    #0a0a0b 70%
   );
 }
 
@@ -3917,9 +4102,11 @@ html[data-loading-style='grid'] .mtv-err-box {
   color: rgba(255, 255, 255, 0.82);
 }
 
-.mtv-play-pop-item:hover {
-  background-color: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
+@media (hover: hover) and (pointer: fine) {
+  .mtv-play-pop-item:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+  }
 }
 
 /* 「更多」面板里的按钮标签常显。工具栏上按钮靠 hover 展开标签是为了省地方，
@@ -3939,7 +4126,15 @@ html[data-loading-style='grid'] .mtv-err-box {
    这里把定稿里的 .pg-* 逐条搬过来，只把 --accent 换成 --ui-accent；
    ink / hair 用定稿给的固定值 —— 播放页恒为深色，不跟主题走。
    ========================================================================== */
-.mtv-play-root {
+.mtv-play-root,
+.mtv-play-detail,
+.mtv-play-recs {
+  /* 播放页恒为深色，正文/标题的继承色必须先钉死。
+     这几个类原先只挂在 .mtv-play-root 上，而「作品信息」「演职员」那一块在
+     .mtv-play-detail 里、是老 root 的兄弟节点 —— 那里 --mtv-* 全是未定义，
+     声明直接 invalid-at-computed-value 退化成 inherit，浅色主题下就继承了
+     body 的深色字，压在近黑画布上等于隐形。 */
+  color: var(--mtv-ink);
   --mtv-card: rgba(255, 255, 255, 0.04);
   --mtv-hair: rgba(255, 255, 255, 0.085);
   --mtv-hair-2: rgba(255, 255, 255, 0.1);
@@ -4030,9 +4225,11 @@ html[data-loading-style='grid'] .mtv-err-box {
     background-color var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-play-iconbtn:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: var(--mtv-ink);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-play-iconbtn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--mtv-ink);
+  }
 }
 
 .mtv-play-iconbtn svg {
@@ -4082,9 +4279,11 @@ html[data-loading-style='grid'] .mtv-err-box {
     background-color var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-play-act:hover {
-  color: #fff;
-  background-color: rgba(255, 255, 255, 0.07);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-play-act:hover {
+    color: #fff;
+    background-color: rgba(255, 255, 255, 0.07);
+  }
 }
 
 .mtv-play-act-primary {
@@ -4197,9 +4396,11 @@ html[data-loading-style='grid'] .mtv-err-box {
     border-color var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-play-erraction:hover {
-  border-color: var(--ui-hair-strong);
-  background-color: color-mix(in srgb, var(--mtv-ink) 7%, transparent);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-play-erraction:hover {
+    border-color: var(--ui-hair-strong);
+    background-color: color-mix(in srgb, var(--mtv-ink) 7%, transparent);
+  }
 }
 
 .mtv-play-erraction.is-primary {
@@ -4208,8 +4409,10 @@ html[data-loading-style='grid'] .mtv-err-box {
   color: var(--ui-accent-ink);
 }
 
-.mtv-play-erraction.is-primary:hover {
-  background-color: color-mix(in srgb, var(--ui-accent) 88%, #000);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-play-erraction.is-primary:hover {
+    background-color: color-mix(in srgb, var(--ui-accent) 88%, #000);
+  }
 }
 
 /* 也许你想看：失败态底部那排兜底推荐 */
@@ -4392,8 +4595,10 @@ html[data-loading-style='grid'] .mtv-err-box {
   transition: color 0.16s ease;
 }
 
-.mtv-play-cmt-name:hover {
-  color: var(--ui-accent);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-play-cmt-name:hover {
+    color: var(--ui-accent);
+  }
 }
 
 .mtv-play-cmt-stars {
@@ -4479,8 +4684,10 @@ html[data-loading-style='grid'] .mtv-err-box {
   transition: filter 0.16s ease;
 }
 
-.mtv-play-cmt-btn:hover {
-  filter: brightness(1.1);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-play-cmt-btn:hover {
+    filter: brightness(1.1);
+  }
 }
 
 .mtv-play-cmt-btn:disabled {
@@ -4590,9 +4797,11 @@ html[data-loading-style='grid'] .mtv-err-box {
     background-color 0.16s ease;
 }
 
-.mtv-dialog-close:hover {
-  color: #fff;
-  background-color: rgba(255, 255, 255, 0.08);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-dialog-close:hover {
+    color: #fff;
+    background-color: rgba(255, 255, 255, 0.08);
+  }
 }
 
 .mtv-dialog-body {
@@ -4605,8 +4814,10 @@ html[data-loading-style='grid'] .mtv-err-box {
   transition: background-color 0.16s ease;
 }
 
-.mtv-hover-ink:hover {
-  background-color: color-mix(in srgb, var(--ui-ink) 7%, transparent);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-hover-ink:hover {
+    background-color: color-mix(in srgb, var(--ui-ink) 7%, transparent);
+  }
 }
 /* ---------- 选择弹幕源 ---------- */
 /* 一个源一行：序号 / 封面 / 标题 + 标签 / 箭头。原来每行是一整块灰底卡片，
@@ -4651,9 +4862,11 @@ html[data-loading-style='grid'] .mtv-err-box {
     border-color var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-dlgsrc-item:hover {
-  border-color: color-mix(in srgb, var(--ui-accent) 45%, transparent);
-  background-color: color-mix(in srgb, var(--ui-accent) 8%, transparent);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-dlgsrc-item:hover {
+    border-color: color-mix(in srgb, var(--ui-accent) 45%, transparent);
+    background-color: color-mix(in srgb, var(--ui-accent) 8%, transparent);
+  }
 }
 
 .mtv-dlgsrc-idx {
@@ -4667,8 +4880,10 @@ html[data-loading-style='grid'] .mtv-err-box {
   transition: color var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-dlgsrc-item:hover .mtv-dlgsrc-idx {
-  color: var(--ui-accent);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-dlgsrc-item:hover .mtv-dlgsrc-idx {
+    color: var(--ui-accent);
+  }
 }
 
 .mtv-dlgsrc-poster {
@@ -4735,9 +4950,11 @@ html[data-loading-style='grid'] .mtv-err-box {
     transform var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-dlgsrc-item:hover .mtv-dlgsrc-arrow {
-  color: var(--ui-accent);
-  transform: translateX(2px);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-dlgsrc-item:hover .mtv-dlgsrc-arrow {
+    color: var(--ui-accent);
+    transform: translateX(2px);
+  }
 }
 
 .mtv-dlgsrc-foot {
@@ -4763,9 +4980,11 @@ html[data-loading-style='grid'] .mtv-err-box {
     border-color var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-dlgsrc-cancel:hover {
-  border-color: rgba(255, 255, 255, 0.24);
-  color: #fff;
+@media (hover: hover) and (pointer: fine) {
+  .mtv-dlgsrc-cancel:hover {
+    border-color: rgba(255, 255, 255, 0.24);
+    color: #fff;
+  }
 }
 
 @media (max-width: 767px) {
@@ -4842,9 +5061,11 @@ html[data-loading-style='grid'] .mtv-err-box {
     background-color var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-dl-ep-act:hover {
-  background-color: rgba(255, 255, 255, 0.08);
-  color: #fff;
+@media (hover: hover) and (pointer: fine) {
+  .mtv-dl-ep-act:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: #fff;
+  }
 }
 
 .mtv-dl-ep-offline {
@@ -4975,9 +5196,11 @@ html[data-loading-style='grid'] .mtv-err-box {
     color var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-dl-ep-page:hover {
-  border-color: rgba(255, 255, 255, 0.24);
-  color: #fff;
+@media (hover: hover) and (pointer: fine) {
+  .mtv-dl-ep-page:hover {
+    border-color: rgba(255, 255, 255, 0.24);
+    color: #fff;
+  }
 }
 
 .mtv-dl-ep-page.is-on {
@@ -5003,9 +5226,11 @@ html[data-loading-style='grid'] .mtv-err-box {
     border-color var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-dl-ep-sort:hover {
-  border-color: rgba(255, 255, 255, 0.24);
-  color: #fff;
+@media (hover: hover) and (pointer: fine) {
+  .mtv-dl-ep-sort:hover {
+    border-color: rgba(255, 255, 255, 0.24);
+    color: #fff;
+  }
 }
 
 .mtv-dl-ep-grid {
@@ -5042,10 +5267,12 @@ html[data-loading-style='grid'] .mtv-err-box {
     color var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-dl-ep-cell:hover {
-  border-color: rgba(255, 255, 255, 0.24);
-  background-color: rgba(255, 255, 255, 0.07);
-  color: #fff;
+@media (hover: hover) and (pointer: fine) {
+  .mtv-dl-ep-cell:hover {
+    border-color: rgba(255, 255, 255, 0.24);
+    background-color: rgba(255, 255, 255, 0.07);
+    color: #fff;
+  }
 }
 
 .mtv-dl-ep-cell.is-on {
@@ -5116,9 +5343,11 @@ html[data-loading-style='grid'] .mtv-err-box {
     border-color var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-dl-ep-btn:hover {
-  border-color: rgba(255, 255, 255, 0.24);
-  color: #fff;
+@media (hover: hover) and (pointer: fine) {
+  .mtv-dl-ep-btn:hover {
+    border-color: rgba(255, 255, 255, 0.24);
+    color: #fff;
+  }
 }
 
 .mtv-dl-ep-btn.is-primary {
@@ -5127,8 +5356,10 @@ html[data-loading-style='grid'] .mtv-err-box {
   color: var(--ui-accent-ink);
 }
 
-.mtv-dl-ep-btn.is-primary:hover {
-  background-color: color-mix(in srgb, var(--ui-accent) 88%, #000);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-dl-ep-btn.is-primary:hover {
+    background-color: color-mix(in srgb, var(--ui-accent) 88%, #000);
+  }
 }
 
 .mtv-dl-ep-btn:disabled {
@@ -5230,8 +5461,10 @@ html[data-loading-style='grid'] .mtv-err-box {
   transition: background-color 0.16s ease;
 }
 
-.mtv-key-row:hover {
-  background-color: rgba(255, 255, 255, 0.05);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-key-row:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
 }
 
 .mtv-key-cap {
@@ -5318,9 +5551,11 @@ html[data-loading-style='grid'] .mtv-err-box {
     border-color var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-play-hidebtn:hover {
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.22);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-play-hidebtn:hover {
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.22);
+  }
 }
 
 .mtv-play-hidebtn-ic {
@@ -5352,13 +5587,14 @@ html[data-loading-style='grid'] .mtv-err-box {
     border-color var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-play-ep:hover {
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.22);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-play-ep:hover {
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.22);
+  }
 }
 
-.mtv-play-ep-on,
-.mtv-play-ep-on:hover {
+.mtv-play-ep-on {
   background-color: var(--ui-accent);
   border-color: var(--ui-accent);
   color: #fff;
@@ -5383,10 +5619,12 @@ html[data-loading-style='grid'] .mtv-err-box {
     border-color var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-play-select:hover,
-.mtv-play-mini:hover {
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.22);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-play-select:hover,
+  .mtv-play-mini:hover {
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.22);
+  }
 }
 
 .mtv-play-select svg {
@@ -5573,12 +5811,13 @@ html[data-loading-style='grid'] .mtv-err-box {
     background-color var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-play-sortbtn:hover {
-  color: var(--mtv-ink);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-play-sortbtn:hover {
+    color: var(--mtv-ink);
+  }
 }
 
-.mtv-play-sortbtn-on,
-.mtv-play-sortbtn-on:hover {
+.mtv-play-sortbtn-on {
   background-color: rgba(255, 255, 255, 0.1);
   color: #fff;
 }
@@ -5593,8 +5832,10 @@ html[data-loading-style='grid'] .mtv-err-box {
   transition: opacity var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-play-srcretest:hover {
-  opacity: 0.8;
+@media (hover: hover) and (pointer: fine) {
+  .mtv-play-srcretest:hover {
+    opacity: 0.8;
+  }
 }
 
 /* ==========================================================================
@@ -5655,12 +5896,14 @@ html[data-loading-style='grid'] .mtv-err-box {
   text-align: left;
 }
 
-.mtv-play-pop.mtv-play-morepanel > button:hover {
-  background-color: rgba(255, 255, 255, 0.08);
-  background-image: none;
-  box-shadow: none;
-  color: #fff;
-  transform: none;
+@media (hover: hover) and (pointer: fine) {
+  .mtv-play-pop.mtv-play-morepanel > button:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    background-image: none;
+    box-shadow: none;
+    color: #fff;
+    transform: none;
+  }
 }
 
 /* 标签常显：桌面上原来要 hover 才展开宽度 */
@@ -5715,9 +5958,11 @@ html[data-loading-style='grid'] .mtv-err-box {
     box-shadow: none;
   }
 
+  @media (hover: hover) and (pointer: fine) {
   .mtv-play-morepanel > button:hover {
-    background-color: rgba(255, 255, 255, 0.08);
-  }
+      background-color: rgba(255, 255, 255, 0.08);
+    }
+}
 
   .mtv-play-morepanel > button > span {
     display: inline;
@@ -5753,7 +5998,6 @@ html[data-loading-style='grid'] .mtv-err-box {
   cursor: zoom-in;
 }
 
-.mtv-play-still-btn:hover .mtv-play-still,
 .mtv-play-still-btn:focus-visible .mtv-play-still {
   filter: brightness(1);
   transform: scale(1.04);
@@ -5859,13 +6103,14 @@ html[data-loading-style='grid'] .mtv-err-box {
     background-color var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-play-epcard:hover {
-  border-color: rgba(255, 255, 255, 0.22);
-  background-color: rgba(255, 255, 255, 0.07);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-play-epcard:hover {
+    border-color: rgba(255, 255, 255, 0.22);
+    background-color: rgba(255, 255, 255, 0.07);
+  }
 }
 
-.mtv-play-epcard-on,
-.mtv-play-epcard-on:hover {
+.mtv-play-epcard-on {
   border-color: var(--ui-accent);
   background-color: color-mix(in srgb, var(--ui-accent) 12%, transparent);
   cursor: default;
@@ -5917,10 +6162,14 @@ html[data-loading-style='grid'] .mtv-err-box {
   color: #fff;
 }
 
-.mtv-play-epcard-tag {
+/* 剧照上的三枚胶囊各占一角，互不遮挡：
+     左下 集数（恒显示）／左上 正在播放（仅当前集）／右上 已看过（仅看过的集）。
+   共同外观走一条规则；位置和配色各写各的。
+   原来「正在播放」是替换掉左下角那枚集数胶囊的 —— 正在播的那一集反而看不到集数。 */
+.mtv-play-epcard-tag,
+.mtv-play-epcard-now,
+.mtv-play-epcard-watched {
   position: absolute;
-  left: 8px;
-  bottom: 8px;
   padding: 2px 8px;
   border-radius: 9999px;
   background-color: rgba(0, 0, 0, 0.62);
@@ -5930,22 +6179,23 @@ html[data-loading-style='grid'] .mtv-err-box {
   color: #fff;
 }
 
-.mtv-play-epcard-on .mtv-play-epcard-tag {
+/* 左下：第 N 集 */
+.mtv-play-epcard-tag {
+  left: 8px;
+  bottom: 8px;
+}
+
+/* 左上：当前正在播放的那一集。用强调色，和左下的集数胶囊区分开 */
+.mtv-play-epcard-now {
+  top: 8px;
+  left: 8px;
   background-color: var(--ui-accent);
 }
 
-/* 已看过的集：剧照右上角一个标签。原来是个 6px 的小圆点，太小认不出来 */
+/* 右上：已看过。原来是个 6px 的小圆点，太小认不出来 */
 .mtv-play-epcard-watched {
-  position: absolute;
   top: 8px;
   right: 8px;
-  padding: 2px 8px;
-  border-radius: 9999px;
-  background-color: rgba(0, 0, 0, 0.62);
-  backdrop-filter: blur(6px);
-  font-size: 10.5px;
-  font-weight: 600;
-  color: #fff;
 }
 
 .mtv-play-epcard-body {
@@ -6029,8 +6279,10 @@ html[data-loading-style='grid'] .mtv-err-box {
   transition: border-color var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-play-aircal:hover {
-  border-color: rgba(255, 255, 255, 0.22);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-play-aircal:hover {
+    border-color: rgba(255, 255, 255, 0.22);
+  }
 }
 
 .mtv-play-aircal-ic {
@@ -6119,8 +6371,10 @@ html[data-loading-style='grid'] .mtv-err-box {
   transition: color var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-play-cal-nav:hover {
-  color: #fff;
+@media (hover: hover) and (pointer: fine) {
+  .mtv-play-cal-nav:hover {
+    color: #fff;
+  }
 }
 
 .mtv-play-cal-week,
@@ -6183,14 +6437,15 @@ html[data-loading-style='grid'] .mtv-err-box {
   border-color: var(--mtv-hair-2);
 }
 
-.mtv-play-cal-day-aired:hover,
-.mtv-play-cal-day-up:hover {
-  border-color: rgba(255, 255, 255, 0.24);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-play-cal-day-aired:hover,
+  .mtv-play-cal-day-up:hover {
+    border-color: rgba(255, 255, 255, 0.24);
+  }
 }
 
 /* 当前播放那一集所在的那天 */
-.mtv-play-cal-day-on,
-.mtv-play-cal-day-on:hover {
+.mtv-play-cal-day-on {
   background-color: var(--ui-accent);
   border-color: var(--ui-accent);
   color: #fff;
@@ -6364,7 +6619,9 @@ html[data-loading-style='grid'] .mtv-err-box {
   }
 
   .mtv-bnav {
-    background-color: #161618;
+    /* 不能用写死的十六进制：浅色主题下会得到「近黑底 + 深色图标」，
+       开了「降低透明度」的用户直接看不到底栏。走令牌，深浅各归各的。 */
+    background-color: var(--ui-surface);
   }
 }
 
@@ -6761,8 +7018,10 @@ html[data-loading-style='silver-screen'] .mtv-load-silver {
     border-color var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-play-src:hover {
-  background-color: color-mix(in srgb, var(--ui-ink) 7%, transparent);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-play-src:hover {
+    background-color: color-mix(in srgb, var(--ui-ink) 7%, transparent);
+  }
 }
 
 /* 当前源：左侧一根强调竖条 + 极淡底色。原来用整圈描边，六个源并排时
@@ -6991,9 +7250,11 @@ html[data-loading-style='silver-screen'] .mtv-load-silver {
     border-color var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-play-src-retry:hover {
-  border-color: var(--ui-ink-3);
-  color: var(--ui-ink);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-play-src-retry:hover {
+    border-color: var(--ui-ink-3);
+    color: var(--ui-ink);
+  }
 }
 
 .mtv-play-src-retry:disabled {
@@ -7153,9 +7414,11 @@ html[data-loading-style='silver-screen'] .mtv-load-silver {
     background-color var(--ui-dur-1) var(--ui-ease);
 }
 
-.mtv-httpwarn-close:hover {
-  background-color: color-mix(in srgb, var(--ui-ink) 7%, transparent);
-  color: var(--ui-ink);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-httpwarn-close:hover {
+    background-color: color-mix(in srgb, var(--ui-ink) 7%, transparent);
+    color: var(--ui-ink);
+  }
 }
 
 .mtv-httpwarn-text {
@@ -7212,9 +7475,11 @@ html[data-loading-style='silver-screen'] .mtv-load-silver {
   color: var(--ui-ink-2);
 }
 
-.mtv-httpwarn-btn.is-ghost:hover {
-  background-color: color-mix(in srgb, var(--ui-ink) 7%, transparent);
-  color: var(--ui-ink);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-httpwarn-btn.is-ghost:hover {
+    background-color: color-mix(in srgb, var(--ui-ink) 7%, transparent);
+    color: var(--ui-ink);
+  }
 }
 
 .mtv-httpwarn-btn.is-primary {
@@ -7222,28 +7487,2323 @@ html[data-loading-style='silver-screen'] .mtv-load-silver {
   color: var(--ui-accent-ink);
 }
 
-.mtv-httpwarn-btn.is-primary:hover {
-  filter: brightness(1.08);
+@media (hover: hover) and (pointer: fine) {
+  .mtv-httpwarn-btn.is-primary:hover {
+    filter: brightness(1.08);
+  }
 }
 
-/* 手机：从底部浮上来比居中更好按，同时避开底部指示条 */
+/* 手机：仍然居中，别贴底。
+   贴底那版在 PWA（standalone）里会被系统手势条 / Home 指示条挤成「底部粘着屏幕
+   边缘、按钮下面还留一大块空白」的样子。改成居中 + 上下都留出安全区，
+   小屏也能一眼看出这是个弹窗。 */
 @media (max-width: 767px) {
   .mtv-httpwarn-scrim {
-    align-items: flex-end;
-    padding: 12px;
+    align-items: center;
+    padding: max(20px, env(safe-area-inset-top)) 14px
+      max(20px, env(safe-area-inset-bottom));
   }
 
   .mtv-httpwarn-card {
     max-width: none;
     border-radius: 18px;
-    transform: translateY(16px);
+    transform: scale(0.96);
   }
 
   .mtv-httpwarn-scrim.is-open .mtv-httpwarn-card {
-    transform: translateY(0);
+    transform: scale(1);
   }
 
   .mtv-httpwarn-body {
-    padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+    padding: 18px 16px;
+  }
+}
+
+/* ==========================================================================
+   网盘 / 磁力（ACG）搜索结果卡片
+   两个页面原来各写一套 gray-* / sky-600 按钮，长标题不断行会把卡片顶宽、
+   按钮行和链接挤在同一行时按钮被压扁。这里统一成一套，标题允许任意位置断行、
+   操作区独占一行并自动换行。
+   ========================================================================== */
+.mtv-pansou-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--ui-hair);
+  border-radius: var(--ui-r-md);
+  background: var(--ui-surface-2);
+  transition: border-color var(--ui-dur-2) var(--ui-ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mtv-pansou-card:hover {
+    border-color: color-mix(in srgb, var(--ui-accent) 44%, var(--ui-hair));
+  }
+}
+
+.mtv-pansou-title {
+  margin: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  overflow: hidden;
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--ui-ink);
+  /* 压制组的命名经常是一长串没有空格的名字，必须允许任意位置断行 */
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.mtv-pansou-shots {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.mtv-pansou-shots::-webkit-scrollbar {
+  display: none;
+}
+
+.mtv-pansou-shots img {
+  flex: 0 0 auto;
+  height: 84px;
+  width: auto;
+  border: 1px solid var(--ui-hair);
+  border-radius: var(--ui-r-sm);
+  object-fit: cover;
+}
+
+.mtv-pansou-link {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  min-width: 0;
+}
+
+.mtv-pansou-url {
+  flex: 1 1 160px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11.5px;
+  color: var(--ui-ink-3);
+}
+
+.mtv-pansou-pwd {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 9px;
+  border: 1px solid var(--ui-hair);
+  border-radius: 999px;
+  background: var(--ui-surface-3);
+  font-size: 11.5px;
+  color: var(--ui-ink-3);
+  white-space: nowrap;
+}
+
+.mtv-pansou-pwd b {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ui-ink);
+}
+
+.mtv-pansou-acts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.mtv-pansou-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--ui-hair-strong);
+  border-radius: 999px;
+  background: var(--ui-surface-3);
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--ui-ink-2);
+  white-space: nowrap;
+  transition: background-color var(--ui-dur-2) var(--ui-ease),
+    border-color var(--ui-dur-2) var(--ui-ease),
+    color var(--ui-dur-2) var(--ui-ease);
+}
+
+.mtv-pansou-btn.is-primary {
+  border-color: transparent;
+  background: var(--ui-accent);
+  color: var(--ui-accent-ink);
+}
+
+.mtv-pansou-btn.is-icon {
+  /* 图标按钮：不定宽，给「已复制」这类文字留出位置，同时保证最小触摸尺寸 */
+  min-width: 30px;
+  padding: 0 8px;
+}
+
+.mtv-pansou-btn[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mtv-pansou-btn:hover:not([disabled]) {
+    border-color: color-mix(in srgb, var(--ui-accent) 40%, var(--ui-hair-strong));
+    color: var(--ui-ink);
+  }
+
+  .mtv-pansou-btn.is-primary:hover:not([disabled]) {
+    filter: brightness(1.08);
+  }
+}
+
+.mtv-pansou-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  font-size: 11.5px;
+  color: var(--ui-ink-3);
+}
+
+/* 触摸设备按钮要够大，手指按 30px 太勉强 */
+@media (max-width: 640px) {
+  .mtv-pansou-btn {
+    height: 32px;
+    padding: 0 13px;
+  }
+
+  .mtv-pansou-btn.is-icon {
+    min-width: 32px;
+    padding: 0 9px;
+  }
+}
+
+/* 搜索联想词面板 */
+.mtv-suggest {
+  position: absolute;
+  z-index: 600;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid var(--ui-hair);
+  border-radius: var(--ui-r-md);
+  background: var(--ui-surface-2);
+  box-shadow: var(--ui-elev-3);
+}
+
+.mtv-suggest-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px;
+  border-radius: var(--ui-r-sm);
+  font-size: 13.5px;
+  color: var(--ui-ink-2);
+  text-align: left;
+  transition: background-color var(--ui-dur-1) var(--ui-ease),
+    color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-suggest-item-ic {
+  flex: 0 0 auto;
+  color: var(--ui-ink-3);
+}
+
+.mtv-suggest-item-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mtv-suggest-item:hover {
+    background: color-mix(in srgb, var(--ui-ink) 7%, transparent);
+    color: var(--ui-ink);
+  }
+}
+
+/* ==========================================================================
+   手机端弹窗：不要铺满屏幕
+   触发条件是「fixed + 水平居中 + 垂直居中」这一组类名同时出现 —— 全站居中式
+   弹窗都是这个写法，底部抽屉 / 气泡提示不在其中（它们没有 -translate-y-1/2）。
+   只收 max-width / max-height，不动 width：本来就窄的弹窗不会被拉宽。
+   ========================================================================== */
+@media (max-width: 767px) {
+  [class*='fixed'][class*='left-1/2'][class*='-translate-x-1/2'][class*='-translate-y-1/2'] {
+    max-width: calc(100vw - 28px);
+    /* 这些弹窗是靠 top:50% + translateY(-50%) 居中的：高度一放开就会同时顶到
+       状态栏、压到底部手势条，两边都点不到。上下各留够手指的空白，并把刘海 /
+       手势条的安全区一起算进去。 */
+    max-height: calc(
+      100dvh - 96px - env(safe-area-inset-top) - env(safe-area-inset-bottom)
+    );
+    border-radius: var(--ui-r-lg);
+  }
+}
+
+/* 装成 PWA 后底栏别浮那么高。
+   浏览器里视口本来就避开工具栏，safe-area 是 0；standalone 下系统手势条 /
+   Home 指示条把 safe-area 撑到 24–34px，整段让出来底栏就显得悬在半空。
+   指示条的视觉高度只有安全区的一小半，这里只吃三成。 */
+@media (display-mode: standalone) {
+  .mtv-bnav {
+    bottom: calc(6px + env(safe-area-inset-bottom) * 0.3);
+  }
+}
+
+/* ==========================================================================
+   网页全屏播放器的兜底
+   --------------------------------------------------------------------------
+   Artplayer 的 fullscreenWeb 会把播放器节点搬到 body 下，自己只给了
+   z-index: 9999 + inset: 0。但那是「原来」的样式：一旦播放器带着
+   .mtv-play-player 的圆角/描边上来，或者页面里某个 fixed 装饰层被抬到
+   它上面，边缘就会漏出底下的内容（浅色主题下看起来就是一条白雾）。
+   这里把它钉成严格的四边贴齐 + 直角，并且不允许被祖先的圆角/描边影响。
+   ========================================================================== */
+.art-fullscreen-web {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  /* 页面上固定的装饰层最高到 --ui-z-modal 一档，这里压过它们；
+     真正的弹窗仍然用更大的 z-index，不受影响 */
+  z-index: calc(var(--ui-z-panel) + 100);
+}
+
+/* ==========================================================================
+   站内共享背景（PageLayout 的 HOME_BACKGROUND_IMAGE）
+   --------------------------------------------------------------------------
+   原来是 absolute inset-0 + 一层 bg-white/50（深色是 gray-950/50）：
+     · absolute 只覆盖首屏，往下滚就没了，剩顶上一片发白的残留；
+     · 那层 50% 纯白盖在照片上，就是「每页顶部一层白雾」的来源。
+   现在改成：固定铺满视口 + 重模糊成环境光 + 一层页面底色的薄纱。
+   薄纱用 --ui-bg 而不是纯白/纯黑，浅色下读起来是「画面被虚化压暗」，
+   不再是一块白色磨砂。
+   ========================================================================== */
+.mtv-app-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  /* 模糊会在四周溢出成透明边，放大一点盖住 */
+  transform: scale(1.08);
+  filter: blur(30px) saturate(1.15);
+  opacity: 0.5;
+}
+
+.mtv-app-bg-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: color-mix(in srgb, var(--ui-bg) 72%, transparent);
+}
+
+/* ==========================================================================
+   观影室（/watch-room）
+   --------------------------------------------------------------------------
+   这个页面原来是一整套手写 Tailwind 配色（蓝 / 紫 / 翠绿 / 灰 / 黄混用），
+   和站内令牌体系脱节：强调色不跟主题走，浅色下发灰、深色下发蓝，同一个页面上
+   还能同时出现三种主色。这里统一收到 --ui-* 令牌上，只留一个强调色 + 中性面。
+
+   手机端三个 tab（创建 / 加入 / 列表）原来用「下划线 tab + px-6」，390px 宽
+   要 380px 才排得下 —— 每个标签内部自己换行。改成等宽分段控件：三格 grid
+   平分、标签 nowrap、图标 15px，320px 的屏也算得下。
+   ========================================================================== */
+
+.mtv-wr {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-sp-5);
+  padding: var(--ui-sp-5) var(--ui-gutter) var(--ui-sp-8);
+}
+
+/* ---------- 标题 ---------- */
+.mtv-wr-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mtv-wr-h1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: var(--ui-fs-h1);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--ui-ink);
+}
+
+.mtv-wr-h1-ic {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  color: var(--ui-accent);
+}
+
+.mtv-wr-h1-tag {
+  font-size: var(--ui-fs-meta);
+  font-weight: 500;
+  color: var(--ui-ink-3);
+}
+
+.mtv-wr-sub {
+  margin: 0;
+  font-size: var(--ui-fs-body);
+  color: var(--ui-ink-2);
+}
+
+/* ---------- 选项卡：分段控件 ---------- */
+.mtv-wr-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--ui-r-md);
+  border: 1px solid var(--ui-hair);
+  background-color: color-mix(in srgb, var(--ui-ink) 5%, transparent);
+}
+
+.mtv-wr-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 9px 6px;
+  border-radius: var(--ui-r-sm);
+  font-size: var(--ui-fs-meta);
+  font-weight: 600;
+  line-height: 1.2;
+  /* 关键：标签永远不换行。放不下就让图标先退场，见下面的窄屏规则 */
+  white-space: nowrap;
+  color: var(--ui-ink-2);
+  transition:
+    background-color var(--ui-dur-1) var(--ui-ease),
+    color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-wr-tab svg {
+  flex: none;
+  width: 15px;
+  height: 15px;
+}
+
+.mtv-wr-tab.is-active {
+  background-color: var(--ui-surface);
+  color: var(--ui-ink);
+  box-shadow: var(--ui-elev-1);
+}
+
+@media (max-width: 359px) {
+  .mtv-wr-tab svg {
+    display: none;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mtv-wr-tab:not(.is-active):hover {
+    color: var(--ui-ink);
+  }
+}
+
+/* ---------- 面板 / 卡片 ---------- */
+.mtv-wr-body {
+  flex: 1;
+}
+
+.mtv-wr-panel {
+  display: flex;
+  flex-direction: column;
+  /* 卡片和下方的提示条之间要有明确间距。原来「提示」那块自带 mt-6，
+     换成统一的 .mtv-wr-note 之后外边距一起丢了，两块直接贴在一起。 */
+  gap: var(--ui-sp-4);
+  max-width: 640px;
+  margin-inline: auto;
+  padding-block: var(--ui-sp-4) var(--ui-sp-6);
+}
+
+.mtv-wr-card {
+  padding: var(--ui-sp-5);
+  border-radius: var(--ui-r-lg);
+  border: 1px solid var(--ui-hair);
+  background-color: var(--ui-surface);
+  box-shadow: var(--ui-elev-1);
+}
+
+@media (max-width: 767px) {
+  .mtv-wr-panel {
+    padding-block: 0 var(--ui-sp-5);
+  }
+
+  .mtv-wr-card {
+    padding: var(--ui-sp-4);
+  }
+}
+
+.mtv-wr-h2 {
+  margin: 0 0 var(--ui-sp-5);
+  font-size: var(--ui-fs-h2);
+  font-weight: 700;
+  color: var(--ui-ink);
+}
+
+/* ---------- 表单 ---------- */
+.mtv-wr-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-sp-4);
+}
+
+.mtv-wr-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: var(--ui-fs-meta);
+  font-weight: 600;
+  color: var(--ui-ink-2);
+}
+
+.mtv-wr-input {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--ui-r-sm);
+  border: 1px solid var(--ui-hair-strong);
+  background-color: var(--ui-surface-2);
+  color: var(--ui-ink);
+  font: inherit;
+  font-size: var(--ui-fs-body);
+  transition:
+    border-color var(--ui-dur-1) var(--ui-ease),
+    box-shadow var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-wr-input::placeholder {
+  color: var(--ui-ink-3);
+}
+
+.mtv-wr-input:focus {
+  outline: none;
+  border-color: var(--ui-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-accent) 20%, transparent);
+}
+
+textarea.mtv-wr-input {
+  min-height: 84px;
+  resize: vertical;
+}
+
+/* 房间号：等宽 + 拉开字距，六位数字一眼数得清 */
+.mtv-wr-input.is-mono {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 1.0625rem;
+  letter-spacing: 0.12em;
+}
+
+.mtv-wr-check-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mtv-wr-check {
+  /* 原生 checkbox 在 iOS 上不吃 border-radius，永远是直角方块；
+     accent-color 也只能换填充、换不了形状。用 appearance: none 自己画：
+     圆角矩形 + 勾选态实底 + 白色对勾。
+     对勾走 background-image（SVG）—— input 是替换元素，::after 不渲染。 */
+  flex: none;
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border-radius: 5px;
+  border: 1.5px solid color-mix(in srgb, var(--ui-ink) 26%, transparent);
+  background-color: color-mix(in srgb, var(--ui-ink) 4%, transparent);
+  transition:
+    background-color var(--ui-dur-1) var(--ui-ease),
+    border-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-wr-check:checked {
+  border-color: var(--ui-accent);
+  background-color: var(--ui-accent);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.6 6.3l2.3 2.3 4.5-4.9' fill='none' stroke='%23fff' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 12px 12px;
+}
+
+.mtv-wr-check:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ui-accent) 32%, transparent);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mtv-wr-check:hover:not(:checked) {
+    border-color: color-mix(in srgb, var(--ui-ink) 42%, transparent);
+  }
+}
+
+.mtv-wr-check-t {
+  font-size: var(--ui-fs-meta);
+  color: var(--ui-ink-2);
+}
+
+/* ---------- 房间类型选择 ---------- */
+.mtv-wr-opts {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+@media (min-width: 640px) {
+  .mtv-wr-opts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mtv-wr-opts.is-three {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.mtv-wr-opt {
+  padding: 14px;
+  text-align: left;
+  border-radius: var(--ui-r-md);
+  border: 1px solid var(--ui-hair-strong);
+  transition:
+    border-color var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-wr-opt.is-on {
+  border-color: var(--ui-accent);
+  background-color: color-mix(in srgb, var(--ui-accent) 10%, transparent);
+}
+
+.mtv-wr-opt-t {
+  font-size: var(--ui-fs-body);
+  font-weight: 600;
+  color: var(--ui-ink);
+}
+
+.mtv-wr-opt-d {
+  margin-top: 4px;
+  font-size: var(--ui-fs-meta);
+  line-height: 1.5;
+  color: var(--ui-ink-2);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mtv-wr-opt:not(.is-on):hover {
+    border-color: var(--ui-hair-strong);
+    background-color: color-mix(in srgb, var(--ui-ink) 4%, transparent);
+  }
+}
+
+/* ---------- 按钮 ---------- */
+.mtv-wr-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border-radius: var(--ui-r-sm);
+  border: 1px solid transparent;
+  font-size: var(--ui-fs-body);
+  font-weight: 600;
+  line-height: 1.2;
+  transition:
+    background-color var(--ui-dur-1) var(--ui-ease),
+    border-color var(--ui-dur-1) var(--ui-ease),
+    color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-wr-btn.is-block {
+  width: 100%;
+}
+
+.mtv-wr-btn.is-primary {
+  background-color: var(--ui-accent);
+  color: #ffffff;
+}
+
+.mtv-wr-btn.is-subtle {
+  border-color: var(--ui-hair);
+  background-color: color-mix(in srgb, var(--ui-ink) 6%, transparent);
+  color: var(--ui-ink);
+}
+
+.mtv-wr-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mtv-wr-btn.is-primary:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--ui-accent) 86%, #000);
+  }
+
+  .mtv-wr-btn.is-subtle:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--ui-ink) 10%, transparent);
+  }
+}
+
+/* ---------- 提示条 ---------- */
+.mtv-wr-note {
+  padding: 12px 14px;
+  border-radius: var(--ui-r-md);
+  border: 1px solid var(--ui-hair);
+  background-color: color-mix(in srgb, var(--ui-ink) 4%, transparent);
+}
+
+.mtv-wr-note-t {
+  margin: 0;
+  font-size: var(--ui-fs-meta);
+  line-height: 1.6;
+  color: var(--ui-ink-2);
+}
+
+/* ---------- 房员等待条 ---------- */
+.mtv-wr-wait {
+  padding: var(--ui-sp-4) var(--ui-sp-5);
+  border-radius: var(--ui-r-lg);
+  border: 1px solid color-mix(in srgb, var(--ui-accent) 26%, transparent);
+  background-color: color-mix(in srgb, var(--ui-accent) 9%, transparent);
+}
+
+.mtv-wr-wait-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.mtv-wr-wait-spin {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--ui-r-full);
+  border: 3px solid color-mix(in srgb, var(--ui-accent) 22%, transparent);
+  border-top-color: var(--ui-accent);
+  animation: mtv-wr-spin 900ms linear infinite;
+}
+
+@keyframes mtv-wr-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.mtv-wr-wait-t {
+  margin: 0 0 2px;
+  font-size: var(--ui-fs-body);
+  font-weight: 700;
+  color: var(--ui-ink);
+}
+
+.mtv-wr-wait-s {
+  margin: 0;
+  font-size: var(--ui-fs-meta);
+  color: var(--ui-ink-2);
+}
+
+.mtv-wr-wait-btn {
+  flex: none;
+  padding: 8px 16px;
+  border-radius: var(--ui-r-full);
+  background-color: var(--ui-accent);
+  color: #ffffff;
+  font-size: var(--ui-fs-meta);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mtv-wr-wait-spin {
+    animation-duration: 2.4s;
+  }
+}
+
+/* ---------- 当前房间信息 ---------- */
+.mtv-wr-hero {
+  padding: var(--ui-sp-5);
+  border-radius: var(--ui-r-lg);
+  border: 1px solid color-mix(in srgb, var(--ui-accent) 28%, transparent);
+  background-color: color-mix(in srgb, var(--ui-accent) 8%, var(--ui-surface));
+  color: var(--ui-ink);
+}
+
+.mtv-wr-hero-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: var(--ui-sp-4);
+}
+
+.mtv-wr-hero-t {
+  margin: 0 0 4px;
+  font-size: var(--ui-fs-h2);
+  font-weight: 700;
+}
+
+.mtv-wr-hero-sub {
+  margin: 0;
+  font-size: var(--ui-fs-meta);
+  color: var(--ui-ink-2);
+}
+
+/* 房主徽章：压在强调色面上，只能用白色半透明 */
+.mtv-wr-owner {
+  flex: none;
+  padding: 3px 10px;
+  border-radius: var(--ui-r-full);
+  background-color: color-mix(in srgb, var(--ui-accent) 16%, transparent);
+  color: var(--ui-accent);
+  font-size: var(--ui-fs-micro);
+  font-weight: 700;
+}
+
+.mtv-wr-stats {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-top: var(--ui-sp-4);
+}
+
+@media (min-width: 640px) {
+  .mtv-wr-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.mtv-wr-stat {
+  padding: 10px 12px;
+  border-radius: var(--ui-r-sm);
+  border: 1px solid var(--ui-hair);
+  background-color: var(--ui-surface);
+}
+
+.mtv-wr-stat-k {
+  margin: 0 0 2px;
+  font-size: var(--ui-fs-micro);
+  color: var(--ui-ink-3);
+}
+
+.mtv-wr-stat-v {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.mtv-wr-stat-v.is-mono {
+  font-family: ui-monospace, Menlo, monospace;
+  letter-spacing: 0.08em;
+}
+
+/* ---------- 房间成员 ---------- */
+.mtv-wr-members {
+  padding: var(--ui-sp-4);
+  border-radius: var(--ui-r-md);
+  background-color: color-mix(in srgb, var(--ui-ink) 4%, transparent);
+}
+
+.mtv-wr-members-h {
+  margin: 0 0 12px;
+  font-size: var(--ui-fs-meta);
+  font-weight: 700;
+  color: var(--ui-ink);
+}
+
+.mtv-wr-member {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--ui-r-sm);
+  border: 1px solid var(--ui-hair);
+  background-color: var(--ui-surface);
+}
+
+.mtv-wr-member-l {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.mtv-wr-avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--ui-r-full);
+  border: 1px solid color-mix(in srgb, var(--ui-accent) 30%, transparent);
+  background-color: color-mix(in srgb, var(--ui-accent) 12%, transparent);
+  color: var(--ui-accent);
+  font-size: var(--ui-fs-meta);
+  font-weight: 700;
+}
+
+.mtv-wr-member-name {
+  overflow: hidden;
+  font-size: var(--ui-fs-body);
+  font-weight: 500;
+  color: var(--ui-ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mtv-wr-member-owner {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: var(--ui-r-full);
+  background-color: color-mix(in srgb, var(--ui-accent) 16%, transparent);
+  color: var(--ui-accent);
+  font-size: var(--ui-fs-micro);
+  font-weight: 600;
+}
+
+/* ---------- 房间列表 ---------- */
+.mtv-wr-list-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: var(--ui-sp-4);
+}
+
+.mtv-wr-list-count {
+  margin: 0;
+  font-size: var(--ui-fs-meta);
+  color: var(--ui-ink-2);
+}
+
+.mtv-wr-list-num {
+  font-weight: 700;
+  color: var(--ui-ink);
+}
+
+.mtv-wr-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ui-sp-8) 0;
+  text-align: center;
+}
+
+.mtv-wr-empty-ic {
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 12px;
+  color: var(--ui-ink-3);
+}
+
+.mtv-wr-empty-t {
+  margin: 0 0 6px;
+  font-size: var(--ui-fs-body);
+  color: var(--ui-ink-2);
+}
+
+.mtv-wr-empty-t.is-strong {
+  font-size: var(--ui-fs-h2);
+  font-weight: 600;
+  color: var(--ui-ink);
+}
+
+.mtv-wr-empty-s {
+  margin: 0;
+  font-size: var(--ui-fs-meta);
+  color: var(--ui-ink-3);
+}
+
+.mtv-wr-rooms {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+@media (min-width: 768px) {
+  .mtv-wr-rooms {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .mtv-wr-rooms {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.mtv-wr-room {
+  display: flex;
+  flex-direction: column;
+  padding: var(--ui-sp-4);
+  border-radius: var(--ui-r-lg);
+  border: 1px solid var(--ui-hair);
+  background-color: var(--ui-surface);
+  transition:
+    box-shadow var(--ui-dur-2) var(--ui-ease),
+    border-color var(--ui-dur-2) var(--ui-ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mtv-wr-room:hover {
+    border-color: var(--ui-hair-strong);
+    box-shadow: var(--ui-elev-2);
+  }
+}
+
+.mtv-wr-room-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.mtv-wr-room-t {
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--ui-fs-h2);
+  font-weight: 700;
+  color: var(--ui-ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mtv-wr-room-d {
+  display: -webkit-box;
+  margin: 4px 0 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: var(--ui-fs-meta);
+  line-height: 1.5;
+  color: var(--ui-ink-2);
+}
+
+.mtv-wr-room-lock {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--ui-warn);
+}
+
+.mtv-wr-room-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: var(--ui-sp-4);
+  font-size: var(--ui-fs-meta);
+}
+
+.mtv-wr-room-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--ui-ink-2);
+}
+
+.mtv-wr-room-row.is-inline {
+  justify-content: flex-start;
+}
+
+.mtv-wr-room-k {
+  color: var(--ui-ink-3);
+}
+
+.mtv-wr-room-id {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--ui-ink);
+}
+
+.mtv-wr-room-live {
+  padding: 8px 10px;
+  border-radius: var(--ui-r-sm);
+  border: 1px solid color-mix(in srgb, var(--ui-accent) 26%, transparent);
+  background-color: color-mix(in srgb, var(--ui-accent) 9%, transparent);
+}
+
+.mtv-wr-room-live-t {
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--ui-fs-micro);
+  color: var(--ui-ink-2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 加入按钮固定在卡片底部 —— 描述长短不一时，同一行的按钮仍然对齐 */
+.mtv-wr-room .mtv-wr-btn {
+  margin-top: auto;
+}
+
+/* 强调值（成员名 / 房间数这类）*/
+.mtv-wr-strong {
+  font-weight: 600;
+  color: var(--ui-ink);
+}
+
+/* ==========================================================================
+   观影室 · 右下角浮动层（房间信息 / 聊天 / 重连）
+   --------------------------------------------------------------------------
+   原来这一簇全是手写 Tailwind：红 500 / 蓝 500 / gray-800 混用，定位靠一串
+   魔数（bottom-20、bottom-36、bottom-[13.5rem]、bottom-[30rem]…），每加一个按钮
+   就得重算一次，而且手机上 bottom-20 = 80px 正好压在悬浮底栏（66px 高、离底 12px）
+   上沿 —— 按钮和底栏叠在一起。
+
+   现在：一个 .mtv-chat-dock 定死在底栏之上，内部 flex-column 自然堆叠；
+   聊天面板也是它的子元素，不用再为「面板多高、按钮该抬到哪」算偏移。
+   ========================================================================== */
+
+.mtv-chat-dock {
+  position: fixed;
+  right: 16px;
+  /* 手机：让开悬浮底栏（66px 高 + 12px 离底）再留 12px 呼吸 */
+  bottom: calc(78px + 12px + env(safe-area-inset-bottom));
+  z-index: 700;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  pointer-events: none;
+}
+
+/* 容器本身不吃点击，避免整块透明区挡住页面 */
+.mtv-chat-dock > * {
+  pointer-events: auto;
+}
+
+@media (min-width: 768px) {
+  .mtv-chat-dock {
+    bottom: 24px;
+  }
+}
+
+/* ---------- 圆形浮动按钮 ---------- */
+.mtv-fab {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--ui-r-full);
+  box-shadow: var(--ui-elev-3);
+  transition:
+    transform var(--ui-dur-1) var(--ui-ease),
+    background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+/* 反相配色：浅色主题下是深色圆、深色主题下是浅色圆。
+   原来用 --ui-surface，结果浅色下白圆压白页、深色下黑圆压黑页，几乎看不见。 */
+/* 两个常驻按钮要分得清主次，也不能都用品牌红 —— 不然未读角标压在同色按钮上
+   等于没有对比。
+   房间信息 = 次要：中性玻璃面 + 发丝线 + 墨色图标。
+   浅色主题是白圆、深色主题是深圆，靠那道描边保证压在任何底图上都有边界。 */
+/* 房间信息 = 次要操作，但必须一眼看见，而且必须是实心的 ——
+   上一版用强调色淡底，看着像半透明，跟聊天那颗反相实心圆不是一套语言。
+   取「比聊天圆明度低一档」的中性灰：
+   浅色主题是深灰圆 + 近白图标，深色主题是浅灰圆 + 黑图标，
+   两个都不透明，也都能和页面底色拉开。 */
+.mtv-fab.is-surface {
+  background-color: color-mix(in srgb, var(--ui-ink) 80%, var(--ui-surface));
+  color: var(--ui-bg);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mtv-fab.is-surface:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--ui-ink) 88%, var(--ui-surface));
+  }
+}
+
+/* 聊天 = 主操作：反相配色（浅色主题深圆、深色主题浅圆）。
+   原来用的是品牌红，红底 + 红角标糊成一团，未读数根本看不清；
+   换成中性反相之后，红色的未读角标才真正跳出来。 */
+.mtv-fab.is-accent {
+  background-color: var(--ui-ink);
+  color: var(--ui-bg);
+}
+
+.mtv-fab.is-danger {
+  background-color: var(--ui-danger-fill);
+  color: #ffffff;
+}
+
+.mtv-fab:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 重连失败：呼吸而不是狂闪，避免一直抢注意力 */
+.mtv-fab.is-pulse {
+  animation: mtv-fab-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes mtv-fab-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mtv-fab:hover:not(:disabled) {
+    transform: scale(1.06);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mtv-fab.is-pulse {
+    animation: none;
+  }
+}
+
+.mtv-fab-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  display: grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: var(--ui-r-full);
+  /* 角标用品牌红（--ui-danger 是浅红文字色，做填充不够实）。
+     外面再套一圈底色描边，把红点从按钮底色里切出来，边界才清楚。 */
+  background-color: var(--ui-accent);
+  box-shadow: 0 0 0 2px var(--ui-bg);
+  color: #ffffff;
+  font-size: var(--ui-fs-micro);
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* ---------- 聊天面板（恒为深色：压在页面/视频上） ---------- */
+.mtv-chat {
+  display: flex;
+  flex-direction: column;
+  width: min(368px, calc(100vw - 32px));
+  max-height: min(560px, calc(100dvh - 200px));
+  overflow: hidden;
+  border-radius: var(--ui-r-lg);
+  border: 1px solid var(--ui-hair);
+  background-color: var(--ui-surface);
+  color: var(--ui-ink);
+  box-shadow: var(--ui-elev-3);
+}
+/* 手机端：留边的浮层，不是全屏页面。
+   之前是贴满屏宽的底部抽屉（left/right 都是 0），跟一个页面没区别，
+   完全看不出这是个可以开、可以关的组件。现在左右各留 12px、四角圆、
+   独立投影；高度跟着可视视口走，键盘弹出时靠 --mtv-kb-inset 整体顶上去，
+   所以下面 / 右边都不会被键盘压住。 */
+@media (max-width: 767px) {
+  .mtv-chat {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom) + var(--mtv-kb-inset, 0px));
+    width: auto;
+    max-height: min(72dvh, calc(100dvh - var(--mtv-kb-inset, 0px) - 24px));
+    border-radius: var(--ui-r-lg);
+    box-shadow: var(--ui-elev-3);
+  }
+
+  /* 浮层打开时把右上角那几颗浮动按钮收起来，别压在浮层顶上。
+     :has 在 iOS 15.4+ 都支持；不支持时最坏也就是重叠，不影响功能。 */
+  .mtv-chat-dock:has(.mtv-chat) > .mtv-fab {
+    display: none;
+  }
+}
+
+.mtv-chat-head {
+  border-bottom: 1px solid var(--ui-hair);
+  background-color: color-mix(in srgb, var(--ui-ink) 4%, transparent);
+  color: var(--ui-ink);
+}
+
+.mtv-chat-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+}
+
+.mtv-chat-head-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--ui-ink);
+}
+
+.mtv-chat-title {
+  margin: 0;
+  font-size: var(--ui-fs-meta);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+/* 标题和在线人数之间的分隔点 */
+.mtv-chat-dot {
+  flex: none;
+  width: 3px;
+  height: 3px;
+  border-radius: var(--ui-r-full);
+  background-color: var(--ui-ink-3);
+}
+
+.mtv-chat-sub {
+  margin: 0;
+  font-size: var(--ui-fs-micro);
+  color: var(--ui-ink-3);
+}
+
+.mtv-chat-iconbtn {
+  padding: 5px;
+  border-radius: var(--ui-r-sm);
+  color: var(--ui-ink-2);
+  transition:
+    background-color var(--ui-dur-1) var(--ui-ease),
+    color var(--ui-dur-1) var(--ui-ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mtv-chat-iconbtn:hover {
+    background-color: color-mix(in srgb, var(--ui-ink) 8%, transparent);
+    color: var(--ui-ink);
+  }
+}
+
+/* ---------- 语音控制 ---------- */
+.mtv-chat-tools {
+  padding: 8px 14px 10px;
+  border-top: 1px solid var(--ui-hair);
+}
+
+.mtv-chat-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--ui-r-full);
+  border: 1px solid var(--ui-hair);
+  background-color: color-mix(in srgb, var(--ui-ink) 5%, transparent);
+  color: var(--ui-ink-2);
+  font-size: var(--ui-fs-micro);
+  font-weight: 600;
+  transition:
+    background-color var(--ui-dur-1) var(--ui-ease),
+    border-color var(--ui-dur-1) var(--ui-ease),
+    color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-chat-toggle.is-on {
+  border-color: transparent;
+  background-color: var(--ui-accent);
+  color: #ffffff;
+}
+
+.mtv-chat-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mtv-chat-status {
+  margin-top: 4px;
+  text-align: left;
+  font-size: var(--ui-fs-micro);
+  color: var(--ui-ink-3);
+}
+
+.mtv-chat-status-err {
+  color: var(--ui-danger);
+}
+
+/* ---------- 消息区 ---------- */
+.mtv-chat-msgs {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  padding: 14px;
+  overscroll-behavior: contain;
+}
+
+.mtv-chat-empty-ic {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 8px;
+  color: var(--ui-ink-3);
+}
+
+.mtv-chat-empty-t {
+  margin: 0;
+  font-size: var(--ui-fs-meta);
+  color: var(--ui-ink-2);
+}
+
+.mtv-chat-empty-s {
+  margin: 2px 0 0;
+  font-size: var(--ui-fs-micro);
+  color: var(--ui-ink-3);
+}
+
+/* 一条消息 = 名字行 + 气泡。自己发的靠右、用强调色气泡；
+   别人发的靠左、中性气泡。这是主流聊天组件的读法。 */
+/* 气泡宽度上限要挂在「一条消息」上，不能挂在气泡自己身上。
+   .mtv-chat-item 是 flex 项，收缩到内容宽度；气泡要是再写 max-width: 84%，
+   这个百分比就按「它自己的内容宽度」去算 —— 算出来的框永远比内容窄 16%，
+   于是每一句话都必然在最后一个字上折行（「你好」拆成两行就是这么来的）。
+   改成：item 撑到 82% 封顶，气泡 100% 跟随，谁都不再自己缩自己。 */
+.mtv-chat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  align-self: flex-start;
+  gap: 3px;
+  min-width: 0;
+  max-width: 82%;
+}
+
+.mtv-chat-item.is-own {
+  align-items: flex-end;
+  align-self: flex-end;
+}
+
+.mtv-chat-item-head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding-inline: 2px;
+}
+
+/* 气泡行：别人的消息左边挂一个首字母头像，自己的不挂（右侧对齐） */
+/* 气泡行：别人的消息左边挂一个首字母头像，自己的不挂（右侧对齐）。
+   头像和气泡居中对齐 —— 之前是 flex-end（贴气泡底边），单行气泡时
+   头像圆心明显低于气泡中线，看着像「掉下去一块」。 */
+.mtv-chat-item-body {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.mtv-chat-avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--ui-r-full);
+  border: 1px solid color-mix(in srgb, var(--ui-ink) 10%, transparent);
+  background-color: color-mix(in srgb, var(--ui-ink) 8%, transparent);
+  color: var(--ui-ink-2);
+  /* 比 --ui-fs-micro 大一档：26px 的圆里塞 11px 的字，
+     像 "I" 这种单笔画首字母会被压成一根竖线，看不出来是个头像。 */
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.mtv-chat-name {
+  font-size: var(--ui-fs-micro);
+  font-weight: 600;
+  color: var(--ui-accent);
+}
+
+.mtv-chat-time {
+  font-size: var(--ui-fs-micro);
+  color: var(--ui-ink-3);
+}
+
+.mtv-chat-msg {
+  /* 宽度由外层的 .mtv-chat-item 封顶，这里只跟着走，不再自己缩自己 */
+  max-width: 100%;
+  padding: 8px 12px;
+  border-radius: var(--ui-r-md);
+  border-top-left-radius: 4px;
+  background-color: color-mix(in srgb, var(--ui-ink) 6%, transparent);
+  color: var(--ui-ink);
+  font-size: var(--ui-fs-meta);
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.mtv-chat-item.is-own .mtv-chat-msg {
+  border-top-left-radius: var(--ui-r-md);
+  border-top-right-radius: 4px;
+  background-color: var(--ui-accent);
+  color: #ffffff;
+}
+
+.mtv-chat-msg.is-emoji,
+.mtv-chat-item.is-own .mtv-chat-msg.is-emoji {
+  padding: 0;
+  background: none;
+  font-size: 1.75rem;
+  line-height: 1.2;
+}
+
+/* ---------- 输入区 ---------- */
+.mtv-chat-input {
+  padding: 10px;
+  border-top: 1px solid var(--ui-hair);
+}
+
+.mtv-chat-emoji {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  margin-bottom: 8px;
+  padding: 8px;
+  border-radius: var(--ui-r-sm);
+  background-color: color-mix(in srgb, var(--ui-ink) 5%, transparent);
+}
+
+.mtv-chat-emoji-btn {
+  padding: 2px;
+  border-radius: 6px;
+  font-size: 1.5rem;
+  line-height: 1.2;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mtv-chat-emoji-btn:hover {
+    background-color: color-mix(in srgb, var(--ui-ink) 10%, transparent);
+  }
+}
+
+.mtv-chat-inputbtn {
+  /* 这一行是 <div className="flex gap-2">，默认 align-items: stretch，
+     子元素会被拉成同一个高度；而按钮宽度只由内容撑开 —— 宽 36 / 高 44，
+     就是一个「瘦高」的竖椭圆。align-self 脱离拉伸 + 给死宽高才是正圆。 */
+  flex: none;
+  align-self: center;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--ui-r-sm);
+  background-color: color-mix(in srgb, var(--ui-ink) 6%, transparent);
+  color: var(--ui-ink-2);
+  transition: background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mtv-chat-inputbtn:hover {
+    background-color: color-mix(in srgb, var(--ui-ink) 11%, transparent);
+    color: var(--ui-ink);
+  }
+}
+
+.mtv-chat-field {
+  /* 药丸输入框跟右边两颗按钮同高同一中线：不给死高度的话，
+     它会被 flex 的 stretch 拉到容器高度，上下 padding 一分摊，
+     光标和占位文字就会浮在偏上的位置。 */
+  flex: 1;
+  align-self: center;
+  min-width: 0;
+  height: 42px;
+  padding: 0 16px;
+  /* 药丸圆角。改高度那一轮把这一行一起覆盖掉了，输入框就成了直角方块。 */
+  border-radius: var(--ui-r-full);
+  border: 1px solid var(--ui-hair);
+  background-color: color-mix(in srgb, var(--ui-ink) 5%, transparent);
+  color: var(--ui-ink);
+  font-size: var(--ui-fs-meta);
+  transition:
+    border-color var(--ui-dur-1) var(--ui-ease),
+    box-shadow var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-chat-field::placeholder {
+  color: var(--ui-ink-3);
+}
+
+.mtv-chat-field:focus {
+  outline: none;
+  border-color: var(--ui-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ui-accent) 30%, transparent);
+}
+
+.mtv-chat-send {
+  /* 同上：不脱离 stretch 就是「宽 36 / 高 44」的竖椭圆。
+     给死 42px 正方形，和左边的药丸输入框站一起才不显单薄。 */
+  flex: none;
+  align-self: center;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: var(--ui-r-full);
+  background-color: var(--ui-accent);
+  color: #ffffff;
+  transition: opacity var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-chat-send:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.mtv-chat-foot {
+  padding: 8px 14px;
+  text-align: center;
+  font-size: var(--ui-fs-micro);
+  color: var(--ui-ink-3);
+  background-color: color-mix(in srgb, var(--ui-ink) 3%, transparent);
+}
+
+.mtv-chat-foot-owner {
+  color: var(--ui-accent);
+  font-weight: 600;
+}
+
+/* ---------- 最小化条 ---------- */
+.mtv-chat-mini {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: var(--ui-r-full);
+  border: 1px solid var(--ui-hair);
+  background-color: var(--ui-surface);
+  color: var(--ui-ink);
+  box-shadow: var(--ui-elev-2);
+}
+
+.mtv-chat-mini-btn {
+  padding: 4px;
+  border-radius: 6px;
+  color: var(--ui-ink-2);
+  transition:
+    background-color var(--ui-dur-1) var(--ui-ease),
+    color var(--ui-dur-1) var(--ui-ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mtv-chat-mini-btn:hover {
+    background-color: color-mix(in srgb, var(--ui-ink) 9%, transparent);
+    color: var(--ui-ink);
+  }
+}
+
+/* ---------- 房间信息弹窗（跟随主题，不是影院配色） ---------- */
+.mtv-chat-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ui-z-modal);
+  background-color: rgba(0, 0, 0, 0.55);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+.mtv-chat-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: calc(var(--ui-z-modal) + 1);
+  display: flex;
+  flex-direction: column;
+  width: min(448px, calc(100vw - 28px));
+  max-height: calc(
+    100dvh - 96px - env(safe-area-inset-top) - env(safe-area-inset-bottom)
+  );
+  overflow: hidden;
+  transform: translate(-50%, -50%);
+  border-radius: var(--ui-r-lg);
+  border: 1px solid var(--ui-hair);
+  background-color: var(--ui-surface);
+  color: var(--ui-ink);
+  box-shadow: var(--ui-elev-3);
+}
+
+.mtv-chat-modal-body {
+  padding: var(--ui-sp-5);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+@media (max-width: 767px) {
+  .mtv-chat-modal-body {
+    padding: var(--ui-sp-4);
+  }
+}
+
+.mtv-chat-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: var(--ui-sp-4);
+}
+
+.mtv-chat-modal-ic {
+  width: 20px;
+  height: 20px;
+  color: var(--ui-accent);
+}
+
+.mtv-chat-modal-t {
+  margin: 0;
+  font-size: var(--ui-fs-h2);
+  font-weight: 700;
+  color: var(--ui-ink);
+}
+
+.mtv-chat-modal-close {
+  flex: none;
+  padding: 6px;
+  border-radius: var(--ui-r-full);
+  color: var(--ui-ink-3);
+  transition:
+    background-color var(--ui-dur-1) var(--ui-ease),
+    color var(--ui-dur-1) var(--ui-ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mtv-chat-modal-close:hover {
+    background-color: color-mix(in srgb, var(--ui-ink) 7%, transparent);
+    color: var(--ui-ink);
+  }
+}
+
+.mtv-chat-modal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mtv-chat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--ui-r-md);
+  border: 1px solid var(--ui-hair);
+  background-color: color-mix(in srgb, var(--ui-ink) 4%, transparent);
+}
+
+.mtv-chat-row.is-block {
+  display: block;
+}
+
+.mtv-chat-row-k {
+  display: block;
+  font-size: var(--ui-fs-meta);
+  font-weight: 600;
+  color: var(--ui-ink-2);
+}
+
+.mtv-chat-row.is-block .mtv-chat-row-k {
+  margin-bottom: 8px;
+}
+
+.mtv-chat-row-v {
+  font-size: var(--ui-fs-meta);
+  font-weight: 700;
+  color: var(--ui-ink);
+}
+
+.mtv-chat-row-v.is-mono {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 1.0625rem;
+  letter-spacing: 0.08em;
+}
+
+.mtv-chat-row-p {
+  margin: 0;
+  font-size: var(--ui-fs-meta);
+  line-height: 1.6;
+  color: var(--ui-ink-2);
+}
+
+.mtv-chat-row-ic {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--ui-ink-3);
+}
+
+.mtv-chat-invite {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  border-radius: var(--ui-r-sm);
+  border: 1px solid var(--ui-hair-strong);
+  background-color: var(--ui-surface-2);
+  color: var(--ui-ink-2);
+  font-size: var(--ui-fs-micro);
+  text-overflow: ellipsis;
+}
+
+.mtv-chat-invite:focus {
+  outline: none;
+  border-color: var(--ui-accent);
+}
+
+.mtv-chat-copy {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: var(--ui-r-sm);
+  background-color: var(--ui-accent);
+  color: #ffffff;
+  font-size: var(--ui-fs-micro);
+  font-weight: 600;
+}
+
+.mtv-chat-hint {
+  margin: 8px 0 0;
+  font-size: var(--ui-fs-micro);
+  line-height: 1.5;
+  color: var(--ui-ink-3);
+}
+
+.mtv-chat-mlist {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 160px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.mtv-chat-mrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--ui-r-sm);
+  border: 1px solid var(--ui-hair);
+  background-color: var(--ui-surface);
+}
+
+.mtv-chat-mavatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--ui-r-full);
+  background-color: var(--ui-accent);
+  color: #ffffff;
+  font-size: var(--ui-fs-micro);
+  font-weight: 700;
+}
+
+.mtv-chat-mname {
+  font-size: var(--ui-fs-meta);
+  font-weight: 600;
+  color: var(--ui-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mtv-chat-mowner {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: var(--ui-r-full);
+  background-color: color-mix(in srgb, var(--ui-accent) 16%, transparent);
+  color: var(--ui-accent);
+  font-size: var(--ui-fs-micro);
+  font-weight: 700;
+}
+
+/* 危险操作：解散 / 退出房间 */
+.mtv-wr-btn.is-danger {
+  background-color: var(--ui-danger-fill);
+  color: #ffffff;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mtv-wr-btn.is-danger:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--ui-danger-fill) 88%, #000);
+  }
+}
+
+/* ==========================================================================
+   /watch-room/screen —— 屏幕共享观影室
+   --------------------------------------------------------------------------
+   这是独立路由（不套 PageLayout），原来整页是手写 Tailwind 调色板：蓝色按钮、
+   红色按钮、黄色房主徽章、灰色卡片，跟站内其它页面完全两个物种。
+   这里统一收进令牌体系 —— 中性面 + 发丝线 + 环境投影；品牌红只留给
+   「开始共享」这一个主操作和「停止」这个危险操作，房主徽章改中性描边。
+   ========================================================================== */
+
+.mtv-scr {
+  min-height: 100dvh;
+  background: var(--ui-bg);
+  color: var(--ui-ink);
+}
+
+/* 底部留白 96px：让开右下角那颗聊天浮层按钮。
+   单位用 dvh 而不是 vh —— iOS 的 100vh 是「工具栏收起后」的高度，
+   按它排版，最后一张卡会永远停在地址栏后面。 */
+.mtv-scr-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-sp-4);
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: var(--ui-sp-4) var(--ui-gutter) calc(96px + env(safe-area-inset-bottom));
+}
+
+/* ---------- 顶部条 ---------- */
+.mtv-scr-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-sp-4);
+  padding: var(--ui-sp-4) var(--ui-sp-5);
+  border-radius: var(--ui-r-lg);
+  border: 1px solid var(--ui-hair);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-elev-1);
+}
+
+.mtv-scr-h1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--ui-fs-h2);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ui-ink);
+}
+
+.mtv-scr-h1-ic {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  color: var(--ui-accent);
+}
+
+.mtv-scr-sub {
+  margin-top: 4px;
+  font-size: var(--ui-fs-meta);
+  color: var(--ui-ink-2);
+}
+
+.mtv-scr-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ---------- 按钮（比 .mtv-wr-btn 收一档） ---------- */
+.mtv-scr-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border-radius: var(--ui-r-sm);
+  border: 1px solid var(--ui-hair);
+  background-color: color-mix(in srgb, var(--ui-ink) 6%, transparent);
+  color: var(--ui-ink);
+  font-size: var(--ui-fs-meta);
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  transition: background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.mtv-scr-btn.is-primary {
+  border-color: transparent;
+  background-color: var(--ui-accent);
+  color: #ffffff;
+}
+
+/* 填充色单独用 --ui-danger-fill：--ui-danger 是「浅红文字色」，
+   拿来铺满一块按钮，深色主题下会显得被冲淡。 */
+.mtv-scr-btn.is-danger {
+  border-color: transparent;
+  background-color: var(--ui-danger-fill);
+  color: #ffffff;
+}
+
+.mtv-scr-btn.is-block {
+  flex: 1;
+}
+
+.mtv-scr-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mtv-scr-btn:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--ui-ink) 11%, transparent);
+  }
+
+  .mtv-scr-btn.is-primary:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--ui-accent) 86%, #000);
+  }
+
+  .mtv-scr-btn.is-danger:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--ui-danger-fill) 86%, #000);
+  }
+}
+
+/* ---------- 主栅格：手机单列 → 宽屏右侧栏 ---------- */
+.mtv-scr-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: start;
+  gap: var(--ui-sp-4);
+}
+
+@media (min-width: 1280px) {
+  .mtv-scr-grid {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+}
+
+/* ---------- 画面舞台 ----------
+   必须给确定高度。只给 min-height 时，里面的 height:100% 会退化成 auto，
+   竖屏共享源按 100% 宽度铺开、高度跟着比例疯长，整页被一条竖屏撑到几千像素。
+   给死高度 + object-fit: contain，竖屏画面居中、左右留黑，不再影响页面高度。 */
+.mtv-scr-stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: clamp(240px, 52dvh, 560px);
+  overflow: hidden;
+  border-radius: var(--ui-r-lg);
+  border: 1px solid var(--ui-hair);
+  background: #000000;
+}
+
+@media (min-width: 1280px) {
+  .mtv-scr-stage {
+    height: clamp(360px, 66dvh, 720px);
+  }
+}
+
+.mtv-scr-video {
+  width: 100%;
+  height: 100%;
+  background: #000000;
+  object-fit: contain;
+}
+
+/* 空态浮层：压在黑色画面上，所以固定用白色系，不跟主题翻转 */
+.mtv-scr-overlay {
+  position: absolute;
+  padding-inline: 24px;
+  text-align: center;
+  color: #ffffff;
+}
+
+.mtv-scr-overlay-ic {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 12px;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.mtv-scr-overlay-t {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.mtv-scr-overlay-s {
+  margin-top: 8px;
+  font-size: var(--ui-fs-meta);
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.68);
+}
+
+/* ---------- 侧栏卡片 ---------- */
+.mtv-scr-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-sp-4);
+  min-width: 0;
+}
+
+.mtv-scr-card {
+  padding: var(--ui-sp-4);
+  border-radius: var(--ui-r-lg);
+  border: 1px solid var(--ui-hair);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-elev-1);
+}
+
+.mtv-scr-h2 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  font-size: var(--ui-fs-body);
+  font-weight: 700;
+  color: var(--ui-ink);
+}
+
+.mtv-scr-h2-ic {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  color: var(--ui-ink-2);
+}
+
+.mtv-scr-kv {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: var(--ui-fs-meta);
+  color: var(--ui-ink-2);
+}
+
+.mtv-scr-kv p {
+  margin: 0;
+}
+
+.mtv-scr-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: var(--ui-fs-meta);
+  font-weight: 600;
+  color: var(--ui-ink-2);
+}
+
+.mtv-scr-select {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: var(--ui-r-sm);
+  border: 1px solid var(--ui-hair);
+  background-color: color-mix(in srgb, var(--ui-ink) 5%, transparent);
+  color: var(--ui-ink);
+  font-size: var(--ui-fs-meta);
+}
+
+.mtv-scr-select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.mtv-scr-hint {
+  margin-top: 8px;
+  font-size: var(--ui-fs-micro);
+  line-height: 1.55;
+  color: var(--ui-ink-3);
+}
+
+.mtv-scr-alert {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border-radius: var(--ui-r-sm);
+  border: 1px solid color-mix(in srgb, var(--ui-danger) 32%, transparent);
+  background-color: color-mix(in srgb, var(--ui-danger) 8%, transparent);
+  color: var(--ui-danger);
+  font-size: var(--ui-fs-meta);
+  line-height: 1.5;
+}
+
+.mtv-scr-vrow {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+/* ---------- 成员 ---------- */
+.mtv-scr-members {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mtv-scr-member {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: var(--ui-r-sm);
+  background-color: color-mix(in srgb, var(--ui-ink) 4%, transparent);
+  font-size: var(--ui-fs-meta);
+  color: var(--ui-ink);
+}
+
+.mtv-scr-owner {
+  padding: 2px 8px;
+  border-radius: var(--ui-r-full);
+  border: 1px solid color-mix(in srgb, var(--ui-ink) 18%, transparent);
+  color: var(--ui-ink-2);
+  font-size: var(--ui-fs-micro);
+  font-weight: 600;
+}
+
+/* ---------- 底部提示 ---------- */
+.mtv-scr-note {
+  padding: 10px 14px;
+  border-radius: var(--ui-r-md);
+  border: 1px solid var(--ui-hair);
+  background-color: color-mix(in srgb, var(--ui-ink) 4%, transparent);
+  color: var(--ui-ink-2);
+  font-size: var(--ui-fs-meta);
+  line-height: 1.55;
+}
+
+/* ---------- 手机端 ---------- */
+@media (max-width: 640px) {
+  .mtv-scr-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .mtv-scr-actions .mtv-scr-btn {
+    flex: 1;
+  }
+}
+
+/* ==========================================================================
+   /watch-room/music —— 一起听音乐
+   --------------------------------------------------------------------------
+   这一页原来自己维护一套 isDark 三元表达式（zinc + emerald 手写调色板），
+   跟 /watch-room、/watch-room/screen 的令牌体系完全是两套语言。
+   这里把最高频的几组收敛成类：面板、进度条、音量滑块、歌词三态、加入按钮。
+   零散的中性灰阶（zinc-400 / zinc-600 之类）保留 —— 它们本来就是灰阶，
+   不影响统一度，全量重写反而容易改出视觉回归。
+   ========================================================================== */
+
+.mtv-mu-root {
+  background: var(--ui-bg);
+  color: var(--ui-ink);
+}
+
+/* 封面模糊铺满之后压的一层薄纱，负责把文字托起来 */
+.mtv-mu-veil {
+  background: color-mix(in srgb, var(--ui-bg) 78%, transparent);
+}
+
+/* 内容面板。只给颜色，形状交给调用处的 Tailwind 圆角/边框工具类，
+   免得和这里的 border 简写抢优先级。 */
+.mtv-mu-panel {
+  border-color: var(--ui-hair);
+  background: color-mix(in srgb, var(--ui-surface) 78%, transparent);
+  box-shadow: var(--ui-elev-1);
+}
+
+/* 进度条 */
+.mtv-mu-track {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--ui-r-full);
+  background: color-mix(in srgb, var(--ui-ink) 12%, transparent);
+}
+
+.mtv-mu-bar {
+  height: 100%;
+  border-radius: var(--ui-r-full);
+  background: var(--ui-accent);
+  transition: width 200ms linear;
+}
+
+/* 竖排音量滑块 */
+.mtv-mu-range {
+  width: 8px;
+  height: 96px;
+  appearance: none;
+  -webkit-appearance: none;
+  border-radius: var(--ui-r-full);
+  accent-color: var(--ui-accent);
+  cursor: pointer;
+}
+
+/* 歌词三态：当前行 / 相邻行 / 其它行 */
+.mtv-mu-lyric-on {
+  transform: scale(1.05);
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--ui-accent);
+}
+
+@media (min-width: 768px) {
+  .mtv-mu-lyric-on {
+    font-size: 1.5rem;
+  }
+}
+
+.mtv-mu-lyric-near {
+  font-size: 1rem;
+  color: var(--ui-ink-2);
+}
+
+.mtv-mu-lyric-idle {
+  font-size: 0.875rem;
+  color: var(--ui-ink-3);
+}
+
+/* 「点击加入一起听」—— 原来是 emerald 大胶囊 */
+.mtv-mu-cta {
+  padding: 16px 32px;
+  border-radius: var(--ui-r-full);
+  background: var(--ui-accent);
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 600;
+  box-shadow: var(--ui-elev-3);
+  transition: background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mtv-mu-cta:hover {
+    background: color-mix(in srgb, var(--ui-accent) 86%, #000);
   }
 }

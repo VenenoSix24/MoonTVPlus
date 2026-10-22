@@ -50,7 +50,7 @@ export function PersonalCenterPanel({
         style={{ touchAction: 'none' }}
       />
 
-      <div className='fixed top-1/2 left-1/2 z-[1001] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-gray-900'>
+      <div className='fixed top-1/2 left-1/2 z-[1001] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl bg-ui-surface shadow-xl'>
         <div
           className='p-6'
           data-panel-content
@@ -62,7 +62,7 @@ export function PersonalCenterPanel({
           <div className='relative mb-6 flex flex-col items-center text-center'>
             <button
               onClick={onClose}
-              className='absolute right-0 top-0 flex h-8 w-8 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800'
+              className='absolute right-0 top-0 flex h-8 w-8 items-center justify-center rounded-full text-ui-ink-3 transition-colors hover:bg-ui-surface-hover'
               aria-label='Close'
             >
               <X className='w-5 h-5' />
@@ -77,7 +77,7 @@ export function PersonalCenterPanel({
                 {roleText}
               </span>
             )}
-            <h3 className='text-xl font-bold text-gray-900 dark:text-gray-100'>
+            <h3 className='text-xl font-bold text-ui-ink'>
               {username}
             </h3>
           </div>
@@ -85,16 +85,16 @@ export function PersonalCenterPanel({
           <div className='space-y-3'>
             <button
               onClick={onOpenEmailSettings}
-              className='flex w-full items-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 text-left transition-colors hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-750'
+              className='flex w-full items-center gap-3 rounded-2xl border border-ui-hair bg-ui-surface-2 px-4 py-4 text-left transition-colors hover:bg-ui-surface-hover'
             >
               <div className='flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300'>
                 <Bell className='w-6 h-6' />
               </div>
               <div>
-                <div className='text-base font-semibold text-gray-900 dark:text-gray-100'>
+                <div className='text-base font-semibold text-ui-ink'>
                   通知设置
                 </div>
-                <div className='mt-1 text-sm text-gray-500 dark:text-gray-400'>
+                <div className='mt-1 text-sm text-ui-ink-3'>
                   管理邮件通知和浏览器系统通知
                 </div>
               </div>
@@ -103,16 +103,16 @@ export function PersonalCenterPanel({
             {showDeviceManagement && (
               <button
                 onClick={onOpenDeviceManagement}
-                className='flex w-full items-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 text-left transition-colors hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-750'
+                className='flex w-full items-center gap-3 rounded-2xl border border-ui-hair bg-ui-surface-2 px-4 py-4 text-left transition-colors hover:bg-ui-surface-hover'
               >
                 <div className='flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-300'>
                   <Monitor className='w-6 h-6' />
                 </div>
                 <div>
-                  <div className='text-base font-semibold text-gray-900 dark:text-gray-100'>
+                  <div className='text-base font-semibold text-ui-ink'>
                     设备管理
                   </div>
-                  <div className='mt-1 text-sm text-gray-500 dark:text-gray-400'>
+                  <div className='mt-1 text-sm text-ui-ink-3'>
                     查看并管理当前账号的登录设备
                   </div>
                 </div>
@@ -122,16 +122,16 @@ export function PersonalCenterPanel({
             {showChangePassword && (
               <button
                 onClick={onOpenChangePassword}
-                className='flex w-full items-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 text-left transition-colors hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-750'
+                className='flex w-full items-center gap-3 rounded-2xl border border-ui-hair bg-ui-surface-2 px-4 py-4 text-left transition-colors hover:bg-ui-surface-hover'
               >
                 <div className='flex h-12 w-12 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-300'>
                   <KeyRound className='w-6 h-6' />
                 </div>
                 <div>
-                  <div className='text-base font-semibold text-gray-900 dark:text-gray-100'>
+                  <div className='text-base font-semibold text-ui-ink'>
                     修改密码
                   </div>
-                  <div className='mt-1 text-sm text-gray-500 dark:text-gray-400'>
+                  <div className='mt-1 text-sm text-ui-ink-3'>
                     修改当前账号密码
                   </div>
                 </div>

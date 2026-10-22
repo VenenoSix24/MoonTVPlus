@@ -55,11 +55,15 @@ export const useNavScrollState = (
 
       const headerRect = headerRef.current?.getBoundingClientRect();
       const heroRect = hero?.getBoundingClientRect();
+      // 「压在 Hero 上」= Hero 的底边还在顶栏底边以下。
+      // 原来是 heroRect.bottom > 0：要等 Hero 底边划过整个顶栏（一直划到视口顶端）
+      // 才脱离，视觉上就是「已经滚到下面一行了，顶栏还是透明的」。
+      // 改成和顶栏自己的下边缘比 —— Hero 底边一碰到顶栏底部就落实底。
       setOverHero(
         !!headerRect &&
           !!heroRect &&
           heroRect.top < headerRect.bottom &&
-          heroRect.bottom > 0
+          heroRect.bottom > headerRect.bottom
       );
     };
 
@@ -68,6 +72,13 @@ export const useNavScrollState = (
     // Hero 挂载/换图都会改 body 高度，用 ResizeObserver 补首次判定
     const observer = new ResizeObserver(measure);
     observer.observe(document.body);
+    // 播放页首帧是骨架屏，.mtv-play-bg 要等数据回来才挂上：只量一次的话顶栏会
+    // 一直停在浅色实底那套，非要等用户滑一下才变。所以盯住整棵 DOM。
+    const mutation = new MutationObserver(() => measure());
+    // 必须 subtree：.mtv-play-bg 挂得很深（body > PageLayout > 内容），只看 body 的
+    // 直接子节点根本不会触发，顶栏就只能靠下面那几次 setTimeout 兜底 —— 用户看到的
+    // 就是「页面已经是深色了，顶栏要等一下才变」。
+    mutation.observe(document.body, { childList: true, subtree: true });
     // 但响应式回调在后台标签页会被节流，Hero 又是异步渲染的，光靠它首帧可能判
     // 不出来（顶栏会一直停在浅色那套）。补几次有界重测。
     const retries = [200, 800, 2000].map((delay) =>
@@ -77,6 +88,7 @@ export const useNavScrollState = (
     return () => {
       window.removeEventListener('scroll', measure, true);
       observer.disconnect();
+      mutation.disconnect();
       retries.forEach((id) => window.clearTimeout(id));
     };
   }, [headerRef]);
