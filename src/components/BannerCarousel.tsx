@@ -464,7 +464,7 @@ export default function BannerCarousel({
 
         // 乐观缓存：如果有缓存（无论是否过期），先显示缓存数据
         if (cachedData) {
-          primeLogoCache(cachedData);
+          primeLogoCache(cachedData, validSource ?? undefined);
           setItems(cachedData);
           setDataSource(validSource || ''); // 设置数据源
           setIsLoading(false);
@@ -480,7 +480,7 @@ export default function BannerCarousel({
             const newDataSource = result.source || 'TMDB'; // 获取数据源标识
             const cacheKey = getLocalStorageKey(newDataSource);
 
-            primeLogoCache(result.list);
+            primeLogoCache(result.list, newDataSource);
             setItems(result.list);
             setDataSource(newDataSource); // 设置数据源
             setTrailersLoaded(false); // 重置预告片加载状态
@@ -625,13 +625,12 @@ export default function BannerCarousel({
      * 会继续用旧响应，挑浅色版这一步会静默失效一整天。
      */
     const warmTone = (item: BannerItem, src: string) => {
-      const { key } = logoRequest(item);
+      const { key } = logoRequest(item, dataSource);
       if (logoMetaCache.has(key)) return;
 
-      // 豆瓣条目反查过 TMDB 的，必须用真实的 TMDB id —— item.id 是豆瓣的数字串，
-      // 拿去查 TMDB 只会返回空，整条 logo 的深浅判定和换图就都不会发生。
-      const tmdbId =
-        item.tmdb_id ?? (item.origin_source === 'Douban' ? null : item.id);
+      // item.id 只有 TMDB 源才是 TMDB id，豆瓣 / TX 条目的 item.id 是另一套编号，
+      // 交给 tmdbIdOf 判断；查不到真实 TMDB id 就跳过，不做无意义的请求。
+      const tmdbId = tmdbIdOf(item, dataSource);
       if (!tmdbId) return;
 
       const kind = item.media_type === 'tv' ? 'tv' : 'movie';
@@ -679,7 +678,7 @@ export default function BannerCarousel({
     // 图片本身是 <img> 挂上去那一刻才开始下的，也就是轮换到的瞬间。这里趁第一屏
     // 还在展示，把其余各屏的标题字全部下完并解码好，顺便把深浅也判掉。
     items.forEach((item) => {
-      const { key } = logoRequest(item);
+      const { key } = logoRequest(item, dataSource);
       const cached = heroLogoCache.get(key);
       if (cached) {
         warmLogo(cached);
@@ -688,12 +687,15 @@ export default function BannerCarousel({
     });
 
     const pending = items.filter(
-      (item) => !heroLogoCache.has(logoRequest(item).key)
+      (item) => !heroLogoCache.has(logoRequest(item, dataSource).key)
     );
     if (!pending.length) return;
 
     pending.forEach((item) => {
-      const { key, url } = logoRequest(item);
+      const { key, url } = logoRequest(item, dataSource);
+      // 没有真实 TMDB id 的条目（豆瓣未反查命中、TX 源）直接跳过：
+      // 渲染会回落到文字标题，也就不必再打一个注定 404 的请求。
+      if (!url) return;
       fetch(url)
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
@@ -842,7 +844,7 @@ export default function BannerCarousel({
 
   // 官方标题字：优先读 state（预取完成后会触发重渲染），再兜一次模块缓存——
   // 重新挂载时 state 是空的，而模块缓存里已经有值，可以立刻命中。
-  const logoKey = logoRequest(currentItem).key;
+  const logoKey = logoRequest(currentItem, dataSource).key;
   const titleLogo: string | null =
     logoMap[logoKey] ?? heroLogoCache.get(logoKey) ?? null;
 
@@ -1169,13 +1171,35 @@ const logoMetaCache = new Map<
   { dark: boolean; ratio: number; density: number }
 >();
 
-/** 官方标题字的请求参数。key 同时用作缓存键；语言按片名内容判定。 */
-const logoRequest = (item: BannerItem) => {
+/**
+ * 条目真正的 TMDB id —— 查标题字、判深浅都只能用这个。
+ *
+ * item.id 只有 TMDB 源才是 TMDB id：豆瓣源给的是豆瓣条目号（8 位数字，如
+ * 36179101），TX 源是本地下发序号，这两者拿去问 TMDB 一律返回 404。
+ * 豆瓣条目在服务端反查命中后会带 tmdb_id，那个才查得到。
+ *
+ * source 是当前列表的数据源（混合模式为 'Mixed'），用来给没有 origin_source
+ * 标记的条目定位归属 —— 旧 localStorage 缓存和单源模式都没有这个字段。
+ */
+const tmdbIdOf = (item: BannerItem, source?: string): number | null => {
+  if (item.tmdb_id) return item.tmdb_id;
+  const origin = item.origin_source || source;
+  return origin === 'TMDB' ? item.id : null;
+};
+
+/**
+ * 官方标题字的请求参数。key 同时用作缓存键；语言按片名内容判定。
+ *
+ * 查不到 TMDB id 的条目（豆瓣未反查命中、TX 源）url 返回 null：调用方直接
+ * 回落到文字标题，不再打一个注定 404 的请求。
+ */
+const logoRequest = (item: BannerItem, source?: string) => {
   const kind = item.media_type === 'tv' ? 'tv' : 'movie';
   const zh = /[\u3400-\u9fff\uf900-\ufaff]/.test(item.title) ? 1 : 0;
+  const tmdbId = tmdbIdOf(item, source);
   return {
     key: `${kind}:${item.id}:${zh}`,
-    url: `/api/tmdb/logo?id=${item.id}&type=${kind}&zh=${zh}`,
+    url: tmdbId ? `/api/tmdb/logo?id=${tmdbId}&type=${kind}&zh=${zh}` : null,
   };
 };
 
@@ -1187,10 +1211,10 @@ const logoRequest = (item: BannerItem) => {
  *
  * 字段缺失时跳过（老 localStorage 缓存、非 TMDB 数据源），留给下面的预取 effect 兜底。
  */
-const primeLogoCache = (list: BannerItem[]) => {
+const primeLogoCache = (list: BannerItem[], source?: string) => {
   list.forEach((item) => {
     if (item.title_logo_path === undefined) return;
-    const { key } = logoRequest(item);
+    const { key } = logoRequest(item, source);
     if (heroLogoCache.has(key)) return;
     heroLogoCache.set(
       key,

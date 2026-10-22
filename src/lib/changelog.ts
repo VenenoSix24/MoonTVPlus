@@ -11,28 +11,38 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "228.0.2",
+    date: "2026-10-23",
+    added: [
+      // 无新增内容
+    ],
+    changed: [
+      // 无变更内容
+    ],
+    fixed: [
+    "修复混合数据源下 Hero 使用错误的 `item.id` 进行获取TMDB 数据，导致获取失败",
+    "修复标题深浅预判（`/api/tmdb/logo-tone`）对 TX 数据源使用错误的 `item.id` 获取TMDB 数据"
+    ]
+  },
+  {
     version: "228.0.0",
     date: "2026-10-22",
     added: [
-    "观影室整套视觉重做：房间列表 / 创建 / 加入 / 房间信息 / 成员列表全部收进令牌体系，手机端三 tab 改成等宽分段控件",
-    "观影室配置进管理面板：总开关、内置或外部服务器、外部地址与鉴权密钥；面板改完即时生效，不需要重启进程",
-    "屏幕共享页（/watch-room/screen）与一起听页（/watch-room/music）收进同一套令牌体系，观影室三个路由视觉语言对齐",
-    "聊天浮层新增房间信息面板，头部收成单行，语音控制改成一排小 chip"
+    "观影室视觉样式升级：房间列表 / 创建 / 加入 / 房间信息 / 成员列表全部更新视觉样式",
+    "观影室配置接入管理面板：总开关、内置或外部服务器、外部地址与鉴权密钥；面板改完即时生效，不需要重启进程",
+    "屏幕共享页（/watch-room/screen）与一起听页（/watch-room/music）与观影室视觉语言对齐"
     ],
     changed: [
-    "聊天按钮改为反相墨色、房间信息按钮改为实心中性灰；未读角标改用品牌红并加一圈底色镂空描边",
-    "悬浮底栏底色 58% → 68%、模糊 26px → 20px、饱和度 180% → 150%，影院态 60% → 70%",
-    "手机端聊天室从满宽底部抽屉改成左右各留 12px 的浮层，看得出是个可以开合的组件",
-    "PWA manifest 补齐 id / lang / dir / display_override / theme_color / icon purpose，默认站点名改为 IVYFLIX"
+    "聊天按钮、未读角标、房间信息按钮易读性调整",
+    "手机端悬浮底栏视觉样式调整",
+    "PWA manifest 补齐 id / lang / dir / display_override / theme_color / icon purpose"
     ],
     fixed: [
-    "iOS 输入框聚焦后页面顶飞且滑不回来：`overflow-x: hidden` 会让 body 变成内部滚动容器，改用 `overflow: clip`",
-    "iOS 浏览器模式下「更多」页最后一张卡被底栏压住：主内容底部补上 `100vh - 100dvh` 的工具栏差值",
-    "管理面板打开观影室开关后仍卡在「创建中」：server.js 只认环境变量，改为同时读后台配置；客户端 ack 补 10 秒超时",
-    "聊天消息每条都在最后一个字折行：气泡的 max-width 百分比挂在了收缩容器上",
-    "聊天发送按钮被 flex 拉伸成竖椭圆",
-    "系统开启「降低透明度」时底栏写死近黑色，浅色主题下图标不可见",
-    "屏幕共享页竖屏源把页面撑到几千像素高，手机端滚不到底"
+    "修复 iOS 输入框聚焦后页面位移且无法复原",
+    "修复聊天消息每条都在最后一个字换行",
+    "修复聊天发送按钮被 flex 拉伸成竖椭圆",
+    "修复系统开启「降低透明度」时底栏过于黑色，浅色主题下图标不可见",
+    "修复屏幕共享页竖屏源使页面拉伸过长"
     ]
   },
   {
@@ -42,7 +52,7 @@ export const changelog: ChangelogEntry[] = [
       // 无新增内容
     ],
     changed: [
-    "有新集角标改用令牌配色，不再内联写死天蓝"
+    "有新集角标改用令牌配色"
     ],
     fixed: [
     "继续观看的横版卡四角被顶部、底部两条渐变遮罩盖成直角：遮罩落在「仅图片层裁剪」之外，全宽矩形没有圆角",
@@ -59,8 +69,8 @@ export const changelog: ChangelogEntry[] = [
       // 无变更内容
     ],
     fixed: [
-    "未登录时 /sw.js、/push-sw.js 与 Workbox 运行时被重定向到登录页，Service Worker 拿不到脚本内容，离线缓存更新不了",
-    "apple-touch-icon、截图、播放器图标等静态资源同样被鉴权挡住，一并放行"
+    "未登录时 /sw.js、/push-sw.js 与 Workbox 运行时被重定向到登录页，Service Worker 无法获取脚本内容，离线缓存更新失败",
+    "apple-touch-icon、截图、播放器图标等静态资源被鉴权阻挡"
     ]
   },
   {
