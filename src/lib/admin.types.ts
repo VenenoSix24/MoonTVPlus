@@ -420,6 +420,12 @@ export interface AdminConfig {
     OpenListCachePath?: string;
     OpenListCacheProxyEnabled?: boolean;
   };
+  WatchRoomConfig?: {
+    Enabled?: boolean; // 观影室总开关（原来只能在环境变量里开）
+    ServerType?: 'internal' | 'external'; // 内置 Socket.IO 服务 / 外部服务器
+    ExternalServerUrl?: string; // 外部服务器地址
+    ExternalServerAuth?: string; // 外部服务器鉴权（敏感，不下发前端）
+  };
   AnimeSubscriptionConfig?: {
     Enabled: boolean; // 是否启用追番功能
     DownloadTool?: 'aria2' | 'qBittorrent' | 'Transmission'; // 追番订阅全局下载方式

@@ -44,17 +44,38 @@ const port = parseInt(process.env.PORT || '3000', 10);
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
-// 读取观影室配置的辅助函数
+// 读取观影室配置：后台开关（admin_config）与环境变量取 OR。
+//
+// 之前这里只认环境变量，于是出现一个很典型的问题：管理面板里把观影室打开，
+// /api/server-config 会告诉前端「已启用」，前端去连 Socket.IO —— 但内置的
+// WatchRoomServer 根本没挂上（启动时环境变量是空的），心跳收不到 pong，
+// room:create 的 ack 永远不回来，页面就卡死在「创建中」。
 async function getWatchRoomConfig() {
-  // 观影室配置现在统一从环境变量读取
+  let dbConfig = null;
+  if (shouldInitSQLite()) {
+    try {
+      const { readAdminConfig } = require('./scripts/read-admin-config.js');
+      dbConfig = readAdminConfig();
+    } catch (error) {
+      console.warn('[WatchRoom] 读取后台配置失败，回退到环境变量:', error.message);
+    }
+  }
+
+  const dbWatchRoom = dbConfig?.WatchRoomConfig || {};
   const config = {
-    enabled: process.env.WATCH_ROOM_ENABLED === 'true',
-    serverType: (process.env.WATCH_ROOM_SERVER_TYPE || 'internal'),
-    externalServerUrl: process.env.WATCH_ROOM_EXTERNAL_SERVER_URL,
-    externalServerAuth: process.env.WATCH_ROOM_EXTERNAL_SERVER_AUTH,
+    enabled:
+      process.env.WATCH_ROOM_ENABLED === 'true' || dbWatchRoom.Enabled === true,
+    serverType: dbWatchRoom.ServerType || process.env.WATCH_ROOM_SERVER_TYPE || 'internal',
+    externalServerUrl:
+      dbWatchRoom.ExternalServerUrl || process.env.WATCH_ROOM_EXTERNAL_SERVER_URL,
+    externalServerAuth:
+      dbWatchRoom.ExternalServerAuth || process.env.WATCH_ROOM_EXTERNAL_SERVER_AUTH,
   };
 
-  console.log(`[WatchRoom] Watch room ${config.enabled ? 'enabled' : 'disabled'} via environment variable.`);
+  console.log(
+    `[WatchRoom] Watch room ${config.enabled ? 'enabled' : 'disabled'} ` +
+      `(serverType=${config.serverType}, source=${dbWatchRoom.Enabled !== undefined ? 'config+env' : 'env'})`
+  );
   return config;
 }
 
@@ -847,8 +868,11 @@ app.prepare().then(async () => {
   let io = null;
 
   const tvModeEnabled = isTVModeEnabled();
-  const shouldStartInternalWatchRoom =
-    watchRoomConfig.enabled && watchRoomConfig.serverType === 'internal';
+  // 只要 serverType 是 internal 就把观影室命名空间挂上，不再和 enabled 绑定。
+  // enabled 存在后台配置里、可以随时在管理面板改；绑在这里就会出现
+  // 「面板里打开了但进程没重启 → 前端连得上、事件却没人处理 → 一直『创建中』」。
+  // 对外的开关交给前端：/api/server-config 的 WatchRoom.enabled。
+  const shouldStartInternalWatchRoom = watchRoomConfig.serverType === 'internal';
 
   if (tvModeEnabled || shouldStartInternalWatchRoom) {
     io = new Server(httpServer, {
@@ -870,13 +894,11 @@ app.prepare().then(async () => {
   if (shouldStartInternalWatchRoom && io) {
     // 初始化观影室服务器
     watchRoomServer = new WatchRoomServer(io);
-    console.log('[WatchRoom] Socket.IO server initialized');
-  } else {
-    if (!watchRoomConfig.enabled) {
-      console.log('[WatchRoom] Watch room is disabled');
-    } else if (watchRoomConfig.serverType === 'external') {
-      console.log('[WatchRoom] Using external watch room server');
-    }
+    console.log(
+      `[WatchRoom] Socket.IO server initialized (enabled=${watchRoomConfig.enabled})`
+    );
+  } else if (watchRoomConfig.serverType === 'external') {
+    console.log('[WatchRoom] Using external watch room server');
   }
 
   httpServer
