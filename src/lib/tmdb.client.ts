@@ -38,6 +38,27 @@ async function universalFetch(url: string, proxy?: string): Promise<Response> {
 }
 
 /**
+ * 带一次重试的 fetch。
+ *
+ * 网络层错误和 5xx 各重试一次；4xx 是请求本身的问题（key 错、id 不存在），重试没有
+ * 意义，直接返回给调用方处理。
+ */
+async function fetchWithOneRetry(
+  url: string,
+  proxy?: string,
+  delayMs = 300
+): Promise<Response> {
+  try {
+    const res = await universalFetch(url, proxy);
+    if (res.ok || res.status < 500) return res;
+  } catch {
+    // 网络层错误，落到下面重试
+  }
+  await new Promise((resolve) => setTimeout(resolve, delayMs));
+  return universalFetch(url, proxy);
+}
+
+/**
  * 解析并获取下一个可用的 TMDB API Key
  * @param apiKeys - API Key 字符串（支持逗号分隔的多个key）
  * @returns 当前应使用的 API Key
@@ -428,7 +449,9 @@ export async function getTMDBTrendingContent(
     const baseUrl = reverseProxyBaseUrl || DEFAULT_TMDB_BASE_URL;
     const url = `${baseUrl}/3/trending/all/week?api_key=${actualKey}&language=zh-CN`;
 
-    const response = await universalFetch(url, proxy);
+    // 建连失败 / 5xx 各重试一次：这台机器到 TMDB 的 TCP 建连实测会偶发在 1 秒内
+    // 失败，而同一目标地址在绝大多数时候正常。一次几秒的抖动不该让整块首页数据作废。
+    const response = await fetchWithOneRetry(url, proxy);
 
     if (!response.ok) {
       console.error('TMDB Trending API 请求失败:', response.status, response.statusText);

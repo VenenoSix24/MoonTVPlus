@@ -264,6 +264,8 @@ export default function BannerCarousel({
 
   // LocalStorage 缓存配置
   const LOCALSTORAGE_DURATION = 24 * 60 * 60 * 1000; // 1天
+  /** 服务端降级（或 Mixed 缺 TMDB）时的缓存时长：挡住下一次刷新即可，不固化残缺结果 */
+  const DEGRADED_CACHE_DURATION = 5 * 60 * 1000; // 5分钟
   const currentTitle = items[currentIndex]?.title || '';
 
   // 根据数据源获取缓存key
@@ -448,14 +450,17 @@ export default function BannerCarousel({
           if (!cached) continue;
 
           try {
-            const { data, timestamp } = JSON.parse(cached);
+            const { data, timestamp, ttl } = JSON.parse(cached);
 
             // 选择时间戳最新的缓存
             if (timestamp > latestTimestamp) {
               cachedData = data;
               validSource = cacheKey.slice(CACHE_PREFIX.length);
               latestTimestamp = timestamp;
-              cacheExpired = Date.now() - timestamp > LOCALSTORAGE_DURATION;
+              // ttl 由写入时按「是否降级」决定；老缓存没有这个字段就按默认 24h
+              cacheExpired =
+                Date.now() - timestamp >
+                (typeof ttl === 'number' ? ttl : LOCALSTORAGE_DURATION);
             }
           } catch (e) {
             console.error('解析缓存数据失败:', e);
@@ -480,6 +485,19 @@ export default function BannerCarousel({
             const newDataSource = result.source || 'TMDB'; // 获取数据源标识
             const cacheKey = getLocalStorageKey(newDataSource);
 
+            // 服务端声明了降级（某个源取数失败），或者声称 Mixed 却一条 TMDB 都没有：
+            // 这份结果只短暂缓存，让下一次刷新能重新取。否则一次几秒的网络抖动会被
+            // 固化在浏览器里一整天 —— 这正是「首页只有 5 条豆瓣」拖了一天的主因。
+            const missingTmdb =
+              newDataSource === 'Mixed' &&
+              !result.list.some((it: any) => it.origin_source === 'TMDB');
+            const degraded =
+              (Array.isArray(result.degraded) && result.degraded.length > 0) ||
+              missingTmdb;
+            const cacheTtl = degraded
+              ? DEGRADED_CACHE_DURATION
+              : LOCALSTORAGE_DURATION;
+
             primeLogoCache(result.list, newDataSource);
             setItems(result.list);
             setDataSource(newDataSource); // 设置数据源
@@ -492,6 +510,7 @@ export default function BannerCarousel({
                 JSON.stringify({
                   data: result.list,
                   timestamp: Date.now(),
+                  ttl: cacheTtl,
                 })
               );
             } catch (e) {

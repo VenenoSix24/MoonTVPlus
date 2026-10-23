@@ -24,6 +24,36 @@ const CACHE_DURATION = 3 * 60 * 60 * 1000; // 3小时
  */
 const ASSET_BUDGET_MS = 6000;
 
+/** TMDB 资产请求的并发上限，见 mapLimit 的注释 */
+const TMDB_ASSET_CONCURRENCY = 5;
+
+/**
+ * 按并发上限跑异步 map。
+ *
+ * 一次 /api/tmdb/trending 要为 10 个条目各取「详情 + 图片」，也就是 20 个并发连接
+ * 同时打向 api.themoviedb.org。这台机器到 TMDB 的建连会偶发失败，并发越高越容易
+ * 撞上，压到 5 之后稳定性明显好转。
+ */
+async function mapLimit<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<R>
+): Promise<R[]> {
+  const out = new Array<R>(items.length);
+  let cursor = 0;
+  const workers = Array.from(
+    { length: Math.min(limit, items.length) },
+    async () => {
+      while (cursor < items.length) {
+        const index = cursor++;
+        out[index] = await fn(items[index]);
+      }
+    }
+  );
+  await Promise.all(workers);
+  return out;
+}
+
 function withBudget<T>(promise: Promise<T>, ms: number): Promise<T | null> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const budget = new Promise<null>((resolve) => {
@@ -95,9 +125,27 @@ export async function GET() {
       }
     }
 
+    // 单个源模式下取到空列表同样是降级（多源模式的分支里已经自己算好了）
+    const onlySource = Array.from(sources)[0];
+    if (!result.degraded && !(result.list || []).length) {
+      result.degraded = [onlySource];
+    }
+
     // 多个源时统一报 Mixed，前端按条目的 origin_source 判断具体来自哪
-    result.source = sources.size > 1 ? 'Mixed' : Array.from(sources)[0];
-    sourceCaches.set(cacheKey, { data: result, timestamp: Date.now() });
+    result.source = sources.size > 1 ? 'Mixed' : onlySource;
+
+    const counts: Record<string, number> =
+      result.counts || { [onlySource]: (result.list || []).length };
+    const countsText = `TMDB ${counts.TMDB ?? 0} / 豆瓣 ${counts.Douban ?? 0} / TX ${counts.TX ?? 0}`;
+
+    if (Array.isArray(result.degraded) && result.degraded.length) {
+      // 关键：降级结果不进缓存。一次几秒的网络抖动，不该让首页在接下来三小时里
+      // 只剩豆瓣那五条 —— 不写缓存，下一个请求就会重试，网络一恢复即自愈。
+      console.warn(`[Banner] 降级 [${result.degraded.join(',')}] | ${countsText}`);
+    } else {
+      sourceCaches.set(cacheKey, { data: result, timestamp: Date.now() });
+      console.log(`[Banner] ${result.source} | ${countsText}`);
+    }
 
     return NextResponse.json(result);
   } catch (error) {
@@ -532,8 +580,12 @@ async function getTMDBBannerContent(config: any): Promise<any> {
   const result = await getTMDBTrendingContent(apiKey, proxy, reverseProxy);
 
   if (result.code === 200 && result.list) {
-    const itemsWithAssets = await Promise.all(
-      result.list.map(async (item: any) => {
+    // 并发上限 5：10 个条目各取「详情 + 图片」= 20 个连接同时打出去，实测这台机器
+    // 对突发建连很敏感（同样的地址单独测 40 并发都正常，但混在一起就容易超时）。
+    const itemsWithAssets = await mapLimit(
+      result.list,
+      TMDB_ASSET_CONCURRENCY,
+      async (item: any) => {
         const kind: 'movie' | 'tv' = item.media_type === 'tv' ? 'tv' : 'movie';
         const [details, imagesRes] = await Promise.all([
           getTMDBDetails(apiKey, item.id, kind, proxy, reverseProxy),
@@ -570,7 +622,7 @@ async function getTMDBBannerContent(config: any): Promise<any> {
           title_logo_path: logo ? logo.file_path : null,
           textless_poster_path: textless ? textless.file_path : null,
         };
-      })
+      }
     );
     result.list = itemsWithAssets;
   }
@@ -627,11 +679,24 @@ async function getMixedBannerContent(
         }))
       : [];
 
+  // 声明要的源却没取到数据 = 降级。三个源各自独立失败，这里一次性说清谁缺了。
+  const degraded: string[] = [];
+  if (wantTmdb && !tmdbList.length) degraded.push('TMDB');
+  if (wantDouban && !doubanList.length) degraded.push('Douban');
+  if (wantTx && !txList.length) degraded.push('TX');
+  const counts = {
+    TMDB: tmdbList.length,
+    Douban: doubanList.length,
+    TX: txList.length,
+  };
+
   if (!tmdbList.length && !doubanList.length && !txList.length) {
     return {
       code: tmdb && tmdb.code !== 200 ? tmdb.code : 500,
       message: '没有可用的轮播数据',
       list: [],
+      degraded,
+      counts,
     };
   }
 
@@ -736,7 +801,8 @@ async function getMixedBannerContent(
     }
   }
 
-  return { code: 200, list };
+  // degraded：声明要的源却没取到数据，调用方据此决定「不写缓存」；counts 供日志用
+  return { code: 200, list, degraded, counts };
 }
 
 /**

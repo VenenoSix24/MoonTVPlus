@@ -11,6 +11,22 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "228.0.3",
+    date: "2026-10-23",
+    added: [
+      // 无新增内容
+    ],
+    changed: [
+    "轮播接口新增各数据源条数日志"
+    ],
+    fixed: [
+    "修复 TMDB 取数失败时降级结果进入缓存",
+    "修复 TMDB 请求失败后不重试",
+    "修复 TMDB 资产请求并发过高（20 → 5）",
+    "修复观影室外部队列鉴权问题"
+    ]
+  },
+  {
     version: "228.0.2",
     date: "2026-10-23",
     added: [

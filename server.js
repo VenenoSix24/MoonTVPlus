@@ -861,7 +861,11 @@ app.prepare().then(async () => {
 
   // 读取观影室配置
   const watchRoomConfig = await getWatchRoomConfig();
-  console.log('[WatchRoom] Config:', watchRoomConfig);
+  // 鉴权密钥不进日志：docker logs 会长期保留，也常被随手贴出去
+  console.log('[WatchRoom] Config:', {
+    ...watchRoomConfig,
+    externalServerAuth: watchRoomConfig.externalServerAuth ? '***' : undefined,
+  });
 
   let watchRoomServer = null;
   let tvRemoteServer = null;
