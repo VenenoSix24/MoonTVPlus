@@ -11,6 +11,22 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "228.0.4",
+    date: "2026-10-23",
+    added: [
+      // 无新增内容
+    ],
+    changed: [
+      // 无变更内容
+    ],
+    fixed: [
+    "修复 Hero 标题字预取一次性发起全部请求",
+    "修复 TMDB 图片接口未按语言过滤",
+    "修复 TMDB 图片与演职人员接口失败后不重试",
+    "修复标题字接口缺少超时上限"
+    ]
+  },
+  {
     version: "228.0.3",
     date: "2026-10-23",
     added: [

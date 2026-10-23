@@ -5,6 +5,7 @@ import { NextResponse } from 'next/server';
 import { getConfig } from '@/lib/config';
 import { fetchDoubanData } from '@/lib/douban';
 import {
+  buildImageLanguageFilter,
   getTMDBDetails,
   getTMDBImages,
   getTMDBTrendingContent,
@@ -590,7 +591,16 @@ async function getTMDBBannerContent(config: any): Promise<any> {
         const [details, imagesRes] = await Promise.all([
           getTMDBDetails(apiKey, item.id, kind, proxy, reverseProxy),
           withBudget(
-            getTMDBImages(apiKey, item.id, kind, proxy, reverseProxy),
+            getTMDBImages(
+              apiKey,
+              item.id,
+              kind,
+              proxy,
+              reverseProxy,
+              // 回填只要 title_logo_path / textless_poster_path，backdrops 拿到就
+              // 丢；不带语言过滤会把各国印刷版海报整包拉下来，pickLogo 之后全丢。
+              buildImageLanguageFilter(item.original_language)
+            ),
             ASSET_BUDGET_MS
           ),
         ]);
@@ -862,7 +872,16 @@ async function enrichWithTmdbAssets(config: any, item: any): Promise<any> {
 
   const [imagesRes, details] = await Promise.all([
     withBudget(
-      getTMDBImages(apiKey, hit.id, hit.media_type, proxy, reverseProxy),
+      getTMDBImages(
+        apiKey,
+        hit.id,
+        hit.media_type,
+        proxy,
+        reverseProxy,
+        // 只要 logos / posters，且只用得到中文、原产国语言和无字版：不带过滤会把
+        // 各国印刷版海报整包拉下来，pickLogo 之后全部丢弃。
+        buildImageLanguageFilter(hit.original_language)
+      ),
       ASSET_BUDGET_MS
     ),
     getTMDBDetails(apiKey, hit.id, hit.media_type, proxy, reverseProxy),

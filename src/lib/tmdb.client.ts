@@ -150,7 +150,7 @@ export async function getTMDBUpcomingMovies(
     const url = `${baseUrl}/3/movie/upcoming?api_key=${actualKey}&language=zh-CN&page=${page}&region=${region}`;
 
     // 使用统一的 fetch 函数
-    const response = await universalFetch(url, proxy);
+    const response = await fetchWithOneRetry(url, proxy);
 
     if (!response.ok) {
       console.error('TMDB API 请求失败:', response.status, response.statusText);
@@ -194,7 +194,7 @@ export async function getTMDBUpcomingTVShows(
     const url = `${baseUrl}/3/tv/on_the_air?api_key=${actualKey}&language=zh-CN&page=${page}`;
 
     // 使用统一的 fetch 函数
-    const response = await universalFetch(url, proxy);
+    const response = await fetchWithOneRetry(url, proxy);
 
     if (!response.ok) {
       console.error('TMDB TV API 请求失败:', response.status, response.statusText);
@@ -320,7 +320,7 @@ export async function getTMDBVideos(
     const baseUrl = reverseProxyBaseUrl || DEFAULT_TMDB_BASE_URL;
     const url = `${baseUrl}/3/${mediaType}/${mediaId}/videos?api_key=${actualKey}`;
 
-    const response = await universalFetch(url, proxy);
+    const response = await fetchWithOneRetry(url, proxy);
 
     if (!response.ok) {
       return null;
@@ -378,7 +378,7 @@ export async function getTMDBVideoList(
     // 一次性请求中文、英文和未标语言视频，避免按语言多次请求。
     // TMDB videos 接口支持 include_video_language 传逗号分隔的多个 ISO-639-1 值。
     const url = `${baseUrl}/3/${mediaType}/${mediaId}/videos?api_key=${actualKey}&include_video_language=zh,en,null`;
-    const response = await universalFetch(url, proxy);
+    const response = await fetchWithOneRetry(url, proxy);
 
     if (!response.ok) {
       return { code: response.status, videos: [] };
@@ -594,11 +594,11 @@ export async function searchTMDBMulti(
   if (yearStr) {
     try {
       const [tvResponse, movieResponse] = await Promise.all([
-        universalFetch(
+        fetchWithOneRetry(
           `${baseUrl}/3/search/tv?api_key=${actualKey}&language=zh-CN&query=${encodedQuery}&first_air_date_year=${yearStr}&page=1`,
           proxy
         ),
-        universalFetch(
+        fetchWithOneRetry(
           `${baseUrl}/3/search/movie?api_key=${actualKey}&language=zh-CN&query=${encodedQuery}&primary_release_year=${yearStr}&page=1`,
           proxy
         ),
@@ -626,7 +626,7 @@ export async function searchTMDBMulti(
   try {
     const url = `${baseUrl}/3/search/multi?api_key=${actualKey}&language=zh-CN&query=${encodedQuery}&page=1`;
 
-    const response = await universalFetch(url, proxy);
+    const response = await fetchWithOneRetry(url, proxy);
 
     if (!response.ok) {
       console.error('TMDB Search API 请求失败:', response.status, response.statusText);
@@ -668,7 +668,7 @@ export async function getTMDBMovieRecommendations(
     const baseUrl = reverseProxyBaseUrl || DEFAULT_TMDB_BASE_URL;
     const url = `${baseUrl}/3/movie/${movieId}/recommendations?api_key=${actualKey}&language=zh-CN&page=1`;
 
-    const response = await universalFetch(url, proxy);
+    const response = await fetchWithOneRetry(url, proxy);
 
     if (!response.ok) {
       console.error('TMDB Movie Recommendations API 请求失败:', response.status, response.statusText);
@@ -710,7 +710,7 @@ export async function getTMDBTVRecommendations(
     const baseUrl = reverseProxyBaseUrl || DEFAULT_TMDB_BASE_URL;
     const url = `${baseUrl}/3/tv/${tvId}/recommendations?api_key=${actualKey}&language=zh-CN&page=1`;
 
-    const response = await universalFetch(url, proxy);
+    const response = await fetchWithOneRetry(url, proxy);
 
     if (!response.ok) {
       console.error('TMDB TV Recommendations API 请求失败:', response.status, response.statusText);
@@ -752,7 +752,7 @@ export async function getTMDBMovieDetails(
     const baseUrl = reverseProxyBaseUrl || DEFAULT_TMDB_BASE_URL;
     const url = `${baseUrl}/3/movie/${movieId}?api_key=${actualKey}&language=zh-CN&append_to_response=external_ids`;
 
-    const response = await universalFetch(url, proxy);
+    const response = await fetchWithOneRetry(url, proxy);
 
     if (!response.ok) {
       console.error('TMDB API 请求失败:', response.status, response.statusText);
@@ -795,7 +795,7 @@ export async function getTMDBTVDetails(
     // external_ids 跟着详情一起取回，省掉一次单独请求；imdb_id 是 OMDb 评分的唯一入口
     const url = `${baseUrl}/3/tv/${tvId}?api_key=${actualKey}&language=zh-CN&append_to_response=external_ids`;
 
-    const response = await universalFetch(url, proxy);
+    const response = await fetchWithOneRetry(url, proxy);
 
     if (!response.ok) {
       console.error('TMDB API 请求失败:', response.status, response.statusText);
@@ -846,7 +846,7 @@ export async function getTMDBRatingRef(
     const baseUrl = reverseProxyBaseUrl || DEFAULT_TMDB_BASE_URL;
     const url = `${baseUrl}/3/${mediaType}/${id}?api_key=${actualKey}&append_to_response=external_ids`;
 
-    const response = await universalFetch(url, proxy);
+    const response = await fetchWithOneRetry(url, proxy);
     if (!response.ok) {
       return { code: response.status, ref: null };
     }
@@ -945,7 +945,7 @@ export async function getTMDBCredits(
 
     for (const endpoint of endpoints) {
       try {
-        const response = await universalFetch(
+        const response = await fetchWithOneRetry(
           `${endpoint}?api_key=${actualKey}&language=zh-CN`,
           proxy
         );
@@ -988,12 +988,32 @@ export async function getTMDBCredits(
 }
 
 /**
+ * 组装 `/images` 的 include_image_language 参数。
+ *
+ * 标题字 / 无字海报只用得到三类：中文、原产国语言、以及 iso_639_1 为 null 的无字图
+ * （`pickLogo` 的 rank 0 / 1 / 2）。其余语言（vi / th / ms / pt / id …）取回来就
+ * 被丢弃，白占带宽也白拉长连接占用 —— 热门片的 /images 常有 200~400 条，光国际版
+ * 存量就能占掉一半以上。
+ *
+ * 原产国语言未知时返回 undefined（不过滤）：宁可多下一份，也不能把日韩片的原生
+ * 标题字筛掉，那会直接让 Hero 回落到文字标题。
+ */
+export function buildImageLanguageFilter(
+  originalLanguage?: string
+): string | undefined {
+  const origin = (originalLanguage || '').trim().toLowerCase();
+  if (!origin) return undefined;
+  return Array.from(new Set(['zh', origin, 'null'])).join(',');
+}
+
+/**
  * 获取 TMDB 图片信息
  * @param apiKey - TMDB API Key
  * @param mediaId - 媒体ID
  * @param mediaType - 媒体类型 (movie 或 tv)
  * @param proxy - 代理服务器地址
  * @param reverseProxyBaseUrl - 反代 Base URL
+ * @param imageLanguages - include_image_language，不传则返回全部语言
  * @returns 图片信息
  */
 export async function getTMDBImages(
@@ -1001,7 +1021,8 @@ export async function getTMDBImages(
   mediaId: number,
   mediaType: 'movie' | 'tv',
   proxy?: string,
-  reverseProxyBaseUrl?: string
+  reverseProxyBaseUrl?: string,
+  imageLanguages?: string
 ): Promise<{ code: number; images: any }> {
   try {
     const actualKey = getNextApiKey(apiKey);
@@ -1010,9 +1031,12 @@ export async function getTMDBImages(
     }
 
     const baseUrl = reverseProxyBaseUrl || DEFAULT_TMDB_BASE_URL;
-    const url = `${baseUrl}/3/${mediaType}/${mediaId}/images?api_key=${actualKey}`;
+    const langQuery = imageLanguages
+      ? `&include_image_language=${encodeURIComponent(imageLanguages)}`
+      : '';
+    const url = `${baseUrl}/3/${mediaType}/${mediaId}/images?api_key=${actualKey}${langQuery}`;
 
-    const response = await universalFetch(url, proxy);
+    const response = await fetchWithOneRetry(url, proxy);
 
     if (!response.ok) {
       console.error('TMDB Images API 请求失败:', response.status, response.statusText);
@@ -1075,7 +1099,7 @@ export async function searchTMDBByTitle(
       );
     }
 
-    const response = await universalFetch(
+    const response = await fetchWithOneRetry(
       `${baseUrl}/3/search/${mediaType}?${params.toString()}`,
       proxy
     );
@@ -1121,6 +1145,10 @@ export async function searchTMDBByTitle(
  * 会按 include_image_language 过滤，默认只留英文那一小撮：《偷天父子兵》
  * 的 /images 有 42 张（含 6 张中文），append 只回几张英文 —— 中文标题字
  * 整组被吞掉，前端就只能显示英文片名。详情另外请求一次只为拿 original_language。
+ *
+ * 顺序是「先详情、后图片」：只有拿到 original_language 才能把 include_image_language
+ * 收成 zh + 原产国 + null，把国际版存量筛掉。详情本身只有几 KB，串行的代价远小于
+ * 多下一份全语言图片；窗口式预取之后这条链一次首页只走三遍，串行无感。
  */
 export async function getTMDBImagesWithLang(
   apiKey: string,
@@ -1136,29 +1164,44 @@ export async function getTMDBImagesWithLang(
     }
 
     const baseUrl = reverseProxyBaseUrl || DEFAULT_TMDB_BASE_URL;
-    const [imagesRes, detailRes] = await Promise.all([
-      universalFetch(
-        `${baseUrl}/3/${mediaType}/${mediaId}/images?api_key=${actualKey}`,
-        proxy
-      ),
-      universalFetch(
+
+    // 详情只用来拿 original_language 当过滤依据，所以不重试、失败也不致命：
+    // 重试会让这条链最坏情况变成「详情 2 次 + 图片 2 次」共 4 个 15 秒，TMDB 整体
+    // 不可达时会把 /api/tmdb/logo 拖到一分钟。拿不到就当不知道，退回不过滤。
+    let originalLanguage = '';
+    try {
+      const detailRes = await universalFetch(
         `${baseUrl}/3/${mediaType}/${mediaId}?api_key=${actualKey}`,
         proxy
-      ),
-    ]);
+      );
+      if (detailRes.ok) {
+        const detail: any = await detailRes.json();
+        originalLanguage = detail.original_language || '';
+      }
+    } catch {
+      // 忽略：过滤器退回「不过滤」，仍能按中文挑
+    }
+    const langFilter = buildImageLanguageFilter(originalLanguage);
+
+    const imagesRes = await fetchWithOneRetry(
+      `${baseUrl}/3/${mediaType}/${mediaId}/images?api_key=${actualKey}${
+        langFilter
+          ? `&include_image_language=${encodeURIComponent(langFilter)}`
+          : ''
+      }`,
+      proxy
+    );
 
     if (!imagesRes.ok) {
       return { code: imagesRes.status, images: null, originalLanguage: '' };
     }
 
     const images: any = await imagesRes.json();
-    // 原产国语言拿不到不致命，只是白名单里少一条，仍能按中文挑
-    const detail: any = detailRes.ok ? await detailRes.json() : {};
 
     return {
       code: 200,
       images,
-      originalLanguage: detail.original_language || '',
+      originalLanguage,
     };
   } catch (error) {
     console.error('获取 TMDB 图片与原语言失败:', error);
@@ -1202,7 +1245,7 @@ export async function getTMDBDetails(
     if (!actualKey) return null;
 
     const baseUrl = reverseProxyBaseUrl || DEFAULT_TMDB_BASE_URL;
-    const response = await universalFetch(
+    const response = await fetchWithOneRetry(
       // videos 必须跨语言：只挂 zh-CN 时绝大多数片子一个视频都取不到，
       // 预告片会整批消失。include_video_language 是 append_to_response 的配套参数。
       `${baseUrl}/3/${mediaType}/${mediaId}?language=zh-CN&append_to_response=videos&include_video_language=zh,en,null&api_key=${actualKey}`,

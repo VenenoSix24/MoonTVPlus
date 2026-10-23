@@ -693,28 +693,37 @@ export default function BannerCarousel({
         });
     };
 
-    // 服务端随列表下发的标题字已经把 URL 写进缓存了，但「有 URL」不等于「有图」：
-    // 图片本身是 <img> 挂上去那一刻才开始下的，也就是轮换到的瞬间。这里趁第一屏
-    // 还在展示，把其余各屏的标题字全部下完并解码好，顺便把深浅也判掉。
-    items.forEach((item) => {
-      const { key } = logoRequest(item, dataSource);
+    // 只预取「当前 + 后两屏」。
+    //
+    // 轮播 5 秒一屏（autoPlayInterval 默认 5000），提前两屏有 10 秒余量，足够一次
+    // logo 请求（正常 300~800ms）落地。原来是把整个列表一次性打满：14 条 ×
+    // （/api/tmdb/logo + /api/tmdb/logo-tone）＝ 28 次本机请求、最多 56 个 TMDB
+    // 请求在同一个 tick 发出，自己把自己打成突发超时。
+    //
+    // 拿不到就显示文字标题 —— 渲染本来就是这条回落，所以渐进加载在视觉上不欠账。
+    // 服务端随列表下发的标题字已经进了缓存，那个分支只做预解码，不发请求。
+    const LOOKAHEAD = 2;
+    const windowItems: BannerItem[] = [];
+    for (let i = 0; i <= LOOKAHEAD && i < items.length; i++) {
+      const item = items[(currentIndex + i) % items.length];
+      if (item && !windowItems.includes(item)) windowItems.push(item);
+    }
+
+    windowItems.forEach((item) => {
+      const { key, url } = logoRequest(item, dataSource);
+
       const cached = heroLogoCache.get(key);
       if (cached) {
         warmLogo(cached);
         warmTone(item, cached);
+        return;
       }
-    });
 
-    const pending = items.filter(
-      (item) => !heroLogoCache.has(logoRequest(item, dataSource).key)
-    );
-    if (!pending.length) return;
-
-    pending.forEach((item) => {
-      const { key, url } = logoRequest(item, dataSource);
       // 没有真实 TMDB id 的条目（豆瓣未反查命中、TX 源）直接跳过：
       // 渲染会回落到文字标题，也就不必再打一个注定 404 的请求。
-      if (!url) return;
+      if (!url || logoInflight.has(key)) return;
+
+      logoInflight.add(key);
       fetch(url)
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
@@ -730,6 +739,9 @@ export default function BannerCarousel({
         })
         .catch(() => {
           // 取不到就回落到文字标题，不打扰用户
+        })
+        .finally(() => {
+          logoInflight.delete(key);
         });
     });
 
@@ -739,7 +751,7 @@ export default function BannerCarousel({
     // object-position: center left 推到右边，看着就是标题字偏左，深色的也不反白。
     // 让它在后台跑完，代价只是用户真的离开时多下几张图。
     return;
-  }, [dataSource, items]);
+  }, [dataSource, items, currentIndex]);
   const goToPrevious = useCallback(() => {
     isManualChange.current = true;
     setSkipNextAutoPlay(true);
@@ -1180,6 +1192,10 @@ const warmLogo = (src: string) => {
 
 /** 标题字按「类型:id:语言」缓存。轮播每 5 秒切一次，来回切不该反复打接口。 */
 const heroLogoCache = new Map<string, string | null>();
+
+/* 正在请求中的标题字。窗口式预取每次切屏都会跑一遍 effect，没有这个集合的话
+   同一屏在响应回来之前会被重复打出去。 */
+const logoInflight = new Set<string>();
 /* 标题字深浅 / 宽高比 / 墨迹密度的预判结果：键同 logoRequest。
    必须连 ratio 和 density 一起存 —— 只记 dark 是不够的：重新挂载时 warmTone 会
    因为「已判过」提前返回，state 补不回来，--logo-r 落回默认 3，盒子比例和图形
