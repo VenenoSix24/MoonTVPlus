@@ -11,6 +11,19 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "228.0.5",
+    date: "2026-10-23",
+    added: [
+      // 无新增内容
+    ],
+    changed: [
+      // 无变更内容
+    ],
+    fixed: [
+    "修复 Hero 背景图加载 TMDB 原图（2.2 MB → 600 KB）"
+    ]
+  },
+  {
     version: "228.0.4",
     date: "2026-10-23",
     added: [

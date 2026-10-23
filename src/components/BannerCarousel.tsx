@@ -68,8 +68,10 @@ const getImageUrl = (path: string | null) => {
   if (path.startsWith('http://') || path.startsWith('https://')) {
     return path;
   }
-  // 否则使用TMDB的URL拼接原始地址
-  return getTMDBImageUrl(path, 'original');
+  // Hero 是满屏背景图，但 original 动辄 3840×2160 / 2 MB 以上（实测单张 2.18 MB），
+  // 国内网络上就是「一点一点刷出来」。w1920 实测 606 KB，压掉 73%，铺到 1080p 屏
+  // 上再盖一层渐变遮罩，肉眼分辨不出差别。
+  return getTMDBImageUrl(path, 'w1920');
 };
 
 // 扩展TMDBItem类型以支持TX数据源的额外字段
